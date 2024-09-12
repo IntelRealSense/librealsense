@@ -23,12 +23,15 @@
 #include "geometry_msgs/Accel.h"
 #include "metadata-parser.h"
 #include "option.h"
-#include "l500/l500-depth.h"
 #include "rosbag/structures.h"
+#include "core/serialization.h"
 #include <regex>
 #include "stream.h"
 #include "types.h"
 #include <vector>
+
+#include <rsutils/string/from.h>
+
 
 enum ros_file_versions
 {
@@ -40,6 +43,15 @@ enum ros_file_versions
 
 namespace librealsense
 {
+    struct stream_descriptor
+    {
+        stream_descriptor() : type( RS2_STREAM_ANY ), index( 0 ) {}
+        stream_descriptor( rs2_stream type, int index = 0 ) : type( type ), index( index ) {}
+
+        rs2_stream type;
+        int index;
+    };
+
     inline void convert(rs2_format source, std::string& target)
     {
         switch (source)
@@ -312,11 +324,6 @@ namespace librealsense
             return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "post_processing" });
         }
 
-        static std::string l500_data_blocks_topic(const device_serializer::sensor_identifier& sensor_id)
-        {
-            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "l500_data" });
-        }
-
         /*version 3 and up*/
         static std::string option_description_topic(const device_serializer::sensor_identifier& sensor_id, rs2_option option_type)
         {
@@ -393,7 +400,8 @@ namespace librealsense
             if (elements_iterator == index)
                 return value_copy;
 
-            throw std::out_of_range(to_string() << "Requeted index \"" << index << "\" is out of bound of topic: \"" << value << "\"");
+            throw std::out_of_range( rsutils::string::from() << "Requeted index \"" << index
+                                                             << "\" is out of bound of topic: \"" << value << "\"" );
         }
     private:
         static std::string stream_to_ros_type(rs2_stream type)
@@ -414,7 +422,7 @@ namespace librealsense
             case RS2_STREAM_POSE:
                 return ros_pose_type_str();
             }
-            throw io_exception(to_string() << "Unknown stream type when resolving ros type: " << type);
+            throw io_exception( rsutils::string::from() << "Unknown stream type when resolving ros type: " << type );
         }
         static std::string create_from(const std::vector<std::string>& parts)
         {
@@ -489,14 +497,15 @@ namespace librealsense
 
         static std::string data_msg_types()
         {   //Either "image" or "imu" or "pose/transform"
-            return to_string() << ros_topic::ros_image_type_str() << "|" << ros_topic::ros_imu_type_str() << "|" << ros_topic::ros_pose_type_str() << "/transform";
+            return rsutils::string::from() << ros_topic::ros_image_type_str() << "|" << ros_topic::ros_imu_type_str()
+                                             << "|" << ros_topic::ros_pose_type_str() << "/transform";
         }
 
         static std::string stream_prefix(const device_serializer::stream_identifier& stream_id)
         {
-           return  to_string() << "/device_" << stream_id.device_index
-                               << "/sensor_" << stream_id.sensor_index
-                               << "/" << get_string(stream_id.stream_type) << "_" << stream_id.stream_index;                               
+            return rsutils::string::from()
+                << "/device_" << stream_id.device_index << "/sensor_" << stream_id.sensor_index << "/"
+                << get_string( stream_id.stream_type ) << "_" << stream_id.stream_index;                               
         }
 
     private:
@@ -506,22 +515,30 @@ namespace librealsense
     class SensorInfoQuery : public RegexTopicQuery
     {
     public:
-        SensorInfoQuery(uint32_t device_index) : RegexTopicQuery(to_string() << "/device_" << device_index << R"RRR(/sensor_(\d)+/info)RRR") {}
+        SensorInfoQuery( uint32_t device_index )
+            : RegexTopicQuery( rsutils::string::from()
+                               << "/device_" << device_index << R"RRR(/sensor_(\d)+/info)RRR" )
+        {
+        }
     };
 
     class FrameQuery : public RegexTopicQuery
     {
     public:
         //TODO: Improve readability and robustness of expressions
-        FrameQuery() : RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/.*_\d+)RRR" << "/(" << data_msg_types() << ")/data") {}
+        FrameQuery()
+            : RegexTopicQuery( rsutils::string::from() << R"RRR(/device_\d+/sensor_\d+/.*_\d+)RRR"
+                                                         << "/(" << data_msg_types() << ")/data" )
+        {
+        }
     };
 
     class StreamQuery : public RegexTopicQuery
     {
     public:
-        StreamQuery(const device_serializer::stream_identifier& stream_id) :
-            RegexTopicQuery(to_string() << stream_prefix(stream_id)
-                << "/(" << data_msg_types() << ")/data")
+        StreamQuery( const device_serializer::stream_identifier & stream_id )
+            : RegexTopicQuery( rsutils::string::from()
+                               << stream_prefix( stream_id ) << "/(" << data_msg_types() << ")/data" )
         {
         }
     };
@@ -529,8 +546,8 @@ namespace librealsense
     class ExtrinsicsQuery : public RegexTopicQuery
     {
     public:
-        ExtrinsicsQuery(const device_serializer::stream_identifier& stream_id) :
-            RegexTopicQuery(to_string() << stream_prefix(stream_id) << "/tf")
+        ExtrinsicsQuery( const device_serializer::stream_identifier & stream_id )
+            : RegexTopicQuery( stream_prefix( stream_id ) + "/tf" )
         {
         }
     };
@@ -538,15 +555,19 @@ namespace librealsense
     class OptionsQuery : public RegexTopicQuery
     {
     public:
-        OptionsQuery() : 
-            RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/option/.*/value)RRR") {}
+        OptionsQuery()
+            : RegexTopicQuery( R"RRR(/device_\d+/sensor_\d+/option/.*/value)RRR" )
+        {
+        }
     };
 
     class NotificationsQuery : public RegexTopicQuery
     {
     public:
-        NotificationsQuery() :
-            RegexTopicQuery(to_string() << R"RRR(/device_\d+/sensor_\d+/notification/.*)RRR") {}
+        NotificationsQuery()
+            : RegexTopicQuery( R"RRR(/device_\d+/sensor_\d+/notification/.*)RRR" )
+        {
+        }
     };
     /**
     * Incremental number of the RealSense file format version
@@ -662,8 +683,8 @@ namespace librealsense
             case 1 /*microcontroller*/ : 
                 return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
             case 2: return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
-           }
-            throw std::runtime_error(to_string() << "Unknown timestamp domain: " << source);
+            }
+            throw std::runtime_error( rsutils::string::from() << "Unknown timestamp domain: " << source );
         }
 
         inline bool info_from_string(const std::string& str, rs2_camera_info& out)
@@ -716,7 +737,7 @@ namespace librealsense
             case RS2_STREAM_ACCEL: name = ACCEL; break;
             case RS2_STREAM_POSE: name = POSE; break;
             default:
-                throw io_exception(to_string() << "Unknown stream type : " << source.type);
+                throw io_exception( rsutils::string::from() << "Unknown stream type : " << source.type );
             }
             if (source.type == RS2_STREAM_POSE)
             {
@@ -726,7 +747,8 @@ namespace librealsense
             {
                 if (source.index == 1)
                 {
-                    throw io_exception(to_string() << "Unknown index for type : " << source.type << ", index = " << source.index);
+                    throw io_exception( rsutils::string::from()
+                                        << "Unknown index for type : " << source.type << ", index = " << source.index );
                 }
                 return name + (source.index == 0 ? "" : std::to_string(source.index));
             }
@@ -775,7 +797,7 @@ namespace librealsense
                 return retval;
             }
             else
-                throw io_exception(to_string() << "Unknown stream type : " << source);
+                throw io_exception( rsutils::string::from() << "Unknown stream type : " << source );
 
             auto index_str = source.substr(type_str.length());
             if (index_str.empty())
@@ -800,9 +822,11 @@ namespace librealsense
             //    /camera/rs_6DoF<id>/0
             //   /imu/ACCELEROMETER/imu_raw/0
             //   /imu/GYROMETER/imu_raw/0
-            FrameQuery() : MultipleRegexTopicQuery({ 
-                to_string() << R"RRR(/(camera|imu)/.*/(image|imu)_raw/\d+)RRR" ,
-                to_string() << R"RRR(/camera/rs_6DoF\d+/\d+)RRR" }) {}
+            FrameQuery()
+                : MultipleRegexTopicQuery( { R"RRR(/(camera|imu)/.*/(image|imu)_raw/\d+)RRR",
+                                             R"RRR(/camera/rs_6DoF\d+/\d+)RRR" } )
+            {
+            }
         };
 
         inline bool is_camera(rs2_stream s)
@@ -818,12 +842,14 @@ namespace librealsense
         class StreamQuery : public RegexTopicQuery
         {
         public:
-            StreamQuery(const device_serializer::stream_identifier& stream_id) :
-                RegexTopicQuery(to_string() 
-                    << (is_camera(stream_id.stream_type) ? "/camera/" : "/imu/") 
-                    << stream_type_to_string({ stream_id.stream_type, (int)stream_id.stream_index})
-                    << ((stream_id.stream_type == RS2_STREAM_POSE) ? "/" : (is_camera(stream_id.stream_type)) ? "/image_raw/" : "/imu_raw/")
-                    << stream_id.sensor_index)
+            StreamQuery( const device_serializer::stream_identifier & stream_id )
+                : RegexTopicQuery( rsutils::string::from()
+                                   << ( is_camera( stream_id.stream_type ) ? "/camera/" : "/imu/" )
+                                   << stream_type_to_string( { stream_id.stream_type, (int)stream_id.stream_index } )
+                                   << ( ( stream_id.stream_type == RS2_STREAM_POSE ) ? "/"
+                                        : ( is_camera( stream_id.stream_type ) )     ? "/image_raw/"
+                                                                                     : "/imu_raw/" )
+                                   << stream_id.sensor_index )
             {
             }
         };
@@ -831,11 +857,11 @@ namespace librealsense
         class FrameInfoExt : public RegexTopicQuery
         {
         public:
-            FrameInfoExt(const device_serializer::stream_identifier& stream_id) :
-                RegexTopicQuery(to_string()
-                    << (is_camera(stream_id.stream_type) ? "/camera/" : "/imu/")
-                    << stream_type_to_string({ stream_id.stream_type, (int)stream_id.stream_index })
-                    << "/rs_frame_info_ext/" << stream_id.sensor_index)
+            FrameInfoExt( const device_serializer::stream_identifier & stream_id )
+                : RegexTopicQuery( rsutils::string::from()
+                                   << ( is_camera( stream_id.stream_type ) ? "/camera/" : "/imu/" )
+                                   << stream_type_to_string( { stream_id.stream_type, (int)stream_id.stream_index } )
+                                   << "/rs_frame_info_ext/" << stream_id.sensor_index )
             {
             }
         };

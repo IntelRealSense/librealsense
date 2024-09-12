@@ -21,6 +21,8 @@ namespace Intel.RealSense
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void rs2_devices_changed_callback(IntPtr removed, IntPtr added, IntPtr user_data);
 
+    public delegate void ProgressCallback(IntPtr progress);
+
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void rs2_update_progress_callback(float progress, IntPtr user_data);
 }

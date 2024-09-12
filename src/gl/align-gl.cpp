@@ -1,13 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "../include/librealsense2-gl/rs_processing_gl.hpp"
+#include <librealsense2/hpp/rs_sensor.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
+#include <librealsense2-gl/rs_processing_gl.hpp>
 
-#include "proc/synthetic-stream.h"
+#include "../proc/synthetic-stream.h"
 #include "align-gl.h"
 #include "option.h"
+#include "rendering.h"
+
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -18,7 +20,6 @@
 #include <iostream>
 
 #include <chrono>
-#include <strstream>
 
 #include "synthetic-stream-gl.h"
 
@@ -61,12 +62,20 @@ void align_gl::align_z_to_other(rs2::video_frame& aligned,
     auto p = _pc->calculate(depth);
 
     auto frame_ref = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)aligned.get());
+    if (!frame_ref)
+        throw std::runtime_error("Frame is not depth frame, cannot cast");
+
     auto gf = dynamic_cast<gpu_addon_interface*>(frame_ref);
+    if (!gf)
+        throw std::runtime_error("Frame is not gpu_addon_interface, cannot output texture");
 
     gf->get_gpu_section().set_size(width, height);
 
     // Set the depth origin of new depth frame to the old depth frame
     auto depth_ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)depth.get());
+    if (!depth_ptr)
+        throw std::runtime_error("Frame interface is not depth frame");
+
     frame_ref->set_sensor(depth_ptr->get_sensor());
     depth_ptr->acquire();
     frame_holder h{ depth_ptr };
@@ -129,7 +138,7 @@ void build_opengl_projection_for_intrinsics(matrix4& frustum,
     // additional row is inserted to map the z-coordinate to
     // OpenGL.
     matrix4 tproj;
-    tproj(0,0) = float(alpha);  tproj(0,1) = float(skew);  tproj(0,2) = 0.f;
+    tproj(0,0) = float(alpha);  tproj(0,1) = float(skew);  tproj(0,2) = float(u0);
     tproj(1,1) = float(beta);   tproj(1,2) = float(v0);
     tproj(2,2) = float(-(N+F)); tproj(2,3) = float(-N*F);
     tproj(3,2) = 1.f;
@@ -232,6 +241,8 @@ void align_gl::align_other_to_z(rs2::video_frame& aligned,
 
     auto frame_ref = (frame_interface*)aligned.get();
     auto gf = dynamic_cast<gpu_addon_interface*>(frame_ref);
+    if (!gf)
+        throw std::runtime_error("Frame interface is not gpu addon interface");
 
     uint32_t output_rgb;
     auto format = other.get_profile().format();
@@ -263,8 +274,15 @@ align_gl::align_gl(rs2_stream to_stream) : align(to_stream, "Align (GLSL)")
 
 align_gl::~align_gl()
 {
-    perform_gl_action([&]()
+    try
     {
-        cleanup_gpu_resources();
-    }, []{});
+        perform_gl_action( [&]()
+        {
+            cleanup_gpu_resources();
+        }, [] {} );
+    }
+    catch(...)
+    {
+        LOG_DEBUG( "Error while cleaning up gpu resources" );
+    }
 }

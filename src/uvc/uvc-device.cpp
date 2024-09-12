@@ -2,6 +2,10 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "uvc-device.h"
+#include "uvc-parser.h"
+#include "uvc-streamer.h"
+
+#include <rsutils/string/from.h>
 
 #define UVC_AE_MODE_D0_MANUAL   ( 1 << 0 )
 #define UVC_AE_MODE_D1_AUTO     ( 1 << 1 )
@@ -486,8 +490,8 @@ namespace librealsense
             unsigned char buffer[4] = {0};
             int32_t ret = 0;
             
-            usb_status sts;
-            uint32_t transferred;
+            usb_status sts = RS2_USB_STATUS_OTHER;
+            uint32_t transferred = 0;
             _action_dispatcher.invoke_and_wait([&, this](dispatcher::cancellable_timer c)
             {
                 if (_messenger)
@@ -566,7 +570,7 @@ namespace librealsense
                     unit = _parser->get_input_terminal().bTerminalID;
                     return UVC_CT_AE_PRIORITY_CONTROL;
                 default:
-                    throw linux_backend_exception(to_string() << "invalid option : " << option);
+                    throw linux_backend_exception(rsutils::string::from() << "invalid option : " << option);
             }
         }
 
@@ -575,8 +579,8 @@ namespace librealsense
             unsigned char buffer[4];
             INT_TO_DW(value, buffer);
 
-            usb_status sts;
-            uint32_t transferred;
+            usb_status sts = RS2_USB_STATUS_OTHER;
+            uint32_t transferred = 0;
 
             _action_dispatcher.invoke_and_wait([&, this](dispatcher::cancellable_timer c)
             {

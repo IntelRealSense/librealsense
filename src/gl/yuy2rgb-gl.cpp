@@ -1,13 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "../include/librealsense2-gl/rs_processing_gl.hpp"
+#include <librealsense2/hpp/rs_sensor.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
+#include <librealsense2-gl/rs_processing_gl.hpp>
 
-#include "proc/synthetic-stream.h"
+#include "../proc/synthetic-stream.h"
 #include "yuy2rgb-gl.h"
-#include "option.h"
+#include "../option.h"
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -18,7 +18,6 @@
 #include <iostream>
 
 #include <chrono>
-#include <strstream>
 
 #include "synthetic-stream-gl.h"
 
@@ -119,10 +118,17 @@ yuy2rgb::yuy2rgb()
 
 yuy2rgb::~yuy2rgb()
 {
-    perform_gl_action([&]()
+    try
     {
-        cleanup_gpu_resources();
-    }, []{});
+        perform_gl_action( [&]()
+        {
+            cleanup_gpu_resources();
+        }, [] {} );
+    }
+    catch(...)
+    {
+        LOG_DEBUG( "Error while cleaning up gpu resources" );
+    }
 }
 
 rs2::frame yuy2rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)
@@ -156,6 +162,8 @@ rs2::frame yuy2rgb::process_frame(const rs2::frame_source& src, const rs2::frame
         if (!res) return;
         
         auto gf = dynamic_cast<gpu_addon_interface*>((frame_interface*)res.get());
+        if (!gf)
+            throw std::runtime_error("Frame interface is not gpu addon interface");
         
         uint32_t yuy_texture;
         

@@ -12,7 +12,6 @@
 #include <usbioctl.h>
 #include <SetupAPI.h>
 #include <comdef.h>
-#include <atlstr.h>
 #include <Windows.h>
 #include <SetupAPI.h>
 #include <string>
@@ -26,9 +25,7 @@
 #include <devpkey.h>  // DEVPKEY_...
 
 //https://docs.microsoft.com/en-us/windows-hardware/drivers/usbcon/supported-usb-classes#microsoft-provided-usb-device-class-drivers
-#ifndef WITH_TRACKING
 DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE, 0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED);
-#endif
 DEFINE_GUID(GUID_DEVINTERFACE_IMAGE_WIN10, 0x6bdd1fc6L, 0x810f, 0x11d0, 0xbe, 0xc7, 0x08, 0x00, 0x2b, 0xe2, 0x09, 0x2f);
 DEFINE_GUID(GUID_DEVINTERFACE_CAMERA_WIN10, 0xca3e7ab9, 0xb4c3, 0x4ae6, 0x82, 0x51, 0x57, 0x9e, 0xf9, 0x33, 0x89, 0x0f);
 
@@ -51,15 +48,6 @@ namespace librealsense
             return sizeof(T) * vec.size();
         }
 
-        std::string hr_to_string(HRESULT hr)
-        {
-            _com_error err(hr);
-            std::wstring errorMessage = (err.ErrorMessage()) ? err.ErrorMessage() : L"";
-            std::stringstream ss;
-            ss << "HResult 0x" << std::hex << hr << ": \"" << win_to_utf(errorMessage.data()) << "\"";
-            return ss.str();
-        }
-
         typedef ULONG(__stdcall* fnRtlGetVersion)(PRTL_OSVERSIONINFOW lpVersionInformation);
 
 
@@ -74,35 +62,6 @@ namespace librealsense
             }
             else
                 return false;
-        }
-
-        bool check(const char * call, HRESULT hr, bool to_throw)
-        {
-            if (FAILED(hr))
-            {
-                std::string descr = to_string() << call << " returned: " << hr_to_string(hr);
-                if (to_throw)
-                    throw windows_backend_exception(descr);
-                else
-                    LOG_DEBUG(descr);
-
-                return false;
-            }
-            return true;
-        }
-
-        std::string win_to_utf(const WCHAR * s)
-        {
-            auto len = WideCharToMultiByte(CP_UTF8, 0, s, -1, nullptr, 0, nullptr, nullptr);
-            if(len == 0)
-                throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
-
-            std::string buffer(len-1, ' ');
-            len = WideCharToMultiByte(CP_UTF8, 0, s, -1, &buffer[0], static_cast<int>(buffer.size())+1, nullptr, nullptr);
-            if(len == 0)
-                throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
-
-            return buffer;
         }
 
         std::vector<std::string> tokenize(std::string string, char separator)
@@ -360,7 +319,7 @@ namespace librealsense
                 {
                     if (handle_node(targetKey, h, i)) // exit condition
                     {
-                        return std::make_tuple(win_to_utf(fullPath.c_str()) + " " + std::to_string(i),
+                        return std::make_tuple(rsutils::string::windows::win_to_utf(fullPath.c_str()) + " " + std::to_string(i),
                                                 static_cast<usb_spec>(pConInfo->DeviceDescriptor.bcdUSB));
                     }
                 }
@@ -384,7 +343,7 @@ namespace librealsense
                 std::vector<WCHAR> buf( cch_required + 1 );
                 if( CM_Get_Device_ID( devinst, buf.data(), cch_required, 0 ) != CR_SUCCESS )
                     return false;
-                *p_out_str = win_to_utf( buf.data() );
+                *p_out_str = rsutils::string::windows::win_to_utf( buf.data() );
             }
 
             return true;
@@ -503,7 +462,7 @@ namespace librealsense
             str.reserve( cb );
             if( CM_Get_DevNode_Property( get(), &property, &type, (PBYTE) str.data(), &cb, 0 ) != CR_SUCCESS )
                 return std::string();
-            return win_to_utf( str.data() );
+            return rsutils::string::windows::win_to_utf( str.data() );
         }
 
 
@@ -593,7 +552,7 @@ namespace librealsense
                 LOG_ERROR("CM_Get_Device_ID failed");
                 return false;
             }
-            std::string parent_id = win_to_utf( pInstID2.data() );
+            std::string parent_id = rsutils::string::windows::win_to_utf( pInstID2.data() );
             //LOG_DEBUG( "...  parent device id " << parent_id );
             uint16_t parent_vid, parent_pid, parent_mi;
             parse_usb_path_from_device_id( parent_vid, parent_pid, parent_mi, parent_uid, parent_id );  // may fail -- but we try to get the parent_uid
@@ -643,7 +602,7 @@ namespace librealsense
             uint16_t mi = 0;
             std::string guid;
             std::wstring ws(detail_data->DevicePath);
-            std::string path( win_to_utf( detail_data->DevicePath ));
+            std::string path(rsutils::string::windows::win_to_utf( detail_data->DevicePath ));
 
             /* Parse the following USB path format = \?usb#vid_vvvv&pid_pppp&mi_ii#aaaaaaaaaaaaaaaa#{gggggggg-gggg-gggg-gggg-gggggggggggg} */
             parse_usb_path_multiple_interface(vid, pid, mi, parent_uid, path, guid);
@@ -798,7 +757,7 @@ namespace librealsense
 
         PSECURITY_DESCRIPTOR make_allow_all_security_descriptor(void)
         {
-            WCHAR *pszStringSecurityDescriptor;
+            WCHAR const *pszStringSecurityDescriptor;
             pszStringSecurityDescriptor = L"D:(A;;GA;;;WD)(A;;GA;;;AN)S:(ML;;NW;;;ME)";
             PSECURITY_DESCRIPTOR pSecDesc;
             if (!ConvertStringSecurityDescriptorToSecurityDescriptor(
@@ -817,11 +776,10 @@ namespace librealsense
 
         create_and_open_status named_mutex::create_named_mutex(const char* camID)
         {
-            CString lstr;
-            CString IDstr(camID);
             // IVCAM_DLL string is left in librealsense to allow safe
             // interoperability with existing tools like DCM
-            lstr.Format(L"Global\\IVCAM_DLL_WINUSB_MUTEX%s", IDstr);
+            std::string lstr( "Global\\IVCAM_DLL_WINUSB_MUTEX" );
+            lstr += camID;
             auto pSecDesc = make_allow_all_security_descriptor();
             if (pSecDesc)
             {
@@ -830,10 +788,10 @@ namespace librealsense
                 SecAttr.lpSecurityDescriptor = pSecDesc;
                 SecAttr.bInheritHandle = FALSE;
 
-                _winusb_mutex = CreateMutex(
+                _winusb_mutex = CreateMutexA(
                     &SecAttr,
                     FALSE,
-                    lstr);
+                    lstr.c_str());
                 LocalFree(pSecDesc);
             }
             //CreateMutex failed
@@ -850,24 +808,18 @@ namespace librealsense
 
         create_and_open_status named_mutex::open_named_mutex(const char* camID)
         {
-            CString lstr;
-            CString IDstr(camID);
             // IVCAM_DLL string is left in librealsense to allow safe
             // interoperability with existing tools like DCM
-            lstr.Format(L"Global\\IVCAM_DLL_WINUSB_MUTEX%s", IDstr.GetString());
+            std::string lstr( "Global\\IVCAM_DLL_WINUSB_MUTEX" );
+            lstr += camID;
 
-            _winusb_mutex = OpenMutex(
-                MUTEX_ALL_ACCESS,            // request full access
-                FALSE,                       // handle not inheritable
-                lstr);  // object name
+            _winusb_mutex = OpenMutexA( MUTEX_ALL_ACCESS,  // request full access
+                                        FALSE,             // handle not inheritable
+                                        lstr.c_str() );    // object name
 
             if (_winusb_mutex == nullptr)
             {
                 return Mutex_TotalFailure;
-            }
-            else if (GetLastError() == ERROR_ALREADY_EXISTS)
-            {
-                return Mutex_AlreadyExist;
             }
 
             return Mutex_Succeed;

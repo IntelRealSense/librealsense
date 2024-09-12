@@ -184,7 +184,7 @@ function DownloadAndSync {
 	else
 		echo "Downloading default $WHAT source..."
 
-		git clone "$REPO_URL" -n ${LDK_SOURCE_DIR} 2>&1 >/dev/null
+		git clone --depth 1 --branch $TAG "$REPO_URL" -n ${LDK_SOURCE_DIR} 2>&1 >/dev/null
 		if [ $? -ne 0 ]; then
 			echo "$2 source sync failed!"
 			echo ""

@@ -39,15 +39,15 @@ struct Time_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::Time_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::Time_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::Time_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::Time_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Time_
 
 typedef ::std_msgs::Time_<std::allocator<void> > Time;
 
-typedef boost::shared_ptr< ::std_msgs::Time > TimePtr;
-typedef boost::shared_ptr< ::std_msgs::Time const> TimeConstPtr;
+typedef std::shared_ptr< ::std_msgs::Time > TimePtr;
+typedef std::shared_ptr< ::std_msgs::Time const> TimeConstPtr;
 
 // constants requiring out of line definition
 
@@ -79,32 +79,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Time_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Time_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Time_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Time_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Time_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Time_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

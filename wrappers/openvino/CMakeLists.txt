@@ -25,9 +25,12 @@ include(check_vino_version.cmake)
 check_vino_version()
 
 if(OPENVINO2019)
-	set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ie_cpu_extension)
+    set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ie_cpu_extension)
+elseif(OPENVINO_NGRAPH)
+    include(${INTEL_OPENVINO_DIR}/deployment_tools/ngraph/cmake/ngraphConfig.cmake)
+    set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ${NGRAPH_LIBRARIES})
 else()
-	set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES})
+    set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES})
 endif()
 
 include_directories( . )
@@ -35,7 +38,9 @@ include_directories( ${InferenceEngine_INCLUDE_DIRS} )
 
 if(OPENVINO2019)
 # We need additional access to ext_list.hpp, for CPU extension support:
-	include_directories( "${IE_ROOT_DIR}/src/extension" )
+    include_directories( "${IE_ROOT_DIR}/src/extension" )
+elseif(OPENVINO_NGRAPH)
+    include_directories( "${INTEL_OPENVINO_DIR}/deployment_tools/ngraph/include" )
 endif()
 
 # The rs-vino directory includes additional classes and helpers that need to be included
@@ -50,7 +55,7 @@ set(OPENVINO_FILES
 )
 
 if(OPENVINO2019)
-	set(OPENVINO_FILES ${OPENVINO_FILES} "${IE_ROOT_DIR}/src/extension/ext_list.hpp")
+    set(OPENVINO_FILES ${OPENVINO_FILES} "${IE_ROOT_DIR}/src/extension/ext_list.hpp")
 endif()
 
 # And they make use of ELPP (EasyLogging++):

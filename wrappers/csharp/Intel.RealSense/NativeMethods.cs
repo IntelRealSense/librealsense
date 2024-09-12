@@ -19,8 +19,10 @@ namespace Intel.RealSense
 
 #if DEBUG
         private const string dllName = "realsense2d";
+        private const string dllNetName = "realsense2-netd";
 #else
         private const string dllName = "realsense2";
+        private const string dllNetName = "realsense2-net";
 #endif
 
 
@@ -158,6 +160,9 @@ namespace Intel.RealSense
         internal static extern void rs2_enqueue_frame(IntPtr frame, IntPtr queue);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int rs2_frame_queue_size(IntPtr queue, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_create_align(Stream align_to, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
@@ -183,9 +188,6 @@ namespace Intel.RealSense
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_create_zero_order_invalidation_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
-
-        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr rs2_create_huffman_depth_decompress_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_create_hdr_merge_processing_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
@@ -501,6 +503,9 @@ namespace Intel.RealSense
         internal static extern IntPtr rs2_send_and_receive_raw_data(IntPtr device, IntPtr raw_data_to_send, uint size_of_raw_data_to_send, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_build_debug_protocol_command(IntPtr device, uint opdoce, uint param1, uint param2, uint param3, uint param4, IntPtr raw_data_to_send, uint size_of_raw_data_to_send, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern int rs2_is_device_extendable_to(IntPtr device, Extension extension, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
@@ -693,6 +698,22 @@ namespace Intel.RealSense
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_run_tare_calibration(IntPtr dev, float ground_truth_mm, [MarshalAs(UnmanagedType.LPStr)] string json_content, int content_size, [MarshalAs(UnmanagedType.FunctionPtr)] rs2_update_progress_callback callback, IntPtr client_data, int timeout_ms, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_run_focal_length_calibration(IntPtr dev, IntPtr left_queue, IntPtr right_queue, float target_width_mm, float target_height_mm, int adjust_both_sides, out float ratio, out float angle,
+            [MarshalAs(UnmanagedType.FunctionPtr)] rs2_update_progress_callback callback, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_run_uv_map_calibration(IntPtr dev, IntPtr left_queue, IntPtr rgb_queue, IntPtr depth_queue, int px_py_only, out float ratio, out float angle,
+            [MarshalAs(UnmanagedType.FunctionPtr)] rs2_update_progress_callback callback, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern float rs2_calculate_target_z(IntPtr dev, IntPtr input_frame_queue1, IntPtr input_frame_queue2, IntPtr input_frame_queue3, float target_width_mm, float target_height_mm,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern float rs2_calculate_target_z(IntPtr dev, IntPtr input_frame_queue1, IntPtr input_frame_queue2, IntPtr input_frame_queue3, float target_width_mm, float target_height_mm,
+            [MarshalAs(UnmanagedType.FunctionPtr)] rs2_update_progress_callback callback, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_get_calibration_table(IntPtr dev, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
@@ -904,6 +925,11 @@ namespace Intel.RealSense
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern int rs2_config_can_resolve(IntPtr config, IntPtr pipe, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
         #endregion
+        #region rs_net_device
+        [DllImport(dllNetName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_create_net_device(int api_version, string address, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+        #endregion
+
 
         #region Error Handling
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]

@@ -40,7 +40,7 @@ struct PoseArray_
    typedef  ::std_msgs::Header_<ContainerAllocator>  _header_type;
   _header_type header;
 
-   typedef std::vector< ::geometry_msgs::Pose_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::geometry_msgs::Pose_<ContainerAllocator> >::other >  _poses_type;
+   typedef std::vector< ::geometry_msgs::Pose_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::geometry_msgs::Pose_<ContainerAllocator>  > >  _poses_type;
   _poses_type poses;
 
 
@@ -86,32 +86,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::geometry_msgs::PoseArray_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::geometry_msgs::PoseArray_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::geometry_msgs::PoseArray_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::geometry_msgs::PoseArray_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::geometry_msgs::PoseArray_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::geometry_msgs::PoseArray_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 

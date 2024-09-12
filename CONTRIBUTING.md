@@ -9,7 +9,7 @@ You are welcome to propose and discuss enhancements using project [issues](https
 > The `development` branch is the one where all contributions must be merged before being promoted to master.
 > If you plan to propose a patch, please commit into the `development` branch, or its own feature branch. 
 
-We recommend enabling [travis-ci](https://travis-ci.org/) on your fork of `librealsense` to make sure the changes compile on all platforms and pass unit-tests.
+We recommend enabling [Github Actions](https://docs.github.com/en/actions) on your fork of `librealsense` to make sure the changes compile on all platforms and pass unit-tests.
 
 In addition, please run `pr_check.sh` and `api_check.sh` under `scripts` directory. These scripts verify compliance with project's standards:
 
@@ -64,10 +64,9 @@ The pull request will be automatically updated
 
 For example, when adding new value to [`rs2_option`](https://github.com/IntelRealSense/librealsense/blob/master/include/librealsense2/h/rs_option.h) enum, please also add it to:
 1. The list of Matlab options under [`wrappers/matlab/option.m`](https://github.com/IntelRealSense/librealsense/blob/master/wrappers/matlab/option.m#L3-L46)
-2. The list of Node.js options [here](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/nodejs/index.js#L4661), [here](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/nodejs/index.js#L4927) and [here](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/nodejs/src/addon.cpp#L4629-L4692)
-3. The list of options for [Unreal Engine](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/unrealengine4/Plugins/RealSense/Source/RealSense/Public/RealSenseTypes.h#L56-L118) integration
-4. The list of options in the C# wrapper - [`wrappers/csharp/Intel.RealSense/Types/Enums/Option.cs`](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/csharp/Intel.RealSense/Types/Enums/Option.cs)
-5. The list of Java options used for Android integration - [`wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/Option.java`](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/Option.java#L4-L64)
-6. The list of options in the [python](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/python/pybackend.cpp#L102-L165) wrapper
+2. The list of options for [Unreal Engine](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/unrealengine4/Plugins/RealSense/Source/RealSense/Public/RealSenseTypes.h#L56-L118) integration
+3. The list of options in the C# wrapper - [`wrappers/csharp/Intel.RealSense/Types/Enums/Option.cs`](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/csharp/Intel.RealSense/Types/Enums/Option.cs)
+4. The list of Java options used for Android integration - [`wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/Option.java`](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/Option.java#L4-L64)
+5. The list of options in the [python](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/python/pybackend.cpp#L102-L165) wrapper
 
-Once all are updated [travis-ci](https://travis-ci.org/IntelRealSense/librealsense) will give clear indication that each of the wrappers is still passing compilation. 
+Once all are updated [Github Actions](https://docs.github.com/en/actions) will give clear indication that each of the wrappers is still passing compilation. 

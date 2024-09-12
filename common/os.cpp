@@ -6,15 +6,18 @@
 #endif
 #endif
 
+#include "os.h"
+#include <rsutils/easylogging/easyloggingpp.h>
+
 #include <thread>
 #include <algorithm>
 #include <regex>
 #include <cmath>
+#include <iomanip>
+#include <sstream>
 
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#include "os.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -26,6 +29,7 @@
 #include <wchar.h>
 #include <KnownFolders.h>
 #include <shlobj.h>
+#include <rsutils/os/hresult.h>
 #endif
 
 #if (defined(_WIN32) || defined(_WIN64))
@@ -42,13 +46,12 @@
 
 namespace rs2
 {
-
     // Use shortcuts for long names to avoid trimming of essential data
     std::string truncate_string(const std::string& str, size_t width)
     {
         if (str.length() > width)
         {
-            std::stringstream ss;
+            std::ostringstream ss;
             ss << str.substr(0, width / 3) << "..." << str.substr(str.length() - width / 3);
             return ss.str().c_str();
         }
@@ -58,7 +61,7 @@ namespace rs2
     void open_url(const char* url)
     {
 #if (defined(_WIN32) || defined(_WIN64))
-        if (reinterpret_cast<int>(ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW)) < 32)
+        if (reinterpret_cast<INT_PTR>(ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW)) < 32)
             throw std::runtime_error("Failed opening URL");
 #elif defined __linux__ || defined(__linux__)
         std::string command_name = "xdg-open ";
@@ -166,7 +169,7 @@ Some auxillary functionalities might be affected. Please report this message if 
             return false;
     }
 
-    const char* file_dialog_open(file_dialog_mode flags, const char* filters, 
+    const char* file_dialog_open(file_dialog_mode flags, const char* filters,
         const char* default_path, const char* default_name)
     {
         std::string def = "";
@@ -176,14 +179,13 @@ Some auxillary functionalities might be affected. Please report this message if 
         const char* def_ptr = nullptr;
         if (default_name || default_path)
             def_ptr = def.c_str();
-        int num_filters = filters == nullptr ? 0 : 1;
 
-        char const * const * aFilterPatterns = nullptr;
-        char const * aSingleFilterDescription = nullptr;
+        char const* const* aFilterPatterns = nullptr;
+        char const* aSingleFilterDescription = nullptr;
 
         std::vector<std::string> filters_split;
 
-        if (num_filters)
+        if (filters)
         {
             auto curr = filters;
             while (*curr != '\0')
@@ -194,22 +196,31 @@ Some auxillary functionalities might be affected. Please report this message if 
             }
         }
 
+        int filters_count = 0;
         std::vector<const char*> filter;
 
-        if (filters_split.size() == 2)
+        if (filters_split.size() >= 1)
         {
-            filter.push_back(filters_split[1].c_str());
-            aFilterPatterns = filter.data();
+            filters_count = int( filters_split.size() - 1 );
+
+            // set description
             aSingleFilterDescription = filters_split[0].c_str();
+
+            // fill filter pattern with extensions
+            for (int i = 1; i < filters_split.size(); ++i)
+            {
+                filter.push_back(filters_split[i].c_str());
+            }
+            aFilterPatterns = filter.data();
         }
 
         if (flags == save_file)
         {
-            return tinyfd_saveFileDialog("Save File", def_ptr, num_filters, aFilterPatterns, aSingleFilterDescription);
+            return tinyfd_saveFileDialog("Save File", def_ptr, filters_count, aFilterPatterns, aSingleFilterDescription);
         }
         if (flags == open_file)
         {
-            return tinyfd_openFileDialog("Open File", def_ptr, num_filters, aFilterPatterns, aSingleFilterDescription, 0);
+            return tinyfd_openFileDialog("Open File", def_ptr, filters_count, aFilterPatterns, aSingleFilterDescription, 0);
         }
         return nullptr;
     }
@@ -244,94 +255,6 @@ Some auxillary functionalities might be affected. Please report this message if 
         return buffer;
     }
 
-    std::string get_folder_path(special_folder f)
-    {
-        std::string res;
-#ifdef _WIN32
-        if (f == temp_folder)
-        {
-            TCHAR buf[MAX_PATH];
-            if (GetTempPath(MAX_PATH, buf) != 0)
-            {
-                char str[1024];
-                wcstombs(str, buf, 1023);
-                res = str;
-            }
-        }
-        else
-        {
-            GUID folder;
-            switch (f)
-            {
-            case user_desktop: folder = FOLDERID_Desktop;
-                break;
-            case user_documents: folder = FOLDERID_Documents;
-                break;
-            case user_pictures: folder = FOLDERID_Pictures;
-                break;
-            case user_videos: folder = FOLDERID_Videos;
-                break;
-            case app_data: folder = FOLDERID_RoamingAppData;
-                break;
-            default:
-                throw std::invalid_argument(
-                    std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
-            }
-            PWSTR folder_path = NULL;
-            HRESULT hr = SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT_PATH, NULL, &folder_path);
-            if (SUCCEEDED(hr))
-            {
-                char str[1024];
-                wcstombs(str, folder_path, 1023);
-                CoTaskMemFree(folder_path);
-                res = str;
-                res += "\\";
-            }
-            else
-            {
-                throw std::runtime_error("Failed to get requested special folder");
-            }
-        }
-#endif //_WIN32
-#if defined __linux__ || defined __APPLE__
-        if (f == special_folder::temp_folder)
-        {
-            const char* tmp_dir = getenv("TMPDIR");
-            res = tmp_dir ? tmp_dir : "/tmp/";
-        }
-        else
-        {
-            const char* home_dir = getenv("HOME");
-            if (!home_dir)
-            {
-                struct passwd* pw = getpwuid(getuid());
-                home_dir = (pw && pw->pw_dir) ? pw->pw_dir : "";
-            }
-            if (home_dir)
-            {
-                res = home_dir;
-                switch (f)
-                {
-                case user_desktop: res += "/Desktop/";
-                    break;
-                case user_documents: res += "/Documents/";
-                    break;
-                case user_pictures: res += "/Pictures/";
-                    break;
-                case user_videos: res += "/Videos/";
-                    break;
-                case app_data: res += "/.";
-                    break;
-                default:
-                    throw std::invalid_argument(
-                        std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
-                }
-            }
-        }
-#endif // defined __linux__ || defined __APPLE__
-        return res;
-    }
-
     bool ends_with(const std::string& s, const std::string& suffix)
     {
         auto i = s.rbegin(), j = suffix.rbegin();
@@ -348,23 +271,6 @@ Some auxillary functionalities might be affected. Please report this message if 
         return j == prefix.end();
     }
 
-    std::string get_os_name()
-    {
-#ifdef _WIN32
-        return "Windows";
-#else
-#ifdef __APPLE__
-        return "Mac OS";
-#else
-#ifdef __linux__
-        return "Linux";
-#else
-        return "Unknown";
-#endif
-#endif
-#endif
-    }
-    
     bool is_debug()
     {
 #ifndef NDEBUG

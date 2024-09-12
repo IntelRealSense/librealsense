@@ -48,7 +48,7 @@ struct occupancy_map_
    typedef uint16_t _tile_count_type;
   _tile_count_type tile_count;
 
-   typedef std::vector<float, typename ContainerAllocator::template rebind<float>::other >  _tiles_type;
+   typedef std::vector<float, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< float > >  _tiles_type;
   _tiles_type tiles;
 
 
@@ -94,32 +94,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::realsense_legacy_msgs::occupancy_map_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::realsense_legacy_msgs::occupancy_map_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::realsense_legacy_msgs::occupancy_map_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::realsense_legacy_msgs::occupancy_map_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::realsense_legacy_msgs::occupancy_map_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::realsense_legacy_msgs::occupancy_map_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

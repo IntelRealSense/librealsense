@@ -1,10 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-// Metadata attributes provided by RS4xx Depth Cameras
-
 #pragma once
 
-#include "types.h"
+#include "float3.h"
+#include "platform/hid-device.h"
+#include "platform/uvc-device.h"
+
+
+// Metadata attributes provided by RS4xx Depth Cameras
+
 
 #define REGISTER_MD_TYPE(A,B)\
     template<>\
@@ -36,6 +40,7 @@ namespace librealsense
         META_DATA_INTEL_CONFIGURATION_ID        = 0x80000002,
         META_DATA_INTEL_STAT_ID                 = 0x80000003,
         META_DATA_INTEL_FISH_EYE_CONTROL_ID     = 0x80000004,
+        META_DATA_MIPI_INTEL_RGB_ID             = 0x80000005, // D457 - added as w/a for a fw bug (which sends META_DATA_INTEL_RGB_CONTROL_ID even for mipi rgb frames)
         META_DATA_INTEL_RGB_CONTROL_ID          = 0x80000005,
         META_DATA_INTEl_FE_FOV_MODEL_ID         = 0x80000006,
         META_DATA_INTEl_FE_CAMERA_EXTRINSICS_ID = 0x80000007,
@@ -47,6 +52,8 @@ namespace librealsense
         META_DATA_CAMERA_DEBUG_ID               = 0x800000FF,
         META_DATA_HID_IMU_REPORT_ID             = 0x80001001,
         META_DATA_HID_CUSTOM_TEMP_REPORT_ID     = 0x80001002,
+        META_DATA_MIPI_INTEL_DEPTH_ID           = 0x80010000,
+        //META_DATA_MIPI_INTEL_RGB_ID             = 0x80010001, // D457 - to be restored after the FW bug is resolved
     };
 
     static const std::map<md_type, std::string> md_type_desc =
@@ -66,6 +73,8 @@ namespace librealsense
         { md_type::META_DATA_INTEL_L500_DEPTH_CONTROL_ID,   "Intel Depth Control"},
         { md_type::META_DATA_HID_IMU_REPORT_ID,             "HID IMU Report"},
         { md_type::META_DATA_HID_CUSTOM_TEMP_REPORT_ID,     "HID Custom Temperature Report"},
+        { md_type::META_DATA_MIPI_INTEL_DEPTH_ID,           "Intel Mipi Depth Control"},
+        { md_type::META_DATA_MIPI_INTEL_RGB_ID,             "Intel Mipi RGB Control"},
     };
 
     /**\brief md_capture_timing_attributes - enumerate the bit offset to check
@@ -111,7 +120,52 @@ namespace librealsense
         roi_attribute                   = (1u << 5),
         preset_attribute                = (1u << 6),
         emitter_mode_attribute          = (1u << 7),
-        led_power_attribute             = (1u << 8) 
+        led_power_attribute             = (1u << 8)
+    };
+    
+    /**\brief md_mipi_depth_control_attributes - bit mask to find active attributes,
+     *  md_mipi_depth_control struct */
+    enum class md_mipi_depth_control_attributes : uint32_t
+    {
+        hw_timestamp_attribute          = (1u << 0),
+        optical_timestamp_attribute     = (1u << 1),
+        exposure_time_attribute         = (1u << 2),
+        manual_exposure_attribute       = (1u << 3),
+        laser_power_attribute           = (1u << 4),
+        trigger_attribute               = (1u << 5),
+        projector_mode_attribute        = (1u << 6),
+        preset_attribute                = (1u << 7),
+        manual_gain_attribute           = (1u << 8),
+        auto_exposure_mode_attribute    = (1u << 9),
+        input_width_attribute           = (1u << 10),
+        input_height_attribute          = (1u << 11),
+        sub_preset_info_attribute       = (1u << 12),
+        calibration_info_attribute      = (1u << 13), // shall be used to stire the frame counter in calibration routines
+        crc_attribute                   = (1u << 14)
+    };
+
+    /**\brief md_mipi_rgb_control_attributes - bit mask to find active attributes,
+     *  md_mipi_rgb_control struct */
+    enum class md_mipi_rgb_control_attributes : uint32_t
+    {
+        hw_timestamp_attribute            = (1u << 0),
+        brightness_attribute              = (1u << 1),
+        contrast_attribute                = (1u << 2),
+        saturation_attribute              = (1u << 3),
+        sharpness_attribute               = (1u << 4),
+        auto_white_balance_temp_attribute = (1u << 5),
+        gamma_attribute                   = (1u << 6),
+        manual_exposure_attribute         = (1u << 7),
+        manual_white_balance_attribute    = (1u << 8),
+        auto_exposure_mode_attribute      = (1u << 9),
+        gain_attribute                    = (1u << 10),
+        backlight_compensation_attribute  = (1u << 11),
+        hue_attribute                     = (1u << 12),
+        power_line_frequency_attribute    = (1u << 13),
+        low_light_compensation_attribute  = (1u << 14),
+        input_width_attribute             = (1u << 15),
+        input_height_attribute            = (1u << 16),
+        crc_attribute                     = (1u << 17)
     };
 
     /**\brief md_depth_control_attributes - bit mask to find active attributes,
@@ -228,85 +282,6 @@ namespace librealsense
     };
 
 #pragma pack(push, 1)
-    // SR300 Metadata definitions
-    struct md_sr300_rgb
-    {
-        uint32_t        uvc_timestamp;      // Modify spec to align with UVC protocol
-        //******* General *****************
-        uint8_t         version;
-        uint8_t         image_info_bits;
-        uint32_t        frame_counter;
-        uint8_t         reserved0[2];
-        //******* Configuration ***********
-        uint8_t         format;
-        uint16_t        height;
-        uint16_t        width;
-        uint16_t        fps;
-        uint8_t         reserved1[1];
-        //******* Controls ****************
-        int8_t          brightness;
-        uint8_t         contrast;
-        uint8_t         saturation;
-        uint8_t         sharpness;
-        uint8_t         auto_exp_mode;
-        uint8_t         auto_wb_temp;
-        uint8_t         gain;
-        uint8_t         backlightComp;
-        uint16_t        gamma;
-        int16_t         hue;
-        uint16_t        manual_exp;
-        uint16_t        manual_wb;
-        uint8_t         power_line_frequency;
-        uint8_t         reserved2[7];
-        //******* Capture Info ************
-        uint16_t        actual_fps;
-        uint16_t        actual_trigger_fps;
-        uint16_t        actual_exposure;
-        uint16_t        color_temperature;
-        uint16_t        frame_latency;
-        uint8_t         reserved3[78];
-    };
-
-    struct md_sr300_depth
-    {
-        uint32_t        uvc_timestamp;      // Modify spec to align with UVC protocol
-        //******* General ***************** [0:7]
-        uint8_t         version;
-        uint8_t         image_info_bits;
-        uint32_t        frame_counter;
-        uint8_t         reserved0[2];
-        //******* Configuration *********** [8:15]
-        uint8_t         format;
-        uint16_t        height;
-        uint16_t        width;
-        uint16_t        fps;
-        uint8_t         reserved1[1];
-        //******* External Trigger ******** [16:23]
-        uint8_t         external_triggerenable;
-        uint8_t         external_trigger_delay_ms;
-        uint8_t         reserved2[6];
-        //******* Controls **************** [24:31]
-        uint8_t         laser_power;
-        uint8_t         accuracy;
-        uint8_t         motion_vs_range;
-        uint8_t         filter;
-        uint8_t         confidence;
-        uint8_t         reserved3[3];
-        //******* Capture Info ************ [32:47]
-        uint16_t        actual_exposure;
-        uint16_t        frame_latency;
-        uint8_t         actual_laser_power;
-        int16_t         sync_delta;
-        uint16_t        actual_fps;
-        uint8_t         reserved4[7];
-        //******* Debug Info ************  [48:127]
-        uint8_t         thermal_loop_enable;
-        int32_t         oac_voltage;
-        int8_t          oac_stability;
-        int8_t          ir_temperature;
-        uint8_t         reserved5[73];
-    };
-
     /**\brief md_header - metadata header is a integral part of all rs4XX metadata objects */
     struct md_header
     {
@@ -314,7 +289,64 @@ namespace librealsense
         uint32_t    md_size;            // Actual size of metadata struct without header
     };
 
-    /**\brief md_capture_timing - properties associated with sensor configuration
+    /**\brief md_mipi_depth_mode - properties associated with sensor configuration
+     *  during video streaming. Corresponds to FW STMetaDataExtMipiDepthIR object*/
+    struct md_mipi_depth_mode
+    {
+        md_header   header;
+        uint8_t     version;  // maybe need to replace by uint8_t for version and 3 others for reserved
+        uint16_t    calib_info;
+        uint8_t     reserved;
+        uint32_t    flags;              // Bit array to specify attributes that are valid
+        uint32_t    hw_timestamp;
+        uint32_t    optical_timestamp;   //In microsecond unit
+        uint32_t    exposure_time;      //The exposure time in microsecond unit
+        uint32_t    manual_exposure;
+        uint16_t    laser_power;
+        uint16_t    trigger;
+        uint8_t     projector_mode;
+        uint8_t     preset;
+        uint8_t     manual_gain;
+        uint8_t     auto_exposure_mode;
+        uint16_t    input_width;
+        uint16_t    input_height;
+        uint32_t    sub_preset_info;
+        uint32_t    crc;
+    };
+    constexpr uint8_t md_mipi_depth_mode_size = sizeof(md_mipi_depth_mode);
+    REGISTER_MD_TYPE(md_mipi_depth_mode, md_type::META_DATA_MIPI_INTEL_DEPTH_ID)
+
+    /**\brief md_mipi_rgb_mode - properties associated with sensor configuration
+     *  during video streaming. Corresponds to FW STMetaDataExtMipiRgb object*/
+    struct md_mipi_rgb_mode
+    {
+        md_header   header;
+        uint32_t    version;  // maybe need to replace by uint8_t for version and 3 others for reserved
+        uint32_t    flags;              // Bit array to specify attributes that are valid
+        uint32_t    hw_timestamp;
+        uint8_t     brightness;
+        uint8_t     contrast;
+        uint8_t     saturation;
+        uint8_t     sharpness;
+        uint16_t    auto_white_balance_temp;
+        uint16_t    gamma;
+        uint16_t    manual_exposure;
+        uint16_t    manual_white_balance;
+        uint8_t     auto_exposure_mode;
+        uint8_t     gain;
+        uint8_t     backlight_compensation;
+        uint8_t     hue;
+        uint8_t     power_line_frequency;
+        uint8_t     low_light_compensation;
+        uint16_t    input_width;
+        uint16_t    input_height;
+        uint8_t     reserved[6];
+        uint32_t    crc;
+    };
+    constexpr uint8_t md_mipi_rgb_mode_size = sizeof(md_mipi_rgb_mode);
+    REGISTER_MD_TYPE(md_mipi_rgb_mode, md_type::META_DATA_MIPI_INTEL_RGB_ID)
+
+    /**\brief md_mipi_capture_timing - properties associated with sensor configuration
      *  during video streaming. Corresponds to FW STMetaDataIntelCaptureTiming object*/
     struct md_capture_timing
     {
@@ -328,7 +360,6 @@ namespace librealsense
         uint32_t    frame_interval;     //The frame interval in microsecond unit
         uint32_t    pipe_latency;       //The latency between start of frame to frame ready in USB buffer
     };
-
     constexpr uint8_t md_capture_timing_size = sizeof(md_capture_timing);
 
     REGISTER_MD_TYPE(md_capture_timing, md_type::META_DATA_INTEL_CAPTURE_TIMING_ID)
@@ -669,8 +700,6 @@ namespace librealsense
         md_depth_mode           depth_mode;
         md_fisheye_mode         fisheye_mode;
         md_rgb_mode             rgb_mode;
-        md_sr300_depth          sr300_depth_mode;
-        md_sr300_rgb            sr300_rgb_mode;
     };
 
     /**\brief metadata_raw - metadata structure
@@ -680,6 +709,37 @@ namespace librealsense
         platform::uvc_header    header;
         md_modes                mode;
     };
+    constexpr int metadata_raw_mode_offset = sizeof(metadata_raw::header);
+
+    /**\brief metadata_mipi_raw - metadata structure
+     *  layout as transmitted and received by backend */
+    struct metadata_mipi_depth_raw
+    {
+        platform::uvc_header_mipi    header;
+        md_mipi_depth_mode           depth_mode;
+
+        inline bool capture_valid() const
+        {
+            return ((header.header.length > platform::uvc_header_mipi_size) &&
+                (depth_mode.header.md_size == md_mipi_depth_mode_size) &&
+                (depth_mode.header.md_type_id == md_type::META_DATA_MIPI_INTEL_DEPTH_ID));
+        }
+    };
+    REGISTER_MD_TYPE(metadata_mipi_depth_raw, md_type::META_DATA_MIPI_INTEL_DEPTH_ID)
+
+    struct metadata_mipi_rgb_raw
+    {
+        platform::uvc_header_mipi    header;
+        md_mipi_rgb_mode             rgb_mode;
+
+        inline bool capture_valid() const
+        {
+            return ((header.header.length > platform::uvc_header_mipi_size) &&
+                (rgb_mode.header.md_size == md_mipi_rgb_mode_size) &&
+                (rgb_mode.header.md_type_id == md_type::META_DATA_MIPI_INTEL_RGB_ID));
+        }
+    };
+    REGISTER_MD_TYPE(metadata_mipi_rgb_raw, md_type::META_DATA_MIPI_INTEL_RGB_ID)
 
     constexpr uint8_t metadata_raw_size = sizeof(metadata_raw);
 
@@ -731,12 +791,23 @@ namespace librealsense
         md_custom_tmp_report    temperature_report;
     };
 
+#pragma pack( push, 1 )
+    struct hid_header
+    {
+        uint8_t length;       // HID report total size. Limited to 255
+        uint8_t report_type;  // Curently supported: IMU/Custom Temperature
+        uint64_t timestamp;   // Driver-produced/FW-based timestamp. Note that currently only the lower 32bit are used
+    };
+#pragma pack( pop )
+
+    constexpr uint8_t hid_header_size = sizeof( hid_header );
+
     /**\brief metadata_hid_raw - HID metadata structure
  *  layout populated by backend */
     struct metadata_hid_raw
     {
-        platform::hid_header   header;
-        md_hid_report          report_type;
+        hid_header header;
+        md_hid_report report_type;
     };
 
     constexpr uint8_t metadata_hid_raw_size = sizeof(metadata_hid_raw);

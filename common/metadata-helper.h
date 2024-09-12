@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+
 #pragma once
 
 #include <string>
@@ -22,7 +25,7 @@ namespace rs2
 
         static bool can_support_metadata(const std::string& product)
         {
-            return product == "D400" || product == "SR300" || product == "L500";
+            return product == "D400" || product == "D500";
         }
 
         // This is the command-line parameter that gets passed to another process (running as admin) in order to enable metadata -- see WinMain

@@ -5,6 +5,7 @@
 
 #include "sensor.h"
 #include "error-handling.h"
+#include "option.h"
 #include <deque>
 
 namespace librealsense
@@ -65,7 +66,10 @@ namespace librealsense
         void start();   // must be called AFTER ALL initializations of _hw_monitor.
         void stop();
         ~time_diff_keeper();
+
         double get_system_hw_time(double crnt_hw_time, bool& is_ready);
+        void set_enabling_opt(std::shared_ptr<global_time_option> en_opt){ _option_is_enabled=en_opt; }
+        bool is_enabled() const { return _option_is_enabled? _option_is_enabled->is_true() : false; }
 
     private:
         bool update_diff_time();
@@ -75,6 +79,7 @@ namespace librealsense
         global_time_interface* _device;
         unsigned int _poll_intervals_ms;
         int             _users_count;
+        std::shared_ptr<global_time_option> _option_is_enabled;
         active_object<> _active_object;
         mutable std::recursive_mutex _read_mtx; // Watch only 1 reader at a time.
         mutable std::recursive_mutex _enable_mtx; // Watch only 1 start/stop operation at a time.
@@ -103,7 +108,7 @@ namespace librealsense
         bool _ts_is_ready;
     };
 
-    class global_time_interface : public recordable<global_time_interface>
+    class global_time_interface
     {
     protected:
         std::shared_ptr<time_diff_keeper> _tf_keeper;
@@ -113,9 +118,8 @@ namespace librealsense
         ~global_time_interface() { _tf_keeper.reset(); }
         void enable_time_diff_keeper(bool is_enable);
         virtual double get_device_time_ms() = 0; // Returns time in miliseconds.
-        virtual void create_snapshot(std::shared_ptr<global_time_interface>& snapshot) const override {}
-        virtual void enable_recording(std::function<void(const global_time_interface&)> record_action) override {}
     };
+
     MAP_EXTENSION(RS2_EXTENSION_GLOBAL_TIMER, librealsense::global_time_interface);
 
 }

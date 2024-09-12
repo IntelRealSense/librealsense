@@ -3,14 +3,19 @@
 
 #include <glad/glad.h>
 #include "output-model.h"
-
-#include "model-views.h"
+#include <rs-config.h>
+#include "ux-window.h"
+#include "device-model.h"
 #include "os.h"
 
 #include <imgui_internal.h>
 #include <librealsense2/hpp/rs_internal.hpp>
 
+#include <fstream>
+#include <iterator>
+
 using namespace rs2;
+using namespace rsutils::string;
 
 void output_model::thread_loop()
 {
@@ -42,8 +47,12 @@ void output_model::thread_loop()
                             }
                             catch (const std::exception& ex)
                             {
-                                add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, 
-                                    to_string() << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what() << "\nEither configure valid XML or remove it");
+                                add_log( RS2_LOG_SEVERITY_WARN,
+                                         __FILE__,
+                                         __LINE__,
+                                         rsutils::string::from()
+                                             << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what()
+                                             << "\nEither configure valid XML or remove it" );
                             }
                         }
 
@@ -52,22 +61,24 @@ void output_model::thread_loop()
                         {
                             auto parsed = fwlogger.create_parsed_message();
                             auto parsed_ok = false;
-                            
+
                             if (has_parser)
                             {
                                 if (fwlogger.parse_log(message, parsed))
                                 {
                                     parsed_ok = true;
 
-                                    add_log(message.get_severity(), 
-                                        parsed.file_name(), parsed.line(), to_string() 
-                                            << "FW-LOG [" << parsed.thread_name() << "] " << parsed.message());
+                                    add_log( message.get_severity(),
+                                             parsed.file_name(),
+                                             parsed.line(),
+                                             rsutils::string::from()
+                                                 << "FW-LOG [" << parsed.thread_name() << "] " << parsed.message() );
                                 }
                             }
 
                             if (!parsed_ok)
                             {
-                                std::stringstream ss; 
+                                std::stringstream ss;
                                 for (auto& elem : message.data())
                                     ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
                                 add_log(message.get_severity(), __FILE__, 0, ss.str());
@@ -79,8 +90,10 @@ void output_model::thread_loop()
                 }
                 catch(const std::exception& ex)
                 {
-                    add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, 
-                        to_string() << "Failed to fetch firmware logs: " << ex.what());
+                    add_log( RS2_LOG_SEVERITY_WARN,
+                             __FILE__,
+                             __LINE__,
+                             rsutils::string::from() << "Failed to fetch firmware logs: " << ex.what() );
                 }
             }
         // FW define the logs polling intervals to be no less than 100msec to cope with limited resources.
@@ -101,6 +114,9 @@ output_model::output_model() : fw_logger([this](){ thread_loop(); }) , incoming_
             configurations::viewer::output_open, false);
     search_line = config_file::instance().get_or_default(
             configurations::viewer::search_term, std::string(""));
+    is_dashboard_open = config_file::instance().get_or_default(
+        configurations::viewer::dashboard_open, true );
+    
     if (search_line != "") search_open = true;
 
     available_dashboards["Frame Drops per Second"] = [&](std::string name){
@@ -362,11 +378,11 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
         ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, dark_sensor_bg);
 
-        ImGui::BeginChild("##LogArea",
-            ImVec2(0.7f * w - 4, h - 38 - ImGui::GetTextLineHeightWithSpacing() - 1), true,
-            ImGuiWindowFlags_AlwaysVerticalScrollbar);
+        const float log_area_width = w - get_dashboard_width() - 2;
 
-        const auto log_area_width = 0.7f * w - 4;
+        ImGui::BeginChild("##LogArea",
+            ImVec2(log_area_width, h - 38 - ImGui::GetTextLineHeightWithSpacing() - 1), true,
+            ImGuiWindowFlags_AlwaysVerticalScrollbar);
 
         bool copy_all = false;
         bool save_all = false;
@@ -375,13 +391,13 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         auto time_now = glfwGetTime();
 
         int i = 0;
-        foreach_log([&](log_entry& log) 
+        foreach_log([&](log_entry& log)
         {
             auto line = log.line;
             if (log.line_number)
             {
                 line = log.filename.substr(log.filename.find_last_of("/\\") + 1) + ":";
-                line += std::string(to_string() << log.line_number) + " - ";
+                line += std::string( rsutils::string::from() << log.line_number) + " - ";
                 line += log.line;
             }
 
@@ -412,11 +428,11 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             if (log.severity >= RS2_LOG_SEVERITY_ERROR)
             {
                 color = redish;
-            } 
+            }
             else if (log.severity >= RS2_LOG_SEVERITY_WARN)
             {
                 color = orange;
-            } 
+            }
             else
             {
                 color = greenish;
@@ -424,13 +440,13 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
 
             auto margin = ImGui::GetTextLineHeightWithSpacing() - ImGui::GetTextLineHeight();
             auto size = ImGui::CalcTextSize(line.c_str());
-            
+
             auto t = single_wave(static_cast<float>(time_now - log.time_added + 0.3f)) * 0.2f;
             if (log.selected) t = 0.2f;
 
             auto pos = ImGui::GetCursorScreenPos();
             ImGui::GetWindowDrawList()->AddRectFilled({ pos.x, pos.y },
-                        { pos.x + log_area_width, pos.y + size.y + 2 * margin }, 
+                        { pos.x + log_area_width, pos.y + size.y + 2 * margin },
                         ImColor(alpha(saturate(color, 0.3f + t), 0.7f + t)));
             ImGui::GetWindowDrawList()->AddLine({ pos.x, pos.y + size.y + 2 * margin },
                         { pos.x + log_area_width, pos.y + size.y + 2 * margin }, ImColor(alpha(color, 0.5f)));
@@ -441,7 +457,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 4);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 4);
 
-            std::string label = to_string() << "##log_entry" << i++;
+            std::string label = rsutils::string::from() << "##log_entry" << i++;
             ImGui::InputTextEx(label.c_str(),
                         (char*)line.data(),
                         static_cast<int>(line.size() + 1),
@@ -453,8 +469,8 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5,5));
-            label = to_string() << "##log_entry" << i << "_context_menu";
-            if (ImGui::BeginPopupContextItem(label.c_str())) 
+            label = rsutils::string::from() << "##log_entry" << i << "_context_menu";
+            if (ImGui::BeginPopupContextItem(label.c_str()))
             {
                 log.selected = true;
                 ImGui::PushFont(win.get_font());
@@ -476,7 +492,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
 
             ImGui::PopStyleColor(3);
             ImGui::PopFont();
-            
+
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1);
 
             output_strings.push_back(full);
@@ -511,23 +527,22 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
 
         ImGui::PushFont(win.get_monofont());
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-        ImGui::PushItemWidth(0.7f * w - 32);
+        ImGui::PushItemWidth( w - get_dashboard_width() - 30 );
 
         bool force_refresh = false;
-
-        if (ImGui::IsKeyPressed(GLFW_KEY_UP) || ImGui::IsKeyPressed(GLFW_KEY_DOWN))
+        if (ImGui::IsWindowFocused() && (ImGui::IsKeyPressed(GLFW_KEY_UP) || ImGui::IsKeyPressed(GLFW_KEY_DOWN)))
         {
             if (commands_histroy.size())
             {
                 if (ImGui::IsKeyPressed(GLFW_KEY_UP)) history_offset = (history_offset + 1) % commands_histroy.size();
-                if (ImGui::IsKeyPressed(GLFW_KEY_DOWN)) history_offset = (history_offset - 1 + commands_histroy.size()) % commands_histroy.size();
+                if (ImGui::IsKeyPressed(GLFW_KEY_DOWN)) history_offset = (history_offset - 1 + (int)commands_histroy.size()) % commands_histroy.size();
                 command_line = commands_histroy[history_offset];
 
                 force_refresh = true;
             }
         }
 
-        if (ImGui::IsKeyPressed(GLFW_KEY_TAB))
+        if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(GLFW_KEY_TAB))
         {
             if (!autocomplete.size() || !starts_with(to_lower(autocomplete.front()), to_lower(command_line)))
             {
@@ -568,7 +583,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         buff[command_line.size()] = 0;
 
         int flags = ImGuiInputTextFlags_EnterReturnsTrue;
-        if (force_refresh) 
+        if (force_refresh)
         {
             flags = ImGuiInputTextFlags_ReadOnly;
         }
@@ -576,7 +591,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         ImGui::PushStyleColor(ImGuiCol_FrameBg, scrollbar_bg);
         if (ImGui::InputText("##TerminalCommand", buff, 1023, flags))
         {
-            
+
         }
         if (!command_focus && !new_log) command_line = buff;
         ImGui::PopStyleColor();
@@ -584,7 +599,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         ImGui::PopFont();
         ImGui::PopStyleColor();
 
-        if (ImGui::IsKeyPressed(GLFW_KEY_ENTER) || ImGui::IsKeyPressed(GLFW_KEY_KP_ENTER))
+        if (ImGui::IsWindowFocused() && (ImGui::IsKeyPressed(GLFW_KEY_ENTER) || ImGui::IsKeyPressed(GLFW_KEY_KP_ENTER)))
         {
             if (commands_histroy.size() > 100) commands_histroy.pop_back();
             commands_histroy.push_front(command_line);
@@ -594,24 +609,80 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         }
         else command_focus = false;
 
-        if (ImGui::IsKeyPressed(GLFW_KEY_ESCAPE))
+        if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(GLFW_KEY_ESCAPE))
         {
             command_line = "";
         }
 
-        ImGui::SetCursorPos(ImVec2(0.7f * w - 2, 35));
-        ImGui::BeginChild("##StatsArea",ImVec2(0.3f * w - 2, h - 38), true);
+        float child_height = 0;
+        for( auto && dash : dashboards )
+        {
+            child_height += dash->get_height();
+        }
+        float new_dashboard_button_height = 40.f;
+        child_height == 0 ? child_height = new_dashboard_button_height : child_height += 5;
+        
+        auto dashboard_width = get_dashboard_width();
+        ImGui::SetCursorPos( ImVec2( w - dashboard_width, 35 ) );
 
-        auto top = 0;
-        for(auto&& dash : dashboards)
-        {   
-            auto h = dash->get_height();
-            auto r = rect { 0.f, (float)top, 0.3f * w - 2, (float)h };
-            dash->draw(win, r);
-            top += h;
+        ImGui::BeginChild( "##StatsArea", ImVec2( dashboard_width - 3.f, h - 38 ), true );
+
+        const ImVec2 collapse_dashboard_button_size = { 28, 28 };
+        const int max_dashboard_width = (int)( ( 0.3f * w ) );
+        const int min_dashboard_width = static_cast<int>(collapse_dashboard_button_size.x) + 2;
+
+        if( is_dashboard_open )
+        {
+            if( ImGui::Button( u8"\uf138", collapse_dashboard_button_size ) )  // close dashboard
+            {
+                is_dashboard_open = false;
+                config_file::instance().set( configurations::viewer::dashboard_open, is_dashboard_open );
+                default_dashboard_w = min_dashboard_width;
+            }
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::SetTooltip( "Collapse dashboard" );
+            }
+
+            // Animation of opening dashboard panel
+            if( default_dashboard_w.value() != max_dashboard_width )
+                default_dashboard_w = max_dashboard_width;
+        }
+        else
+        {
+            float cursor_pos_x = ImGui::GetCursorPosX();
+            ImGui::SetCursorPosX( 0 );
+
+            if( ImGui::Button( u8"\uf137", collapse_dashboard_button_size ) )  // open dashboard
+            {
+                is_dashboard_open = true;
+                config_file::instance().set( configurations::viewer::dashboard_open, is_dashboard_open );
+                default_dashboard_w = max_dashboard_width;
+            }
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::SetTooltip( "Open dashboard" );
+            }
+            ImGui::SetCursorPosX( cursor_pos_x );
+
+            // Animation of closing dashboard panel
+            if( default_dashboard_w.value() != min_dashboard_width )
+                default_dashboard_w = min_dashboard_width;
         }
 
-        dashboards.erase(std::remove_if(dashboards.begin(), dashboards.end(), 
+        auto top = 0;
+        if( is_dashboard_open && dashboard_width == max_dashboard_width )
+        {
+            for( auto && dash : dashboards )
+            {
+                auto h = dash->get_height();
+                auto r = rect{ 0.f, (float)top, get_dashboard_width() - 8.f, (float)h };
+                dash->draw( win, r );
+                top += h;
+            }
+        }
+
+        dashboards.erase(std::remove_if(dashboards.begin(), dashboards.end(),
         [](std::shared_ptr<stream_dashboard> p){
             return p->closing();
         }), dashboards.end());
@@ -630,7 +701,8 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         if (can_add)
         {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-            const auto new_dashboard_name = "new_dashaborad";
+            const auto new_dashboard_name = "new_dashboard";
+            ImGui::SameLine();
             if (ImGui::Button(u8"\uF0D0 Add Dashboard", ImVec2(-1, 25)))
             {
                 ImGui::OpenPopup(new_dashboard_name);
@@ -673,15 +745,14 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             ImGui::PopStyleColor(4);
             ImGui::PopStyleVar();
         }
-        
+
 
         ImGui::EndChild();
-
 
         ImGui::PopStyleColor();
     }
     else foreach_log([&](log_entry& log) {});
-    
+
 
     ImGui::End();
     ImGui::PopStyleColor(7);
@@ -785,7 +856,7 @@ void output_model::run_command(std::string command, device_models_list & device_
 
         if (std::regex_match(command, e))
         {
-            add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, to_string() << "Trying to send " << command << "...");
+            add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, rsutils::string::from() << "Trying to send " << command << "...");
 
             std::vector<uint8_t> raw_data;
             std::stringstream ss(command);
@@ -809,13 +880,13 @@ void output_model::run_command(std::string command, device_models_list & device_
                     found = true;
                     auto res = dbg.send_and_receive_raw_data(raw_data);
 
-                    std::stringstream ss; 
+                    std::stringstream ss;
                     int i = 0;
                     for (auto& elem : res)
                     {
                         ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
                         i++;
-                        if (i > 80) 
+                        if (i > 80)
                         {
                             ss << "\n";
                             i = 0;
@@ -858,7 +929,7 @@ void output_model::run_command(std::string command, device_models_list & device_
                     found = true;
                     auto res = dbg.send_and_receive_raw_data(buffer);
 
-                    std::string response = to_string() << "\n" << terminal_parser.parse_response(to_lower(command), res);
+                    std::string response = rsutils::string::from() << "\n" << terminal_parser.parse_response(to_lower(command), res);
                     add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, response);
                 }
             }
@@ -869,8 +940,8 @@ void output_model::run_command(std::string command, device_models_list & device_
             return;
         }
 
-        add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, to_string() << "Unrecognized command '" << command << "'");
-    } 
+        add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, rsutils::string::from() << "Unrecognized command '" << command << "'");
+    }
     catch(const std::exception& ex)
     {
         add_log( RS2_LOG_SEVERITY_ERROR, __FILE__, __LINE__, ex.what() );
@@ -909,7 +980,7 @@ bool output_model::user_defined_command( std::string command, device_models_list
         add_log( RS2_LOG_SEVERITY_WARN,
                  __FILE__,
                  __LINE__,
-                 to_string() << "None of the connected devices supports '" << command << "'" );
+                 rsutils::string::from() << "None of the connected devices supports '" << command << "'" );
     }
 
     return user_defined_command_detected;
@@ -953,9 +1024,9 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     for (int i = 0; i <= ticks_y; i++)
     {
         auto y = max_y - i * (gap_y / ticks_y);
-        std::string y_label = to_string() << std::fixed << std::setprecision(2) << y;
+        std::string y_label = rsutils::string::from() << std::fixed << std::setprecision(2) << y;
         auto size = ImGui::CalcTextSize(y_label.c_str());
-        max_y_label_width = std::max(max_y_label_width, 
+        max_y_label_width = std::max(max_y_label_width,
             size.x);
     }
 
@@ -969,14 +1040,15 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
                 { pos.x + r.w, pos.y + get_height() }, ImColor(dark_sensor_bg));
 
     auto size = ImGui::CalcTextSize(name.c_str());
-    ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5 ));
+    float collapse_buton_h = 28.f + 3.f;  // Dashboard button size plus some spacing
+    ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5 + collapse_buton_h));
     ImGui::Text("%s", name.c_str());
     ImGui::SameLine();
 
     ImGui::PushStyleColor(ImGuiCol_Text, grey);
     ImGui::SetCursorPosX(r.w - 25);
-    ImGui::SetCursorPosY(3);
-    std::string id = to_string() << u8"\uF00D##Close_" << name;
+    ImGui::SetCursorPosY( 3.f + collapse_buton_h );
+    std::string id = rsutils::string::from() << u8"\uF00D##Close_" << name;
     if (ImGui::Button(id.c_str(),ImVec2(22,22)))
     {
         close();
@@ -995,13 +1067,13 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     for (int i = 0; i <= ticks_y; i++)
     {
         auto y = max_y - i * (gap_y / ticks_y);
-        std::string y_label = to_string() << std::fixed << std::setprecision(2) << y;
+        std::string y_label = rsutils::string::from() << std::fixed << std::setprecision(2) << y;
         auto y_pixel = ImGui::GetTextLineHeight() + i * (height_y / ticks_y);
-        ImGui::SetCursorPos(ImVec2( 10, y_pixel ));
+        ImGui::SetCursorPos(ImVec2( 10, y_pixel + collapse_buton_h));
         ImGui::Text("%s", y_label.c_str());
 
-        ImGui::GetWindowDrawList()->AddLine({ pos.x + max_y_label_width + 15, pos.y + y_pixel + 5 },
-                 { pos.x + r.w - 10, pos.y + y_pixel + 5 }, ImColor(light_grey));
+        ImGui::GetWindowDrawList()->AddLine({ pos.x + max_y_label_width + 15.f, pos.y + y_pixel + 5.f },
+                 { pos.x + r.w - 10.f, pos.y + y_pixel + 5.f }, ImColor(light_grey));
     }
 
     auto graph_width = r.w - max_y_label_width - 25;
@@ -1010,11 +1082,11 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     bool has_room = true;
     while (has_room)
     {
-        auto total = 0;
+        float total = 0;
         for (int i = 0; i <= ticks_x; i++)
         {
             auto x = min_x + i * (gap_x / ticks_x);
-            std::string x_label = to_string() << std::fixed << std::setprecision(2) << x;
+            std::string x_label = rsutils::string::from() << std::fixed << std::setprecision(2) << x;
             auto size = ImGui::CalcTextSize(x_label.c_str());
             total += size.x;
         }
@@ -1026,8 +1098,8 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     for (int i = 0; i < ticks_x; i++)
     {
         auto x = min_x + i * (gap_x / ticks_x);
-        std::string x_label = to_string() << std::fixed << std::setprecision(2) << x;
-        ImGui::SetCursorPos(ImVec2( 15 + max_y_label_width+ i * (graph_width / ticks_x), r.h - ImGui::GetTextLineHeight() ));
+        std::string x_label = rsutils::string::from() << std::fixed << std::setprecision(2) << x;
+        ImGui::SetCursorPos(ImVec2( 15 + max_y_label_width+ i * (graph_width / ticks_x), r.h - ImGui::GetTextLineHeight() + collapse_buton_h));
         ImGui::Text("%s", x_label.c_str());
 
         ImGui::GetWindowDrawList()->AddLine({ pos.x + 15 + max_y_label_width + i * (graph_width / ticks_x), pos.y + ImGui::GetTextLineHeight() + 5 },
@@ -1070,12 +1142,12 @@ void frame_drops_dashboard::process_frame(rs2::frame f)
         {
             auto last = stream_to_time[f.get_profile().unique_id()];
 
-            auto fps = f.get_profile().fps();
+            double fps = (double)f.get_profile().fps();
 
-            if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
-                fps = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+            if( f.supports_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) )
+                fps = f.get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) / 1000.;
 
-            if (1000.f * (ts - last) > 1.5f * (1000.f / fps)) {
+            if (1000. * (ts - last) > 1.5 * (1000. / fps)) {
                 drops++;
             }
         }
@@ -1102,23 +1174,25 @@ void frame_drops_dashboard::draw(ux_window& win, rect r)
     auto hist = read_shared_data<std::deque<int>>([&](){ return drops_history; });
     for (int i = 0; i < hist.size(); i++)
     {
-        add_point(i, hist[i]);
+        add_point((float)i, (float)hist[i]);
     }
     r.h -= ImGui::GetTextLineHeightWithSpacing() + 10;
-    draw_dashboard(win, r);
+
+    if( config_file::instance().get( configurations::viewer::dashboard_open) )
+        draw_dashboard(win, r);
 
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 40);
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
     ImGui::Text("%s", "Measurement Metric:"); ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
 
-    ImGui::SetCursorPosX(200);
+    ImGui::SetCursorPosX( 11.5f * win.get_font_size() );
 
     std::vector<const char*> methods;
     methods.push_back("Viewer Processing Rate");
     methods.push_back("Camera Timestamp Rate");
 
-    ImGui::PushItemWidth(r.w - 207);
+    ImGui::PushItemWidth(-1.f);
     if (ImGui::Combo("##fps_method", &method, methods.data(), (int)(methods.size())))
     {
         clear(false);
@@ -1126,13 +1200,13 @@ void frame_drops_dashboard::draw(ux_window& win, rect r)
     ImGui::PopItemWidth();
 }
 
-int frame_drops_dashboard::get_height() const 
-{ 
+int frame_drops_dashboard::get_height() const
+{
     return (int)(160 + ImGui::GetTextLineHeightWithSpacing());
 }
 
-void frame_drops_dashboard::clear(bool full) 
-{ 
+void frame_drops_dashboard::clear(bool full)
+{
     write_shared_data([&](){
         stream_to_time.clear();
         last_time = 0;

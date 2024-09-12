@@ -1,8 +1,8 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#include "python.hpp"
-#include "../include/librealsense2/hpp/rs_internal.hpp"
+#include "pyrealsense2.h"
+#include <librealsense2/hpp/rs_internal.hpp>
 #include <cstring>
 
 void init_internal(py::module &m) {
@@ -39,38 +39,91 @@ void init_internal(py::module &m) {
         .def_readwrite("fps", &rs2_pose_stream::fps)
         .def_readwrite("fmt", &rs2_pose_stream::fmt);
 
-    py::class_<rs2_software_video_frame> software_video_frame(m, "software_video_frame", "All the parameters "
-                                                              "required to define a video frame.");
-    software_video_frame.def(py::init([]() { rs2_software_video_frame f{}; f.deleter = nullptr; return f; })) // guarantee deleter is set to nullptr
-        .def_property("pixels", [](const rs2_software_video_frame& self) {
-            // TODO: Not all formats (e.g. RAW10) are properly handled (see struct FmtToType in python.hpp)
-            auto vp = rs2::stream_profile(self.profile).as<rs2::video_stream_profile>();
-            size_t size = fmt_to_value<itemsize>(vp.format());
-            size_t upp = self.bpp / size;
-            if (upp == 1)
-                return BufData(self.pixels, size, fmt_to_value<fmtstring>(vp.format()), 2,
-                    { (size_t)vp.height(), (size_t)vp.width() }, { vp.width()*size, size });
-            else
-                return BufData(self.pixels, size, fmt_to_value<fmtstring>(vp.format()), 3,
-                    { (size_t)vp.height(), (size_t)vp.width(), upp }, { vp.width()*upp*size, upp*size, size });
-        }, [](rs2_software_video_frame& self, py::buffer buf) {
-            if (self.deleter) self.deleter(self.pixels);
-            auto data = buf.request();
-            self.pixels = new uint8_t[data.size*data.itemsize]; // fwiw, might be possible to convert data.format -> underlying data type
-            std::memcpy(self.pixels, data.ptr, data.size*data.itemsize);
-            self.deleter = [](void* ptr){ delete[] ptr; };
-        })
+    py::class_< rs2_software_video_frame >( m,
+                                            "software_video_frame",
+                                            "All the parameters required to define a video frame" )
+        .def( py::init( []() { return rs2_software_video_frame{ 0 }; } ) )
+        .def_property(
+            "pixels",
+            []( const rs2_software_video_frame & self ) {
+                if( ! self.profile || ! self.pixels )
+                    return BufData( nullptr, 1, "b", 0 );
+                // TODO: Not all formats (e.g. RAW10) are properly handled (see struct FmtToType in
+                // python.hpp)
+                auto vp = rs2::stream_profile( self.profile ).as< rs2::video_stream_profile >();
+                size_t size = fmt_to_value< itemsize >( vp.format() );
+                size_t upp = self.bpp / size;
+                if( upp == 1 )
+                    return BufData( self.pixels,
+                                    size,
+                                    fmt_to_value< fmtstring >( vp.format() ),
+                                    2,
+                                    { (size_t)vp.height(), (size_t)vp.width() },
+                                    { vp.width() * size, size } );
+                else
+                    return BufData( self.pixels,
+                                    size,
+                                    fmt_to_value< fmtstring >( vp.format() ),
+                                    3,
+                                    { (size_t)vp.height(), (size_t)vp.width(), upp },
+                                    { vp.width() * upp * size, upp * size, size } );
+            },
+            []( rs2_software_video_frame & self, py::buffer buf ) {
+                if( self.deleter )
+                    self.deleter( self.pixels );
+                auto data = buf.request();
+                if( ! data.size || ! data.itemsize )
+                {
+                    self.pixels = nullptr;
+                    self.deleter = nullptr;
+                }
+                else
+                {
+                    self.pixels
+                        = new uint8_t[data.size
+                                      * data.itemsize];  // fwiw, might be possible to convert
+                                                         // data.format -> underlying data type
+                    std::memcpy( self.pixels, data.ptr, data.size * data.itemsize );
+                    self.deleter = []( void * ptr ) {
+                        delete[]( uint8_t * ) ptr;
+                    };
+                }
+            } )
         .def_readwrite("stride", &rs2_software_video_frame::stride)
         .def_readwrite("bpp", &rs2_software_video_frame::bpp)
         .def_readwrite("timestamp", &rs2_software_video_frame::timestamp)
         .def_readwrite("domain", &rs2_software_video_frame::domain)
         .def_readwrite("frame_number", &rs2_software_video_frame::frame_number)
-        .def_property("profile", [](const rs2_software_video_frame& self) { return rs2::stream_profile(self.profile).as<rs2::video_stream_profile>(); },
-                      [](rs2_software_video_frame& self, rs2::video_stream_profile profile) { self.profile = profile.get(); });
+        .def_readwrite("depth_units", &rs2_software_video_frame::depth_units)
+        .def_property(
+            "profile",
+            []( const rs2_software_video_frame & self ) {
+                if( ! self.profile )
+                    return rs2::video_stream_profile();
+                else
+                    return rs2::stream_profile( self.profile ).as< rs2::video_stream_profile >();
+            },
+            []( rs2_software_video_frame & self, rs2::video_stream_profile const & profile ) {
+                self.profile = profile.get();
+            } )
+        .def( "__repr__", []( const rs2_software_video_frame& self ) {
+            std::ostringstream ss;
+            ss << "<" << SNAME << ".software_video_frame";
+            if( self.profile )
+            {
+                rs2::stream_profile profile( self.profile );
+                ss << " " << rs2_format_to_string( profile.format() );
+            }
+            ss << " #" << self.frame_number;
+            ss << " @" << self.timestamp;
+            ss << ">";
+            return ss.str();
+        } );
 
     py::class_<rs2_software_motion_frame> software_motion_frame(m, "software_motion_frame", "All the parameters "
                                                                 "required to define a motion frame.");
-    software_motion_frame.def(py::init([]() { rs2_software_motion_frame f{}; f.deleter = nullptr; return f; })) // guarantee deleter is set to nullptr
+    software_motion_frame  //
+        .def( py::init( []() { return rs2_software_motion_frame{ 0 }; } ) )
         .def_property("data", [](const rs2_software_motion_frame& self) -> rs2_vector {
             auto data = reinterpret_cast<const float*>(self.data);
             return rs2_vector{ data[0], data[1], data[2] };
@@ -81,7 +134,7 @@ void init_internal(py::module &m) {
             dptr[0] = data.x;
             dptr[1] = data.y;
             dptr[2] = data.z;
-            self.deleter = [](void* ptr){ delete[] ptr; };
+            self.deleter = [](void* ptr){ delete[]( float * ) ptr; };
         })
         .def_readwrite("timestamp", &rs2_software_motion_frame::timestamp)
         .def_readwrite("domain", &rs2_software_motion_frame::domain)
@@ -91,14 +144,21 @@ void init_internal(py::module &m) {
 
     py::class_<rs2_software_pose_frame> software_pose_frame(m, "software_pose_frame", "All the parameters "
                                                             "required to define a pose frame.");
-    software_pose_frame.def(py::init([]() { rs2_software_pose_frame f{}; f.deleter = nullptr; return f; })) // guarantee deleter is set to nullptr
-        .def_property("data", [](const rs2_software_pose_frame& self) -> rs2_pose {
-            return *reinterpret_cast<const rs2_pose*>(self.data);
-        }, [](rs2_software_pose_frame& self, rs2_pose data) {
-            if (self.deleter) self.deleter(self.data);
-            self.data = new rs2_pose(data);
-            self.deleter = [](void* ptr){ delete[] ptr; };
-        })
+    software_pose_frame  //
+        .def( py::init( []() { return rs2_software_pose_frame{ 0 }; } ) )
+        .def_property(
+            "data",
+            []( const rs2_software_pose_frame & self ) -> rs2_pose {
+                return *reinterpret_cast< const rs2_pose * >( self.data );
+            },
+            []( rs2_software_pose_frame & self, rs2_pose data ) {
+                if( self.deleter )
+                    self.deleter( self.data );
+                self.data = new rs2_pose( data );
+                self.deleter = []( void * ptr ) {
+                    delete(rs2_pose *)ptr;
+                };
+            } )
         .def_readwrite("timestamp", &rs2_software_pose_frame::timestamp)
         .def_readwrite("domain", &rs2_software_pose_frame::domain)
         .def_readwrite("frame_number", &rs2_software_pose_frame::frame_number)
@@ -117,9 +177,13 @@ void init_internal(py::module &m) {
     
     /** rs_internal.hpp **/
     // rs2::software_sensor
-    py::class_<rs2::software_sensor> software_sensor(m, "software_sensor");
-    software_sensor.def("add_video_stream", &rs2::software_sensor::add_video_stream, "Add video stream to software sensor",
-                        "video_stream"_a, "is_default"_a=false)
+    py::class_<rs2::software_sensor, rs2::sensor> software_sensor(m, "software_sensor");
+    software_sensor
+        .def( "add_video_stream",
+              &rs2::software_sensor::add_video_stream,
+              "Add video stream to software sensor",
+              "video_stream"_a,
+              "is_default"_a = false )
         .def("add_motion_stream", &rs2::software_sensor::add_motion_stream, "Add motion stream to software sensor",
             "motion_stream"_a, "is_default"_a = false)
         .def("add_pose_stream", &rs2::software_sensor::add_pose_stream, "Add pose stream to software sensor",
@@ -137,7 +201,7 @@ void init_internal(py::module &m) {
         .def("on_notification", &rs2::software_sensor::on_notification, "notif"_a);
 
     // rs2::software_device
-    py::class_<rs2::software_device> software_device(m, "software_device");
+    py::class_<rs2::software_device, rs2::device> software_device(m, "software_device");
     software_device.def(py::init<>())
         .def("add_sensor", &rs2::software_device::add_sensor, "Add software sensor with given name "
             "to the software device.", "name"_a)
@@ -149,9 +213,9 @@ void init_internal(py::module &m) {
         .def("register_info", &rs2::software_device::register_info, "Add a new camera info value, like serial number",
              "info"_a, "val"_a)
         .def("update_info", &rs2::software_device::update_info, "Update an existing camera info value, like serial number",
-             "info"_a, "val"_a);
-        //.def("create_matcher", &rs2::software_device::create_matcher, "Set the wanted matcher type that will "
-        //     "be used by the syncer", "matcher"_a) // TODO: bind rs2_matchers enum.
+             "info"_a, "val"_a)
+        .def("create_matcher", &rs2::software_device::create_matcher, "Set the wanted matcher type that will "
+            "be used by the syncer", "matcher"_a);
 
     // rs2::firmware_log_message
     py::class_<rs2::firmware_log_message> firmware_log_message(m, "firmware_log_message");

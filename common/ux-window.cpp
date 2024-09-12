@@ -1,11 +1,19 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
 #include <glad/glad.h>
-
+#include <rs-config.h>
 #include "ux-window.h"
 
-#include "model-views.h"
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+
+#include "device-model.h"
+
+#include <rsutils/os/special-folder.h>
 #include "os.h"
 
 // We use STB image to load the splash-screen from memory
@@ -38,9 +46,8 @@ namespace rs2
     {
         if (type == GL_DEBUG_TYPE_ERROR)
         {
-            fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-                (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
-                type, severity, message);
+            fprintf(stderr, "GL CALLBACK: ** GL ERROR ** type = 0x%x, severity = 0x%x, message = %s\n",
+                    type, severity, message);
         }
     }
 
@@ -55,6 +62,7 @@ namespace rs2
         config_file::instance().set_default(configurations::window::is_fullscreen, false);
         config_file::instance().set_default(configurations::window::saved_pos, false);
         config_file::instance().set_default(configurations::window::saved_size, false);
+        config_file::instance().set_default(configurations::window::font_size, 16);
 
         config_file::instance().set_default(configurations::viewer::is_measuring, false);
         config_file::instance().set_default(configurations::viewer::log_to_console, true);
@@ -62,6 +70,7 @@ namespace rs2
         config_file::instance().set_default(configurations::viewer::log_severity, 2);
         config_file::instance().set_default(configurations::viewer::metric_system, true);
         config_file::instance().set_default(configurations::viewer::ground_truth_r, 2500);
+        config_file::instance().set_default(configurations::viewer::dashboard_open, true);
 
         config_file::instance().set_default(configurations::record::compression_mode, 2); // Let the device decide
         config_file::instance().set_default(configurations::record::file_save_mode, 0); // Auto-select name
@@ -80,7 +89,7 @@ namespace rs2
         std::string path;
         try
         {
-            path = get_folder_path(special_folder::user_documents);
+            path = rsutils::os::get_special_folder( rsutils::os::special_folder::user_documents );
         }
         catch (const std::exception&)
         {
@@ -110,15 +119,15 @@ namespace rs2
         bool use_glsl = false;
 
         // Absolutely arbitrary list of manufacturers that are likely to benefit from GLSL optimisation
-        if (starts_with(to_lower(vendor), "intel") ||
-            starts_with(to_lower(vendor), "ati") ||
-            starts_with(to_lower(vendor), "nvidia"))
+        if (starts_with(rsutils::string::to_lower(vendor), "intel") ||
+            starts_with(rsutils::string::to_lower(vendor), "ati") ||
+            starts_with(rsutils::string::to_lower(vendor), "nvidia"))
         {
             use_glsl = true;
         }
 
         // Double-check that GLSL 1.3+ is supported
-        if (starts_with(to_lower(vendor), "1.1") || starts_with(to_lower(vendor), "1.2"))
+        if (starts_with(rsutils::string::to_lower(vendor), "1.1") || starts_with(rsutils::string::to_lower(vendor), "1.2"))
         {
             use_glsl = false;
         }
@@ -262,7 +271,7 @@ namespace rs2
         _fullscreen = config_file::instance().get(configurations::window::is_fullscreen);
 
         rs2_error* e = nullptr;
-        _title_str = to_string() << _title << " v" << api_version_to_string(rs2_get_api_version(&e));
+        _title_str = rsutils::string::from() << _title << " v" << api_version_to_string(rs2_get_api_version(&e));
         auto debug = is_debug();
         if (debug)
         {
@@ -349,13 +358,16 @@ namespace rs2
             config_file::instance().set(configurations::window::position_y, y);
         });
 
-        glfwSetWindowSizeCallback(_win, [](GLFWwindow* window, int width, int height)
-        {
-            config_file::instance().set(configurations::window::saved_size, true);
-            config_file::instance().set(configurations::window::width, width);
-            config_file::instance().set(configurations::window::height, height);
-            config_file::instance().set(configurations::window::maximized, glfwGetWindowAttrib(window, GLFW_MAXIMIZED));
-        });
+        glfwSetWindowSizeCallback( _win, []( GLFWwindow * window, int width, int height ) {
+            if( width > 0 && height > 0 )
+            {
+                config_file::instance().set( configurations::window::saved_size, true );
+                config_file::instance().set( configurations::window::width, width );
+                config_file::instance().set( configurations::window::height, height );
+                config_file::instance().set( configurations::window::maximized,
+                                             glfwGetWindowAttrib( window, GLFW_MAXIMIZED ) );
+            }
+        } );
 
         setup_icon();
 
@@ -365,7 +377,7 @@ namespace rs2
             _2d_vis = std::make_shared<visualizer_2d>(std::make_shared<splash_screen_shader>());
 
         // Load fonts to be used with the ImGui - TODO move to RAII
-        imgui_easy_theming(_font_14, _font_18, _monofont);
+        imgui_easy_theming(_font_dynamic, _font_18, _monofont, font_size);
 
         // Register for UI-controller events
         glfwSetWindowUserPointer(_win, this);
@@ -420,7 +432,7 @@ namespace rs2
 
     ux_window::ux_window(const char* title, context &ctx) :
         _win(nullptr), _width(0), _height(0), _output_height(0),
-        _font_14(nullptr), _font_18(nullptr), _monofont(nullptr), _app_ready(false),
+        _font_dynamic(nullptr), _font_18(nullptr), _monofont(nullptr), font_size(16), _app_ready(false),
         _first_frame(true), _query_devices(true), _missing_device(false),
         _hourglass_index(0), _dev_stat_message{}, _keep_alive(true), _title(title), _ctx(ctx)
     {
@@ -479,12 +491,12 @@ namespace rs2
         }
 
         std::string hourglass = u8"\uf251";
-        static utilities::time::periodic_timer every_200ms(std::chrono::milliseconds(200));
+        static rsutils::time::periodic_timer every_200ms(std::chrono::milliseconds(200));
         bool do_200ms = every_200ms;
         if (_query_devices && do_200ms)
         {
             _missing_device = _ctx.query_devices(RS2_PRODUCT_LINE_ANY_INTEL).size() == 0;
-            _hourglass_index = (_hourglass_index + 1) % 5;
+            _hourglass_index = (_hourglass_index + 1) % 4;
 
             if (!_missing_device)
             {
@@ -635,8 +647,14 @@ namespace rs2
 
         end_frame();
 
-        rs2::gl::shutdown_rendering();
-        if (_use_glsl_proc) rs2::gl::shutdown_processing();
+        try
+        {
+            rs2::gl::shutdown_rendering();
+            if (_use_glsl_proc) rs2::gl::shutdown_processing();
+        }
+        catch( ... )
+        {
+        }
 
         ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
         ImGui_ImplGlfw_Shutdown();
@@ -694,7 +712,7 @@ namespace rs2
 
         if (fw != _fb_width || fh != _fb_height)
         {
-            std::string msg = to_string() << "Framebuffer size changed to " << _fb_width << " x " << _fb_height;
+            std::string msg = rsutils::string::from() << "Framebuffer size changed to " << _fb_width << " x " << _fb_height;
             rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
         }
 
@@ -708,13 +726,13 @@ namespace rs2
 
         if (w != _width || h != _height)
         {
-            std::string msg = to_string() << "Window size changed to " << _width << " x " << _height;
+            std::string msg = rsutils::string::from() << "Window size changed to " << _width << " x " << _height;
             rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
         }
 
         if (_scale_factor != sf)
         {
-            std::string msg = to_string() << "Scale Factor is now " << _scale_factor;
+            std::string msg = rsutils::string::from() << "Scale Factor is now " << _scale_factor;
             rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
         }
 

@@ -121,6 +121,16 @@ namespace librealsense
             usb3_2_type = 0x0320,
         };
 
+        static const std::map< std::string, usb_spec > usb_name_to_spec = { { "Undefined", usb_undefined },
+                                                                            { "1.0", usb1_type },
+                                                                            { "1.1", usb1_1_type },
+                                                                            { "2.0", usb2_type },
+                                                                            { "2.01", usb2_01_type },
+                                                                            { "2.1", usb2_1_type },
+                                                                            { "3.0", usb3_type },
+                                                                            { "3.1", usb3_1_type },
+                                                                            { "3.2", usb3_2_type } };
+
         static const std::map<usb_spec, std::string> usb_spec_names = {
                 { usb_undefined,"Undefined" },
                 { usb1_type,    "1.0" },
@@ -158,6 +168,12 @@ namespace librealsense
                 return s.str();
             }
         };
+
+        inline bool operator==( const usb_device_info & a, const usb_device_info & b )
+        {
+            return ( a.id == b.id ) && ( a.vid == b.vid ) && ( a.pid == b.pid ) && ( a.mi == b.mi )
+                && ( a.unique_id == b.unique_id ) && ( a.conn_spec == b.conn_spec );
+        }
 
         static std::map<usb_status,std::string> usb_status_to_string = 
         {

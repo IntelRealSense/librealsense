@@ -1,18 +1,20 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/rsutil.h"
-#include "environment.h"
-#include "proc/occlusion-filter.h"
-#include "proc/pointcloud.h"
-#include "option.h"
-#include "environment.h"
-#include "context.h"
-#include "../device.h"
-#include "../stream.h"
-#include <iostream>
+#include "pointcloud.h"
+#include "occlusion-filter.h"
+#include <src/environment.h>
+#include <src/core/depth-frame.h>
+#include <src/option.h>
+#include <src/device.h>
+#include <src/stream.h>
+#include <src/points.h>
+#include <src/core/sensor-interface.h>
 #include "device-calibration.h"
+
+#include <librealsense2/rs.hpp>
+
+#include <rsutils/string/from.h>
 
 #ifdef RS2_USE_CUDA
 #include "proc/cuda/cuda-pointcloud.h"
@@ -37,9 +39,10 @@ namespace librealsense
     }
 
     const float3 * pointcloud::depth_to_points(rs2::points output, 
-        const rs2_intrinsics &depth_intrinsics, const rs2::depth_frame& depth_frame, float depth_scale)
+        const rs2_intrinsics &depth_intrinsics, const rs2::depth_frame& depth_frame)
     {
         auto image = output.get_vertices();
+        auto depth_scale = depth_frame.get_units();
         deproject_depth((float*)image, depth_intrinsics, (const uint16_t*)depth_frame.get_data(), [depth_scale](uint16_t z) { return depth_scale * z; });
         return (float3*)image;
     }
@@ -72,12 +75,11 @@ namespace librealsense
                 RS2_STREAM_DEPTH, depth.get_profile().stream_index(), RS2_FORMAT_XYZ32F);
             _depth_stream = depth;
             _depth_intrinsics = optional_value<rs2_intrinsics>();
-            _depth_units = optional_value<float>();
+            _depth_units = ((depth_frame*)depth.get())->get_units();
             _extrinsics = optional_value<rs2_extrinsics>();
         }
 
         bool found_depth_intrinsics = false;
-        bool found_depth_units = false;
 
         if (!_depth_intrinsics)
         {
@@ -94,18 +96,11 @@ namespace librealsense
             }
         }
 
-        if (!_depth_units)
-        {
-            auto sensor = ((frame_interface*)depth.get())->get_sensor().get();
-            _depth_units = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
-            found_depth_units = true;
-        }
-
         set_extrinsics();
     }
 
     template< class callback >
-    calibration_change_callback_ptr create_calibration_change_callback_ptr( callback&& cb )
+    rs2_calibration_change_callback_sptr create_calibration_change_callback_ptr( callback&& cb )
     {
         return {
             new rs2::calibration_change_callback< callback >( std::move( cb ) ),
@@ -146,7 +141,8 @@ namespace librealsense
                                         sensor_interface & s = dev->get_sensor( x );
                                         for( auto const & sp : s.get_active_streams() )
                                         {
-                                            if( sp->get_stream_type() == RS2_STREAM_COLOR )
+                                            if(( sp->get_stream_type() == RS2_STREAM_COLOR ) &&
+                                               ( _stream_filter.stream == RS2_STREAM_COLOR ))
                                             {
                                                 auto vspi = As< video_stream_profile_interface >(
                                                     sp.get() );
@@ -253,8 +249,7 @@ namespace librealsense
     {
         auto res = allocate_points(source, depth);
         auto pframe = (librealsense::points*)(res.get());
-
-        const float3* points = depth_to_points(res, *_depth_intrinsics, depth, *_depth_units);
+        const float3* points = depth_to_points(res, *_depth_intrinsics, depth);
 
         auto vid_frame = depth.as<rs2::video_frame>();
 
@@ -284,7 +279,7 @@ namespace librealsense
                 if (_occlusion_filter->find_scanning_direction(extr) == vertical)
                 {
                     _occlusion_filter->set_scanning(static_cast<uint8_t>(vertical));
-                    _occlusion_filter->_depth_units = _depth_units.value();
+                    _occlusion_filter->_depth_units = _depth_units;
                 }
                 _occlusion_filter->process(pframe->get_vertices(), pframe->get_texture_coordinates(), _pixels_map, depth);
             }
@@ -307,11 +302,18 @@ namespace librealsense
             occlusion_monotonic_scan,
             (uint8_t*)&_occlusion_filter->_occlusion_filter,
             "Occlusion removal");
-        occlusion_invalidation->on_set([this, occlusion_invalidation](float val)
+
+        // Passing shared_ptr to capture list generates circular dependency and a memleak
+        auto occ_inv_weak = std::weak_ptr< ptr_option< uint8_t > >( occlusion_invalidation );
+        occlusion_invalidation->on_set( [this, occ_inv_weak]( float val )
         {
-            if (!occlusion_invalidation->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported occlusion filtering requiested " << val << " is out of range.");
+            auto occ_inv_shared = occ_inv_weak.lock();
+            if(!occ_inv_shared) return;
+
+            if( ! occ_inv_shared->is_valid( val ) )
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported occlusion filtering mode requiested " << val
+                                               << " is out of range." );
 
             _occlusion_filter->set_mode(static_cast<uint8_t>(val));
 

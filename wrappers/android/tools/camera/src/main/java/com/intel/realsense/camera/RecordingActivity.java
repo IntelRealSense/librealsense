@@ -3,6 +3,7 @@ package com.intel.realsense.camera;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import androidx.core.app.ActivityCompat;
@@ -35,17 +36,7 @@ public class RecordingActivity extends AppCompatActivity {
         setContentView(R.layout.activity_recording);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        mGLSurfaceView = findViewById(R.id.recordingGlSurfaceView);
-
-        mStopRecordFab = findViewById(R.id.stopRecordFab);
-        mStopRecordFab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(RecordingActivity.this, PreviewActivity.class);
-                startActivity(intent);
-                finish();
-            }
-        });
+        setupControls();
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PermissionsUtils.PERMISSIONS_REQUEST_WRITE);
@@ -63,6 +54,39 @@ public class RecordingActivity extends AppCompatActivity {
         }
 
         mPermissionsGranted = true;
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        // handling device orientation changes to avoid interruption during recording
+
+        // cleanup previous surface
+        if(mGLSurfaceView != null) {
+            mGLSurfaceView.clear();
+            mGLSurfaceView.close();
+        }
+
+        // setup recording layout landscape or portrait automatically depends on orientation
+        setContentView(R.layout.activity_recording);
+
+        // setup layout controls
+        setupControls();
+    }
+
+    private void setupControls() {
+        mGLSurfaceView = findViewById(R.id.recordingGlSurfaceView);
+
+        mStopRecordFab = findViewById(R.id.stopRecordFab);
+        mStopRecordFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(RecordingActivity.this, PreviewActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 
     @Override

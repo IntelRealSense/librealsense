@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+
 #include "metadata-helper.h"
 
 #ifdef WIN32
@@ -16,11 +19,12 @@
 #include <memory>
 
 #include <librealsense2/rs.hpp>
+#include <rsutils/string/windows.h>
 
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383
 
-#ifdef _MSC_VER 
+#ifdef _MSC_VER
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
 #endif
@@ -50,10 +54,12 @@ namespace rs2
 
     class windows_metadata_helper : public metadata_helper
     {
+        using super = metadata_helper;
+
     public:
         static bool parse_device_id(const std::string& id, device_id* res)
         {
-            static const std::regex regex("pid_([0-9a-f]+)&mi_([0-9]+)#[0-9a-f]&([0-9a-f]+)&[\\s\\S]*\\{([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}", std::regex_constants::icase);
+            static const std::regex regex("pid_([0-9a-f]+)&mi_([0-9a-f]+)#[0-9a-f]&([0-9a-f]+)&[\\s\\S]*\\{([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}", std::regex_constants::icase);
 
             std::match_results<std::string::const_iterator> match;
 
@@ -93,30 +99,30 @@ namespace rs2
                     // Don't forget to release in the end:
                     std::shared_ptr<void> raii(key, RegCloseKey);
 
-                    TCHAR    achClass[MAX_PATH] = TEXT("");  // buffer for class name 
-                    DWORD    cchClassName = MAX_PATH;  // size of class string 
-                    DWORD    cSubKeys = 0;               // number of subkeys 
-                    DWORD    cbMaxSubKey;              // longest subkey size 
-                    DWORD    cchMaxClass;              // longest class string 
-                    DWORD    cValues;              // number of values for key 
-                    DWORD    cchMaxValue;          // longest value name 
-                    DWORD    cbMaxValueData;       // longest value data 
-                    DWORD    cbSecurityDescriptor; // size of security descriptor 
-                    FILETIME ftLastWriteTime;      // last write time 
+                    TCHAR    achClass[MAX_PATH] = TEXT("");  // buffer for class name
+                    DWORD    cchClassName = MAX_PATH;  // size of class string
+                    DWORD    cSubKeys = 0;               // number of subkeys
+                    DWORD    cbMaxSubKey;              // longest subkey size
+                    DWORD    cchMaxClass;              // longest class string
+                    DWORD    cValues;              // number of values for key
+                    DWORD    cchMaxValue;          // longest value name
+                    DWORD    cbMaxValueData;       // longest value data
+                    DWORD    cbSecurityDescriptor; // size of security descriptor
+                    FILETIME ftLastWriteTime;      // last write time
 
                     DWORD retCode = RegQueryInfoKey(
-                        key,                    // key handle 
-                        achClass,                // buffer for class name 
-                        &cchClassName,           // size of class string 
-                        NULL,                    // reserved 
-                        &cSubKeys,               // number of subkeys 
-                        &cbMaxSubKey,            // longest subkey size 
-                        &cchMaxClass,            // longest class string 
-                        &cValues,                // number of values for this key 
-                        &cchMaxValue,            // longest value name 
-                        &cbMaxValueData,         // longest value data 
-                        &cbSecurityDescriptor,   // security descriptor 
-                        &ftLastWriteTime);       // last write time 
+                        key,                    // key handle
+                        achClass,                // buffer for class name
+                        &cchClassName,           // size of class string
+                        NULL,                    // reserved
+                        &cSubKeys,               // number of subkeys
+                        &cbMaxSubKey,            // longest subkey size
+                        &cchMaxClass,            // longest class string
+                        &cValues,                // number of values for this key
+                        &cchMaxValue,            // longest value name
+                        &cbMaxValueData,         // longest value data
+                        &cbSecurityDescriptor,   // security descriptor
+                        &ftLastWriteTime);       // last write time
 
                     for (auto i = 0ul; i < cSubKeys; i++)
                     {
@@ -133,7 +139,9 @@ namespace rs2
                         {
                             std::wstring suffix = achKey;
                             device_id rdid;
-                            auto a = std::string(suffix.begin(), suffix.end());
+
+                            std::string a = rsutils::string::windows::win_to_utf( suffix.c_str() );
+
                             if (parse_device_id(a, &rdid))
                             {
                                 for (auto&& did : kvp.second)
@@ -158,10 +166,8 @@ namespace rs2
         {
             if (mi == "00")
             {
-                // L500 has 3 media-pins
-                if (equal(pid, "0b0d") || equal(pid, "0b3d") || equal(pid, "0b64") || equal(pid, "0b68")) return 3;
                 // D405 has 3 media-pins
-                else if (equal(pid, "0b5b")) return 3;
+                if (equal(pid, "0b5b")) return 3;
                 else return 2; // D400 has two
             }
             return 1; // RGB has one
@@ -192,62 +198,56 @@ namespace rs2
                 return false;
             }
 
-            return result;
+            return result == TRUE;
         }
 
-        bool elevate_to_admin()
+        void enable_metadata_with_new_admin_process()
         {
-            if (!is_running_as_admin())
+            wchar_t szPath[MAX_PATH];
+            if (GetModuleFileName(NULL, szPath, ARRAYSIZE(szPath)))
             {
-                wchar_t szPath[MAX_PATH];
-                if (GetModuleFileName(NULL, szPath, ARRAYSIZE(szPath)))
+                SHELLEXECUTEINFO sei = { sizeof(sei) };
+
+                sei.lpVerb = L"runas";
+                sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+                sei.lpFile = szPath;
+                sei.hwnd = NULL;
+                sei.nShow = SW_NORMAL;
+                auto cmd_line = get_command_line_param();
+                std::wstring wcmd(cmd_line.begin(), cmd_line.end());
+                sei.lpParameters = wcmd.c_str();
+
+                if (!ShellExecuteEx(&sei))
                 {
-                    SHELLEXECUTEINFO sei = { sizeof(sei) };
-
-                    sei.lpVerb = L"runas";
-                    sei.fMask = SEE_MASK_NOCLOSEPROCESS;
-                    sei.lpFile = szPath;
-                    sei.hwnd = NULL;
-                    sei.nShow = SW_NORMAL;
-                    auto cmd_line = get_command_line_param();
-                    std::wstring wcmd(cmd_line.begin(), cmd_line.end());
-                    sei.lpParameters = wcmd.c_str();
-
-                    if (ShellExecuteEx(&sei) != ERROR_SUCCESS)
-                    {
-                        rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to elevate to admin privilege to enable metadata!");
-                        return false;
-                    }
-                    else
-                    {
-                        WaitForSingleObject(sei.hProcess, INFINITE);
-                        DWORD exitCode = 0;
-                        GetExitCodeProcess(sei.hProcess, &exitCode);
-                        CloseHandle(sei.hProcess);
-                        if (exitCode)
-                            throw std::runtime_error("Failed to set metadata registry keys!");
-                        return true;
-                    }
+                    auto errstr = std::system_category().message(GetLastError());
+                    std::string msg = "Unable to elevate to admin privilege to enable metadata! " + errstr;
+                    rs2::log(RS2_LOG_SEVERITY_WARN, msg.c_str());
                 }
                 else
                 {
-                    rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to fetch module name!");
-                    return false;
+                    WaitForSingleObject(sei.hProcess, INFINITE);
+                    DWORD exitCode = 0;
+                    GetExitCodeProcess(sei.hProcess, &exitCode);
+                    CloseHandle(sei.hProcess);
+                    if (exitCode)
+                        throw std::runtime_error("Failed to set metadata registry keys!");
                 }
             }
             else
             {
-                return true;
+                rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to fetch module name!");
             }
         }
 
         bool is_enabled(std::string id) const override
         {
-            bool res = false;
-
             device_id did;
-            if (parse_device_id(id, &did))
-                foreach_device_path({ did }, [&res, did](const device_id&, std::wstring path) {
+            if( ! parse_device_id( id, &did ) )
+                // If it's not parsed, it's not a valid USB device; return the default
+                return super::is_enabled( id );
+
+            bool res = false;
+            foreach_device_path({ did }, [&res, did](const device_id&, std::wstring path) {
 
                 HKEY key;
                 if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, path.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &key) == ERROR_SUCCESS)
@@ -285,7 +285,11 @@ namespace rs2
 
         void enable_metadata() override
         {
-            if (elevate_to_admin()) // Elevation to admin was succesful?
+            if (!is_running_as_admin())
+            {
+                enable_metadata_with_new_admin_process();
+            }
+            else
             {
                 std::vector<device_id> dids;
 
@@ -308,7 +312,8 @@ namespace rs2
                                     {
                                         std::string port = sen.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
                                         device_id did;
-                                        if (parse_device_id(port, &did)) dids.push_back(did);
+                                        if (parse_device_id(port, &did))
+                                            dids.push_back(did);
                                     }
                                 }
                             }
@@ -342,7 +347,7 @@ namespace rs2
                             }
                         }
                     }
-                });
+                    });
                 if (failure) throw std::runtime_error("Unable to write to metadata registry key!");
             }
         }

@@ -90,6 +90,10 @@ classdef option < int64
         auto_gain_limit                 (86)
         auto_rx_sensitivity             (87)
         transmitter_frequency           (88)
-        count                           (89)
+        vertical_binning                (89)
+        receiver_sensitivity            (90)
+        emitter_frequency               (93)
+        depth_auto_exposue_mode         (94)
+        count                           (95)
     end
 end

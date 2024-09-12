@@ -3,7 +3,12 @@
 
 #pragma once
 
-#include "rendering.h"
+#include "float3.h"
+#include <memory>  // shared_ptr
+
+namespace rs2 {
+    class texture_buffer;
+}
 
 class skybox
 {

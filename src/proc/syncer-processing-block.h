@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <src/core/frame-holder.h>
+
 #include <stdint.h>
 #include <vector>
 #include <mutex>
@@ -31,10 +33,7 @@ namespace librealsense
 
         // Stopping the syncer means no more frames will be enqueued, and any existing frames
         // pending dispatch will be lost!
-        void stop()
-        {
-            _matcher->stop();
-        }
+        void stop();
 
         ~syncer_process_unit()
         {

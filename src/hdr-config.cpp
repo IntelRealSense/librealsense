@@ -2,7 +2,10 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "hdr-config.h"
-#include "ds5/ds5-private.h"
+#include "ds/d400/d400-private.h"
+
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
@@ -12,7 +15,6 @@ namespace librealsense
         _sensor(depth_ep),
         _is_enabled(false),
         _is_config_in_process(false),
-        _has_config_changed(false),
         _current_hdr_sequence_index(DEFAULT_CURRENT_HDR_SEQUENCE_INDEX),
         _auto_exposure_to_be_restored(false),
         _emitter_on_off_to_be_restored(false),
@@ -28,7 +30,7 @@ namespace librealsense
 
         // restoring current HDR configuration if such subpreset is active
         bool existing_subpreset_restored = false;
-        std::vector<byte> res;
+        std::vector< uint8_t > res;
         if (is_hdr_enabled_in_device(res))
             existing_subpreset_restored = configure_hdr_as_in_fw(res);
 
@@ -47,7 +49,7 @@ namespace librealsense
         }
     }
 
-    bool hdr_config::is_hdr_enabled_in_device(std::vector<byte>& result) const
+    bool hdr_config::is_hdr_enabled_in_device( std::vector< uint8_t > & result ) const
     {
         command cmd(ds::GETSUBPRESET);
         bool hdr_enabled_in_device = false;
@@ -61,7 +63,7 @@ namespace librealsense
         return hdr_enabled_in_device;
     }
 
-    bool hdr_config::is_current_subpreset_hdr(const std::vector<byte>& current_subpreset) const
+    bool hdr_config::is_current_subpreset_hdr( const std::vector< uint8_t > & current_subpreset ) const
     {
         bool result = false;
         if (current_subpreset.size() > 0)
@@ -77,7 +79,7 @@ namespace librealsense
         return id >= 0 && id <= 3;
     }
 
-    bool hdr_config::configure_hdr_as_in_fw(const std::vector<byte>& current_subpreset)
+    bool hdr_config::configure_hdr_as_in_fw( const std::vector< uint8_t > & current_subpreset )
     {
         // parsing subpreset pattern, considering:
         // SubPresetHeader::iterations always equals 0 (continuous subpreset)
@@ -160,7 +162,8 @@ namespace librealsense
             // should never happen
             catch (std::out_of_range)
             {
-                throw invalid_value_exception(to_string() << "hdr_config::get(...) failed! Index is above the sequence size.");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "hdr_config::get(...) failed! Index is above the sequence size." );
             }
             break;
         case RS2_OPTION_GAIN:
@@ -170,11 +173,13 @@ namespace librealsense
             // should never happen
             catch (std::out_of_range)
             {
-                throw invalid_value_exception(to_string() << "hdr_config::get(...) failed! Index is above the sequence size.");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "hdr_config::get(...) failed! Index is above the sequence size." );
             }
             break;
         default:
-            throw invalid_value_exception(to_string() << "option: " << rs2_option_to_string(option) << " is not an HDR option");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "option: " << rs2_option_to_string( option ) << " is not an HDR option" );
         }
         return rv;
     }
@@ -182,8 +187,9 @@ namespace librealsense
     void hdr_config::set(rs2_option option, float value, option_range range)
     {
         if (value < range.min || value > range.max)
-            throw invalid_value_exception(to_string() << "hdr_config::set(...) failed! value: " << value <<
-                " is out of the option range: [" << range.min << ", " << range.max << "].");
+            throw invalid_value_exception( rsutils::string::from() << "hdr_config::set(...) failed! value: " << value
+                                                                   << " is out of the option range: [" << range.min
+                                                                   << ", " << range.max << "]." );
 
         switch (option)
         {
@@ -208,12 +214,6 @@ namespace librealsense
         default:
             throw invalid_value_exception("option is not an HDR option");
         }
-
-        // subpreset configuration change is immediately sent to firmware if HDR is already running
-        if (_is_enabled && _has_config_changed)
-        {
-            send_sub_preset_to_fw();
-        }
     }
 
     bool hdr_config::is_config_in_process() const
@@ -228,16 +228,26 @@ namespace librealsense
         {
             float rv = 0.f;
             command cmd(ds::GETSUBPRESETID);
-            // if no subpreset is streaming, the firmware returns "ON_DATA_TO_RETURN" error
-            try {
-                auto res = _hwm.send(cmd);
-                // if a subpreset is streaming, checking this is the current HDR sub preset
-                if (res.size())
-                    rv = (is_hdr_id(res[0])) ? 1.0f : 0.f;
+            try
+            {
+                hwmon_response response;
+                auto res = _hwm.send( cmd, &response );  // avoid the throw
+                switch( response )
+                {
+                case hwmon_response::hwm_NoDataToReturn:
+                    // If no subpreset is streaming, the firmware returns "NO_DATA_TO_RETURN" error
+                    break;
+                default:
+                    // If a subpreset is streaming, checking this is the current HDR sub preset
+                    if( res.size() )
+                        rv = ( is_hdr_id( res[0] ) ) ? 1.0f : 0.f;
+                    else
+                        LOG_DEBUG( "hdr_config query: " << hwmon_error_string( cmd, response ) );
+                    break;
+                }
             }
             catch (...)
             {
-                rv = 0.f;
             }
 
             _is_enabled = (rv == 1.f);
@@ -252,12 +262,12 @@ namespace librealsense
         {
             if (validate_config())
             {
-                std::vector<byte> res;
+                std::vector< uint8_t > res;
                 _is_enabled = is_hdr_enabled_in_device(res);
                 if (!_is_enabled)
                 {
                     // saving status of options that are not compatible with hdr,
-                // so that they could be reenabled after hdr disable
+                    // so that they could be reenabled after hdr disable
                     set_options_to_be_restored_after_disable();
 
                     if (_use_workaround)
@@ -274,7 +284,14 @@ namespace librealsense
                     }
 
                     _is_enabled = send_sub_preset_to_fw();
-                    _has_config_changed = false;
+                    if (!_is_enabled)
+                    {
+                        LOG_WARNING("Couldn't enable HDR." );
+                    }
+                }
+                else
+                {
+                    LOG_WARNING("HDR is already enabled. Skipping the request." );
                 }
             }
             else
@@ -369,7 +386,7 @@ namespace librealsense
     void hdr_config::disable()
     {
         // sending empty sub preset
-        std::vector<uint8_t> pattern{};
+        std::vector<uint8_t> pattern;
 
         // TODO - make it usable not only for ds - use _sensor
         command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
@@ -387,7 +404,7 @@ namespace librealsense
         std::vector<uint8_t> subpreset_header = prepare_sub_preset_header();
         std::vector<uint8_t> subpreset_frames_config = prepare_sub_preset_frames_config();
 
-        std::vector<uint8_t> pattern{};
+        std::vector<uint8_t> pattern;
         if (subpreset_frames_config.size() > 0)
         {
             pattern.insert(pattern.end(), &subpreset_header[0], &subpreset_header[0] + subpreset_header.size());
@@ -469,7 +486,9 @@ namespace librealsense
     {
         size_t new_size = static_cast<size_t>(value);
         if (new_size > 3 || new_size < 2)
-            throw invalid_value_exception(to_string() << "hdr_config::set_sequence_size(...) failed! Only size 2 or 3 are supported.");
+            throw invalid_value_exception(
+                rsutils::string::from()
+                << "hdr_config::set_sequence_size(...) failed! Only size 2 or 3 are supported." );
 
         if (new_size != _sequence_size)
         {
@@ -489,19 +508,28 @@ namespace librealsense
             _current_hdr_sequence_index = (int)new_index - 1;
         }
         else
-            throw invalid_value_exception(to_string() << "hdr_config::set_sequence_index(...) failed! Index above sequence size.");
+            throw invalid_value_exception(
+                rsutils::string::from() << "hdr_config::set_sequence_index(...) failed! Index above sequence size." );
     }
 
     void hdr_config::set_exposure(float value)
     {
-        _hdr_sequence_params[_current_hdr_sequence_index]._exposure = value;
-        _has_config_changed = true;
+        if (!_is_enabled)
+            _hdr_sequence_params[_current_hdr_sequence_index]._exposure = value;
+        else
+            throw wrong_api_call_sequence_exception(rsutils::string::from()
+                << "Cannot update HDR config (exposure) while HDR mode is active." );
     }
 
     void hdr_config::set_gain(float value)
     {
-        _hdr_sequence_params[_current_hdr_sequence_index]._gain = value;
-        _has_config_changed = true;
+        if (!_is_enabled)
+        {
+            _hdr_sequence_params[_current_hdr_sequence_index]._gain = value;
+        }
+        else
+            throw wrong_api_call_sequence_exception(rsutils::string::from()
+                << "Cannot update HDR config (gain) while HDR mode is active." );
     }
 
 

@@ -1,0 +1,167 @@
+From 49dd078930da9d2fa95f1853ca1bfb2ec033f7dc Mon Sep 17 00:00:00 2001
+From: Dmitry Perchanov <dmitry.perchanov@intel.com>
+Date: Thu, 24 Nov 2022 18:49:35 +0200
+Subject: [PATCH] Streaming formats for L4T 5.0.2 Ubuntu 20.04 (focal). Kernel
+ 5.10
+
+---
+ drivers/media/usb/uvc/uvc_driver.c   | 57 ++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvcvideo.h     | 34 +++++++++++++++++
+ drivers/media/v4l2-core/v4l2-ioctl.c |  1 +
+ include/uapi/linux/videodev2.h       |  1 +
+ 4 files changed, 93 insertions(+)
+
+diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
+index 20ff2a0d9..8ed019b26 100644
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -165,6 +165,11 @@ static struct uvc_format_desc uvc_fmts[] = {
+ 		.guid		= UVC_GUID_FORMAT_Y12I,
+ 		.fcc		= V4L2_PIX_FMT_Y12I,
+ 	},
++	{
++		.name		= "Greyscale 16 L/R (Y16I)",
++		.guid		= UVC_GUID_FORMAT_Y16I,
++		.fcc		= V4L2_PIX_FMT_Y16I,
++	},
+ 	{
+ 		.name		= "Depth data 16-bit (Z16)",
+ 		.guid		= UVC_GUID_FORMAT_Z16,
+@@ -272,6 +277,58 @@ static struct uvc_format_desc uvc_fmts[] = {
+ 		.guid		= UVC_GUID_FORMAT_PAIR,
+ 		.fcc		= V4L2_PIX_FMT_PAIR,
+ 	},
++	{
++		.name		= "Depth data 16-bit (D16)",
++		.guid		= UVC_GUID_FORMAT_D16,
++		.fcc		= V4L2_PIX_FMT_Z16,
++	},
++	{
++		.name		= "Packed raw data 10-bit",
++		.guid		= UVC_GUID_FORMAT_W10,
++		.fcc		= V4L2_PIX_FMT_W10,
++	},
++	{
++		.name		= "Confidence data (C   )",
++		.guid		= UVC_GUID_FORMAT_CONFIDENCE_MAP,
++		.fcc		= V4L2_PIX_FMT_CONFIDENCE_MAP,
++	},
++	/* FishEye 8-bit monochrome */
++	{
++		.name		= "Raw data 8-bit (RAW8)",
++		.guid		= UVC_GUID_FORMAT_RAW8,
++		.fcc		= V4L2_PIX_FMT_GREY,
++	},
++	/* Legacy formats for backward-compatibility*/
++	{
++		.name		= "Raw data 16-bit (RW16)",
++		.guid		= UVC_GUID_FORMAT_RW16,
++		.fcc		= V4L2_PIX_FMT_RW16,
++	},
++	{
++		.name		= "16-bit Bayer BGBG/GRGR",
++		.guid		= UVC_GUID_FORMAT_BAYER16,
++		.fcc		= V4L2_PIX_FMT_SBGGR16,
++	},
++	{
++		.name		= "Z16 Huffman Compression",
++		.guid		= UVC_GUID_FORMAT_Z16H,
++		.fcc		= V4L2_PIX_FMT_Z16H,
++	},
++	{
++		.name		= "Frame Grabber (FG  )",
++		.guid		= UVC_GUID_FORMAT_FG,
++		.fcc		= V4L2_PIX_FMT_FG,
++	},
++	{
++		.name		= "SR300 Depth/Confidence (INZC)",
++		.guid		= UVC_GUID_FORMAT_INZC,
++		.fcc		= V4L2_PIX_FMT_INZC,
++	},
++	{
++		.name		= "Relative IR (PAIR)",
++		.guid		= UVC_GUID_FORMAT_PAIR,
++		.fcc		= V4L2_PIX_FMT_PAIR,
++	},
+ };
+ 
+ /* ------------------------------------------------------------------------
+diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
+index 7b904a767..adeafe2b2 100644
+--- a/drivers/media/usb/uvc/uvcvideo.h
++++ b/drivers/media/usb/uvc/uvcvideo.h
+@@ -139,6 +139,9 @@
+ #define UVC_GUID_FORMAT_Y12I \
+ 	{ 'Y',  '1',  '2',  'I', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Y16I \
++	{ 'Y',  '1',  '6',  'I', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
+ #define UVC_GUID_FORMAT_Z16 \
+ 	{ 'Z',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
+@@ -200,6 +203,37 @@
+ 	{ 'P',  'A',  'I',  'R', 0x36, 0x85, 0x41, 0x48, \
+ 	 0xb6, 0xbf, 0x8f, 0xc6, 0xff, 0xb0, 0x83, 0xa8}
+ 
++	#define UVC_GUID_FORMAT_D16 \
++	{ 'P', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
++		0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++	#define UVC_GUID_FORMAT_W10 \
++	{ 'W',  '1',  '0',  ' ', 0x00, 0x00, 0x10, 0x00, \
++		0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++	#define UVC_GUID_FORMAT_RAW8 \
++	{ 'R',  'A',  'W',  '8', 0x66, 0x1a, 0x42, 0xa2, \
++		0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++	#define UVC_GUID_FORMAT_CONFIDENCE_MAP \
++	{ 'C',  ' ',  ' ',  ' ', 0x00, 0x00, 0x10, 0x00, \
++		0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++	/* Legacy formats */
++	#define UVC_GUID_FORMAT_RW16 \
++	{ 'R',  'W',  '1',  '6', 0x00, 0x00, 0x10, 0x00, \
++		0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++	#define UVC_GUID_FORMAT_BAYER16 \
++	{ 'R',  'W',  '1',  '6', 0x66, 0x1a, 0x42, 0xa2, \
++		0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++	#define UVC_GUID_FORMAT_Z16H \
++	{ 'Z',  '1',  '6',  'H', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++	#define UVC_GUID_FORMAT_FG \
++	{ 'F',  'G',  ' ',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++	#define UVC_GUID_FORMAT_INZC \
++	{ 'I',  'N',  'Z',  'C', 0x02, 0xb6, 0x0f, 0x48, \
++	0x97, 0x8c, 0xe4, 0xe8, 0x8a, 0xe8, 0x9b, 0x89}
++	#define UVC_GUID_FORMAT_PAIR \
++	{ 'P',  'A',  'I',  'R', 0x36, 0x85, 0x41, 0x48, \
++	0xb6, 0xbf, 0x8f, 0xc6, 0xff, 0xb0, 0x83, 0xa8}
+ 
+ /* ------------------------------------------------------------------------
+  * Driver specific constants.
+diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
+index 62550fb6c..394f33e9b 100644
+--- a/drivers/media/v4l2-core/v4l2-ioctl.c
++++ b/drivers/media/v4l2-core/v4l2-ioctl.c
+@@ -1309,6 +1309,7 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+ 	case V4L2_PIX_FMT_Y10P:		descr = "10-bit Greyscale (MIPI Packed)"; break;
+ 	case V4L2_PIX_FMT_Y8I:		descr = "Interleaved 8-bit Greyscale"; break;
+ 	case V4L2_PIX_FMT_Y12I:		descr = "Interleaved 12-bit Greyscale"; break;
++	case V4L2_PIX_FMT_Y16I:		descr = "Interleaved 16-bit Greyscale"; break;
+ 	case V4L2_PIX_FMT_Z16:		descr = "16-bit Depth"; break;
+ 	case V4L2_PIX_FMT_INZI:		descr = "Planar 10:16 Greyscale Depth"; break;
+ 	case V4L2_PIX_FMT_CNF4:		descr = "4-bit Depth Confidence (Packed)"; break;
+diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
+index f750b6cce..29e1e7e06 100644
+--- a/include/uapi/linux/videodev2.h
++++ b/include/uapi/linux/videodev2.h
+@@ -740,6 +740,7 @@ struct v4l2_pix_format {
+ #define V4L2_PIX_FMT_S5C_UYVY_JPG v4l2_fourcc('S', '5', 'C', 'I') /* S5C73M3 interleaved UYVY/JPEG */
+ #define V4L2_PIX_FMT_Y8I      v4l2_fourcc('Y', '8', 'I', ' ') /* Greyscale 8-bit L/R interleaved */
+ #define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
++#define V4L2_PIX_FMT_Y16I     v4l2_fourcc('Y', '1', '6', 'I') /* Greyscale 16-bit L/R interleaved */
+ #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
+ #define V4L2_PIX_FMT_MT21C    v4l2_fourcc('M', 'T', '2', '1') /* Mediatek compressed block mode  */
+ #define V4L2_PIX_FMT_INZI     v4l2_fourcc('I', 'N', 'Z', 'I') /* Intel Planar Greyscale 10-bit and Depth 16-bit */
+-- 
+2.25.1
+

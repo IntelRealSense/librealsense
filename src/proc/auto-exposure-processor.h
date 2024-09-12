@@ -6,7 +6,7 @@
 #include "synthetic-stream.h"
 #include "option.h"
 #include "image.h"
-#include "ds5/ds5-options.h"
+#include "ds/d400/d400-options.h"
 
 namespace librealsense
 {

@@ -2,8 +2,9 @@
 // Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "../include/librealsense2/hpp/rs_frame.hpp"
-#include "proc/rotation-transform.h"
+#include <librealsense2/hpp/rs_frame.hpp>
+#include "rotation-transform.h"
+#include <src/pose.h>
 
 #define ROTATION_BUFFER_SIZE 32 // minimum limit that could be divided by all resolutions
 #define VERTICAL_SCAN_WINDOW_SIZE 16
@@ -43,9 +44,9 @@ namespace librealsense
         occlusion_scanning_type find_scanning_direction(const rs2_extrinsics& extr)
         {
             // in L500 X-axis translation in extrinsic matrix is close to 0 and Y-axis is > 0 because RGB and depth sensors are vertically aligned
-            float extrensic_low_threshold  = 0.001f; //meters
-            float extrensic_high_threshold = 0.01f;  //meters
-            return ((extr.translation[0] < extrensic_low_threshold) && (extr.translation[1] > extrensic_high_threshold) ? vertical : horizontal);
+            float extrinsic_low_threshold  = 0.001f; //meters
+            float extrinsic_high_threshold = 0.01f;  //meters
+            return ((extr.translation[0] < extrinsic_low_threshold) && (extr.translation[1] > extrinsic_high_threshold) ? vertical : horizontal);
         }
 
         bool is_same_sensor(const rs2_extrinsics& extr)

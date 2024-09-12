@@ -54,6 +54,19 @@ rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error);
 
 /**
+* Creates y411 decoder processing block. This block accepts raw y411 frames and outputs frames in RGB8.
+*     https://www.fourcc.org/pixel-format/yuv-y411/
+* Y411 is disguised as NV12 to allow Linux compatibility. Both are 12bpp encodings that allow high-resolution
+* modes in the camera to still fit within the USB3 limits (YUY wasn't enough).
+*
+* The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
+* best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+*
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_y411_decoder(rs2_error** error);
+
+/**
 * Creates depth thresholding processing block
 * By controlling min and max options on the block, one could filter out depth values
 * that are either too large or too small, as a software post-processing step
@@ -156,6 +169,13 @@ rs2_frame_queue* rs2_create_frame_queue(int capacity, rs2_error** error);
 void rs2_delete_frame_queue(rs2_frame_queue* queue);
 
 /**
+* queries the number of frames
+* \param[in] queue to delete
+* \returns the number of frames currently stored in queue
+*/
+int rs2_frame_queue_size(rs2_frame_queue* queue, rs2_error** error);
+
+/**
 * wait until new frame becomes available in the queue and dequeue it
 * \param[in] queue the frame queue data structure
 * \param[in] timeout_ms   max time in milliseconds to wait until an exception will be thrown
@@ -244,7 +264,7 @@ rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error);
 rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error);
 
 /**
-* Creates Depth frame decompression module. Decoded frames compressed and transmitted with Z16H variable-lenght Huffman code to 
+* Creates Depth frame decompression module. Decoded frames compressed and transmitted with Z16H variable-lenght Huffman code to
 * standartized Z16 Depth data format. Using the compression allows to reduce the Depth frames bandwidth by more than 50 percent
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               Huffman-code decompression processing block
@@ -252,7 +272,7 @@ rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error
 rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** error);
 
 /**
-* Creates a hdr_merge processing block. 
+* Creates a hdr_merge processing block.
 * The block merges between two depth frames with different exposure values
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */

@@ -16,9 +16,16 @@
 #include <csignal>
 
 #include "os.h"
+#include <rsutils/os/os.h>
 #include "metadata-helper.h"
 #include "rendering.h"
+#include <rsutils/string/windows.h>
+
 #include <delayimp.h>
+
+#ifdef _MSC_VER
+#pragma warning(disable: 4244) // Prevent warning for wchar->char string conversion
+#endif
 
 // Use OS hook to modify message box behaviour
 // This lets us implement "report" functionality if Viewer is crashing
@@ -69,9 +76,12 @@ std::string exception_code_to_string(int code, struct _EXCEPTION_POINTERS *ep)
         auto details = (DelayLoadInfo*)ep->ExceptionRecord->ExceptionInformation[0];
         std::string dll_name = details->szDll;
         std::string fname = details->dlp.szProcName;
-        return rs2::to_string() << "Could not find " << dll_name << " library required for " << fname << ".\nMake sure all program dependencies are reachable or download standalone version of the App from our GitHub";
+        return rsutils::string::from() << "Could not find " << dll_name << " library required for " << fname
+                                       << ".\nMake sure all program dependencies are reachable or download standalone "
+                                          "version of the App from our GitHub";
     }
-    else return rs2::to_string() << "Unknown error (" << code << ")!";
+    else
+        return rsutils::string::from() << "Unknown error (" << code << ")!";
 }
 
 // Show custom error message box with OK and Report options
@@ -89,7 +99,7 @@ void report_error(std::string error)
         ss << "| | |\n";
         ss << "|---|---|\n";
         ss << "|**librealsense**|" << rs2::api_version_to_string(rs2_get_api_version(&e)) << (rs2::is_debug() ? " DEBUG" : " RELEASE") << "|\n";
-        ss << "|**OS**|" << rs2::get_os_name() << "|\n\n";
+        ss << "|**OS**|" << rsutils::os::get_os_name() << "|\n\n";
         ss << "Intel RealSense Viewer / Depth Quality Tool has crashed with the following error message:\n";
         ss << "```\n";
         ss << error;
@@ -161,8 +171,7 @@ int CALLBACK WinMain(
     std::vector<std::string> args;
     for (int i = 0; i < argCount; i++)
     {
-        std::wstring ws = szArgList.get()[i];
-        std::string s(ws.begin(), ws.end());
+        std::string s = rsutils::string::windows::win_to_utf( szArgList.get()[i] );
 
         if (s == rs2::metadata_helper::get_command_line_param())
         {

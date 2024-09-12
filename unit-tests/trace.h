@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <rsutils/string/from.h>
+
 
 // Define our own logging macro for debugging to stdout
 // Can possibly turn it on automatically based on the Catch options supplied
@@ -13,4 +15,4 @@
 //     }
 //     #define TRACE(X) if( catch_session.configData().verbosity == ... ) {}
 // With Catch2, we can turn this into SCOPED_INFO.
-#define TRACE(X) std::cout << (std::string)( librealsense::to_string() << X ) << std::endl
+#define TRACE(X) std::cout << ( rsutils::string::from() << X ).str() << std::endl

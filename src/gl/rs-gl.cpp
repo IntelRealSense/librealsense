@@ -4,6 +4,7 @@
 #include "api.h"
 #include "synthetic-stream-gl.h"
 #include "yuy2rgb-gl.h"
+#include "y4112rgb-gl.h"
 #include "align-gl.h"
 #include "pointcloud-gl.h"
 #include "../include/librealsense2/h/rs_types.h"
@@ -13,6 +14,7 @@
 #include "pc-shader.h"
 #include "colorizer-gl.h"
 #include "proc/color-formats-converter.h"
+#include "proc/y411-converter.h"
 #include "proc/colorizer.h"
 #include "proc/align.h"
 #include "log.h"
@@ -79,6 +81,19 @@ rs2_processing_block* rs2_gl_create_yuy_decoder(int api_version, rs2_error** err
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
+rs2_processing_block* rs2_gl_create_y411_decoder(int api_version, rs2_error** error) BEGIN_API_CALL
+{
+    verify_version_compatibility(api_version);
+
+    auto block = std::make_shared<librealsense::gl::y411_2rgb>();
+    auto backup = std::make_shared<librealsense::y411_converter>(RS2_FORMAT_RGB8);
+    auto dual = std::make_shared<librealsense::gl::dual_processing_block>();
+    dual->add(block);
+    dual->add(backup);
+    return new rs2_processing_block{ dual };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
 unsigned int rs2_gl_frame_get_texture_id(const rs2_frame* frame_ref, unsigned int id, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);
@@ -135,7 +150,7 @@ rs2_processing_block* rs2_gl_create_align(int api_version, rs2_stream to, rs2_er
 {
     verify_version_compatibility(api_version);
     auto block = std::make_shared<librealsense::gl::align_gl>(to);
-    auto backup = std::make_shared<librealsense::align>(to);
+    auto backup = align::create_align(to);
     auto dual = std::make_shared<librealsense::gl::dual_processing_block>();
     dual->add(block);
     dual->add(backup);
@@ -257,7 +272,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 #ifdef SHARED_LIBS
 INITIALIZE_EASYLOGGINGPP
 #endif
-char log_gl_name[] = "librealsense";
+char log_gl_name[] = LIBREALSENSE_ELPP_ID;
 static logger_type<log_gl_name> logger_gl;
 #endif
 

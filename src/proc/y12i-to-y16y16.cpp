@@ -10,7 +10,8 @@
 namespace librealsense
 {
     struct y12i_pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; int l() const { return lh << 4 | ll; } int r() const { return rh << 8 | rl; } };
-    void unpack_y16_y16_from_y12i_10(byte * const dest[], const byte * source, int width, int height, int actual_size)
+
+    void unpack_y16_y16_from_y12i_10( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto count = width * height;
 #ifdef RS2_USE_CUDA
@@ -30,7 +31,7 @@ namespace librealsense
                                                                          RS2_FORMAT_Y16, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME, 2)
     {}
 
-    void y12i_to_y16y16::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    void y12i_to_y16y16::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         unpack_y16_y16_from_y12i_10(dest, source, width, height, actual_size);
     }

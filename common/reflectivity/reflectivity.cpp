@@ -1,9 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include <numeric>
 #include "reflectivity.h"
-#include <types.h>
+#include <vector>
+#include <numeric>
+#include <algorithm>
+#include <stdexcept>
+#include <cmath>
+#include <limits>
 
 using namespace rs2;
 
@@ -119,7 +123,7 @@ float reflectivity::get_reflectivity( float raw_noise_estimation,
 
     // STD based analysis
     // STD values are at the edges, hard to get data
-    if( standard_deviation >= 1.5f || standard_deviation <= 10.f )
+    if( standard_deviation >= 1.5f && standard_deviation <= 10.f )
     {
         if( standard_deviation > 2.5f )
             ref_from_std = 0.5f;  // Low confidence data due to low STD values

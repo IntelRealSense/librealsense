@@ -5,7 +5,7 @@
 #include <core/motion.h>
 #include <core/advanced_mode.h>
 #include "record_device.h"
-#include "l500/l500-depth.h"
+#include <src/platform/backend-device-group.h>
 
 using namespace librealsense;
 
@@ -13,7 +13,7 @@ librealsense::record_device::record_device(std::shared_ptr<librealsense::device_
                                       std::shared_ptr<librealsense::device_serializer::writer> serializer):
     m_write_thread([](){return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max());}),
     m_is_recording(true),
-    m_record_pause_time(0)
+    m_record_total_pause_duration(0)
 {
     if (device == nullptr)
     {
@@ -39,12 +39,20 @@ std::vector<std::shared_ptr<librealsense::record_sensor>> librealsense::record_d
     {
         auto& live_sensor = device->get_sensor(sensor_index);
         auto recording_sensor = std::make_shared<librealsense::record_sensor>(*this, live_sensor);
-        m_on_notification_token = recording_sensor->on_notification += [this, recording_sensor, sensor_index](const notification& n) { write_notification(sensor_index, n); };
-        auto on_error = [recording_sensor](const std::string& s) {recording_sensor->stop_with_error(s); };
-        m_on_frame_token = recording_sensor->on_frame += [this, recording_sensor, sensor_index, on_error](frame_holder f) { 
-            write_data(sensor_index, std::move(f), on_error);
+        recording_sensor->on_notification(
+            [this, sensor_index]( const notification & n )
+            { write_notification( sensor_index, n ); } );
+        auto on_error = [weak = std::weak_ptr< librealsense::record_sensor >( recording_sensor )](const std::string& s) {
+            auto strong_recording_sensor = weak.lock();
+            if( strong_recording_sensor )
+                strong_recording_sensor->stop_with_error(s);
         };
-        m_on_extension_change_token = recording_sensor->on_extension_change += [this, recording_sensor, sensor_index, on_error](rs2_extension ext, std::shared_ptr<extension_snapshot> snapshot) { write_sensor_extension_snapshot(sensor_index, ext, snapshot, on_error); };
+        recording_sensor->on_frame( [this, sensor_index, on_error]( frame_holder f )
+                                    { write_data( sensor_index, std::move( f ), on_error ); } );
+        recording_sensor->on_extension_change(
+            [this, sensor_index, on_error]( rs2_extension ext,
+                                                              std::shared_ptr< extension_snapshot > snapshot )
+            { write_sensor_extension_snapshot( sensor_index, ext, snapshot, on_error ); } );
         recording_sensor->init(); //Calling init AFTER register to the above events
         record_sensors.emplace_back(recording_sensor);
     }
@@ -55,9 +63,6 @@ librealsense::record_device::~record_device()
 {
     for (auto&& s : m_sensors)
     {
-        s->on_notification -= m_on_notification_token;
-        s->on_frame -= m_on_frame_token;
-        s->on_extension_change -= m_on_extension_change_token;
         s->disable_recording();
     }
     if ((*m_write_thread)->flush() == false)
@@ -109,15 +114,24 @@ std::chrono::nanoseconds librealsense::record_device::get_capture_time() const
     {
         return std::chrono::nanoseconds::zero();
     }
-    auto now = std::chrono::high_resolution_clock::now();
-    return (now - m_capture_time_base) - m_record_pause_time;
+
+    auto capture_time = std::chrono::high_resolution_clock::now() - m_capture_time_base;
+
+    if (m_record_total_pause_duration > std::chrono::nanoseconds::zero())
+    {
+        capture_time -= m_record_total_pause_duration;
+    }
+    
+    return capture_time;
 }
 
 void librealsense::record_device::write_data(size_t sensor_index, librealsense::frame_holder frame, std::function<void(std::string const&)> on_error)
 {
     //write_data is called from the sensors, when the live sensor raises a frame
 
-    LOG_DEBUG("write frame " << (frame ? std::to_string(frame.frame->get_frame_number()) : "") <<  " from sensor " << sensor_index);
+    LOG_DEBUG( "write frame: " << ( frame ? std::to_string( frame.frame->get_frame_number() ) : "" )
+                              << ", stream: " << (frame ? rs2_stream_to_string( frame.frame->get_stream()->get_stream_type() ) : "")
+                              << ", sensor: " << sensor_index );
 
     std::call_once(m_first_call_flag, [this]()
     {
@@ -152,7 +166,7 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
             catch (const std::exception& e)
             {
                 LOG_ERROR("Failed to write header. " << e.what());
-                on_error(to_string() << "Failed to write header. " << e.what());
+                on_error( std::string( "Failed to write header. " ) + e.what() );
             }
         });
 
@@ -166,7 +180,7 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
         }
         catch(std::exception& e)
         {
-            on_error(to_string() << "Failed to write frame. " << e.what());
+            on_error( std::string( "Failed to write frame. " ) + e.what() );
         }
     });
 }
@@ -205,7 +219,7 @@ void librealsense::record_device::try_add_snapshot(T* extendable, device_seriali
             if (snapshot != nullptr)
             {
                 snapshots[TypeToExtension<Ext>::value] = snapshot;
-                LOG_INFO("Added snapshot of type: " << TypeToExtension<Ext>::to_string());
+                LOG_INFO("Added snapshot of type: " << TypeToExtension<Ext>::to_string() << "  to: " << extendable->get_info( RS2_CAMERA_INFO_NAME ) );
             }
             else
             {
@@ -233,31 +247,14 @@ device_serializer::snapshot_collection librealsense::record_device::get_extensio
     for (int i = 0; i < static_cast<int>(RS2_EXTENSION_COUNT ); ++i)
     {
         rs2_extension ext = static_cast<rs2_extension>(i);
+        // Most extensions are unsupported; those that derive from recordable<> need to be added here:
         switch (ext)
         {
-            case RS2_EXTENSION_DEBUG           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEBUG          >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_INFO            : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_INFO           >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots); break;
-            //case RS2_EXTENSION_VIDEO           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_VIDEO          >::type>(extendable, snapshots); break;
-            //case RS2_EXTENSION_ROI             : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ROI            >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_DEPTH_SENSOR    : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_SENSOR   >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_L500_DEPTH_SENSOR : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_L500_DEPTH_SENSOR   >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_DEPTH_STEREO_SENSOR: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_COLOR_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_COLOR_SENSOR   >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_MOTION_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_MOTION_SENSOR   >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_FISHEYE_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_FISHEYE_SENSOR   >::type>(extendable, snapshots); break;
-                //case RS2_EXTENSION_ADVANCED_MODE   : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ADVANCED_MODE  >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_RECOMMENDED_FILTERS: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_RECOMMENDED_FILTERS   >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_VIDEO_FRAME     : break;
-            case RS2_EXTENSION_MOTION_FRAME    : break;
-            case RS2_EXTENSION_COMPOSITE_FRAME : break;
-            case RS2_EXTENSION_POINTS          : break;
-            case RS2_EXTENSION_RECORD          : break;
-            case RS2_EXTENSION_PLAYBACK        : break;
-            case RS2_EXTENSION_COUNT           : break;
-            case RS2_EXTENSION_UNKNOWN         : break;
-            default:
-                LOG_WARNING("Extensions type is unhandled: " << get_string(ext));
+        case RS2_EXTENSION_INFO:
+            try_add_snapshot< T, ExtensionToType< RS2_EXTENSION_INFO >::type >( extendable, snapshots );
+            break;
+        case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots); break;
+        case RS2_EXTENSION_RECOMMENDED_FILTERS: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_RECOMMENDED_FILTERS   >::type>(extendable, snapshots); break;
         }
     }
     return snapshots;
@@ -362,8 +359,11 @@ bool librealsense::record_device::extend_to(rs2_extension extension_type, void**
         *ext = this;
         return true;
     case RS2_EXTENSION_OPTIONS         : return extend_to_aux<RS2_EXTENSION_OPTIONS        >(m_device, ext);
-    case RS2_EXTENSION_ADVANCED_MODE   : return extend_to_aux<RS2_EXTENSION_ADVANCED_MODE  >(m_device, ext);
-    case RS2_EXTENSION_DEBUG           : return extend_to_aux<RS2_EXTENSION_DEBUG          >(m_device, ext);
+
+    case RS2_EXTENSION_ADVANCED_MODE   :
+        *ext = As< typename ExtensionToType< RS2_EXTENSION_ADVANCED_MODE >::type >( m_device ).get();
+        return *ext;
+
     //Other cases are not extensions that we expect a device to have.
     default:
         LOG_WARNING("Extensions type is unhandled: " << get_string(extension_type));
@@ -385,7 +385,7 @@ void librealsense::record_device::pause_recording()
         //unregister_callbacks();
         m_time_of_pause = std::chrono::high_resolution_clock::now();
         m_is_recording = false;
-        LOG_DEBUG("Time of pause: " << m_time_of_pause.time_since_epoch().count());
+        LOG_DEBUG("Time of pause: " << std::dec << m_time_of_pause.time_since_epoch().count());
     });
     (*m_write_thread)->flush();
     LOG_INFO("Record paused");
@@ -399,10 +399,32 @@ void librealsense::record_device::resume_recording()
         if (m_is_recording)
             return;
 
-        m_record_pause_time += (std::chrono::high_resolution_clock::now() - m_time_of_pause);
+        auto now = std::chrono::high_resolution_clock::now();
+        auto current_pause_duration = now - m_time_of_pause;
+
+        // Only accumulate pause duration if we already initialized the recording base time (first frame arrived)
+        // If the pause action occurred after the recording base time set add the current pause duration to the total.
+        // If the pause time occurred before the recording base set and the resume after it, only add the offset from base time until resume time 
+        if ( m_capture_time_base.time_since_epoch() != std::chrono::nanoseconds::zero() )
+        {
+            if ( m_capture_time_base < m_time_of_pause )
+            {
+                m_record_total_pause_duration += current_pause_duration;
+            }
+            else
+            {
+                m_record_total_pause_duration += now - m_capture_time_base;
+            }
+
+            LOG_DEBUG("Total pause time: " << m_record_total_pause_duration.count());
+        }
+        else
+        {
+            LOG_DEBUG("Pause time ignored since no frames have been recorded yet");
+        }
+
         //register_callbacks();
         m_is_recording = true;
-        LOG_DEBUG("Total pause time: " << m_record_pause_time.count());
         LOG_INFO("Record resumed");
     });
 }
@@ -411,9 +433,9 @@ const std::string& librealsense::record_device::get_filename() const
 {
     return m_ros_writer->get_file_name();
 }
-platform::backend_device_group record_device::get_device_data() const
+std::shared_ptr< const device_info > record_device::get_device_info() const
 {
-    return m_device->get_device_data();
+    return m_device->get_device_info();
 }
 std::shared_ptr<matcher> record_device::create_matcher(const frame_holder& frame) const
 {
@@ -425,14 +447,8 @@ void record_device::initialize_recording()
     //Expected to be called once when recording to file actually starts
     m_capture_time_base = std::chrono::high_resolution_clock::now();
     m_cached_data_size = 0;
-}
-void record_device::stop_gracefully(to_string error_msg)
-{
-    for (auto&& sensor : m_sensors)
-    {
-        sensor->stop();
-        sensor->close();
-    }
+    LOG_DEBUG( "Recording capture time base set to: " << m_capture_time_base.time_since_epoch().count() );
+
 }
 
 std::pair<uint32_t, rs2_extrinsics> record_device::get_extrinsics(const stream_interface& stream) const

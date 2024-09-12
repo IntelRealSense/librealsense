@@ -1,10 +1,13 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#include "python.hpp"
-#include "../include/librealsense2/hpp/rs_internal.hpp"
-#include "../include/librealsense2/hpp/rs_device.hpp"
-#include "../include/librealsense2/hpp/rs_record_playback.hpp" // for downcasts
+#include "pyrealsense2.h"
+#include <librealsense2/hpp/rs_internal.hpp>
+#include <librealsense2/hpp/rs_device.hpp>
+#include <librealsense2/hpp/rs_record_playback.hpp> // for downcasts
+#include <common/metadata-helper.h>
+
+#include <iostream>
 
 void init_device(py::module &m) {
     /** rs_device.hpp **/
@@ -26,10 +29,10 @@ void init_device(py::module &m) {
         .def(py::init<>())
         .def("__nonzero__", &rs2::device::operator bool) // Called to implement truth value testing in Python 2
         .def("__bool__", &rs2::device::operator bool) // Called to implement truth value testing in Python 3
+        .def( "is_connected", &rs2::device::is_connected )
         .def(BIND_DOWNCAST(device, debug_protocol))
         .def(BIND_DOWNCAST(device, playback))
         .def(BIND_DOWNCAST(device, recorder))
-        .def(BIND_DOWNCAST(device, tm2))
         .def(BIND_DOWNCAST(device, updatable))
         .def(BIND_DOWNCAST(device, update_device))
         .def(BIND_DOWNCAST(device, auto_calibrated_device))
@@ -37,18 +40,37 @@ void init_device(py::module &m) {
         .def(BIND_DOWNCAST(device, calibration_change_device))
         .def(BIND_DOWNCAST(device, firmware_logger))
         .def("__repr__", [](const rs2::device &self) {
-            std::stringstream ss;
-            ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME);
+            std::ostringstream ss;
+            auto name = self.get_info( RS2_CAMERA_INFO_NAME );
+            if( 0 == strncmp( name, "Intel RealSense ", 16 ) )
+                name += 16;
+            ss << "<" SNAME ".device: " << name;
             if (self.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
                 ss << " (S/N: " << self.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
             else
                 ss << " (FW update id: " << self.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
             if (self.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
                 ss << "  FW: " << self.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-            if (self.supports(RS2_CAMERA_INFO_CAMERA_LOCKED))
-                ss << "  LOCKED: " << self.get_info(RS2_CAMERA_INFO_CAMERA_LOCKED);
+            if( self.supports( RS2_CAMERA_INFO_CAMERA_LOCKED )
+                && strcmp( "YES", self.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) ) )
+                ss << "  UNLOCKED";
+            if( self.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
+                ss << "  on USB" << self.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
+            else if( self.supports( RS2_CAMERA_INFO_PHYSICAL_PORT ) )
+                ss << "  @ " << self.get_info( RS2_CAMERA_INFO_PHYSICAL_PORT );
             ss << ")>";
             return ss.str();
+        })
+        .def("is_metadata_enabled", [](const rs2::device& self) -> bool{
+            auto depth_sens = self.first< rs2::depth_sensor >();
+
+            if (!depth_sens.supports(RS2_CAMERA_INFO_PHYSICAL_PORT))
+            {
+                throw std::runtime_error("Device does not support checking metadata with this API");
+            }
+            std::string id = depth_sens.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
+
+            return rs2::metadata_helper::instance().is_enabled(id);
         });
 
     // not binding update_progress_callback, templated
@@ -67,7 +89,7 @@ void init_device(py::module &m) {
              "Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread.", "fw_image"_a,
              "update_mode"_a = RS2_UNSIGNED_UPDATE_MODE_UPDATE, py::call_guard<py::gil_scoped_release>())
         .def("update_unsigned", [](rs2::updatable& self, const std::vector<uint8_t>& fw_image, std::function<void(float)> f, int update_mode) { return self.update_unsigned(fw_image, f, update_mode); },
-             "Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread and it supports progress notifications via the callback.",
+             "Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread and provides progress notifications via the callback.",
              "fw_image"_a, "callback"_a, "update_mode"_a = RS2_UNSIGNED_UPDATE_MODE_UPDATE, py::call_guard<py::gil_scoped_release>())
         .def("check_firmware_compatibility", &rs2::updatable::check_firmware_compatibility, "Check firmware compatibility with device. "
             "This method should be called before burning a signed firmware.", "image"_a);
@@ -77,7 +99,7 @@ void init_device(py::module &m) {
         .def("update", [](rs2::update_device& self, const std::vector<uint8_t>& fw_image) { return self.update(fw_image); },
              "Update an updatable device to the provided firmware. This call is executed on the caller's thread.", "fw_image"_a, py::call_guard<py::gil_scoped_release>())
         .def("update", [](rs2::update_device& self, const std::vector<uint8_t>& fw_image, std::function<void(float)> f) { return self.update(fw_image, f); },
-             "Update an updatable device to the provided firmware. This call is executed on the caller's thread and it supports progress notifications via the callback.",
+             "Update an updatable device to the provided firmware. This call is executed on the caller's thread and provides progress notifications via the callback.",
              "fw_image"_a, "callback"_a, py::call_guard<py::gil_scoped_release>());
 
     py::class_<rs2::auto_calibrated_device, rs2::device> auto_calibrated_device(m, "auto_calibrated_device");
@@ -86,21 +108,86 @@ void init_device(py::module &m) {
         .def("run_on_chip_calibration", [](rs2::auto_calibrated_device& self, std::string json_content, int timeout_ms)
         { 
             float health;
-            return py::make_tuple(self.run_on_chip_calibration(json_content, &health, timeout_ms), health);
+            rs2::calibration_table table = self.run_on_chip_calibration(json_content, &health, timeout_ms);
+            return std::make_tuple(table, std::make_tuple(health, 0.0));
         },"This will improve the depth noise (plane fit RMS). This call is executed on the caller's thread.","json_content"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
         .def("run_on_chip_calibration", [](rs2::auto_calibrated_device& self, std::string json_content, std::function<void(float)> f, int timeout_ms)
         {
             float health;
-            return py::make_tuple(self.run_on_chip_calibration(json_content, &health, f, timeout_ms), health);
-        },"This will improve the depth noise (plane fit RMS). This call is executed on the caller's thread and it supports progress notifications via the callback.", "json_content"_a, "callback"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
+            rs2::calibration_table table = self.run_on_chip_calibration(json_content, &health, f, timeout_ms);
+            return std::make_tuple(table, std::make_tuple(health, 0.0));
+        },"This will improve the depth noise (plane fit RMS). This call is executed on the caller's thread and provides progress notifications via the callback.", "json_content"_a, "callback"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
         .def("run_tare_calibration", [](const rs2::auto_calibrated_device& self, float ground_truth_mm, std::string json_content, int timeout_ms)
         {
-            return self.run_tare_calibration(ground_truth_mm, json_content, timeout_ms);
-        }, "This will adjust camera absolute distance to flat target. This call is executed on the caller's thread and it supports progress notifications via the callback.", "ground_truth_mm"_a, "json_content"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
+            float health[] = { 0,0 };
+            rs2::calibration_table table = self.run_tare_calibration(ground_truth_mm, json_content, health, timeout_ms);
+            return std::make_tuple(table, std::make_tuple(health[0], health[1]));
+        }, "This will adjust camera absolute distance to flat target. This call is executed on the caller's thread.", "ground_truth_mm"_a, "json_content"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
         .def("run_tare_calibration", [](const rs2::auto_calibrated_device& self, float ground_truth_mm, std::string json_content, std::function<void(float)> callback, int timeout_ms)
         {
-            return self.run_tare_calibration(ground_truth_mm, json_content, callback, timeout_ms);
-        }, "This will adjust camera absolute distance to flat target. This call is executed on the caller's thread.", "ground_truth_mm"_a, "json_content"_a, "callback"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
+            float health[] = { 0,0 };
+            rs2::calibration_table table = self.run_tare_calibration(ground_truth_mm, json_content, health, callback, timeout_ms);
+            return std::make_tuple(table, std::make_tuple(health[0], health[1]));
+        }, "This will adjust camera absolute distance to flat target. This call is executed on the caller's thread and it supports progress notifications via the callback.", "ground_truth_mm"_a, "json_content"_a, "callback"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
+        .def("process_calibration_frame", [](const rs2::auto_calibrated_device& self, rs2::frame frame, int timeout_ms)
+            {
+            float health[] = { 0,0 };
+            rs2::calibration_table table = self.process_calibration_frame(frame, health, timeout_ms);
+            return std::make_tuple(table, std::make_tuple(health[0], health[1]));
+            }, "This will add a frame to the calibration process initiated by run_tare_calibration or run_on_chip_calibration as host assistant process. This call is executed on the caller's thread  and it supports progress notifications via the callback.", "frame"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
+        .def("process_calibration_frame", [](const rs2::auto_calibrated_device& self, rs2::frame frame, std::function<void(float)> callback, int timeout_ms)
+            {
+            float health[] = { 0,0 };
+            rs2::calibration_table table = self.process_calibration_frame(frame, health, callback, timeout_ms);
+            return std::make_tuple(table, std::make_tuple(health[0], health[1]));
+            }, "This will add a frame to the calibration process initiated by run_tare_calibration or run_on_chip_calibration as host assistant process. This call is executed on the caller's thread and it supports progress notifications via the callback.", "frame"_a, "callback"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
+        .def("run_focal_length_calibration", [](const rs2::auto_calibrated_device& self, rs2::frame_queue left_queue, rs2::frame_queue right_queue,
+                float target_width_mm, float target_heigth_mm, int adjust_both_sides)
+        {
+                float ratio{};
+                float angle{};
+            return std::make_tuple(self.run_focal_length_calibration(left_queue, right_queue, target_width_mm, target_heigth_mm, adjust_both_sides,
+                &ratio, &angle), ratio, angle);
+        }, "Run target-based focal length calibration. This call is executed on the caller's thread.",
+            "left_queue"_a, "right_queue"_a, "target_width_mm"_a, "target_heigth_mm"_a, "adjust_both_sides"_a,py::call_guard<py::gil_scoped_release>())
+
+        .def("run_focal_length_calibration", [](const rs2::auto_calibrated_device& self, rs2::frame_queue left_queue, rs2::frame_queue right_queue,
+                float target_width_mm, float target_heigth_mm, int adjust_both_sides, std::function<void(float)> callback)
+        {
+                float ratio = 0.f;
+                float angle = 0.f;
+            return std::make_tuple(self.run_focal_length_calibration(left_queue, right_queue, target_width_mm, target_heigth_mm, adjust_both_sides,
+                &ratio, &angle, callback), ratio, angle);
+        }, "Run target-based focal length calibration. This call is executed on the caller's thread and provides progress notifications via the callback.",
+            "left_queue"_a, "right_queue"_a, "target_width_mm"_a, "target_heigth_mm"_a, "adjust_both_sides"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
+        .def("run_uv_map_calibration", [](const rs2::auto_calibrated_device& self, rs2::frame_queue left, rs2::frame_queue color, rs2::frame_queue depth,
+            int py_px_only)
+        {
+            constexpr int health_check_params = 4; // px, py, fx, fy for the calibration
+            float health{};
+            return std::make_tuple(self.run_uv_map_calibration(left, color, depth, py_px_only, &health, health_check_params), health);
+        }, "Run target-based Depth-RGB UV-map calibraion. This call is executed on the caller's thread.",
+            "left"_a, "color"_a, "depth"_a, "py_px_only"_a)
+        .def("run_uv_map_calibration", [](const rs2::auto_calibrated_device& self, rs2::frame_queue left, rs2::frame_queue color, rs2::frame_queue depth,
+                int py_px_only, std::function<void(float)> callback)
+            {
+                constexpr int health_check_params = 4; // px, py, fx, fy for the calibration
+                float health{};
+                return std::make_tuple(self.run_uv_map_calibration(left, color, depth, py_px_only, &health, health_check_params, callback), health);
+            }, "Run target-based Depth-RGB UV-map calibraion. This call is executed on the caller's thread and provides progress notifications via the callback.",
+            "left"_a, "color"_a, "depth"_a, "py_px_only"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
+        .def("calculate_target_z", [](const rs2::auto_calibrated_device& self, rs2::frame_queue queue1, rs2::frame_queue queue2, rs2::frame_queue queue3,
+            float target_width_mm, float target_height_mm)
+            {
+                return self.calculate_target_z(queue1, queue2, queue3, target_width_mm, target_height_mm);
+            }, "Calculate Z for calibration target - distance to the target's plane.",
+            "queue1"_a, "queue2"_a, "queue3"_a, "target_width_mm"_a, "target_height_mm"_a, py::call_guard<py::gil_scoped_release>())
+        .def("calculate_target_z", [](const rs2::auto_calibrated_device& self, rs2::frame_queue queue1, rs2::frame_queue queue2, rs2::frame_queue queue3,
+            float target_width_mm, float target_height_mm, std::function<void(float)> callback)
+            {
+                return self.calculate_target_z(queue1, queue2, queue3, target_width_mm, target_height_mm, callback);
+            }, "Calculate Z for calibration target - distance to the target's plane. This call is executed on the caller's thread and provides progress notifications via the callback.",
+            "queue1"_a, "queue2"_a, "queue3"_a, "target_width_mm"_a, "target_height_mm"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
         .def("get_calibration_table", &rs2::auto_calibrated_device::get_calibration_table, "Read current calibration table from flash.")
         .def("set_calibration_table", &rs2::auto_calibrated_device::set_calibration_table, "Set current table to dynamic area.")
         .def("reset_to_factory_calibration", &rs2::auto_calibrated_device::reset_to_factory_calibration, "Reset device to factory calibration.");
@@ -163,8 +250,10 @@ void init_device(py::module &m) {
 
     py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol"); // No docstring in C++
     debug_protocol.def(py::init<rs2::device>())
+        .def("build_command", &rs2::debug_protocol::build_command, "opcode"_a, "param1"_a = 0, 
+            "param2"_a = 0, "param3"_a = 0, "param4"_a = 0, "data"_a = std::vector<uint8_t>()) 
         .def("send_and_receive_raw_data", &rs2::debug_protocol::send_and_receive_raw_data,
-             "input"_a);  // No docstring in C++
+            "input"_a);  // No docstring in C++
 
     py::class_<rs2::device_list> device_list(m, "device_list"); // No docstring in C++
     device_list.def(py::init<>())
@@ -192,22 +281,6 @@ void init_device(py::module &m) {
         })
         .def("front", &rs2::device_list::front) // No docstring in C++
         .def("back", &rs2::device_list::back); // No docstring in C++
-
-    py::class_<rs2::tm2, rs2::device> tm2(m, "tm2", "The tm2 class is an interface for T2XX devices, such as T265.\n"
-                                                    "For T265, it provides RS2_STREAM_FISHEYE(2), RS2_STREAM_GYRO, "
-                                                    "RS2_STREAM_ACCEL, and RS2_STREAM_POSE streams, and contains the following sensors:\n"
-                                                    "-pose_sensor: map and relocalization functions.\n"
-                                                    "-wheel_odometer: input for odometry data.");
-    tm2.def(py::init<rs2::device>(), "device"_a)
-        .def("enable_loopback", &rs2::tm2::enable_loopback, "Enter the given device into "
-             "loopback operation mode that uses the given file as input for raw data", "filename"_a)
-        .def("disable_loopback", &rs2::tm2::disable_loopback, "Restores the given device into normal operation mode")
-        .def("is_loopback_enabled", &rs2::tm2::is_loopback_enabled, "Checks if the device is in loopback mode or not")
-        .def("set_intrinsics", &rs2::tm2::set_intrinsics, "Set camera intrinsics", "sensor_id"_a, "intrinsics"_a)
-        .def("set_extrinsics", &rs2::tm2::set_extrinsics, "Set camera extrinsics", "from_stream"_a, "from_id"_a, "to_stream"_a, "to_id"_a, "extrinsics"_a)
-        .def("set_motion_device_intrinsics", &rs2::tm2::set_motion_device_intrinsics, "Set motion device intrinsics", "stream_type"_a, "motion_intrinsics"_a)
-        .def("reset_to_factory_calibration", &rs2::tm2::reset_to_factory_calibration, "Reset to factory calibration")
-        .def("write_calibration", &rs2::tm2::write_calibration, "Write calibration to device's EEPROM");
 
     /** end rs_device.hpp **/
 }

@@ -109,9 +109,12 @@ function choose_kernel_branch {
 		"5.8")									# kernel 5.8
 			echo hwe-5.8
 			;;
+		"5.11")									# kernel 5.11
+			echo hwe-5.11
+			;;
 		*)
 			#error message shall be redirected to stderr to be printed properly
-			echo -e "\e[31mUnsupported kernel version $1 . The Focal patches are maintained for Ubuntu LTS with kernel 5.4 only\e[0m" >&2
+			echo -e "\e[31mUnsupported kernel version $1 . The Focal patches are maintained for Ubuntu LTS with kernel 5.4, 5.8, 5.11 only\e[0m" >&2
 			exit 1
 			;;
 		esac

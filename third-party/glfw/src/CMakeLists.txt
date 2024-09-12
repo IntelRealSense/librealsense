@@ -95,7 +95,7 @@ set_target_properties(glfw PROPERTIES
                       VERSION ${GLFW_VERSION}
                       SOVERSION ${GLFW_VERSION_MAJOR}
                       POSITION_INDEPENDENT_CODE ON
-                      FOLDER "GLFW3")
+                      FOLDER "3rd Party")
 
 target_compile_definitions(glfw PRIVATE _GLFW_USE_CONFIG_H)
 target_include_directories(glfw PUBLIC
@@ -117,6 +117,10 @@ target_compile_definitions(glfw PRIVATE
 target_compile_options(glfw PRIVATE
                        "$<$<C_COMPILER_ID:Clang>:-Wall>"
                        "$<$<C_COMPILER_ID:GNU>:-Wall>")
+
+if (UNIX)
+    target_compile_options(glfw PRIVATE -Wno-pedantic)
+endif (UNIX)
 
 if (BUILD_SHARED_LIBS)
     if (WIN32)

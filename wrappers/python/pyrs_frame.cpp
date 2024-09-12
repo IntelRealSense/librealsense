@@ -1,8 +1,27 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#include "python.hpp"
-#include "../include/librealsense2/rs.hpp"
+#include "pyrealsense2.h"
+#include <librealsense2/rs.hpp>
+
+#include <rsutils/string/from.h>
+#include <src/image.cpp>  // bad idea? for get_image_bpp
+
+
+namespace {
+
+
+    std::ostream & operator<<( std::ostream & ss, const rs2::frame & self )
+    {
+        ss << rs2_format_to_string( self.get_profile().format() );
+        ss << " #" << self.get_frame_number();
+        ss << " @" << rsutils::string::from( self.get_timestamp() );
+        return ss;
+    }
+
+
+}
+
 
 void init_frame(py::module &m) {
     py::class_<BufData> BufData_py(m, "BufData", py::buffer_protocol());
@@ -39,7 +58,7 @@ void init_frame(py::module &m) {
             }
         }
         else
-            return BufData(const_cast<void*>(self.get_data()), 1, std::string("@B"), 0); };
+            return BufData(const_cast<void*>(self.get_data()), 1, std::string("@B"), self.get_data_size()); };
     
     /* rs_frame.hpp */
     py::class_<rs2::stream_profile> stream_profile(m, "stream_profile", "Stores details about the profile of a stream.");
@@ -47,12 +66,14 @@ void init_frame(py::module &m) {
         .def("stream_index", &rs2::stream_profile::stream_index, "The stream's index")
         .def("stream_type", &rs2::stream_profile::stream_type, "The stream's type")
         .def("format", &rs2::stream_profile::format, "The stream's format")
+        .def("bytes_per_pixel", []( rs2::stream_profile const & self ) { return librealsense::get_image_bpp( self.format() ) / 8; } )
         .def("fps", &rs2::stream_profile::fps, "The streams framerate")
         .def("unique_id", &rs2::stream_profile::unique_id, "Unique index assigned whent the stream was created")
         .def("clone", &rs2::stream_profile::clone, "Clone the current profile and change the type, index and format to input parameters", "type"_a, "index"_a, "format"_a)
         .def(BIND_DOWNCAST(stream_profile, stream_profile))
         .def(BIND_DOWNCAST(stream_profile, video_stream_profile))
         .def(BIND_DOWNCAST(stream_profile, motion_stream_profile))
+        .def(BIND_DOWNCAST(stream_profile, pose_stream_profile))
         .def("stream_name", &rs2::stream_profile::stream_name, "The stream's human-readable name.")
         .def("is_default", &rs2::stream_profile::is_default, "Checks if the stream profile is marked/assigned as default, "
              "meaning that the profile will be selected when the user requests stream configuration using wildcards.")
@@ -68,7 +89,7 @@ void init_frame(py::module &m) {
             std::stringstream ss;
             if (auto vf = self.as<rs2::video_stream_profile>())
             {
-                ss << "<" SNAME ".video_stream_profile: "
+                ss << "<" SNAME ".[video_]stream_profile: "
                     << vf.stream_type() << "(" << vf.stream_index() << ") " << vf.width()
                     << "x" << vf.height() << " @ " << vf.fps() << "fps "
                     << vf.format() << ">";
@@ -137,19 +158,25 @@ void init_frame(py::module &m) {
         // No apply_filter?
         .def( "__repr__", []( const rs2::frame &self )
         {
-            std::stringstream ss;
+            std::ostringstream ss;
             ss << "<" << SNAME << ".frame";
-            if( auto fs = self.as< rs2::frameset >() )
+            if( ! self )
             {
-                ss << "set";
-                for( auto sf : fs )
-                    ss << " " << rs2_format_to_string( sf.get_profile().format() );
+                ss << " NULL";
             }
             else
             {
-                ss << " " << rs2_format_to_string( self.get_profile().format() );
+                if( auto fs = self.as< rs2::frameset >() )
+                {
+                    ss << "set";
+                    for( auto sf : fs )
+                        ss << "  " << sf;
+                }
+                else
+                {
+                    ss << " " << self;
+                }
             }
-            ss << " #" << self.get_frame_number();
             ss << ">";
             return ss.str();
         });
@@ -173,6 +200,16 @@ void init_frame(py::module &m) {
             {
                 target_dims.resize(4);
                 self.extract_target_dimensions(RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, target_dims.data(), 4);
+            }
+            else if (target_type == RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES)
+            {
+                target_dims.resize(4);
+                self.extract_target_dimensions(RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES, target_dims.data(), 4);
+            }
+            else if (target_type == RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES)
+            {
+                target_dims.resize(8);
+                self.extract_target_dimensions(RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES, target_dims.data(), 8);
             }
             return target_dims;
         }, "This will calculate the four target dimenson size(s) in millimeter on the specific target.");

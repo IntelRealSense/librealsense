@@ -1,11 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/rsutil.h"
+#include <librealsense2/rs.hpp>
 #include "proc/synthetic-stream.h"
 #include "proc/occlusion-filter.h"
-//#include  "../../common/tiny-profiler.h"
+
+#include <rsutils/string/from.h>
+
 #include <vector>
 #include <cmath>
 
@@ -32,8 +33,8 @@ namespace librealsense
             monotonic_heuristic_invalidation(points, uv_map, pix_coord, depth);
             break;
         default:
-            throw std::runtime_error(to_string() << "Unsupported occlusion filter type " << _occlusion_filter << " requested");
-            break;
+            throw std::runtime_error( rsutils::string::from()
+                                      << "Unsupported occlusion filter type " << _occlusion_filter << " requested" );
         }
     }
    int gcd(int a, int b) {
@@ -64,7 +65,7 @@ namespace librealsense
        return res;
    }
    template<size_t SIZE>
-   void rotate_image_optimized(byte* dest[], const byte* source, int width, int height)
+   void rotate_image_optimized( uint8_t * dest[], const uint8_t * source, int width, int height)
    {
 
        auto width_out = height;
@@ -73,9 +74,9 @@ namespace librealsense
        auto out = dest[0];
        auto buffer_size = maxDivisorRange(height, width, 1, ROTATION_BUFFER_SIZE); 
 
-       byte** buffer = new byte * [buffer_size];
+       uint8_t ** buffer = new uint8_t * [buffer_size];
        for (int i = 0; i < buffer_size; ++i)
-           buffer[i] = new byte[buffer_size * SIZE];
+           buffer[i] = new uint8_t[buffer_size * SIZE];
 
 
        for (int i = 0; i <= height - buffer_size; i = i + buffer_size)
@@ -107,7 +108,7 @@ namespace librealsense
  
    }
     // IMPORTANT! This implementation is based on the assumption that the RGB sensor is positioned strictly to the left of the depth sensor.
-    // namely D415/D435 and SR300. The implementation WILL NOT work properly for different setups
+    // namely D415/D435. The implementation WILL NOT work properly for different setups
     // Heuristic occlusion invalidation algorithm:
     // -  Use the uv texels calculated when projecting depth to color
     // -  Scan each line from left to right and check the the U coordinate in the mapping is raising monotonically.
@@ -166,12 +167,12 @@ namespace librealsense
        {
            auto rotated_depth_width = _depth_intrinsics->height;
            auto rotated_depth_height = _depth_intrinsics->width;
-           auto depth_ptr = (byte*)(depth.get_data());
-           std::vector< byte > alloc( depth.get_bytes_per_pixel() * points_width * points_height );
-           byte* depth_planes[1];
+           auto depth_ptr = (uint8_t *)(depth.get_data());
+           std::vector< uint8_t > alloc( depth.get_bytes_per_pixel() * points_width * points_height );
+           uint8_t * depth_planes[1];
            depth_planes[0] = alloc.data();
 
-           rotate_image_optimized<2>(depth_planes, (const byte*)(depth.get_data()), points_width, points_height);
+           rotate_image_optimized<2>(depth_planes, (const uint8_t *)(depth.get_data()), points_width, points_height);
 
            // scan depth frame after rotation: check if there is a noticed jump between adjacen pixels in Z-axis (depth), it means there could be occlusion.
            // save suspected points and run occlusion-invalidation vertical scan only on them
@@ -187,7 +188,8 @@ namespace librealsense
                    auto uv_index = ((rotated_depth_height - i - 1) + (rotated_depth_width - j - 1) * rotated_depth_height);
                    auto index_right = index + 1;
                    uint16_t* diff_depth_ptr = (uint16_t*)depth_planes[0];
-                   uint16_t diff_right = abs((uint16_t)(*(diff_depth_ptr + index)) - (uint16_t)(*(diff_depth_ptr + index_right)));
+                   uint16_t diff_right = std::abs( (uint16_t)( *( diff_depth_ptr + index ) )
+                                                   - (uint16_t)( *( diff_depth_ptr + index_right ) ) );
                    float scaled_threshold = DEPTH_OCCLUSION_THRESHOLD / _depth_units;
                    if (diff_right > scaled_threshold)
                    {

@@ -4,7 +4,6 @@
 #pragma once
 
 #include "sw-update/dev-updates-profile.h"
-#include "ux-window.h"
 #include "notifications.h"
 #include "fw-update-helper.h"
 
@@ -16,6 +15,8 @@
 
 namespace rs2
 {
+    class ux_window;
+
     class updates_model
     {
     public:
@@ -31,7 +32,7 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_lock);
             auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
-                return (p.profile.device_name == update.profile.device_name && p.profile.serial_number == update.profile.serial_number);
+                return (p.profile.fw_update_id == update.profile.fw_update_id);
             });
             if (it == _updates.end())
                 _updates.push_back(update);
@@ -45,7 +46,7 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_lock);
             auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
-                return (p.profile.device_name == update.profile.device_name && p.profile.serial_number == update.profile.serial_number);
+                return (p.profile.fw_update_id == update.profile.fw_update_id);
             });
             if (it != _updates.end())
             {
@@ -56,7 +57,7 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_lock);
             auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
-                return (p.profile.device_name == update.device_name && p.profile.serial_number == update.serial_number);
+                return (p.profile.fw_update_id == update.fw_update_id);
             });
             if (it != _updates.end())
                 _updates.erase(it);
@@ -69,7 +70,7 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_lock);
             auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
-                return (p.profile.device_name == update.device_name && p.profile.serial_number == update.serial_number);
+                return (p.profile.fw_update_id == update.fw_update_id);
             });
             if (it != _updates.end())
                 it->profile.dev_active = active;

@@ -1,11 +1,9 @@
 #include "rosbag/bag_player.h"
 
-#define foreach BOOST_FOREACH
-
 namespace rosbag
 {
 
-BagPlayer::BagPlayer(const std::string &fname) throw(BagException) {
+BagPlayer::BagPlayer(const std::string &fname) {
     bag.open(fname, rosbag::bagmode::Read);
     rs2rosinternal::Time::init();
     View v(bag);
@@ -43,14 +41,13 @@ rs2rosinternal::Time BagPlayer::real_time(const rs2rosinternal::Time &msg_time) 
 void BagPlayer::start_play() {
 
     std::vector<std::string> topics;
-    std::pair<std::string, BagCallback *> cb;
-    foreach(cb, cbs_)
+    for( auto const & cb : cbs_ )
         topics.push_back(cb.first);
 
     View view(bag, TopicQuery(topics), bag_start_, bag_end_);
     play_start_ = rs2rosinternal::Time::now();
 
-    foreach(MessageInstance const m, view)
+    for( auto const & m : view )
     {
         if (cbs_.find(m.getTopic()) == cbs_.end())
             continue;

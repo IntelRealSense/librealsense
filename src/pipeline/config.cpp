@@ -3,6 +3,11 @@
 
 #include "config.h"
 #include "pipeline.h"
+#include "platform/platform-device-info.h"
+#include "media/playback/playback-device-info.h"
+#include "context.h"
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
@@ -246,17 +251,14 @@ namespace librealsense
             //Check if the file is already loaded to context, and if so return that device
             for (auto&& d : ctx->query_devices(RS2_PRODUCT_LINE_ANY))
             {
-                auto playback_devs = d->get_device_data().playback_devices;
-                for (auto&& p : playback_devs)
-                {
-                    if (p.file_path == file)
-                    {
-                        return d->create_device();
-                    }
-                }
+                auto pdev = std::dynamic_pointer_cast< playback_device_info >( d );
+                if( pdev && pdev->get_filename() == file )
+                    return pdev->create_device();
             }
 
-            return ctx->add_device(file)->create_device();
+            auto dev_info = std::make_shared< playback_device_info >( ctx, file );
+            ctx->add_device( dev_info );
+            return dev_info->create_device();
         }
 
         std::shared_ptr<device_interface> config::resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)
@@ -271,27 +273,36 @@ namespace librealsense
                 }
                 catch (const std::exception& e)
                 {
-                    throw std::runtime_error(to_string() << "Failed to resolve request. Request to enable_device_from_file(\"" << _device_request.filename << "\") was invalid, Reason: " << e.what());
+                    throw std::runtime_error( rsutils::string::from()
+                                              << "Failed to resolve request. Request to enable_device_from_file(\""
+                                              << _device_request.filename << "\") was invalid, Reason: " << e.what() );
                 }
                 //check if a serial number was also requested, and check again the device
                 if (!_device_request.serial.empty())
                 {
                     if (!dev->supports_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
                     {
-                        throw std::runtime_error(to_string() << "Failed to resolve request. "
-                            "Conflic between enable_device_from_file(\"" << _device_request.filename
-                            << "\") and enable_device(\"" << _device_request.serial << "\"), "
-                            "File does not contain a device with such serial");
+                        throw std::runtime_error( rsutils::string::from()
+                                                  << "Failed to resolve request. "
+                                                     "Conflic between enable_device_from_file(\""
+                                                  << _device_request.filename << "\") and enable_device(\""
+                                                  << _device_request.serial
+                                                  << "\"), "
+                                                     "File does not contain a device with such serial" );
                     }
                     else
                     {
                         std::string s = dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
                         if (s != _device_request.serial)
                         {
-                            throw std::runtime_error(to_string() << "Failed to resolve request. "
-                                "Conflic between enable_device_from_file(\"" << _device_request.filename
-                                << "\") and enable_device(\"" << _device_request.serial << "\"), "
-                                "File contains device with different serial number (" << s << "\")");
+                            throw std::runtime_error( rsutils::string::from()
+                                                      << "Failed to resolve request. "
+                                                         "Conflic between enable_device_from_file(\""
+                                                      << _device_request.filename << "\") and enable_device(\""
+                                                      << _device_request.serial
+                                                      << "\"), "
+                                                         "File contains device with different serial number ("
+                                                      << s << "\")" );
                         }
                     }
                 }

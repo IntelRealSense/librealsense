@@ -76,9 +76,9 @@ namespace rs2
 
         void export_to_ply(points p, video_frame color) {
             const bool use_texcoords  = color && !get_option(OPTION_IGNORE_COLOR);
-            bool mesh = get_option(OPTION_PLY_MESH);
-            bool binary = get_option(OPTION_PLY_BINARY);
-            bool use_normals = get_option(OPTION_PLY_NORMALS);
+            bool mesh = get_option(OPTION_PLY_MESH) != 0;
+            bool binary = get_option(OPTION_PLY_BINARY) != 0;
+            bool use_normals = get_option(OPTION_PLY_NORMALS) != 0;
             const auto verts = p.get_vertices();
             const auto texcoords = p.get_texture_coordinates();
             const uint8_t* texture_data;

@@ -1,12 +1,27 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include "types.h"
+#include "core/enum-helpers.h"
+#include <librealsense2/hpp/rs_types.hpp>
+
+#include <rsutils/string/from.h>
+#include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/os/ensure-console.h>
+
+#include <stdexcept>
+#include <mutex>
+#include <fstream>
+
 
 namespace librealsense
 {
+    void log_to_console( rs2_log_severity min_severity );
+    void log_to_file( rs2_log_severity min_severity, const char * file_path );
+    void log_to_callback( rs2_log_severity min_severity, rs2_log_callback_sptr callback );
+    void reset_logger();
+    void enable_rolling_log_file( unsigned max_size );
+
 #if BUILD_EASYLOGGINGPP
     struct log_message
     {
@@ -131,7 +146,7 @@ namespace librealsense
 
 
         logger_type()
-            : filename(to_string() << datetime_string() << ".log")
+            : filename( rsutils::string::from::datetime() + ".log" )
         {
             rs2_log_severity severity;
             if (try_get_log_severity(severity))
@@ -172,6 +187,8 @@ namespace librealsense
 
         void log_to_console(rs2_log_severity min_severity)
         {
+            if( min_severity != RS2_LOG_SEVERITY_NONE )
+                rsutils::os::ensure_console( false );  // don't create if none available
             minimum_console_severity = min_severity;
             open();
         }
@@ -193,7 +210,7 @@ namespace librealsense
         class elpp_dispatcher : public el::LogDispatchCallback
         {
         public:
-            log_callback_ptr callback;
+            rs2_log_callback_sptr callback;
             rs2_log_severity min_severity = RS2_LOG_SEVERITY_NONE;
 
         protected:
@@ -218,7 +235,7 @@ namespace librealsense
             callback_dispatchers.clear();
         }
 
-        void log_to_callback( rs2_log_severity min_severity, log_callback_ptr callback )
+        void log_to_callback( rs2_log_severity min_severity, rs2_log_callback_sptr callback )
         {
             open();
             

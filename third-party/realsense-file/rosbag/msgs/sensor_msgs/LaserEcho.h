@@ -33,21 +33,21 @@ struct LaserEcho_
 
 
 
-   typedef std::vector<float, typename ContainerAllocator::template rebind<float>::other >  _echoes_type;
+   typedef std::vector<float, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< float > >  _echoes_type;
   _echoes_type echoes;
 
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::LaserEcho_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::LaserEcho_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::LaserEcho_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::LaserEcho_<ContainerAllocator> const> ConstPtr;
 
 }; // struct LaserEcho_
 
 typedef ::sensor_msgs::LaserEcho_<std::allocator<void> > LaserEcho;
 
-typedef boost::shared_ptr< ::sensor_msgs::LaserEcho > LaserEchoPtr;
-typedef boost::shared_ptr< ::sensor_msgs::LaserEcho const> LaserEchoConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::LaserEcho > LaserEchoPtr;
+typedef std::shared_ptr< ::sensor_msgs::LaserEcho const> LaserEchoConstPtr;
 
 // constants requiring out of line definition
 
@@ -79,32 +79,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::LaserEcho_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::LaserEcho_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::LaserEcho_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::LaserEcho_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::LaserEcho_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::LaserEcho_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

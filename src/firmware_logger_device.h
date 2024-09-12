@@ -5,6 +5,7 @@
 
 #include "core/extension.h"
 #include "device.h"
+#include "hw-monitor.h"
 #include <vector>
 #include "fw-logs/fw-log-data.h"
 #include "fw-logs/fw-logs-parser.h"
@@ -26,7 +27,7 @@ namespace librealsense
     class firmware_logger_device : public virtual device, public firmware_logger_extensions
     {
     public:
-        firmware_logger_device(std::shared_ptr<context> ctx, const platform::backend_device_group group,
+        firmware_logger_device( std::shared_ptr< const device_info > const & dev_info,
             std::shared_ptr<hw_monitor> hardware_monitor,
             const command& fw_logs_command, const command& flash_logs_command);
 

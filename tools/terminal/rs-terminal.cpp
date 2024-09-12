@@ -1,19 +1,24 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <librealsense2/rs.hpp>
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <algorithm>
 
+#include <librealsense2/rs.hpp>
+#include <rsutils/string/string-utilities.h>
 #include "tclap/CmdLine.h"
 #include "parser.hpp"
 #include "auto-complete.h"
 
-#include <string>
+#include <rsutils/json.h>
+#include <thread>
 
 
 using namespace std;
 using namespace TCLAP;
+using rsutils::json;
 
 
 vector<uint8_t> build_raw_command_data(const command& command, const vector<string>& params)
@@ -50,17 +55,20 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, rs2::device& dev,
     }
 
     if (tokens.empty())
-        throw runtime_error("Wrong input!");
+        throw runtime_error("Invalid input! - no arguments provided");
 
-    auto command_str = tokens.front();
+    auto command_str = rsutils::string::to_lower(tokens.front());
     auto it = cmd_xml.commands.find(command_str);
     if (it == cmd_xml.commands.end())
-        throw runtime_error("Command not found!");
+        throw runtime_error("Command " + command_str + " was not found!");
 
     auto command = it->second;
     vector<string> params;
     for (auto i = 1; i < tokens.size(); ++i)
         params.push_back(tokens[i]);
+
+    // In case of sending data from file, the data will be retrieved and converted into raw format
+    file_argument_to_blob(params);
 
     auto raw_data = build_raw_command_data(command, params);
 
@@ -155,9 +163,10 @@ rs2::device wait_for_device(const rs2::device_hub& hub, bool print_info = true)
     return dev;
 }
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) try
 {
-    CmdLine cmd("librealsense rs-terminal example tool", ' ', RS2_API_VERSION_STR);
+    CmdLine cmd("librealsense rs-terminal tool", ' ', RS2_API_FULL_VERSION_STR);
+    SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
     ValueArg<string> xml_arg("l", "load", "Full file path of commands XML file", false, "", "Load commands XML file");
     ValueArg<int> device_id_arg("d", "deviceId", "Device ID could be obtain from rs-enumerate-devices example", false, 0, "Select a device to work with");
     ValueArg<string> specific_SN_arg("n", "serialNum", "Serial Number can be obtain from rs-enumerate-devices example", false, "", "Select a device serial number to work with");
@@ -165,6 +174,8 @@ int main(int argc, char** argv)
     ValueArg<string> hex_cmd_arg("s", "send", "Hexadecimal raw data", false, "", "Send hexadecimal raw data to device");
     ValueArg<string> hex_script_arg("r", "raw", "Full file path of hexadecimal raw data script", false, "", "Send raw data line by line from script file");
     ValueArg<string> commands_script_arg("c", "cmd", "Full file path of commands script", false, "", "Send commands line by line from script file");
+    SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)" );
+    cmd.add(debug_arg);
     cmd.add(xml_arg);
     cmd.add(device_id_arg);
     cmd.add(specific_SN_arg);
@@ -172,30 +183,74 @@ int main(int argc, char** argv)
     cmd.add(hex_cmd_arg);
     cmd.add(hex_script_arg);
     cmd.add(commands_script_arg);
+    cmd.add(only_sw_arg);
+#ifdef BUILD_WITH_DDS
+    ValueArg< int > domain_arg( "", "dds-domain", "Set the DDS domain ID (default to 0)", false, 0, "0-232" );
+    cmd.add( domain_arg );
+#endif
     cmd.parse(argc, argv);
+
+#ifdef BUILD_EASYLOGGINGPP
+    bool debugging = debug_arg.getValue();
+    rs2::log_to_console( debugging ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_ERROR );
+#endif
 
     // parse command.xml
     rs2::log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
+
+    json settings = json::object();
+#ifdef BUILD_WITH_DDS
+    if( domain_arg.isSet() || only_sw_arg.isSet() )
+    {
+        json dds = json::object();
+        if( domain_arg.isSet() )
+            dds["domain"] = domain_arg.getValue();
+        dds["enabled"];  // null: remove global dds:false or dds/enabled:false, if any
+        settings["dds"] = std::move( dds );
+    }
+#endif
+    if( only_sw_arg.getValue() )
+        settings["device-mask"] = RS2_PRODUCT_LINE_SW_ONLY | RS2_PRODUCT_LINE_ANY;
+
     // Obtain a list of devices currently present on the system
-    rs2::context ctx = rs2::context();
+    rs2::context ctx( settings.dump() );
     rs2::device_hub hub(ctx);
     rs2::device_list all_device_list = ctx.query_devices();
+    if( only_sw_arg.getValue() )
+    {
+        // For SW-only devices, allow some time for DDS devices to connect
+        int tries = 5;
+        cout << "No device detected. Waiting..." << flush;
+        while( ! all_device_list.size() && tries-- )
+        {
+            cout << "." << flush;
+            std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+            all_device_list = ctx.query_devices();
+        }
+        cout << endl;
+    }
     if (all_device_list.size() == 0) {
         std::cout << "\nLibrealsense is not detecting any devices" << std::endl;
         return EXIT_FAILURE;
     };
 
     std::vector<rs2::device> rs_device_list;
-    //Ensure that diviceList only has realsense devices in it. tmpList contains webcams as well
-    for (size_t i = 0; i < all_device_list.size(); i++) {
-        try {
-            all_device_list[i].get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-            rs_device_list.push_back(all_device_list[i]);
+    // Ensure that deviceList only has realsense devices in it. tmpList contains webcams as well
+    if( only_sw_arg.getValue() )
+    {
+        rs_device_list = all_device_list;
+    }
+    else
+    {
+        for (uint32_t i = 0; i < all_device_list.size(); i++) {
+            try {
+                all_device_list[i].get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+                rs_device_list.push_back(all_device_list[i]);
+            }
+            catch (...) {
+                continue;
+            }
         }
-        catch (...) {
-            continue;
-        }
-
     }
     auto num_rs_devices = rs_device_list.size();
     if (rs_device_list.size() == 0) {
@@ -213,19 +268,18 @@ int main(int argc, char** argv)
         auto sts = parse_xml_from_file(xml_full_file_path, cmd_xml);
         if (!sts)
         {
-            cout << "Provided XML not found!\n";
+            cout << "Commands dictionary " << xml_full_file_path << " is invalid, aborting!\n";
             return EXIT_FAILURE;
         }
 
         update_format_type_to_lambda(format_type_to_lambda);
         is_application_in_hex_mode = false;
-        cout << "Commands XML file - " << xml_full_file_path << " was loaded successfully. Type commands by name (e.g.'gvd'`).\n";
+        cout << "Commands XML file - " << xml_full_file_path << " was loaded successfully.\n Type commands by name (e.g.'gvd'`).\n";
     }
     else
     {
         cout << "Commands XML file not provided.\nyou still can send raw data to device in hexadecimal\nseparated by spaces.\n";
-        cout << "Example GVD command for the SR300:\n14 00 ab cd 3b 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
-        cout << "Example GVD command for the RS4xx:\n14 00 ab cd 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
+        cout << "Example GVD command for the D4XX:\n14 00 ab cd 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
     }
     auto auto_comp = get_auto_complete_obj(is_application_in_hex_mode, cmd_xml.commands);
 
@@ -323,11 +377,17 @@ int main(int argc, char** argv)
         }
 
         if (!script_file.empty())
+        {
             read_script_file(script_file, script_lines);
+            cout << "Executing the following command from script file " << script_file << endl;
+            for (auto& ln : script_lines)
+                cout << rsutils::string::to_upper(ln) << endl;
+            cout << endl;
+        }
 
         if (hex_script_arg.isSet())
         {
-            for (auto dev : selected_rs_devices) {
+            for (auto& dev : selected_rs_devices) {
                 try
                 {
                     for (auto& elem : script_lines)
@@ -341,9 +401,6 @@ int main(int argc, char** argv)
             }
             return EXIT_SUCCESS;
         }
-
-
-
 
         if (commands_script_arg.isSet())
         {
@@ -413,4 +470,18 @@ int main(int argc, char** argv)
 
     }
 }
-
+catch( const rs2::error & e )
+{
+    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( const exception & e )
+{
+    cerr << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( ... )
+{
+    cerr << "some error" << endl;
+    return EXIT_FAILURE;
+}

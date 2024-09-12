@@ -32,12 +32,6 @@
 #include <cstddef>
 #include <memory>
 
-//
-//namespace boost
-//{
-//template<typename T> class std::shared_ptr;
-//}
-
 /**
  * \brief Forward-declare a message, including Ptr and ConstPtr types, with an allocator
  *

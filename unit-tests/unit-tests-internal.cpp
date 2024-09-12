@@ -1251,7 +1251,7 @@ TEST_CASE("Streaming modes sanity check", "[live][!mayfail]")
                         CAPTURE(video.width());
                         CAPTURE(video.height());
 
-                        bool calib_format = ((PID != "0AA5") &&
+                        bool calib_format = (
                                             (RS2_FORMAT_Y16 == video.format()) &&
                                             (RS2_STREAM_INFRARED == video.stream_type()));
                         if (!calib_format) // intrinsics are not available for calibration formats
@@ -1399,8 +1399,8 @@ TEST_CASE("Check width and height of stream intrinsics", "[live][AdvMd]")
                         CAPTURE(video.width());
                         CAPTURE(video.height());
 
-                        // Calibration formats does not provide intrinsic data, except for SR300
-                        bool calib_format = ((PID != "0AA5") &&
+                        // Calibration formats does not provide intrinsic data
+                        bool calib_format = (
                                             (RS2_FORMAT_Y16 == video.format()) &&
                                             (RS2_STREAM_INFRARED == video.stream_type()));
                         if (!calib_format)
@@ -1944,14 +1944,12 @@ void metadata_verification(const std::vector<internal_frame_additional_data>& da
 ////serialize_json
 void trigger_error(const rs2::device& dev, int num)
 {
-    std::vector<uint8_t> raw_data(24, 0);
-    raw_data[0] = 0x14;
-    raw_data[2] = 0xab;
-    raw_data[3] = 0xcd;
-    raw_data[4] = 0x4d;
-    raw_data[8] = num;
+    int opcode  = 0x4d;
     if (auto debug = dev.as<debug_protocol>())
+    {
+        auto& raw_data = debug.build_raw_data(opcode, num)
         debug.send_and_receive_raw_data(raw_data);
+    }
 }
 
 
@@ -2064,7 +2062,7 @@ TEST_CASE("Auto disabling control behavior", "[live]") {
                 }
             }
 
-            if (subdevice.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)) // TODO: Add auto-disabling to SR300 options
+            if (subdevice.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
             {
                 SECTION("Disable white balance when setting a value")
                 {
@@ -2804,7 +2802,6 @@ static const std::map< dev_type, device_profiles> pipeline_default_configuration
 /* RS405/DS5U*/         { { "0B03", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
 /* RS435_RGB/AWGC*/     { { "0B07", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true }},
 /* D435/USB2*/          { { "0B07", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
-/* SR300*/              { { "0AA5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
 TEST_CASE("Pipeline wait_for_frames", "[live]") {
@@ -2957,13 +2954,6 @@ static const std::map<dev_type, device_profiles> pipeline_custom_configurations 
     /* RS405/DS5U*/     { {"0B03", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS435_RGB/AWGC*/ { {"0B07", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
     /* D435/USB2*/      { {"0B07", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 424, 240, 0 } }, 30, true } },
-
-    /* SR300*/          { {"0AA5", true },{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16,  640, 240, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,   640, 240, 1 },
-                                     { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-
-    /* SR300*/          { {"0AA5", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },
-                                     { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
 TEST_CASE("Pipeline enable stream", "[live]") {
@@ -3057,15 +3047,11 @@ static const std::map<dev_type, device_profiles> pipeline_autocomplete_configura
     /* RS405/DS5U*/     { {"0B03", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 1 } }, 30, true } },
     /* RS435_RGB/AWGC*/ { {"0B07", true },{ { /*{ RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 },*/{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
     /* D435/USB2*/      { {"0B07", false },{ { /*{ RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },*/{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 60, true } },
-
-    /* SR300*/          { {"0AA5", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 1 },
-                                     { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
 };
 
 TEST_CASE("Pipeline enable stream auto complete", "[live]")
 {
-    auto configurations = pipeline_autocomplete_configurations;
+    auto & configurations = pipeline_autocomplete_configurations;
 
     rs2::context ctx;
 
@@ -3095,7 +3081,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live]")
         {
             REQUIRE(configurations[PID].streams.size() > 0);
 
-            for (auto req : configurations[PID].streams)
+            for (auto & req : configurations[PID].streams)
                 REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
 
             REQUIRE_NOTHROW(profile = pipe.start(cfg));
@@ -3494,14 +3480,11 @@ static const std::map<dev_type, device_profiles> pipeline_configurations_for_ext
     /* D435/USB2*/      { {"0B07", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },
                                      { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 424, 240, 0 } }, 30, true } },
 
-    /* SR300*/          { {"0AA5", true },{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16, 640, 240, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 240, 1 },
-                                     { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
                         };
 
 TEST_CASE("Pipeline get selection", "[live]") {
     rs2::context ctx;
-    auto configurations = pipeline_configurations_for_extrinsic;
+    auto & configurations = pipeline_configurations_for_extrinsic;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -3529,7 +3512,7 @@ TEST_CASE("Pipeline get selection", "[live]") {
         {
             REQUIRE(configurations[PID].streams.size() > 0);
 
-            for (auto req : configurations[PID].streams)
+            for (auto & req : configurations[PID].streams)
                 REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
 
             REQUIRE_NOTHROW(pipe.start(cfg));
@@ -3538,7 +3521,7 @@ TEST_CASE("Pipeline get selection", "[live]") {
             REQUIRE(pipe_profile);
             REQUIRE_NOTHROW(profiles = pipe_profile.get_streams());
 
-            auto streams = configurations[PID].streams;
+            auto & streams = configurations[PID].streams;
             std::vector<test_profile> pipe_streams;
             for (auto s : profiles)
             {

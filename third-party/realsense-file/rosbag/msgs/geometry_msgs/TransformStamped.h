@@ -42,7 +42,7 @@ struct TransformStamped_
    typedef  ::std_msgs::Header_<ContainerAllocator>  _header_type;
   _header_type header;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _child_frame_id_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _child_frame_id_type;
   _child_frame_id_type child_frame_id;
 
    typedef  ::geometry_msgs::Transform_<ContainerAllocator>  _transform_type;
@@ -91,32 +91,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::geometry_msgs::TransformStamped_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::geometry_msgs::TransformStamped_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::geometry_msgs::TransformStamped_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::geometry_msgs::TransformStamped_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::geometry_msgs::TransformStamped_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::geometry_msgs::TransformStamped_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 
@@ -248,7 +248,7 @@ struct Printer< ::geometry_msgs::TransformStamped_<ContainerAllocator> >
     s << std::endl;
     Printer< ::std_msgs::Header_<ContainerAllocator> >::stream(s, indent + "  ", v.header);
     s << indent << "child_frame_id: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.child_frame_id);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.child_frame_id);
     s << indent << "transform: ";
     s << std::endl;
     Printer< ::geometry_msgs::Transform_<ContainerAllocator> >::stream(s, indent + "  ", v.transform);

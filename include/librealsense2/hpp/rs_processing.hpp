@@ -209,17 +209,35 @@ namespace rs2
         {
             enqueue(std::move(f));
         }
+
+        /**
+        * Return the capacity of the queue
+        * \return capacity size
+        */
+        size_t size() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_frame_queue_size(_queue.get(), &e);
+            error::handle(e);
+            return static_cast<size_t>(res);
+        }
+
         /**
         * Return the capacity of the queue
         * \return capacity size
         */
         size_t capacity() const { return _capacity; }
-
         /**
         * Return whether or not the queue calls keep on enqueued frames
         * \return keeping frames
         */
         bool keep_frames() const { return _keep; }
+
+        /**
+        * Provide a getter for underlying rs2_frame_queue object. Used to invoke C-API that require C-type parameters in signature
+        * \return keeping frames
+        */
+        std::shared_ptr<rs2_frame_queue> get() { return _queue; }
 
     private:
         std::shared_ptr<rs2_frame_queue> _queue;
@@ -508,6 +526,32 @@ namespace rs2
         }
     };
 
+    class y411_decoder : public filter
+    {
+    public:
+        /**
+         * Creates y411 decoder processing block. This block accepts raw y411 frames and outputs frames in RGB8.
+         *     https://www.fourcc.org/pixel-format/yuv-y411/
+         * Y411 is disguised as NV12 to allow Linux compatibility. Both are 12bpp encodings that allow high-resolution
+         * modes in the camera to still fit within the USB3 limits (YUY wasn't enough).
+         */
+        y411_decoder() : filter(init()) { }
+
+    protected:
+        y411_decoder(std::shared_ptr<rs2_processing_block> block) : filter(block) {}
+
+    private:
+        static std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_y411_decoder(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
   class threshold_filter : public filter
     {
     public:
@@ -959,46 +1003,11 @@ namespace rs2
         }
     };
 
-    class zero_order_invalidation : public filter
-    {
-    public:
-        /**
-        * Create zero order fix filter
-        * The filter fixes the zero order artifact
-        */
-        zero_order_invalidation() : filter(init())
-        {}
-
-        zero_order_invalidation(filter f) :filter(f)
-        {
-            rs2_error* e = nullptr;
-            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_ZERO_ORDER_FILTER, &e) && !e)
-            {
-                _block.reset();
-            }
-            error::handle(e);
-        }
-
-    private:
-        friend class context;
-
-        std::shared_ptr<rs2_processing_block> init()
-        {
-            rs2_error* e = nullptr;
-            auto block = std::shared_ptr<rs2_processing_block>(
-                rs2_create_zero_order_invalidation_block(&e),
-                rs2_delete_processing_block);
-            error::handle(e);
-
-            return block;
-        }
-    };
-
     class depth_huffman_decoder : public filter
     {
     public:
         /**
-        * Create decoder for Huffman-code compressed Depth frames
+        * Deprecated!  - Create decoder for Huffman-code compressed Depth frames
         */
         depth_huffman_decoder() : filter(init())
         {}

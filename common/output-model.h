@@ -3,17 +3,26 @@
 
 #pragma once
 
+#include <librealsense2/rs.hpp>
+
+#include "rect.h"
+#include "animated.h"
+
 #include <functional>
 #include <string>
+#include <map>
 
-#include "ux-window.h"
 #include "rendering.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <imgui.h>
 
-#include "../src/concurrency.h"
+#include <rsutils/concurrency/concurrency.h>
 
 namespace rs2
 {
     class device_model;
+    class ux_window;
 
     class stream_dashboard
     {
@@ -56,7 +65,7 @@ namespace rs2
         }
 
         void add_point(float x, float y) { xy.push_back(std::make_pair(x, y)); }
-        
+
         void draw_dashboard(ux_window& win, rect& r);
 
     private:
@@ -81,9 +90,9 @@ namespace rs2
     class frame_drops_dashboard : public stream_dashboard
     {
     public:
-        frame_drops_dashboard(std::string name, int* frame_drop_count, int* total) 
-            : stream_dashboard(name, 30), 
-              last_time(glfwGetTime()), frame_drop_count(frame_drop_count), total(total) 
+        frame_drops_dashboard(std::string name, int* frame_drop_count, int* total)
+            : stream_dashboard(name, 30),
+              last_time(glfwGetTime()), frame_drop_count(frame_drop_count), total(total)
         {
             clear(true);
         }
@@ -128,6 +137,7 @@ namespace rs2
         void draw(ux_window& win, rect view_rect, std::vector<std::unique_ptr<device_model>> &  device_models);
 
         int get_output_height() const { return default_log_h; }
+        int get_dashboard_width() const { return default_dashboard_w; }
 
         void run_command(std::string command, std::vector<std::unique_ptr<device_model>> & device_models);
         bool user_defined_command(std::string command, std::vector<std::unique_ptr<device_model>> & device_models);
@@ -137,7 +147,7 @@ namespace rs2
         void open(ux_window& win);
 
         void foreach_log(std::function<void(log_entry& line)> action);
-        bool round_indicator(ux_window& win, std::string icon, int count, 
+        bool round_indicator(ux_window& win, std::string icon, int count,
             ImVec4 color, std::string tooltip, bool& highlighted, std::string suffix = "");
 
         bool new_log = false;
@@ -148,6 +158,8 @@ namespace rs2
 
         animated<int> default_log_h { 36 };
         bool is_output_open = true;
+        animated< int > default_dashboard_w { 0 };
+        bool is_dashboard_open = true;
 
         bool enable_firmware_logs = false;
 

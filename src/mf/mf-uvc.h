@@ -2,7 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "../backend.h"
+#include <src/platform/uvc-device.h>
+#include <src/platform/uvc-device-info.h>
 #include "win/win-helpers.h"
 
 #include <mfidl.h>
@@ -58,15 +59,6 @@ namespace librealsense
             stream_profile profile;
         } mf_profile;
 
-        template <class T>
-        static void safe_release(T &ppT)
-        {
-            if (ppT)
-            {
-                ppT.Release();
-                ppT = NULL;
-            }
-        }
 
         class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>,
             public uvc_device
@@ -98,6 +90,8 @@ namespace librealsense
 
             void lock() const override { _systemwide_lock.lock(); }
             void unlock() const override { _systemwide_lock.unlock(); }
+
+            bool is_platform_jetson() const override { return false;}
 
             std::string get_device_location() const override { return _location; }
             usb_spec get_usb_specification() const override { return _device_usb_spec; }

@@ -49,7 +49,7 @@ struct compressed_frame_info_
    typedef uint64_t _system_time_type;
   _system_time_type system_time;
 
-   typedef std::vector< ::realsense_legacy_msgs::metadata_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::realsense_legacy_msgs::metadata_<ContainerAllocator> >::other >  _frame_metadata_type;
+   typedef std::vector< ::realsense_legacy_msgs::metadata_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::realsense_legacy_msgs::metadata_<ContainerAllocator>  > >  _frame_metadata_type;
   _frame_metadata_type frame_metadata;
 
    typedef uint32_t _time_stamp_domain_type;
@@ -61,7 +61,7 @@ struct compressed_frame_info_
    typedef uint32_t _height_type;
   _height_type height;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _encoding_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _encoding_type;
   _encoding_type encoding;
 
    typedef uint32_t _step_type;
@@ -110,32 +110,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::realsense_legacy_msgs::compressed_frame_info_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::realsense_legacy_msgs::compressed_frame_info_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::realsense_legacy_msgs::compressed_frame_info_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::realsense_legacy_msgs::compressed_frame_info_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::realsense_legacy_msgs::compressed_frame_info_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::realsense_legacy_msgs::compressed_frame_info_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
@@ -240,7 +240,7 @@ struct Printer< ::realsense_legacy_msgs::compressed_frame_info_<ContainerAllocat
     s << indent << "height: ";
     Printer<uint32_t>::stream(s, indent + "  ", v.height);
     s << indent << "encoding: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.encoding);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.encoding);
     s << indent << "step: ";
     Printer<uint32_t>::stream(s, indent + "  ", v.step);
   }

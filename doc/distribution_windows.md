@@ -23,26 +23,26 @@ After plugging the camera into a USB3 port, you should be able to see the newly 
 * Click through several simple steps of the installer:
 1. Intel® RealSense™ SDK 2.0 is distributed under the [Apache 2.0](../LICENSE) permissive open-source license:
 
-![Step 1](./img/win_step1.PNG)
+    ![Step 1](./img/win_step1.PNG)
 
 2.  The SDK includes the RealSense Viewer, as well as development packages for various programming languages:
 
-![Step 2](./img/win_step2.PNG)
+    ![Step 2](./img/win_step2.PNG)
 
 3. Approve adding two shortcuts to your desktop:
 
- ![Step 3](./img/win_step3.PNG)
+    ![Step 3](./img/win_step3.PNG)
 
 4. Review before installing:
 
-![Step 4](./img/win_step4.PNG)
+    ![Step 4](./img/win_step4.PNG)
+    
+5. Open the `Intel® RealSense™ Samples` solution:
 
-5. Open the `Intel® RealSense™ Samples`solution:
-
-![Step 5](./img/win_shortcuts.PNG)
+    ![Step 5](./img/win_shortcuts.PNG)
 
 6. Press `F5` to compile and run the demos:
 
-![Step 6](./img/win_samples.PNG)
+    ![Step 6](./img/win_samples.PNG)
 
 7. Success!

@@ -7,7 +7,7 @@
 #include <librealsense2/h/rs_internal.h> // Access librealsense internal clock
 #include <opencv2/opencv.hpp>   // Include OpenCV API
 #include "../cv-helpers.hpp"    // Helper functions for conversions between RealSense and OpenCV
-#include "../../../src/concurrency.h" // We are borrowing from librealsense concurrency infrastructure for this sample
+#include <rsutils/concurrency/concurrency.h> // We are borrowing from librealsense concurrency infrastructure for this sample
 #include <algorithm>
 
 // Helper class to keep track of measured data

@@ -67,6 +67,11 @@ struct float3 {
     }
 };
 struct float2 { float x, y; };
+struct frame_pixel
+{
+    int frame_idx;
+    float2 pixel;
+};
 
 struct rect
 {
@@ -109,10 +114,19 @@ using frames_mosaic = std::map<int, frame_and_tile_property>;
 
 inline void draw_text(int x, int y, const char* text)
 {
-    std::vector<char> buffer; 
+    std::vector<char> buffer;
+    buffer.resize(60000); // ~300 chars
     glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(2, GL_FLOAT, 16, &buffer);
-    glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)(y - 7), (char*)text, nullptr, &buffer, sizeof(buffer)));
+    glVertexPointer(2, GL_FLOAT, 16, &(buffer[0]) );
+    glDrawArrays( GL_QUADS,
+                  0,
+                  4
+                      * stb_easy_font_print( (float)x,
+                                             (float)( y - 7 ),
+                                             (char *)text,
+                                             nullptr,
+                                             &( buffer[0] ),
+                                             int( sizeof( char ) * buffer.size() ) ) );
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
@@ -659,11 +673,13 @@ public:
     {
         if (auto fs = frame.as<rs2::frameset>())
             render_frameset(fs, rect);
-        if (auto vf = frame.as<rs2::video_frame>())
+        else if (auto vf = frame.as<rs2::depth_frame>())
+            render_video_frame(vf.apply_filter(_colorizer), rect);
+        else if (auto vf = frame.as<rs2::video_frame>())
             render_video_frame(vf, rect);
-        if (auto mf = frame.as<rs2::motion_frame>())
+        else if (auto mf = frame.as<rs2::motion_frame>())
             render_motion_frame(mf, rect);
-        if (auto pf = frame.as<rs2::pose_frame>())
+        else if (auto pf = frame.as<rs2::pose_frame>())
             render_pose_frame(pf, rect);
     }
 
@@ -710,7 +726,7 @@ public:
                     return frame1.second.priority < frame2.second.priority;
                 });
             //create margin to the shown frame on tile
-            float frame_width_size_from_tile_width = 0.98f;
+            float frame_width_size_from_tile_width = 1.0f;
             //iterate over frames in ascending priority order (so that lower priority frame is drawn first, and can be over-written by higher priority frame )
             for (const auto& frame : vector_frames)
             {
@@ -727,6 +743,44 @@ public:
         }
     }
 
+    /////////////////////////////////////////////////////////////
+    //     get_pos_on_current_image:
+    // There may be several windows displayed on the sceen, as described in the frames_mosaic structure.
+    // The windows are displayed in a reduced resolution, appropriate the amount of space allocated for them on the screen.
+    // This function converts from screen pixel to original image pixel.
+    // 
+    // Input:
+    // pos - pixel in screen coordinates.
+    // frames - structure of separate windows displayed on screen.
+    // Returns: 
+    // The index of the window the screen pixel is in and the pixel in that window in the original window's resolution.
+    frame_pixel get_pos_on_current_image(float2 pos, const frames_mosaic& frames)
+    {
+        frame_pixel res{ -1, -1,-1 };
+        for (auto& frame : frames)
+        {
+            if (auto vf = frame.second.first.as<rs2::video_frame>())
+            {
+                tile_properties attr = frame.second.second;
+                float frame_width_size_from_tile_width = 1.0f;
+                rect viewport_loc{ _tile_width_pixels * attr.x + _canvas_left_top_x, _tile_height_pixels * attr.y + _canvas_left_top_y,
+                    _tile_width_pixels * attr.w * frame_width_size_from_tile_width, _tile_height_pixels * attr.h };
+                viewport_loc = viewport_loc.adjust_ratio({ (float)vf.get_width(), (float)vf.get_height() });
+                if (pos.x >= viewport_loc.x && pos.x < viewport_loc.x + viewport_loc.w &&
+                    pos.y >= _height - (viewport_loc.y + viewport_loc.h) && pos.y < _height - viewport_loc.y)
+                {
+                    float image_rect_ratio = (float)vf.get_width() / viewport_loc.w;   //Ratio for y-axis is the same.
+                    res.frame_idx = frame.first;
+                    res.pixel.x = (pos.x - viewport_loc.x) * image_rect_ratio;
+                    res.pixel.y = (pos.y - (_height - (viewport_loc.y + viewport_loc.h))) * image_rect_ratio;
+                    break;
+                }
+            }
+        }
+
+        return res;
+    }
+
     operator GLFWwindow* () { return win; }
 
 private:
@@ -740,6 +794,7 @@ private:
     int _canvas_width, _canvas_height;
     unsigned _tiles_in_row, _tiles_in_col;
     float _tile_width_pixels, _tile_height_pixels;
+    rs2::colorizer _colorizer;
 
     void render_video_frame(const rs2::video_frame& f, const rect& r)
     {
@@ -1070,4 +1125,12 @@ void register_glfw_callbacks(window& app, glfw_state& app_state)
             app_state.yaw = app_state.pitch = 0; app_state.offset_x = app_state.offset_y = 0.0;
         }
     };
+}
+
+void get_screen_resolution(unsigned int& window_width, unsigned int& window_height) {
+    glfwInit();
+    const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+    window_width = mode->width;
+    window_height = mode->height;
 }

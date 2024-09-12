@@ -3,6 +3,7 @@ package com.intel.realsense.camera;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -54,8 +55,7 @@ public class PreviewActivity extends AppCompatActivity {
 
     boolean keepalive = true;
 
-    public synchronized void toggleStats(){
-        statsToggle = !statsToggle;
+    public synchronized void updateStats(){
         if(statsToggle){
             mGLSurfaceView.setVisibility(View.GONE);
             mStatsView.setVisibility(View.VISIBLE);
@@ -83,7 +83,37 @@ public class PreviewActivity extends AppCompatActivity {
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+        setupControls();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        // handling device orientation changes
+        // upon device orientation change, actitity will not go through default route
+        // to destroy and recreate the preview activity
+        // instead to refresh the appropriate layout and control here
+        // so that device streaming is not interrupted
+
+        // cleanup previous surface
+        if(mGLSurfaceView != null) {
+            mGLSurfaceView.clear();
+            mGLSurfaceView.close();
+        }
+
+        // setup preview layout landscape or portrait automatically depends on orientation
+        setContentView(R.layout.activity_preview);
+
+        // update layout controls
+        setupControls();
+        updateStats();
+    }
+
+    private void setupControls()
+    {
         mGLSurfaceView = findViewById(R.id.glSurfaceView);
+
         mStatsView = findViewById(R.id.streaming_stats_text);
         mStartRecordFab = findViewById(R.id.start_record_fab);
         mPlaybackButton = findViewById(R.id.preview_playback_button);
@@ -121,6 +151,8 @@ public class PreviewActivity extends AppCompatActivity {
                 mGLSurfaceView.clear();
                 clearLables();
                 mShow3D = !mShow3D;
+                mGLSurfaceView.showPointcloud(mShow3D);
+
                 m3dButton.setTextColor(mShow3D ? Color.YELLOW : Color.WHITE);
                 mGLSurfaceView.setVisibility(View.VISIBLE);
                 SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
@@ -140,7 +172,8 @@ public class PreviewActivity extends AppCompatActivity {
         mStatisticsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                toggleStats();
+                statsToggle = !statsToggle;
+                updateStats();
             }
         });
         SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);

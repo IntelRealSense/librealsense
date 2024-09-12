@@ -2,12 +2,15 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "playback_sensor.h"
+#include "playback_device.h"
 #include "core/motion.h"
 #include <map>
 #include "types.h"
-#include "context.h"
-#include "ds5/ds5-options.h"
+#include "ds/d400/d400-options.h"
 #include "media/ros/ros_reader.h"
+
+#include <rsutils/string/from.h>
+
 
 using namespace librealsense;
 
@@ -71,14 +74,15 @@ void playback_sensor::open(const stream_profiles& requests)
     //Playback can only play the streams that were recorded.
     //Go over the requested profiles and see if they are available
     LOG_DEBUG("Open Sensor " << m_sensor_id);
-
+    std::lock_guard<std::mutex> l(m_mutex);
     for (auto&& r : requests)
     {
         if (std::find_if(std::begin(m_available_profiles),
             std::end(m_available_profiles),
             [r](const std::shared_ptr<stream_profile_interface>& s) { return r->get_unique_id() == s->get_unique_id(); }) == std::end(m_available_profiles))
         {
-            throw std::runtime_error(to_string() << "Failed to open sensor, requested profile: " << profile_to_string(r) << " is not available");
+            throw std::runtime_error( rsutils::string::from() << "Failed to open sensor, requested profile: "
+                                                              << profile_to_string( r ) << " is not available" );
         }
     }
     std::vector<device_serializer::stream_identifier> opened_streams;
@@ -94,16 +98,19 @@ void playback_sensor::open(const stream_profiles& requests)
             std::make_shared< dispatcher >( _default_queue_size, on_drop_callback ) ) );
 
         m_dispatchers[profile->get_unique_id()]->start();
+
         device_serializer::stream_identifier f{ get_device_index(), m_sensor_id, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) };
         opened_streams.push_back(f);
     }
     set_active_streams(requests);
-    opened(opened_streams);
+    if( _on_opened )
+        _on_opened( opened_streams );
 }
 
 void playback_sensor::close()
 {
     LOG_DEBUG("Close sensor " << m_sensor_id);
+    std::lock_guard<std::mutex> l(m_mutex);
     std::vector<device_serializer::stream_identifier> closed_streams;
     for (auto&& dispatcher : m_dispatchers)
     {
@@ -118,51 +125,72 @@ void playback_sensor::close()
     }
     m_dispatchers.clear();
     set_active_streams({});
-    closed(closed_streams);
+    if( _on_closed )
+        _on_closed( closed_streams );
 }
 
-void playback_sensor::register_notifications_callback(notifications_callback_ptr callback)
+void playback_sensor::register_notifications_callback( rs2_notifications_callback_sptr callback )
 {
     LOG_DEBUG("register_notifications_callback for sensor " << m_sensor_id);
     _notifications_processor.set_callback(std::move(callback));
 }
 
-notifications_callback_ptr playback_sensor::get_notifications_callback() const
+rs2_notifications_callback_sptr playback_sensor::get_notifications_callback() const
 {
     return _notifications_processor.get_callback();
 }
 
 
-void playback_sensor::start(frame_callback_ptr callback)
+void playback_sensor::start( rs2_frame_callback_sptr callback )
 {
     LOG_DEBUG("Start sensor " << m_sensor_id);
-    std::lock_guard<std::mutex> l(m_mutex);
-    if (m_is_started == false)
+    bool was_started = false;
     {
-        started(m_sensor_id, callback);
-        m_user_callback = callback ;
-        m_is_started = true;
+        std::lock_guard<std::mutex> l(m_mutex);
+        if (m_is_started == false)
+        {
+            m_is_started = true;
+            was_started = true;
+            m_user_callback = callback;
+        }
     }
+    if( was_started && _on_started )
+        _on_started( m_sensor_id, callback );
 }
 
 void playback_sensor::stop(bool invoke_required)
 {
     LOG_DEBUG("Stop sensor " << m_sensor_id);
-    std::lock_guard<std::mutex> l(m_mutex);
-    if (m_is_started == true)
+    bool was_stopped = false;
     {
-        m_is_started = false;
-        for (auto dispatcher : m_dispatchers)
+        std::lock_guard<std::mutex> l(m_mutex);
+
+        if (m_is_started == true)
         {
-            dispatcher.second->stop();
+            m_is_started = false;
+            was_stopped = true;
+            for (auto dispatcher : m_dispatchers)
+            {
+                dispatcher.second->stop();
+            }
+            m_user_callback.reset();
         }
-        m_user_callback.reset();
-        stopped(m_sensor_id, invoke_required);
     }
+
+    if( was_stopped && _on_stopped )
+        _on_stopped( m_sensor_id, invoke_required );
+
 }
 void playback_sensor::stop()
 {
-    stop(true);
+    // This stop is "from the user" -- as opposed to a stop that's called when we reach EOF, from
+    // playback_device::do_loop, which calls stop(false) directly.
+    // 
+    // If we send stop(true), the stop will be placed on the device's dispatcher but only after
+    // setting m_is_started to false and stopping our own dispatchers. Each sensor will place its
+    // own stop dispatch, and the whole thing is a mess...
+    //
+    stop( false );
 }
 
 bool playback_sensor::is_streaming() const
@@ -187,6 +215,7 @@ void playback_sensor::update_option(rs2_option id, std::shared_ptr<option> optio
 
 void playback_sensor::flush_pending_frames()
 {
+    std::lock_guard<std::mutex> l(m_mutex);
     for (auto&& dispatcher : m_dispatchers)
     {
         dispatcher.second->flush();
@@ -269,11 +298,11 @@ void playback_sensor::update(const device_serializer::sensor_snapshot& sensor_sn
     register_sensor_options(sensor_snapshot);
 }
 
-frame_callback_ptr playback_sensor::get_frames_callback() const
+rs2_frame_callback_sptr playback_sensor::get_frames_callback() const
 {
     return m_user_callback;
 }
-void playback_sensor::set_frames_callback(frame_callback_ptr callback)
+void playback_sensor::set_frames_callback( rs2_frame_callback_sptr callback )
 {
     m_user_callback = callback;
 }

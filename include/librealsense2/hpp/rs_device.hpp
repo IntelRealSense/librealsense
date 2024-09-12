@@ -7,6 +7,7 @@
 #include "rs_types.hpp"
 #include "rs_sensor.hpp"
 #include <array>
+#include <cstring>
 
 namespace rs2
 {
@@ -46,6 +47,48 @@ namespace rs2
             }
 
             return results;
+        }
+
+        /**
+         * \return   the type of device: USB/GMSL/DDS, etc.
+         */
+        std::string get_type() const
+        {
+            if( supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
+                return "USB";
+            if( supports( RS2_CAMERA_INFO_PRODUCT_ID ) )
+            {
+                std::string pid = get_info( RS2_CAMERA_INFO_PRODUCT_ID );
+                if( pid == "ABCD" ) // Specific for D457
+                    return "GMSL";
+                return pid;  // for DDS devices, this will be "DDS"
+            }
+            return {};
+        }
+
+        /**
+         * \return   the one-line description: "[<type>] <name> s/n <#>"
+         */
+        std::string get_description() const
+        {
+            std::ostringstream os;
+            auto type = get_type();
+            if( supports( RS2_CAMERA_INFO_NAME ) )
+            {
+                if( ! type.empty() )
+                    os << "[" << type << "] ";
+                os << get_info( RS2_CAMERA_INFO_NAME );
+            }
+            else
+            {
+                if( ! type.empty() )
+                    os << type << " device";
+                else
+                    os << "unknown device";
+            }
+            if( supports( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
+                os << " s/n " << get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+            return os.str();
         }
 
         template<class T>
@@ -90,7 +133,6 @@ namespace rs2
         void hardware_reset()
         {
             rs2_error* e = nullptr;
-
             rs2_hardware_reset(_dev.get(), &e);
             error::handle(e);
         }
@@ -109,6 +151,8 @@ namespace rs2
         }
         device() : _dev(nullptr) {}
 
+        // Note: this checks the validity of rs2::device (i.e., if it's connected to a realsense device), and does
+        // NOT reflect the current condition (connected/disconnected). Use is_connected() for that.
         operator bool() const
         {
             return _dev != nullptr;
@@ -116,6 +160,21 @@ namespace rs2
         const std::shared_ptr<rs2_device>& get() const
         {
             return _dev;
+        }
+        bool operator<( device const & other ) const
+        {
+            // All RealSense cameras have an update-ID but not always a serial number
+            return std::strcmp( get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID ),
+                          other.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID ) )
+                 < 0;
+        }
+
+        bool is_connected() const
+        {
+            rs2_error * e = nullptr;
+            bool connected = rs2_device_is_connected( _dev.get(), &e );
+            error::handle( e );
+            return connected;
         }
 
         template<class T>
@@ -229,7 +288,7 @@ namespace rs2
             return results;
         }
 
-        // check firmware compatibility with sku
+        // check firmware compatibility with SKU
         bool check_firmware_compatibility(const std::vector<uint8_t>& image) const
         {
             rs2_error* e = nullptr;
@@ -336,20 +395,22 @@ namespace rs2
         }
 
         /**
-         * This will improve the depth noise.
+         * On-chip calibration intended to reduce the Depth noise. Applies to D400 Depth cameras
          * \param[in] json_content      Json string to configure regular speed on chip calibration parameters:
                                             {
                                               "calib type" : 0,
                                               "speed": 3,
                                               "scan parameter": 0,
                                               "adjust both sides": 0,
-                                              "white wall mode": 0
+                                              "white wall mode": 0,
+                                              "host assistance": 0
                                             }
                                             calib_type - calibraton type: 0 = regular, 1 = focal length, 2 = both regular and focal length in order
                                             speed - for regular calibration. value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is Slow for type 0 and Fast for type 2
                                             scan_parameter - for regular calibration. value can be one of: Py scan (default) = 0, Rx scan = 1
                                             adjust_both_sides - for focal length calibration. value can be one of: 0 = adjust right only, 1 = adjust both sides
                                             white_wall_mode - white wall mode: 0 for normal mode and 1 for white wall mode
+                                            host_assistance: 0 for no assistance, 1 for starting with assistance, 2 for first part feeding host data to firmware, 3 for second part of feeding host data to firmware (calib_type 2 only)
                                             if json is nullptr it will be ignored and calibration will use the default parameters
          * \param[out] health           The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
                                             [0, 0.25) - Good
@@ -390,20 +451,22 @@ namespace rs2
         }
 
         /**
-         * This will improve the depth noise.
+         * On-chip calibration intended to reduce the Depth noise. Applies to D400 Depth cameras
          * \param[in] json_content      Json string to configure regular speed on chip calibration parameters:
                                             {
                                               "focal length" : 0,
                                               "speed": 3,
                                               "scan parameter": 0,
                                               "adjust both sides": 0,
-                                              "white wall mode": 0
+                                              "white wall mode": 0,
+                                              "host assistance": 0
                                             }
                                             focal_length - calibraton type: 0 = regular, 1 = focal length, 2 = both regular and focal length in order
                                             speed - for regular calibration. value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is Slow for type 0 and Fast for type 2
                                             scan_parameter - for regular calibration. value can be one of: Py scan (default) = 0, Rx scan = 1
                                             adjust_both_sides - for focal length calibration. value can be one of: 0 = adjust right only, 1 = adjust both sides
                                             white_wall_mode - white wall mode: 0 for normal mode and 1 for white wall mode
+                                            host_assistance: 0 for no assistance, 1 for starting with assistance, 2 for first part feeding host data to firmware, 3 for second part of feeding host data to firmware (calib_type 2 only)
                                             if json is nullptr it will be ignored and calibration will use the default parameters
          * \param[out] health           The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
                                             [0, 0.25) - Good
@@ -426,14 +489,15 @@ namespace rs2
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
-            std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), static_cast< int >( json_content.size() ), health, nullptr, timeout_ms, &e),
-                rs2_delete_raw_data);
+            const rs2_raw_data_buffer* buf = rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), static_cast< int >( json_content.size() ), health, nullptr, timeout_ms, &e);
             error::handle(e);
+            std::shared_ptr<const rs2_raw_data_buffer> list(buf, rs2_delete_raw_data);
+
             auto size = rs2_get_raw_data_size(list.get(), &e);
             error::handle(e);
 
             auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
 
             results.insert(results.begin(), start, start + size);
 
@@ -441,7 +505,8 @@ namespace rs2
         }
 
         /**
-        * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+         * Tare calibration adjusts the camera absolute distance to flat target. Applies to D400 Depth cameras
+         * User needs to enter the known ground truth.
         * \param[in] ground_truth_mm     Ground truth in mm must be between 60 and 10000
         * \param[in] json_content        Json string to configure tare calibration parameters:
                                             {
@@ -449,29 +514,36 @@ namespace rs2
                                               "step count": 20,
                                               "accuracy": 2,
                                               "scan parameter": 0,
-                                              "data sampling": 0
+                                              "data sampling": 0,
+                                              "host assistance": 0,
+                                              "depth" : 0
                                             }
                                             average step count - number of frames to average, must be between 1 - 30, default = 20
                                             step count - max iteration steps, must be between 5 - 30, default = 10
-                                            accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
+                                            accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is Medium
                                             scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
                                             data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                            host_assistance: 0 for no assistance, 1 for starting with assistance, 2 for feeding host data to firmware
+                                            depth: 0 for not relating to depth, > 0 for feeding depth from host to firmware, -1 for ending to feed depth from host to firmware
                                             if json is nullptr it will be ignored and calibration will use the default parameters
-        * \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
-        * \param[in]  callback            Optional callback to get progress notifications
-        * \param[in] timeout_ms           Timeout in ms
-        * \return                         New calibration table
+        * \param[in]  content_size       Json string size if its 0 the json will be ignored and calibration will use the default parameters
+         * \param[out] health           The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
+                                            [0, 0.25) - Good
+                                            [0.25, 0.75) - Can be Improved
+                                            [0.75, ) - Requires Calibration
+        * \param[in]  callback           Optional callback to get progress notifications
+        * \param[in] timeout_ms          Timeout in ms
+        * \return                        New calibration table
         */
         template<class T>
-        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, T callback, int timeout_ms = 5000) const
+        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, float* health, T callback, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
-            std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), int(json_content.size()), new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
-                rs2_delete_raw_data);
+            const rs2_raw_data_buffer* buf = rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), int(json_content.size()), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e);
             error::handle(e);
+            std::shared_ptr<const rs2_raw_data_buffer> list(buf, rs2_delete_raw_data);
 
             auto size = rs2_get_raw_data_size(list.get(), &e);
             error::handle(e);
@@ -484,7 +556,8 @@ namespace rs2
         }
 
         /**
-         * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+         * Tare calibration adjusts the camera absolute distance to flat target. Applies to D400 Depth cameras
+         * User needs to enter the known ground truth.
          * \param[in] ground_truth_mm     Ground truth in mm must be between 60 and 10000
          * \param[in] json_content        Json string to configure tare calibration parameters:
                                              {
@@ -492,27 +565,88 @@ namespace rs2
                                                "step count": 20,
                                                "accuracy": 2,
                                                "scan parameter": 0,
-                                               "data sampling": 0
+                                               "data sampling": 0,
+                                               "host assistance": 0,
+                                               "depth" : 0
                                              }
                                              average step count - number of frames to average, must be between 1 - 30, default = 20
                                              step count - max iteration steps, must be between 5 - 30, default = 10
-                                             accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
+                                             accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is Medium
                                              scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
                                              data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                             host_assistance: 0 for no assistance, 1 for starting with assistance, 2 for feeding host data to firmware
+                                             depth: 0 for not relating to depth, > 0 for feeding depth from host to firmware, -1 for ending to feed depth from host to firmware
                                              if json is nullptr it will be ignored and calibration will use the default parameters
-         * \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
-         * \param[in] timeout_ms           Timeout in ms
-         * \return                         New calibration table
+         * \param[in]  content_size       Json string size if its 0 the json will be ignored and calibration will use the default parameters
+         * \param[out] health           The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
+                                            [0, 0.25) - Good
+                                            [0.25, 0.75) - Can be Improved
+                                            [0.75, ) - Requires Calibration
+         * \param[in] timeout_ms          Timeout in ms
+         * \return                        New calibration table
          */
-        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, int timeout_ms = 5000) const
+        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, float * health, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
-            std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), static_cast< int >( json_content.size() ), nullptr, timeout_ms, &e),
-                rs2_delete_raw_data);
+            const rs2_raw_data_buffer* buf = rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), static_cast< int >( json_content.size() ), health, nullptr, timeout_ms, &e);
             error::handle(e);
+            std::shared_ptr<const rs2_raw_data_buffer> list(buf, rs2_delete_raw_data);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        * When doing a host-assited calibration (Tare or on-chip) add frame to the calibration process
+         * \param[in] f     The next depth frame.
+         * \param[in] callback            Optional callback to get progress notifications
+         * \param[in] timeout_ms          Timeout in ms
+         * \param[out] health             The health check numbers before and after calibration
+        * \return a New calibration table when process is done. An empty table otherwise - need more frames.
+        **/
+        template<class T>
+        calibration_table process_calibration_frame(rs2::frame f, float* const health, T callback, int timeout_ms = 5000) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            const rs2_raw_data_buffer* buf = rs2_process_calibration_frame(_dev.get(), f.get(), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e);
+            error::handle(e);
+            std::shared_ptr<const rs2_raw_data_buffer> list(buf, rs2_delete_raw_data);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        * When doing a host-assited calibration (Tare or on-chip) add frame to the calibration process
+         * \param[in] f     The next depth frame.
+         * \param[in] timeout_ms          Timeout in ms
+         * \param[out] health             The health check numbers before and after calibration
+        * \return a New calibration table when process is done. An empty table otherwise - need more frames.
+        **/
+        calibration_table process_calibration_frame(rs2::frame f, float* const health, int timeout_ms = 5000) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            const rs2_raw_data_buffer* buf = rs2_process_calibration_frame(_dev.get(), f.get(), health, nullptr, timeout_ms, &e);
+            error::handle(e);
+            std::shared_ptr<const rs2_raw_data_buffer> list(buf, rs2_delete_raw_data);
 
             auto size = rs2_get_raw_data_size(list.get(), &e);
             error::handle(e);
@@ -558,6 +692,179 @@ namespace rs2
             rs2_set_calibration_table(_dev.get(), calibration.data(), static_cast< int >( calibration.size() ), &e);
             error::handle(e);
         }
+
+        /**
+        *  Run target-based focal length calibration for D400 Stereo Cameras
+        * \param[in]    left_queue: container for left IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI.
+        * \param[in]    right_queue: container for right IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
+        * \param[in]    target_w: the rectangle width in mm on the target
+        * \param[in]    target_h: the rectangle height in mm on the target
+        * \param[in]    adjust_both_sides: 1 for adjusting both left and right camera calibration tables and 0 for adjusting right camera calibraion table only
+        * \param[out]   ratio: the corrected ratio from the calibration
+        * \param[out]   angle: the target's tilt angle
+        * \return       New calibration table
+        */
+        std::vector<uint8_t> run_focal_length_calibration(rs2::frame_queue left, rs2::frame_queue right, float target_w, float target_h, int adjust_both_sides,
+            float* ratio, float* angle) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_focal_length_calibration_cpp(_dev.get(), left.get().get(), right.get().get(), target_w, target_h, adjust_both_sides, ratio, angle, nullptr, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        *  Run target-based focal length calibration for D400 Stereo Cameras
+        * \param[in]    left_queue: container for left IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI.
+        * \param[in]    right_queue: container for right IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
+        * \param[in]    target_w: the rectangle width in mm on the target
+        * \param[in]    target_h: the rectangle height in mm on the target
+        * \param[in]    adjust_both_sides: 1 for adjusting both left and right camera calibration tables and 0 for adjusting right camera calibraion table only
+        * \param[out]   ratio: the corrected ratio from the calibration
+        * \param[out]   angle: the target's tilt angle
+        * \return       New calibration table
+        */
+        template<class T>
+        std::vector<uint8_t> run_focal_length_calibration(rs2::frame_queue left, rs2::frame_queue right, float target_w, float target_h, int adjust_both_sides,
+            float* ratio, float* angle, T callback) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_focal_length_calibration_cpp(_dev.get(), left.get().get(), right.get().get(), target_w, target_h, adjust_both_sides, ratio, angle,
+                    new update_progress_callback<T>(std::move(callback)), &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        *  Depth-RGB UV-Map calibration. Applicable for D400 cameras
+        * \param[in]    left: container for left IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI.
+        * \param[in]    color: container for RGB frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
+        * \param[in]    depth: container for Depth frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
+        * \param[in]    py_px_only: 1 for calibrating color camera py and px only, 1 for calibrating color camera py, px, fy, and fx.
+        * \param[out]   health: The four health check numbers int the oorder of px, py, fx, fy for the calibration
+        * \param[in]    health_size: number of health check numbers, which is 4 by default
+        * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
+        * \return       New calibration table
+        */
+        std::vector<uint8_t> run_uv_map_calibration(rs2::frame_queue left, rs2::frame_queue color, rs2::frame_queue depth, int py_px_only,
+            float* health, int health_size) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_uv_map_calibration_cpp(_dev.get(), left.get().get(), color.get().get(), depth.get().get(), py_px_only, health, health_size, nullptr, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        *  Depth-RGB UV-Map calibration. Applicable for D400 cameras
+        * \param[in]    left: container for left IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI.
+        * \param[in]    color: container for RGB frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
+        * \param[in]    depth: container for Depth frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
+        * \param[in]    py_px_only: 1 for calibrating color camera py and px only, 1 for calibrating color camera py, px, fy, and fx.
+        * \param[out]   health: The four health check numbers in order of px, py, fx, fy for the calibration
+        * \param[in]    health_size: number of health check numbers, which is 4 by default
+        * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
+        * \param[in]    client_data: Optional client data for the callback
+        * \return       New calibration table
+        */
+        template<class T>
+        std::vector<uint8_t> run_uv_map_calibration(rs2::frame_queue left, rs2::frame_queue color, rs2::frame_queue depth, int py_px_only,
+            float* health, int health_size, T callback) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_uv_map_calibration_cpp(_dev.get(), left.get().get(), color.get().get(), depth.get().get(), py_px_only, health, health_size,
+                    new update_progress_callback<T>(std::move(callback)), &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        *  Calculate Z for calibration target - distance to the target's plane
+        * \param[in]    queue1-3: Frame queues of raw images used to calculate and extract the distance to a predefined target pattern.
+        * For D400 the indexes 1-3 correspond to Left IR, Right IR and Depth with only the Left IR being used
+        * \param[in]    target_width: expected target's horizontal dimension in mm
+        * \param[in]    target_height: expected target's vertical dimension in mm
+        * \return       Calculated distance (Z) to target in millimeter, return negative number on failure
+        */
+        float calculate_target_z(rs2::frame_queue queue1, rs2::frame_queue queue2, rs2::frame_queue queue3,
+            float target_width, float target_height) const
+        {
+            rs2_error* e = nullptr;
+            float result = rs2_calculate_target_z_cpp(_dev.get(), queue1.get().get(), queue2.get().get(), queue3.get().get(),
+                target_width, target_height, nullptr, &e);
+            error::handle(e);
+
+            return result;
+        }
+
+        /**
+        *  Calculate Z for calibration target - distance to the target's plane
+        * \param[in]    queue1-3: Frame queues of raw images used to calculate and extract the distance to a predefined target pattern.
+        * For D400 the indexes 1-3 correspond to Left IR, Right IR and Depth with only the Left IR being used
+        * \param[in]    target_width: expected target's horizontal dimension in mm
+        * \param[in]    target_height: expected target's vertical dimension in mm
+        * \param[in]    callback: Optional callback for reporting progress status
+        * \return       Calculated distance (Z) to target in millimeter, return negative number on failure
+        */
+        template<class T>
+        float calculate_target_z(rs2::frame_queue queue1, rs2::frame_queue queue2, rs2::frame_queue queue3,
+            float target_width, float target_height, T callback) const
+        {
+            rs2_error* e = nullptr;
+            float result = rs2_calculate_target_z_cpp(_dev.get(), queue1.get().get(), queue2.get().get(), queue3.get().get(),
+                target_width, target_height, new update_progress_callback<T>(std::move(callback)), &e);
+            error::handle(e);
+
+            return result;
+        }
     };
 
     /*
@@ -573,7 +880,11 @@ namespace rs2
 
         void on_calibration_change( rs2_calibration_status status ) noexcept override
         {
-            _callback( status );
+            try
+            {
+                _callback( status );
+            }
+            catch( ... ) { }
         }
         void release() override { delete this; }
     };
@@ -655,6 +966,32 @@ namespace rs2
             error::handle(e);
         }
 
+        std::vector<uint8_t> build_command(uint32_t opcode,
+            uint32_t param1 = 0,
+            uint32_t param2 = 0,
+            uint32_t param3 = 0,
+            uint32_t param4 = 0,
+            std::vector<uint8_t> const & data = {}) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            auto buffer = rs2_build_debug_protocol_command(_dev.get(), opcode, param1, param2, param3, param4,
+                (void*)data.data(), (uint32_t)data.size(), &e);
+            std::shared_ptr<const rs2_raw_data_buffer> list(buffer, rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
         std::vector<uint8_t> send_and_receive_raw_data(const std::vector<uint8_t>& input) const
         {
             std::vector<uint8_t> results;
@@ -669,6 +1006,7 @@ namespace rs2
             error::handle(e);
 
             auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
 
             results.insert(results.begin(), start, start + size);
 
@@ -680,7 +1018,7 @@ namespace rs2
     {
     public:
         explicit device_list(std::shared_ptr<rs2_device_list> list)
-            : _list(move(list)) {}
+            : _list(std::move(list)) {}
 
         device_list()
             : _list(nullptr) {}
@@ -702,7 +1040,7 @@ namespace rs2
 
         device_list& operator=(std::shared_ptr<rs2_device_list> list)
         {
-            _list = move(list);
+            _list = std::move(list);
             return *this;
         }
 
@@ -782,140 +1120,6 @@ namespace rs2
 
     private:
         std::shared_ptr<rs2_device_list> _list;
-    };
-
-    /**
-     * The tm2 class is an interface for T2XX devices, such as T265.
-     *
-     * For T265, it provides RS2_STREAM_FISHEYE (2), RS2_STREAM_GYRO, RS2_STREAM_ACCEL, and RS2_STREAM_POSE streams,
-     * and contains the following sensors:
-     *
-     * - pose_sensor: map and relocalization functions.
-     * - wheel_odometer: input for odometry data.
-     */
-    class tm2 : public calibrated_device // TODO: add to wrappers [Python done]
-    {
-    public:
-        tm2(device d)
-            : calibrated_device(d)
-        {
-            rs2_error* e = nullptr;
-            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_TM2, &e) == 0 && !e)
-            {
-                _dev.reset();
-            }
-            error::handle(e);
-        }
-
-        /**
-        * Enter the given device into loopback operation mode that uses the given file as input for raw data
-        * \param[in]  from_file  Path to bag file with raw data for loopback
-        */
-        void enable_loopback(const std::string& from_file)
-        {
-            rs2_error* e = nullptr;
-            rs2_loopback_enable(_dev.get(), from_file.c_str(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Restores the given device into normal operation mode
-        */
-        void disable_loopback()
-        {
-            rs2_error* e = nullptr;
-            rs2_loopback_disable(_dev.get(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Checks if the device is in loopback mode or not
-        * \return true if the device is in loopback operation mode
-        */
-        bool is_loopback_enabled() const
-        {
-            rs2_error* e = nullptr;
-            int is_enabled = rs2_loopback_is_enabled(_dev.get(), &e);
-            error::handle(e);
-            return is_enabled != 0;
-        }
-
-        /**
-        * Connects to a given tm2 controller
-        * \param[in]  mac_addr   The MAC address of the desired controller
-        */
-        void connect_controller(const std::array<uint8_t, 6>& mac_addr)
-        {
-            rs2_error* e = nullptr;
-            rs2_connect_tm2_controller(_dev.get(), mac_addr.data(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Disconnects a given tm2 controller
-        * \param[in]  id         The ID of the desired controller
-        */
-        void disconnect_controller(int id)
-        {
-            rs2_error* e = nullptr;
-            rs2_disconnect_tm2_controller(_dev.get(), id, &e);
-            error::handle(e);
-        }
-
-        /**
-        * Set tm2 camera intrinsics
-        * \param[in] fisheye_senor_id The ID of the fisheye sensor
-        * \param[in] intrinsics       value to be written to the device
-        */
-        void set_intrinsics(int fisheye_sensor_id, const rs2_intrinsics& intrinsics)
-        {
-            rs2_error* e = nullptr;
-            auto fisheye_sensor = get_sensor_profile(RS2_STREAM_FISHEYE, fisheye_sensor_id);
-            rs2_set_intrinsics(fisheye_sensor.first.get().get(), fisheye_sensor.second.get(), &intrinsics, &e);
-            error::handle(e);
-        }
-
-        /**
-        * Set tm2 camera extrinsics
-        * \param[in] from_stream     only support RS2_STREAM_FISHEYE
-        * \param[in] from_id         only support left fisheye = 1
-        * \param[in] to_stream       only support RS2_STREAM_FISHEYE
-        * \param[in] to_id           only support right fisheye = 2
-        * \param[in] extrinsics      extrinsics value to be written to the device
-        */
-        void set_extrinsics(rs2_stream from_stream, int from_id, rs2_stream to_stream, int to_id, rs2_extrinsics& extrinsics)
-        {
-            rs2_error* e = nullptr;
-            auto from_sensor = get_sensor_profile(from_stream, from_id);
-            auto to_sensor   = get_sensor_profile(to_stream, to_id);
-            rs2_set_extrinsics(from_sensor.first.get().get(), from_sensor.second.get(), to_sensor.first.get().get(), to_sensor.second.get(), &extrinsics, &e);
-            error::handle(e);
-        }
-
-        /** 
-        * Set tm2 motion device intrinsics
-        * \param[in] stream_type       stream type of the motion device
-        * \param[in] motion_intriniscs intrinsics value to be written to the device
-        */
-        void set_motion_device_intrinsics(rs2_stream stream_type, const rs2_motion_device_intrinsic& motion_intriniscs)
-        {
-            rs2_error* e = nullptr;
-            auto motion_sensor = get_sensor_profile(stream_type, 0);
-            rs2_set_motion_device_intrinsics(motion_sensor.first.get().get(), motion_sensor.second.get(), &motion_intriniscs, &e);
-            error::handle(e);
-        }
-
-    private:
-
-        std::pair<sensor, stream_profile> get_sensor_profile(rs2_stream stream_type, int stream_index) {
-            for (auto s : query_sensors()) {
-                for (auto p : s.get_stream_profiles()) {
-                    if (p.stream_type() == stream_type && p.stream_index() == stream_index)
-                        return std::pair<sensor, stream_profile>(s, p);
-                }
-            }
-            return std::pair<sensor, stream_profile>();
-         }
     };
 }
 #endif // LIBREALSENSE_RS2_DEVICE_HPP

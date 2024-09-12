@@ -116,6 +116,15 @@ namespace Intel.RealSense
             NativeMethods.rs2_enqueue_frame(f.Handle, Handle);
         }
 
+        /// <summary>
+        /// Number of frames hold by the queue
+        /// </summary>
+        public int QueueSize()
+        {
+            object error;
+            return NativeMethods.rs2_frame_queue_size(this.Handle, out error);
+        }
+
         internal static IntPtr Create(int capacity = 1)
         {
             object error;

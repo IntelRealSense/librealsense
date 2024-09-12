@@ -10,6 +10,10 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #ifndef LIBREALSENSE_RS2_OPTION_H
 #define LIBREALSENSE_RS2_OPTION_H
 
+
+#include <stdint.h>
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,15 +35,15 @@ extern "C" {
         RS2_OPTION_SATURATION, /**< Color image saturation setting*/
         RS2_OPTION_SHARPNESS, /**< Color image sharpness setting*/
         RS2_OPTION_WHITE_BALANCE, /**< Controls white balance of color image. Setting any value will disable auto white balance*/
-        RS2_OPTION_ENABLE_AUTO_EXPOSURE, /**< Enable / disable color image auto-exposure*/
+        RS2_OPTION_ENABLE_AUTO_EXPOSURE, /**< Enable / disable auto-exposure*/
         RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, /**< Enable / disable color image auto-white-balance*/
         RS2_OPTION_VISUAL_PRESET, /**< Provide access to several recommend sets of option presets for the depth camera */
-        RS2_OPTION_LASER_POWER, /**< Power of the laser emitter, with 0 meaning projector off*/
+        RS2_OPTION_LASER_POWER, /**< Power of the laser emitter (mW), with 0 meaning projector turned off*/
         RS2_OPTION_ACCURACY, /**< Set the number of patterns projected per frame. The higher the accuracy value the more patterns projected. Increasing the number of patterns help to achieve better accuracy. Note that this control is affecting the Depth FPS */
         RS2_OPTION_MOTION_RANGE, /**< Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range*/
         RS2_OPTION_FILTER_OPTION, /**< Set the filter to apply to each depth frame. Each one of the filter is optimized per the application requirements*/
         RS2_OPTION_CONFIDENCE_THRESHOLD, /**< The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/
-        RS2_OPTION_EMITTER_ENABLED, /**< Emitter select: 0 – disable all emitters. 1 – enable laser. 2 – enable auto laser. 3 – enable LED.*/
+        RS2_OPTION_EMITTER_ENABLED, /**< Emitter select: 0 - disable all emitters. 1 - enable laser. 2 - enable auto laser. 3 - enable LED.*/
         RS2_OPTION_FRAMES_QUEUE_SIZE, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
         RS2_OPTION_TOTAL_FRAME_DROPS, /**< Total number of detected frame drops from all streams */
         RS2_OPTION_AUTO_EXPOSURE_MODE, /**< Auto-Exposure modes: Static, Anti-Flicker and Hybrid */
@@ -47,11 +51,11 @@ extern "C" {
         RS2_OPTION_ASIC_TEMPERATURE, /**< Current Asic Temperature */
         RS2_OPTION_ERROR_POLLING_ENABLED, /**< disable error handling */
         RS2_OPTION_PROJECTOR_TEMPERATURE, /**< Current Projector Temperature */
-        RS2_OPTION_OUTPUT_TRIGGER_ENABLED, /**< Enable / disable trigger to be outputed from the camera to any external device on every depth frame */
+        RS2_OPTION_OUTPUT_TRIGGER_ENABLED, /**< Enable / disable trigger to be outputted from the camera to any external device on every depth frame */
         RS2_OPTION_MOTION_MODULE_TEMPERATURE, /**< Current Motion-Module Temperature */
         RS2_OPTION_DEPTH_UNITS, /**< Number of meters represented by a single depth unit */
         RS2_OPTION_ENABLE_MOTION_CORRECTION, /**< Enable/Disable automatic correction of the motion data */
-        RS2_OPTION_AUTO_EXPOSURE_PRIORITY, /**< Allows sensor to dynamically ajust the frame rate depending on lighting conditions */
+        RS2_OPTION_AUTO_EXPOSURE_PRIORITY, /**< Allows sensor to dynamically adjust the frame rate depending on lighting conditions */
         RS2_OPTION_COLOR_SCHEME, /**< Color scheme for data visualization */
         RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, /**< Perform histogram equalization post-processing on the depth data */
         RS2_OPTION_MIN_DISTANCE, /**< Minimal distance to the target */
@@ -62,7 +66,7 @@ extern "C" {
         RS2_OPTION_FILTER_SMOOTH_DELTA, /**< 2D-filter range/validity threshold*/
         RS2_OPTION_HOLES_FILL, /**< Enhance depth data post-processing with holes filling where appropriate*/
         RS2_OPTION_STEREO_BASELINE, /**< The distance in mm between the first and the second imagers in stereo-based depth cameras*/
-        RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP, /**< Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure algorithm*/
+        RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP, /**< Allows dynamically adjust the converge step value of the target exposure in Auto-Exposure algorithm*/
         RS2_OPTION_INTER_CAM_SYNC_MODE, /**< Impose Inter-camera HW synchronization mode. Applicable for D400/L500/Rolling Shutter SKUs */
         RS2_OPTION_STREAM_FILTER, /**< Select a stream to process */
         RS2_OPTION_STREAM_FORMAT_FILTER, /**< Select a stream format to process */
@@ -107,15 +111,68 @@ extern "C" {
         RS2_OPTION_ALTERNATE_IR, /**< Turn on/off the alternate IR, When enabling alternate IR, the IR image is holding the amplitude of the depth correlation. */
         RS2_OPTION_NOISE_ESTIMATION,  /**< Noise estimation - indicates the noise on the IR image */
         RS2_OPTION_ENABLE_IR_REFLECTIVITY, /**< Enables data collection for calculating IR pixel reflectivity  */
-        RS2_OPTION_AUTO_EXPOSURE_LIMIT, /**< Set and get auto exposure limit in microseconds. Default is 0 which means full exposure range. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session. */
-        RS2_OPTION_AUTO_GAIN_LIMIT, /**< Set and get auto gain limits ranging from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session. */
+        RS2_OPTION_AUTO_EXPOSURE_LIMIT, /**< Set and get auto exposure limit in microseconds. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session. */
+        RS2_OPTION_AUTO_GAIN_LIMIT, /**< Set and get auto gain limits ranging from 16 to 248. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session. */
         RS2_OPTION_AUTO_RX_SENSITIVITY, /**< Enable receiver sensitivity according to ambient light, bounded by the Receiver Gain control. */
-        RS2_OPTION_TRANSMITTER_FREQUENCY, /**<changes the transmitter frequencies increasing effective range over sharpness. */
+        RS2_OPTION_TRANSMITTER_FREQUENCY, /**< changes the transmitter frequencies increasing effective range over sharpness. */
+        RS2_OPTION_VERTICAL_BINNING, /**< Enables vertical binning which increases the maximal sensed distance. */
+        RS2_OPTION_RECEIVER_SENSITIVITY, /**< Control receiver sensitivity to incoming light, both projected and ambient (same as APD on L515). */
+        RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, /**< Enable / disable color image auto-exposure*/
+        RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, /**< Enable / disable color image auto-gain*/
+        RS2_OPTION_EMITTER_FREQUENCY, /**< Select emitter (laser projector) frequency, see rs2_emitter_frequency for values */
+        RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE, /**< Select depth sensor auto exposure mode see rs2_depth_auto_exposure_mode for values  */
+        RS2_OPTION_OHM_TEMPERATURE, /**< Temperature of the Optical Head Sensor */
+        RS2_OPTION_SOC_PVT_TEMPERATURE, /**< Temperature of PVT SOC */
+        RS2_OPTION_GYRO_SENSITIVITY,/**< Control of the gyro sensitivity level, see rs2_gyro_sensitivity for values */ 
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
-    // This function is being deprecated. For existing options it will return option name, but for future API additions the user should call rs2_get_option_name instead.
+    /**
+    * Returns the option name if the option exists, or "UNKNOWN" otherwise.
+    * See rs2_option_from_string() for the reverse.
+    * \param[in] option    the option identifier
+    */
     const char* rs2_option_to_string(rs2_option option);
+
+    /**
+    * Get the specific rs2_option identifier given its name if found, or RS2_OPTION_COUNT if not.
+    * See rs2_option_to_string() for the reverse.
+    * \param[in] option_name    the case-sensitive option name
+    */
+    rs2_option rs2_option_from_string( const char * option_name );
+
+    /** \brief Defines known option value types.
+    */
+    typedef enum rs2_option_type
+    {
+        RS2_OPTION_TYPE_INTEGER, /**< 64-bit signed integer value */
+        RS2_OPTION_TYPE_FLOAT,
+        RS2_OPTION_TYPE_STRING,
+        RS2_OPTION_TYPE_BOOLEAN,
+
+        RS2_OPTION_TYPE_COUNT
+
+    } rs2_option_type;
+
+    /**
+    * Returns the option type as a string, or "UNKNOWN" otherwise.
+    * \param[in] type    the option type identifier
+    */
+    const char * rs2_option_type_to_string( rs2_option_type type );
+
+    /** \brief The value of an option, in a known option type.
+    */
+    typedef struct rs2_option_value
+    {
+        rs2_option id;
+        int is_valid;                     /**< 0 if no value available; 1 otherwise */
+        rs2_option_type type;
+        union {
+            char const * as_string;       /**< valid only while rs2_option_value is alive! */
+            float as_float;
+            int64_t as_integer;           /**< including boolean value */
+        };
+    } rs2_option_value;
 
     /** \brief For SR300 devices: provides optimized settings (presets) for specific types of usage. */
     typedef enum rs2_sr300_visual_preset
@@ -200,6 +257,36 @@ extern "C" {
     } rs2_host_perf_mode;
     const char* rs2_host_perf_mode_to_string( rs2_host_perf_mode perf );
 
+    /** \brief values for RS2_EMITTER_FREQUENCY option. */
+    typedef enum rs2_emitter_frequency_mode
+    {
+        RS2_EMITTER_FREQUENCY_57_KHZ = 0,  /**< Emitter frequency shall be 57 [KHZ] */
+        RS2_EMITTER_FREQUENCY_91_KHZ = 1,  /**< Emitter frequency shall be 91 [KHZ] */
+        RS2_EMITTER_FREQUENCY_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    } rs2_emitter_frequency_mode;
+    const char* rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mode );
+
+    /** \brief values for RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE option. */
+    typedef enum rs2_depth_auto_exposure_mode
+    {
+        RS2_DEPTH_AUTO_EXPOSURE_REGULAR = 0,  /**< Choose regular algorithm for auto exposure */
+        RS2_DEPTH_AUTO_EXPOSURE_ACCELERATED = 1,  /**< Choose accelerated algorithm for auto exposure */
+        RS2_DEPTH_AUTO_EXPOSURE_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    } rs2_depth_auto_exposure_mode;
+    const char* rs2_depth_auto_exposure_mode_to_string( rs2_depth_auto_exposure_mode mode );
+
+      /** \brief values for RS2_OPTION_GYRO_SENSITIVITY option. */
+    typedef enum rs2_gyro_sensitivity
+    {
+        RS2_GYRO_SENSITIVITY_61_0_MILLI_DEG_SEC = 0,
+        RS2_GYRO_SENSITIVITY_30_5_MILLI_DEG_SEC = 1,
+        RS2_GYRO_SENSITIVITY_15_3_MILLI_DEG_SEC = 2,
+        RS2_GYRO_SENSITIVITY_7_6_MILLI_DEG_SEC = 3,
+        RS2_GYRO_SENSITIVITY_3_8_MILLI_DEG_SEC = 4,
+        RS2_GYRO_SENSITIVITY_COUNT
+    } rs2_gyro_sensitivity;
+    const char * rs2_gyro_sensitivity_to_string( rs2_gyro_sensitivity mode );
+
     /**
     * check if an option is read-only
     * \param[in] options  the options container
@@ -219,6 +306,15 @@ extern "C" {
     float rs2_get_option(const rs2_options* options, rs2_option option, rs2_error** error);
 
     /**
+    * read option value from the sensor
+    * \param[in] options    the options container
+    * \param[in] option_id  option id to be queried
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return pointer to the value structure of the option; use rs2_delete_option_value to clean up
+    */
+    rs2_option_value const * rs2_get_option_value( const rs2_options * options, rs2_option option_id, rs2_error ** error );
+
+    /**
     * write new value to sensor option
     * \param[in] options    the options container
     * \param[in] option     option id to be queried
@@ -226,6 +322,14 @@ extern "C" {
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
     void rs2_set_option(const rs2_options* options, rs2_option option, float value, rs2_error** error);
+
+    /**
+    * write new value to sensor option
+    * \param[in] options       the options container
+    * \param[in] option_value  option id, type, and value to be set
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    */
+    void rs2_set_option_value( rs2_options const * options, rs2_option_value const * option_value, rs2_error ** error );
 
    /**
    * get the list of supported options of options container
@@ -251,11 +355,26 @@ extern "C" {
     const char* rs2_get_option_name(const rs2_options* options, rs2_option option, rs2_error** error);
 
     /**
-   * get the specific option from options list
-   * \param[in] i    the index of the option
-   * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-   */
+    * get the specific option from options list
+    * \param[in] i    the index of the option
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return the option ID
+    */
     rs2_option rs2_get_option_from_list(const rs2_options_list* options, int i, rs2_error** error);
+
+    /**
+    * get the specific option from options list
+    * \param[in] i    the index of the option
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return temporary (goes away with the options-list) pointer to the option-value struct
+    */
+    rs2_option_value const * rs2_get_option_value_from_list( const rs2_options_list * options, int i, rs2_error ** error );
+
+    /**
+    * Clean up a value and all it points to
+    * \param[in] handle value to delete
+    */
+    void rs2_delete_option_value( rs2_option_value const * handle );
 
     /**
     * Deletes options list
@@ -302,6 +421,28 @@ extern "C" {
     * \return human-readable description of a specific value of an option or null if no special meaning
     */
     const char* rs2_get_option_value_description(const rs2_options* options, rs2_option option, float value, rs2_error ** error);
+
+    /**
+    * Sets a callback in case an option in this options container value is updated.
+    * Will create a thread that will periodically check the options in the container for updates.
+    * The update period is determined by the context's 'options-update-interval' setting.
+    * \param[in] options    the options container
+    * \param[in] callback   callback function pointer to update on value changes
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    */
+    void rs2_set_options_changed_callback( rs2_options * options,
+                                           rs2_options_changed_callback_ptr callback,
+                                           rs2_error ** error );
+
+    /**
+    * Sets a callback in case an option in this options container value is updated
+    * \param[in] options    the options container
+    * \param[in] callback   callback object created from c++ application. ownership over the callback object is moved to librealsense
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    */
+    void rs2_set_options_changed_callback_cpp( rs2_options * options,
+                                               rs2_options_changed_callback * callback,
+                                               rs2_error ** error );
 
 #ifdef __cplusplus
 }

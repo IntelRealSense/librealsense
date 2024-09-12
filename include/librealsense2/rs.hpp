@@ -57,7 +57,7 @@ namespace rs2
     class log_message
     {
         // Only log_callback should be creating us!
-        template< class T > friend class log_callback;
+        friend class log_callback;
 
         log_message( rs2_log_message const & msg ) : _msg( msg ) {}
 
@@ -105,12 +105,19 @@ namespace rs2
     /*
         Wrapper around any callback function that is given to log_to_callback.
     */
-    template<class T>
     class log_callback : public rs2_log_callback
     {
-        T on_log_function;
     public:
-        explicit log_callback( T on_log ) : on_log_function( on_log ) {}
+        typedef std::function< void( rs2_log_severity, rs2::log_message const & ) > log_fn;
+
+    private:
+        log_fn on_log_function;
+
+    public:
+        explicit log_callback( log_fn && on_log )
+            : on_log_function( std::move( on_log ) )
+        {
+        }
 
         void on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept override
         {
@@ -135,14 +142,13 @@ namespace rs2
                     std::cout << msg.build() << std::endl;
                 })
     */
-    template< typename S >
-    inline void log_to_callback( rs2_log_severity min_severity, S callback )
+    inline void log_to_callback( rs2_log_severity min_severity, log_callback::log_fn callback )
     {
         // We wrap the callback with an interface and pass it to librealsense, who will
         // now manage its lifetime. Rather than deleting it, though, it will call its
         // release() function, where (back in our context) it can be safely deleted:
         rs2_error* e = nullptr;
-        rs2_log_to_callback_cpp( min_severity, new log_callback< S >( std::move( callback )), &e );
+        rs2_log_to_callback_cpp( min_severity, new log_callback( std::move( callback )), &e );
         error::handle( e );
     }
 

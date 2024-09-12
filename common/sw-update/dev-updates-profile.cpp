@@ -16,6 +16,14 @@ namespace rs2
 
             std::string dev_name = (dev.supports(RS2_CAMERA_INFO_NAME)) ? dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
             std::string serial = (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)) ? dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown";
+
+            std::string fw_update_id = "Unknown";
+
+            if (dev.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
+            {
+                fw_update_id = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
+            }
+
             std::string firmware_ver = (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION)) ? dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "0.0.0";
 
             _update_profile.software_version = sw_update::version(RS2_API_FULL_VERSION_STR);
@@ -25,6 +33,7 @@ namespace rs2
 
             _update_profile.device_name = dev_name;
             _update_profile.serial_number = serial;
+            _update_profile.fw_update_id = fw_update_id;
         }
 
         bool dev_updates_profile::retrieve_updates(component_part_type comp, bool& fail_access_db)
@@ -38,47 +47,43 @@ namespace rs2
 
             bool update_available(false);
 
-            // We expect to get here in recovery mode (on firmware update flow) and therefore do not want to throw...
-            if (_update_profile.device_name.find("Recovery") == std::string::npos)
+            auto &versions_vec((comp == FIRMWARE) ?
+                _update_profile.firmware_versions : _update_profile.software_versions);
+
+            version& current_version((comp == FIRMWARE) ? _update_profile.firmware_version : _update_profile.software_version);
             {
-                auto &versions_vec((comp == FIRMWARE) ?
-                    _update_profile.firmware_versions : _update_profile.software_versions);
-
-                version& current_version((comp == FIRMWARE) ? _update_profile.firmware_version : _update_profile.software_version);
+                version_info experimental_update;
+                auto parse_update_stts = try_parse_update(_versions_db, _update_profile.device_name, EXPERIMENTAL, comp, experimental_update);
+                if ( parse_update_stts == VERSION_FOUND)
                 {
-                    version_info experimental_update;
-                    auto parse_update_stts = try_parse_update(_versions_db, _update_profile.device_name, EXPERIMENTAL, comp, experimental_update);
-                    if ( parse_update_stts == VERSION_FOUND)
+                    if (current_version < experimental_update.ver)
                     {
-                        if (current_version < experimental_update.ver)
-                        {
-                            versions_vec[experimental_update.ver] = experimental_update;
-                            update_available = true;
-                        }
+                        versions_vec[experimental_update.ver] = experimental_update;
+                        update_available = true;
                     }
-
-                    version_info recommened_update;
-                    if (try_parse_update(_versions_db, _update_profile.device_name, RECOMMENDED, comp, recommened_update) == VERSION_FOUND)
-                    {
-                        if (current_version < recommened_update.ver)
-                        {
-                            versions_vec[recommened_update.ver] = recommened_update;
-                            update_available = true;
-                        }
-                    }
-
-                    version_info required_update;
-                    if (try_parse_update(_versions_db, _update_profile.device_name, ESSENTIAL, comp, required_update) == VERSION_FOUND)
-                    {
-                        if (current_version < required_update.ver)
-                        {
-                            versions_vec[required_update.ver] = required_update;
-                            update_available = true;
-                        }
-                    }
-
-                    fail_access_db = (parse_update_stts == DB_LOAD_FAILURE);
                 }
+
+                version_info recommened_update;
+                if (try_parse_update(_versions_db, _update_profile.device_name, RECOMMENDED, comp, recommened_update) == VERSION_FOUND)
+                {
+                    if (current_version < recommened_update.ver)
+                    {
+                        versions_vec[recommened_update.ver] = recommened_update;
+                        update_available = true;
+                    }
+                }
+
+                version_info required_update;
+                if (try_parse_update(_versions_db, _update_profile.device_name, ESSENTIAL, comp, required_update) == VERSION_FOUND)
+                {
+                    if (current_version < required_update.ver)
+                    {
+                        versions_vec[required_update.ver] = required_update;
+                        update_available = true;
+                    }
+                }
+
+                fail_access_db = (parse_update_stts == DB_LOAD_FAILURE);
             }
             return update_available;
         }

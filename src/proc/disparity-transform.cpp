@@ -1,12 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
+#include <librealsense2/hpp/rs_sensor.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
 
 #include "option.h"
-#include "context.h"
-#include "ds5/ds5-private.h"
+#include "stream.h"
+#include "ds/d400/d400-private.h"
 #include "core/video.h"
 #include "proc/synthetic-stream.h"
 #include "proc/disparity-transform.h"
@@ -21,21 +21,6 @@ namespace librealsense
         _update_target(false),
         _width(0), _height(0), _bpp(0)
     {
-        auto transform_opt = std::make_shared<ptr_option<bool>>(
-            false,true,true,true,
-            &_transform_to_disparity,
-            "Stereoscopic Transformation Mode");
-        transform_opt->set_description(false, "Disparity to Depth");
-        transform_opt->set_description(true, "Depth to Disparity");
-        transform_opt->on_set([this, transform_opt](float val)
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-            if (!transform_opt->is_valid(val))
-                throw invalid_value_exception(to_string() << "Unsupported transformation mode" << (int)val << " is out of range.");
-
-            on_set_mode(static_cast<bool>(!!int(val)));
-        });
-
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
         on_set_mode(_transform_to_disparity);
@@ -96,7 +81,6 @@ namespace librealsense
 
             auto info = disparity_info::update_info_from_frame(f);
             _stereoscopic_depth = info.stereoscopic_depth;
-            _depth_units = info.depth_units;
             _d2d_convert_factor = info.d2d_convert_factor;
 
             auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
@@ -110,8 +94,15 @@ namespace librealsense
         {
             auto tgt_format = _transform_to_disparity ? RS2_FORMAT_DISPARITY32 : RS2_FORMAT_Z16;
             _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, tgt_format);
+
             auto src_vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
+            if (!src_vspi)
+                throw std::runtime_error("Stream profile is not video stream profile");
+
             auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(_target_stream_profile.get()->profile);
+            if (!tgt_vspi)
+                throw std::runtime_error("Stream profile is not video stream profile");
+
             rs2_intrinsics src_intrin   = src_vspi->get_intrinsics();
 
             tgt_vspi->set_intrinsics([src_intrin]() { return src_intrin; });

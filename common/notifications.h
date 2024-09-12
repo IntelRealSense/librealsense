@@ -8,12 +8,12 @@
 #include <vector>
 #include <chrono>
 
-#include "ux-window.h"
-
 #include "output-model.h"
 
 namespace rs2
 {
+    class ux_window;
+
     class notification_data
     {
     public:
@@ -71,7 +71,7 @@ namespace rs2
         double timestamp = 0.0;
         rs2_log_severity severity = RS2_LOG_SEVERITY_NONE;
         std::chrono::system_clock::time_point created_time;
-        rs2_notification_category category;
+        rs2_notification_category category = RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR;
         bool to_close = false; // true when user clicks on close notification
 
         int width = 320;
@@ -118,7 +118,7 @@ namespace rs2
         virtual ~process_manager() = default;
 
         void start(invoker invoke);
-        int get_progress() const { return _progress; }
+        int get_progress() const { return int(_progress); }
         bool done() const { return _done; }
         bool started() const { return _started; }
         bool failed() const { return _failed; }
@@ -139,7 +139,7 @@ namespace rs2
         bool _started = false;
         bool _done = false;
         bool _failed = false;
-        int _progress = 0;
+        float _progress = 0;
 
         std::mutex _log_lock;
         std::string _last_error;
@@ -203,6 +203,14 @@ namespace rs2
             std::function<void()> custom_action,
             bool use_custom_action = true);
         void add_notification(std::shared_ptr<notification_model> model);
+        
+        // Check of a notification of type T is currently on the display queue.
+        template <typename T>
+        bool notification_type_is_displayed()
+        {
+           std::lock_guard<std::recursive_mutex> lock(m);
+           return std::any_of(pending_notifications.cbegin(), pending_notifications.cend(), [](const std::shared_ptr<notification_model>& nm) {return nm->is<T>(); });
+        }
         bool draw(ux_window& win, int w, int h, std::string& error_message);
 
         notifications_model() {}
@@ -255,6 +263,24 @@ namespace rs2
             ux_window& win, int x, int y, float t, std::string& error_message) override;
         int calc_height() override { return 65; }
     };    
+
+    struct ucal_disclaimer_model : public notification_model
+    {
+        ucal_disclaimer_model();
+
+        void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
+        int calc_height() override { return 110; }
+        int get_max_lifetime_ms() const override { return 15000; }
+    };
+
+    struct fl_cal_limitation_model : public notification_model
+    {
+        fl_cal_limitation_model();
+
+        void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
+        int calc_height() override { return 100; }
+        int get_max_lifetime_ms() const override { return 10000; }
+    };
 
     class export_manager : public process_manager
     {

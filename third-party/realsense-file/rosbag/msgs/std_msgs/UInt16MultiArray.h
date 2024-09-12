@@ -39,21 +39,21 @@ struct UInt16MultiArray_
    typedef  ::std_msgs::MultiArrayLayout_<ContainerAllocator>  _layout_type;
   _layout_type layout;
 
-   typedef std::vector<uint16_t, typename ContainerAllocator::template rebind<uint16_t>::other >  _data_type;
+   typedef std::vector<uint16_t, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< uint16_t > >  _data_type;
   _data_type data;
 
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::UInt16MultiArray_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::UInt16MultiArray_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::UInt16MultiArray_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::UInt16MultiArray_<ContainerAllocator> const> ConstPtr;
 
 }; // struct UInt16MultiArray_
 
 typedef ::std_msgs::UInt16MultiArray_<std::allocator<void> > UInt16MultiArray;
 
-typedef boost::shared_ptr< ::std_msgs::UInt16MultiArray > UInt16MultiArrayPtr;
-typedef boost::shared_ptr< ::std_msgs::UInt16MultiArray const> UInt16MultiArrayConstPtr;
+typedef std::shared_ptr< ::std_msgs::UInt16MultiArray > UInt16MultiArrayPtr;
+typedef std::shared_ptr< ::std_msgs::UInt16MultiArray const> UInt16MultiArrayConstPtr;
 
 // constants requiring out of line definition
 
@@ -85,32 +85,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::UInt16MultiArray_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::UInt16MultiArray_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::UInt16MultiArray_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::UInt16MultiArray_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::UInt16MultiArray_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::UInt16MultiArray_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

@@ -104,7 +104,7 @@ if [ ! -d ${kernel_name} ]; then
 	mkdir ${kernel_name}
 	cd ${kernel_name}
 	git init
-	git remote add origin git://kernel.ubuntu.com/ubuntu/ubuntu-${ubuntu_codename}.git
+	git remote add origin https://kernel.ubuntu.com/ubuntu/ubuntu-${ubuntu_codename}.git
 	cd ..
 fi
 
@@ -116,7 +116,7 @@ then
 	kernel_full_num=$(echo $LINUX_BRANCH | cut -d '-' -f 1,2)
 	kernel_git_tag=$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | tail -n 1 | awk -F/ '{print $NF}')
 	echo -e "\e[32mFetching Ubuntu LTS tag \e[47m${kernel_git_tag}\e[0m \e[32m to the local kernel sources folder\e[0m"
-	git fetch origin tag ${kernel_git_tag} --no-tags
+	git fetch origin tag ${kernel_git_tag} --no-tags --depth 1
 
 	# Verify that there are no trailing changes., warn the user to make corrective action if needed
 	if [ $(git status | grep 'modified:' | wc -l) -ne 0 ];
@@ -144,7 +144,7 @@ then
 
 
 	if [ $reset_driver -eq 1 ];
-	then 
+	then
 		echo -e "\e[43mUser requested to rebuild and reinstall ubuntu-${ubuntu_codename} stock drivers\e[0m"
 	else
 		# Patching kernel for RealSense devices

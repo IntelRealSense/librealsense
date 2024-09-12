@@ -38,8 +38,6 @@
 
 #include <stdint.h>
 
-//#include <boost/shared_array.hpp>
-
 #include "../../../cpp_common/include/ros/datatypes.h"
 #include "cpp_common_decl.h"
 

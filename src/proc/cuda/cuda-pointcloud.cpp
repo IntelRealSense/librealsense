@@ -13,11 +13,11 @@ namespace librealsense
     const float3 * pointcloud_cuda::depth_to_points(
         rs2::points output,
         const rs2_intrinsics &depth_intrinsics,
-        const rs2::depth_frame& depth_frame,
-        float depth_scale)
+        const rs2::depth_frame& depth_frame)
     {
         auto image = output.get_vertices();
         auto depth_data = (uint16_t*)depth_frame.get_data();
+        auto depth_scale = depth_frame.get_units();
 #ifdef RS2_USE_CUDA
         rscuda::deproject_depth_cuda((float*)image, depth_intrinsics, depth_data, depth_scale);
 #endif

@@ -17,6 +17,9 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "core/options.h"   // Workaround for the missing DLL_EXPORT template
 #include "core/info.h"   // Workaround for the missing DLL_EXPORT template
 #include "../src/backend.h"
+#include <src/core/time-service.h>
+#include <src/platform/command-transfer.h>
+#include <src/platform/hid-device.h>
 #include "pybackend_extras.h"
 #include "../../third-party/stb_image_write.h"
 
@@ -31,6 +34,12 @@ using namespace pybind11::literals;
 
 using namespace librealsense;
 using namespace pybackend2;
+
+namespace librealsense {
+namespace platform {
+std::shared_ptr< backend > create_backend();
+}  // namespace platform
+}  // namespace librealsense
 
 
 // Prevents expensive copies of pixel buffers into python
@@ -58,10 +67,7 @@ PYBIND11_MODULE(NAME, m) {
                  .def_readwrite("def", &platform::control_range::def)
                  .def_readwrite("step", &platform::control_range::step);
 
-    py::class_<platform::time_service> time_service(m, "time_service");
-    time_service.def("get_time", &platform::time_service::get_time);
-
-    py::class_<platform::os_time_service, platform::time_service> os_time_service(m, "os_time_service");
+    m.def("get_time", &librealsense::time_service::get_time);
 
 #define BIND_RAW_RO_ARRAY(class, name, type, size) #name, [](const class &c) -> const std::array<type, size>& { return reinterpret_cast<const std::array<type, size>&>(c.name); }
 #define BIND_RAW_RW_ARRAY(class, name, type, size) BIND_RAW_RO_ARRAY(class, name, type, size), [](class &c, const std::array<type, size> &arr) { for (int i=0; i<size; ++i) c.name[i] = arr[i]; }
@@ -187,6 +193,12 @@ PYBIND11_MODULE(NAME, m) {
         .value("auto_gain_limit", RS2_OPTION_AUTO_GAIN_LIMIT)
         .value("auto_rx_sensitivity", RS2_OPTION_AUTO_RX_SENSITIVITY)
         .value("transmitter_frequency", RS2_OPTION_TRANSMITTER_FREQUENCY)
+        .value("vertical_binning", RS2_OPTION_VERTICAL_BINNING)
+        .value("receiver_sensitivity", RS2_OPTION_RECEIVER_SENSITIVITY)
+        .value("exposure_limit_toggle", RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE)
+        .value("gain_limit_toggle", RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE)
+        .value("emitter_frequency", RS2_OPTION_EMITTER_FREQUENCY)
+        .value("depth_auto_exposure_mode", RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
@@ -255,11 +267,6 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<platform::hid_sensor_input> hid_sensor_input(m, "hid_sensor_input");
     hid_sensor_input.def_readwrite("index", &platform::hid_sensor_input::index)
                     .def_readwrite("name", &platform::hid_sensor_input::name);
-
-    py::class_<platform::callback_data> callback_data(m, "callback_data");
-    callback_data.def_readwrite("sensor", &platform::callback_data::sensor)
-                 .def_readwrite("sensor_input", &platform::callback_data::sensor_input)
-                 .def_readwrite("value", &platform::callback_data::value);
 
     py::class_<platform::sensor_data> sensor_data(m, "sensor_data");
     sensor_data.def_readwrite("sensor", &platform::sensor_data::sensor)
@@ -384,8 +391,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("create_usb_device", &platform::backend::create_usb_device, "info"_a)
         .def("query_usb_devices", &platform::backend::query_usb_devices)
         .def("create_hid_device", &platform::backend::create_hid_device, "info"_a)
-        .def("query_hid_devices", &platform::backend::query_hid_devices)
-        .def("create_time_service", &platform::backend::create_time_service);
+        .def("query_hid_devices", &platform::backend::query_hid_devices);
 
     py::class_<platform::multi_pins_uvc_device, std::shared_ptr<platform::multi_pins_uvc_device>, platform::uvc_device> multi_pins_uvc_device(m, "multi_pins_uvc_device");
     multi_pins_uvc_device.def(py::init<std::vector<std::shared_ptr<platform::uvc_device>>&>())
@@ -476,4 +482,3 @@ void librealsense::info_container::enable_recording(std::function<void(const inf
 void librealsense::info_container::update(std::shared_ptr<extension_snapshot> ext){}
 bool librealsense::info_container::supports_info(rs2_camera_info info) const { return false; }
 const std::string& librealsense::info_container::get_info(enum rs2_camera_info) const { static std::string s = ""; return s; }
-std::vector<rs2_option> librealsense::options_container::get_supported_options(void)const { return{}; }

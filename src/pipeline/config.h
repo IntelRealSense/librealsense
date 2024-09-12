@@ -60,7 +60,7 @@ namespace librealsense
             std::mutex _mtx;
             bool _enable_all_streams = false;
             std::shared_ptr<profile> _resolved_profile;
-            bool _playback_loop;
+            bool _playback_loop = false;
             std::vector<std::pair<rs2_stream, int>> _streams_to_disable;
         };
     }

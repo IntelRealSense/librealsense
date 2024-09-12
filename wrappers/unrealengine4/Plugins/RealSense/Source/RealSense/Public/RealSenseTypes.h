@@ -143,6 +143,10 @@ enum class ERealSenseOptionType : uint8
     AUTO_GAIN_LIMIT                            , /**< Set and get auto gain limits ranging from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session. */
     AUTO_RX_SENSITIVITY                        , /**< Set and get auto receiver sensitivity.*/
     TRANSMITTER_FREQUENCY                      , /**< Change transmitter frequency, increasing effective range over sharpness. */
+    VERTICAL_BINNING                           , /**< Enables vertical binning which increases the maximal sensed distance. */
+    RECEIVER_SENSITIVITY                       , /**< Control the receiver sensitivity to incoming light, both projected and ambient. */
+    EMITTER_FREQUENCY                          , /**< Select emitter (laser) frequency:  0 --> 57[KHZ], 1 --> 97[KHZ] */
+    DEPTH_AUTO_EXPOSURE_MODE                   , /**< Select depth sensor auto exposure mode:  0 --> REGULAR 1 --> ACCELERATED */
 };
 
 UENUM(Blueprintable)

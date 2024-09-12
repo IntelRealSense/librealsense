@@ -11,49 +11,6 @@
 
 namespace rs2
 {
-    class recording_context : public context
-    {
-    public:
-        /**
-        * create librealsense context that will try to record all operations over librealsense into a file
-        * \param[in] filename string representing the name of the file to record
-        */
-        recording_context(const std::string& filename,
-                          const std::string& section = "",
-                          rs2_recording_mode mode = RS2_RECORDING_MODE_BLANK_FRAMES)
-        {
-            rs2_error* e = nullptr;
-            _context = std::shared_ptr<rs2_context>(
-                rs2_create_recording_context(RS2_API_VERSION, filename.c_str(), section.c_str(), mode, &e),
-                rs2_delete_context);
-            error::handle(e);
-        }
-
-        recording_context() = delete;
-    };
-
-    class mock_context : public context
-    {
-    public:
-        /**
-        * create librealsense context that given a file will respond to calls exactly as the recording did
-        * if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
-        * \param[in] filename string of the name of the file
-        */
-        mock_context(const std::string& filename,
-                     const std::string& section = "",
-                     const std::string& min_api_version = "0.0.0")
-        {
-            rs2_error* e = nullptr;
-            _context = std::shared_ptr<rs2_context>(
-                rs2_create_mock_context_versioned(RS2_API_VERSION, filename.c_str(), section.c_str(), min_api_version.c_str(), &e),
-                rs2_delete_context);
-            error::handle(e);
-        }
-
-        mock_context() = delete;
-    };
-
     namespace internal
     {
         /**

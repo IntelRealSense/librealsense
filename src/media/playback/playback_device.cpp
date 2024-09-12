@@ -3,23 +3,44 @@
 
 #include <cmath>
 #include "playback_device.h"
+#include "playback-device-info.h"
 #include "core/motion.h"
 #include "stream.h"
 #include "media/ros/ros_reader.h"
 #include "environment.h"
 #include "sync.h"
+#include <src/depth-sensor.h>
+#include <src/color-sensor.h>
+#include <src/pose.h>
+
+#include <rsutils/string/from.h>
+
 
 using namespace librealsense;
 
-playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
-    m_read_thread([]() {return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max()); }),
-    m_context(ctx),
-    m_is_started(false),
-    m_is_paused(false),
-    m_sample_rate(1),
-    m_real_time(true),
-    m_prev_timestamp(0),
-    m_last_published_timestamp(0)
+static bool is_video_stream( rs2_stream stream )
+{
+    return stream != RS2_STREAM_GYRO && stream != RS2_STREAM_ACCEL && stream != RS2_STREAM_POSE;
+}
+
+std::shared_ptr< device_interface > playback_device_info::create_device()
+{
+    auto playback_dev
+        = std::make_shared< playback_device >( shared_from_this(),
+                                               std::make_shared< ros_reader >( _filename, get_context() ) );
+    return playback_dev;
+}
+
+playback_device::playback_device( std::shared_ptr< const device_info > const & dev_info,
+                                  std::shared_ptr< device_serializer::reader > const & serializer )
+    : m_read_thread( []() { return std::make_shared< dispatcher >( std::numeric_limits< unsigned int >::max() ); } )
+    , m_device_info( dev_info )
+    , m_is_started( false )
+    , m_is_paused( false )
+    , m_sample_rate( 1 )
+    , m_real_time( true )
+    , m_prev_timestamp( 0 )
+    , m_last_published_timestamp( 0 )
 {
     if (serializer == nullptr)
     {
@@ -53,10 +74,11 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
         //Each sensor will know its capabilities from the sensor_snapshot
         auto sensor = std::make_shared<playback_sensor>(*this, sensor_snapshot);
 
-        sensor->started += [this](uint32_t id, frame_callback_ptr user_callback) -> void
+        sensor->on_started( [this](uint32_t id, rs2_frame_callback_sptr user_callback) -> void
         {
             (*m_read_thread)->invoke([this, id, user_callback](dispatcher::cancellable_timer c)
             {
+                std::lock_guard<std::mutex> locker(_active_sensors_mutex);
                 auto it = m_active_sensors.find(id);
                 if (it == m_active_sensors.end())
                 {
@@ -68,23 +90,36 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
                     }
                 }
             });
-        };
+        } );
 
-        sensor->stopped += [this](uint32_t id, bool invoke_required) -> void
+        sensor->on_stopped( [this](uint32_t id, bool invoke_required) -> void
         {
             //stopped could be called by the user (when calling sensor.stop(), main thread==invoke required) or from the reader_thread when
             // reaching eof, or some read error (which means invoke is not required)
 
             auto action = [this, id]()
             {
-                auto it = m_active_sensors.find(id);
-                if (it != m_active_sensors.end())
+                bool need_to_stop_device = false;
                 {
-                    m_active_sensors.erase(it);
-                    if (m_active_sensors.size() == 0)
+                    std::lock_guard<std::mutex> locker(_active_sensors_mutex);
+                    auto it = m_active_sensors.find(id);
+                    if (it != m_active_sensors.end())
                     {
-                        stop_internal();
+                        m_active_sensors.erase(it);
+                        if (m_active_sensors.size() == 0)
+                        {
+                            need_to_stop_device = true;
+                        }
                     }
+                }
+
+                // If all sensors were stopped, we want to stop the device from dispatching frames.
+                // We invoke "stop_internal()" for concurrency reasons
+                if (need_to_stop_device)
+                {
+                    ( *m_read_thread )->invoke( [this]( dispatcher::cancellable_timer c ) {
+                        stop_internal();
+                    } );
                 }
             };
             if (invoke_required)
@@ -95,23 +130,23 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
             {
                 action();
             }
-        };
+        } );
 
-        sensor->opened += [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
+        sensor->on_opened( [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
         {
             (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
                 m_reader->enable_stream(filters);
             });
-        };
+        } );
 
-        sensor->closed += [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
+        sensor->on_closed( [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
         {
             (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
                 m_reader->disable_stream(filters);
             });
-        };
+        } );
 
         sensors[sensor_snapshot.get_sensor_index()] = sensor;
     }
@@ -144,25 +179,28 @@ rs2_extrinsics playback_device::calc_extrinsic(const rs2_extrinsics& from, const
 
 playback_device::~playback_device()
 {
-    (*m_read_thread)->invoke([this](dispatcher::cancellable_timer c)
+    std::vector< std::shared_ptr< playback_sensor > > playback_sensors_copy;
     {
-        for (auto&& sensor : m_active_sensors)
-        {
-            if (sensor.second != nullptr)
-                sensor.second->stop();
-        }
-    });
-    if((*m_read_thread)->flush() == false)
-    {
-        LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
-        assert(0); //Detect this immediately in debug
+        std::lock_guard< std::mutex > locker(_active_sensors_mutex);
+        for (auto s : m_active_sensors)
+            playback_sensors_copy.push_back(s.second);
     }
+
+
+    for (auto&& sensor : playback_sensors_copy)
+    {
+        if (sensor)
+        {
+            sensor->stop();
+        }
+    }
+
     (*m_read_thread)->stop();
 }
 
 std::shared_ptr<context> playback_device::get_context() const
 {
-    return m_context;
+    return m_device_info->get_context();
 }
 
 sensor_interface& playback_device::get_sensor(size_t i)
@@ -194,10 +232,31 @@ bool playback_device::extend_to(rs2_extension extension_type, void** ext)
 
 std::shared_ptr<matcher> playback_device::create_matcher(const frame_holder& frame) const
 {
-    //TOOD: Use future implementation of matcher factory with the device's name (or other unique identifier)
-    LOG_WARNING("Playback device does not provide a matcher");
-    auto s = frame.frame->get_stream();
-    return std::make_shared<identity_matcher>(s->get_unique_id(), s->get_stream_type());
+    std::vector<std::shared_ptr<matcher>> sync_matchers;
+    std::vector<std::shared_ptr<matcher>> non_sync_matchers;
+
+    for (auto const& sensor : m_sensors)
+    {
+        auto stream_profiles = sensor.second->get_stream_profiles(); 
+
+        for( auto const & stream_profile : stream_profiles )
+        {
+            if(is_video_stream(stream_profile->get_stream_type()))
+                sync_matchers.push_back(std::make_shared<identity_matcher>(stream_profile->get_unique_id(), stream_profile->get_stream_type()));
+            else
+                non_sync_matchers.push_back(std::make_shared<identity_matcher>(stream_profile->get_unique_id(), stream_profile->get_stream_type()));
+        }
+    }
+    
+    std::vector<std::shared_ptr<matcher>> all_matchers;
+
+    if (!sync_matchers.empty())
+       all_matchers.push_back(std::make_shared<timestamp_composite_matcher>(sync_matchers));
+
+    if (!non_sync_matchers.empty())
+        all_matchers.insert(all_matchers.end(), non_sync_matchers.begin(), non_sync_matchers.end());
+
+    return std::make_shared<composite_identity_matcher>(all_matchers);
 }
 
 void playback_device::set_frame_rate(double rate)
@@ -205,7 +264,8 @@ void playback_device::set_frame_rate(double rate)
     LOG_INFO("Request to change playback frame rate to: " << rate);
     if(rate < 0)
     {
-        throw invalid_value_exception(to_string() << "Failed to set frame rate to " << std::to_string(rate) << ", value is less than 0");
+        throw invalid_value_exception( rsutils::string::from() << "Failed to set frame rate to "
+                                                               << std::to_string( rate ) << ", value is less than 0" );
     }
     (*m_read_thread)->invoke([this, rate](dispatcher::cancellable_timer t)
     {
@@ -236,7 +296,9 @@ void playback_device::seek_to_time(std::chrono::nanoseconds time)
                 {
                     if (frame->stream_id.device_index != get_device_index() || frame->stream_id.sensor_index >= m_sensors.size())
                     {
-                        std::string error_msg = to_string() << "Unexpected sensor index while playing file (Read index = " << frame->stream_id.sensor_index << ")";
+                        std::string error_msg = rsutils::string::from()
+                                             << "Unexpected sensor index while playing file (Read index = "
+                                             << frame->stream_id.sensor_index << ")";
                         LOG_ERROR(error_msg);
                     }
                     //push frame to the sensor (see handle_frame definition for more details)
@@ -298,7 +360,7 @@ void playback_device::pause()
             }
         }
         LOG_DEBUG("Notifying RS2_PLAYBACK_STATUS_PAUSED");
-        playback_status_changed(RS2_PLAYBACK_STATUS_PAUSED);
+        playback_status_changed.raise( RS2_PLAYBACK_STATUS_PAUSED );
     });
     if ((*m_read_thread)->flush() == false)
     {
@@ -348,9 +410,9 @@ bool playback_device::is_real_time() const
     return m_real_time;
 }
 
-platform::backend_device_group playback_device::get_device_data() const
+std::shared_ptr< const device_info > playback_device::get_device_info() const
 {
-    return platform::backend_device_group({ platform::playback_device_info{ m_reader->get_file_name() } });
+    return m_device_info;
 }
 
 std::pair<uint32_t, rs2_extrinsics> playback_device::get_extrinsics(const stream_interface& stream) const
@@ -421,8 +483,8 @@ void playback_device::start()
     catch_up();
     try_looping();
     LOG_INFO("Playback started");
-
 }
+
 void playback_device::stop()
 {
     LOG_DEBUG("playback stop called");
@@ -436,27 +498,26 @@ void playback_device::stop()
         LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
         assert(0); //Detect this immediately in debug
     }
-    LOG_INFO("Playback stoped");
 
+    LOG_INFO("Playback stopped");
 }
 
 void playback_device::stop_internal()
 {
     //stop_internal() is called from within the reading thread
+    LOG_DEBUG("stop_internal() called");
     if (m_is_started == false)
         return; //nothing to do
 
 
     m_is_started = false;
     m_is_paused = false;
-    for (auto sensor : m_sensors)
-    {
-        //sensor.second->flush_pending_frames();
-    }
+
     m_reader->reset();
     m_prev_timestamp = std::chrono::nanoseconds(0);
     catch_up();
-    playback_status_changed(RS2_PLAYBACK_STATUS_STOPPED);
+    playback_status_changed.raise( RS2_PLAYBACK_STATUS_STOPPED );
+    LOG_DEBUG("stop_internal() end");
 }
 
 template <typename T>
@@ -465,38 +526,41 @@ void playback_device::do_loop(T action)
     (*m_read_thread)->invoke([this, action](dispatcher::cancellable_timer c)
     {
         bool action_succeeded = false;
-        try
+        if (m_is_started)
         {
-            action_succeeded = action();
-        }
-        catch(const std::exception& e)
-        {
-            LOG_ERROR("Failed to read next frame from file: " << e.what());
-            //TODO: notify user that playback unexpectedly ended
-            action_succeeded = false; //will make the scope_guard stop the sensors, must return.
+            try
+            {
+                action_succeeded = action();
+            }
+            catch (const std::exception& e)
+            {
+                LOG_ERROR("Failed to read next frame from file: " << e.what());
+                //TODO: notify user that playback unexpectedly ended
+                action_succeeded = false; //will make the scope_guard stop the sensors, must return.
+            }
         }
 
         //On failure, exit thread
-        if(action_succeeded == false)
+        if(action_succeeded == false && m_is_started)
         {
-            for (auto s : m_active_sensors)
-                s.second->flush_pending_frames();
-
-            //Go over the sensors and stop them
-            size_t active_sensors_count = m_active_sensors.size();
-            for (size_t i = 0; i<active_sensors_count; i++)
+            // Stopping the sensor will call another function which will remove the sensor from the
+            // list of active sensors, which will cause issues -- so we copy it first
+            std::vector< std::shared_ptr< playback_sensor > > playback_sensors_copy;
             {
-                if (m_active_sensors.size() == 0)
-                    break;
-
-                //NOTE: calling stop will remove the sensor from m_active_sensors
-                m_active_sensors.begin()->second->stop(false);
+                std::lock_guard< std::mutex > locker( _active_sensors_mutex );
+                for (auto s : m_active_sensors)
+                    playback_sensors_copy.push_back( s.second );
+            }
+            for( auto & psc : playback_sensors_copy )
+            {
+                if( psc )
+                {
+                    psc->flush_pending_frames();
+                    psc->stop( false );
+                }
             }
 
             m_last_published_timestamp = device_serializer::nanoseconds(0);
-
-            //After all sensors were stopped, stop_internal() is called and flags m_is_started as false
-            assert(m_is_started == false);
         }
 
         //Continue looping?
@@ -511,6 +575,7 @@ void playback_device::do_loop(T action)
 // Return should indicate whether any frames are available: if there are, we need to sleep before proceeding
 bool playback_device::prefetch_done()
 {
+    std::lock_guard<std::mutex> locker(_active_sensors_mutex);
     for (auto s : m_active_sensors)
     {
         if (s.second->streams_contains_one_frame_or_more())
@@ -527,11 +592,11 @@ void playback_device::try_looping()
         //Notify subscribers that playback status changed
         if (m_is_paused)
         {
-            playback_status_changed(RS2_PLAYBACK_STATUS_PAUSED);
+            playback_status_changed.raise( RS2_PLAYBACK_STATUS_PAUSED );
         }
         else
         {
-            playback_status_changed(RS2_PLAYBACK_STATUS_PLAYING);
+            playback_status_changed.raise( RS2_PLAYBACK_STATUS_PLAYING );
         }
     }
 
@@ -577,26 +642,42 @@ void playback_device::try_looping()
             frame->frame.frame->set_blocking(!m_real_time);
             if (frame->stream_id.device_index != get_device_index() || frame->stream_id.sensor_index >= m_sensors.size())
             {
-                std::string error_msg = to_string() << "Unexpected sensor index while playing file (Read index = " << frame->stream_id.sensor_index << ")";
+                std::string error_msg = rsutils::string::from()
+                                     << "Unexpected sensor index while playing file (Read index = "
+                                     << frame->stream_id.sensor_index << ")";
                 LOG_ERROR(error_msg);
                 throw invalid_value_exception(error_msg);
             }
-            LOG_DEBUG("Dispatching frame " << frame_holder_to_string(frame->frame));
+            LOG_DEBUG("Dispatching frame " << frame->frame);
 
             if (data->is<serialized_invalid_frame>())
             {
                 LOG_WARNING("Bad frame from reader, ignoring");
                 return true;
             }
-            //Dispatch frame to the relevant sensor (see handle_frame definition for more details)
-            m_active_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time,
-                [this, timestamp]() { return calc_sleep_time(timestamp); },
-                [this]() { return m_is_paused == true; },
-                [this, timestamp]()
+            {
+                std::lock_guard< std::mutex > locker( _active_sensors_mutex );
+                auto it = m_active_sensors.find( frame->stream_id.sensor_index );
+                if( it == m_active_sensors.end() )
                 {
-                    std::lock_guard<std::mutex> locker(m_last_published_timestamp_mutex);
-                    m_last_published_timestamp = timestamp;
-                });
+                    LOG_DEBUG( "stream " << frame->stream_id.sensor_index
+                                         << " is not longer active, frame dropped!" );
+                    return true;
+                }
+
+
+                // Dispatch frame to the relevant sensor (see handle_frame definition for more
+                // details)
+                it->second->handle_frame(
+                    std::move( frame->frame ),
+                    m_real_time,
+                    [this, timestamp]() { return calc_sleep_time( timestamp ); },
+                    [this]() { return m_is_paused == true; },
+                    [this, timestamp]() {
+                        std::lock_guard< std::mutex > locker( m_last_published_timestamp_mutex );
+                        m_last_published_timestamp = timestamp;
+                    } );
+            }
             return true;
         }
 
@@ -671,7 +752,7 @@ void playback_device::register_extrinsics(const device_serializer::device_snapsh
             auto p1 = get_stream(m_sensors, e1.first);
             auto p2 = get_stream(m_sensors, e2.first);
             rs2_extrinsics x = calc_extrinsic(e1.second.second, e2.second.second);
-            auto extrinsic_fetcher = std::make_shared<lazy<rs2_extrinsics>>([x]()
+            auto extrinsic_fetcher = std::make_shared< rsutils::lazy< rs2_extrinsics > >( [x]()
             {
                 return x;
             });
@@ -690,15 +771,16 @@ bool playback_device::try_extend_snapshot(std::shared_ptr<extension_snapshot>& e
         return false;
     }
 
+    // NOTE: the extensions listed here may not all have a base of recordable<>, but a snapshot of which is nonetheless
+    // created by ros_reader. I.e., any snapshot created by ros_reader needs to be listed here, even if the extension is
+    // not recordable!
     switch (extension_type)
     {
-    case RS2_EXTENSION_DEBUG:   return try_extend<debug_interface>(e, ext);
     case RS2_EXTENSION_INFO:    return try_extend<info_interface>(e, ext);
     case RS2_EXTENSION_OPTIONS: return try_extend<options_interface>(e, ext);
     case RS2_EXTENSION_VIDEO:   return try_extend<video_sensor_interface>(e, ext);
     case RS2_EXTENSION_ROI:     return try_extend<roi_sensor_interface>(e, ext);
     case RS2_EXTENSION_DEPTH_SENSOR: return try_extend<depth_sensor>(e, ext);
-    case RS2_EXTENSION_L500_DEPTH_SENSOR: return try_extend<l500_depth_sensor_interface>(e, ext);
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR: return try_extend<depth_stereo_sensor>(e, ext);
     case RS2_EXTENSION_COLOR_SENSOR: return try_extend<color_sensor>(e, ext);
     case RS2_EXTENSION_MOTION_SENSOR: return try_extend<motion_sensor>(e, ext);

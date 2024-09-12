@@ -1,20 +1,19 @@
-From 7013990ed22d6ab5884b2cf8647332c37586f3b6 Mon Sep 17 00:00:00 2001
-From: Evgeni <evgeni.raikhel@intel.com>
-From: icarpis <itay.carpis@intel.com>
-Date: Sun, 2 Sep 2018 13:12:14 +0300
-Subject: [PATCH] Streaming formats for Ubuntu  Kernel 4.15
+From 7a1bdea21fa4ec32d1a984a1a9459f2c6a02c61c Mon Sep 17 00:00:00 2001
+From: Dmitry Perchanov <dmitry.perchanov@intel.com>
+Date: Sun, 21 Aug 2022 15:52:41 +0300
+Subject: [PATCH] Streaming formats for Ubuntu Xenial hwe Kernel 4.15
 
-Signed-off-by: Evgeni Raikhel <evgeni.raikhel@intel.com>
+Signed-off-by: Dmitry Perchanov <dmitry.perchanov@intel.com>
 ---
  drivers/media/usb/uvc/Makefile       |  1 +
- drivers/media/usb/uvc/uvc_driver.c   | 52 ++++++++++++++++++++++++++++++++++++
- drivers/media/usb/uvc/uvcvideo.h     | 34 +++++++++++++++++++++++
- drivers/media/v4l2-core/v4l2-ioctl.c |  8 +++++-
- include/uapi/linux/videodev2.h       |  8 ++++++
- 5 files changed, 102 insertions(+), 1 deletion(-)
+ drivers/media/usb/uvc/uvc_driver.c   | 62 ++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvcvideo.h     | 40 ++++++++++++++++++
+ drivers/media/v4l2-core/v4l2-ioctl.c | 10 ++++-
+ include/uapi/linux/videodev2.h       | 10 +++++
+ 5 files changed, 122 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/media/usb/uvc/Makefile b/drivers/media/usb/uvc/Makefile
-index a4fe5b5..cb5ee09 100644
+index a4fe5b5d533f..cb5ee0955b5e 100644
 --- a/drivers/media/usb/uvc/Makefile
 +++ b/drivers/media/usb/uvc/Makefile
 @@ -1,4 +1,5 @@
@@ -24,12 +23,24 @@ index a4fe5b5..cb5ee09 100644
  		  uvc_status.o uvc_isight.o uvc_debugfs.o
  ifeq ($(CONFIG_MEDIA_CONTROLLER),y)
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 28b91b7..a262064 100644
+index 3fff6fabefac..2eca76e13d33 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -208,6 +208,63 @@ static struct uvc_format_desc uvc_fmts[] = {
- 		.guid		= UVC_GUID_FORMAT_INZI,
- 		.fcc		= V4L2_PIX_FMT_INZI,
+@@ -158,6 +158,11 @@ static struct uvc_format_desc uvc_fmts[] = {
+ 		.guid		= UVC_GUID_FORMAT_Y12I,
+ 		.fcc		= V4L2_PIX_FMT_Y12I,
+ 	},
++	{
++		.name		= "Greyscale 16 L/R (Y16I)",
++		.guid		= UVC_GUID_FORMAT_Y16I,
++		.fcc		= V4L2_PIX_FMT_Y16I,
++	},
+ 	{
+ 		.name		= "Depth data 16-bit (Z16)",
+ 		.guid		= UVC_GUID_FORMAT_Z16,
+@@ -208,6 +213,63 @@ static struct uvc_format_desc uvc_fmts[] = {
+ 		.guid		= UVC_GUID_FORMAT_HEVC,
+ 		.fcc		= V4L2_PIX_FMT_HEVC,
  	},
 +	{
 +		.name		= "Luminosity data 8-bit (L8)",
@@ -92,13 +103,23 @@ index 28b91b7..a262064 100644
  
  /* ------------------------------------------------------------------------
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 0539878..401882d 100644
+index 029fbf881d74..38b6aaa5938f 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -156,6 +156,43 @@
+@@ -138,6 +138,9 @@
+ #define UVC_GUID_FORMAT_Y12I \
+ 	{ 'Y',  '1',  '2',  'I', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Y16I \
++	{ 'Y',  '1',  '6',  'I', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
+ #define UVC_GUID_FORMAT_Z16 \
+ 	{ 'Z',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
+@@ -156,6 +159,43 @@
  #define UVC_GUID_FORMAT_HEVC \
-	{ 'H',  'E',  'V',  'C', 0x00, 0x00, 0x10, 0x00, \
-	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
+ 	{ 'H',  'E',  'V',  'C', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
 +#define UVC_GUID_FORMAT_L8 \
 +	{ '2', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
 +	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
@@ -140,10 +161,18 @@ index 0539878..401882d 100644
  /* ------------------------------------------------------------------------
   * Driver specific constants.
 diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
-index 89e0878..b584ff1 100644
+index 34d121170a57..d894beb6cd93 100644
 --- a/drivers/media/v4l2-core/v4l2-ioctl.c
 +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
-@@ -1248,7 +1248,14 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+@@ -1151,6 +1151,7 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+ 	case V4L2_PIX_FMT_Y10BPACK:	descr = "10-bit Greyscale (Packed)"; break;
+ 	case V4L2_PIX_FMT_Y8I:		descr = "Interleaved 8-bit Greyscale"; break;
+ 	case V4L2_PIX_FMT_Y12I:		descr = "Interleaved 12-bit Greyscale"; break;
++	case V4L2_PIX_FMT_Y16I:		descr = "Interleaved 16-bit Greyscale"; break;
+ 	case V4L2_PIX_FMT_Z16:		descr = "16-bit Depth"; break;
+ 	case V4L2_PIX_FMT_INZI:		descr = "Planar 10:16 Greyscale Depth"; break;
+ 	case V4L2_PIX_FMT_PAL8:		descr = "8-bit Palette"; break;
+@@ -1248,7 +1249,14 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
  	case V4L2_TCH_FMT_TU08:		descr = "8-bit unsigned touch data"; break;
  	case V4L2_META_FMT_VSP1_HGO:	descr = "R-Car VSP1 1-D Histogram"; break;
  	case V4L2_META_FMT_VSP1_HGT:	descr = "R-Car VSP1 2-D Histogram"; break;
@@ -160,10 +189,14 @@ index 89e0878..b584ff1 100644
  		/* Compressed formats */
  		flags = V4L2_FMT_FLAG_COMPRESSED;
 diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
-index 1c095b5..959bf0b 100644
+index f1ed70857076..6286f73ae08d 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -679,6 +679,15 @@ struct v4l2_pix_format {
+@@ -676,9 +676,19 @@ struct v4l2_pix_format {
+ #define V4L2_PIX_FMT_S5C_UYVY_JPG v4l2_fourcc('S', '5', 'C', 'I') /* S5C73M3 interleaved UYVY/JPEG */
+ #define V4L2_PIX_FMT_Y8I      v4l2_fourcc('Y', '8', 'I', ' ') /* Greyscale 8-bit L/R interleaved */
+ #define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
++#define V4L2_PIX_FMT_Y16I     v4l2_fourcc('Y', '1', '6', 'I') /* Greyscale 16-bit L/R interleaved */
  #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
  #define V4L2_PIX_FMT_MT21C    v4l2_fourcc('M', 'T', '2', '1') /* Mediatek compressed block mode  */
  #define V4L2_PIX_FMT_INZI     v4l2_fourcc('I', 'N', 'Z', 'I') /* Intel Planar Greyscale 10-bit and Depth 16-bit */
@@ -180,5 +213,5 @@ index 1c095b5..959bf0b 100644
  /* SDR formats - used only for Software Defined Radio devices */
  #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */
 -- 
-2.7.4
+2.37.1
 

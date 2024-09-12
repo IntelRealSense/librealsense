@@ -104,7 +104,11 @@ public class DetachedActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                String appVersion = BuildConfig.VERSION_NAME;
+                String appVersion = "-";
+                try {
+                    appVersion = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+                } catch (PackageManager.NameNotFoundException e) {
+                }
                 String lrsVersion = RsContext.getVersion();
                 TextView versions = findViewById(R.id.versionsText);
                 versions.setText("librealsense version: " + lrsVersion + "\ncamera app version: " + appVersion);

@@ -1,36 +1,28 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include "device.h"
+
 #include "environment.h"
 #include "core/video.h"
 #include "core/motion.h"
-#include "device.h"
+#include "core/frame-holder.h"
+#include "sync.h"
+#include "context.h"  // rs2_device_info
+#include "core/sensor-interface.h"
+
+#include <rsutils/string/from.h>
+#include <rsutils/json.h>
 
 using namespace librealsense;
 
-std::shared_ptr<matcher> matcher_factory::create(rs2_matchers matcher, std::vector<stream_interface*> profiles)
-{
-    switch (matcher)
-    {
-    case RS2_MATCHER_DI:
-        return create_DI_matcher(profiles);
-    case RS2_MATCHER_DI_C:
-        return create_DI_C_matcher(profiles);
-    case RS2_MATCHER_DLR_C:
-        return create_DLR_C_matcher(profiles);
-    case RS2_MATCHER_DLR:
-        return create_DLR_matcher(profiles);
-    case RS2_MATCHER_DEFAULT:default:
-        LOG_DEBUG("Created default matcher");
-        return create_timestamp_matcher(profiles);
-        break;
-    }
-}
-stream_interface* librealsense::find_profile(rs2_stream stream, int index, std::vector<stream_interface*> profiles)
+
+stream_interface *
+librealsense::find_profile( rs2_stream stream, int index, std::vector< stream_interface * > const & profiles )
 {
     auto prof = std::find_if(profiles.begin(), profiles.end(), [&](stream_interface* profile)
     {
-        return profile->get_stream_type() == stream && profile->get_stream_index() == index;
+        return profile->get_stream_type() == stream && ( index == -1 || profile->get_stream_index() == index );
     });
 
     if (prof != profiles.end())
@@ -39,124 +31,45 @@ stream_interface* librealsense::find_profile(rs2_stream stream, int index, std::
         return nullptr;
 }
 
-std::shared_ptr<matcher> matcher_factory::create_DLR_C_matcher(std::vector<stream_interface*> profiles)
+
+device::device( std::shared_ptr< const device_info > const & dev_info,
+                bool device_changed_notifications )
+    : _dev_info( dev_info )
+    , _is_alive( std::make_shared< std::atomic< bool > >( true ) )
+    , _profiles_tags( [this]() { return get_profiles_tags(); } )
 {
-    auto color  = find_profile(RS2_STREAM_COLOR, 0, profiles);
-    if (!color)
+    if( device_changed_notifications )
     {
-        LOG_DEBUG("Created default matcher");
-        return create_timestamp_matcher(profiles);
-    }
-
-    return create_timestamp_composite_matcher({ create_DLR_matcher(profiles),
-        create_identity_matcher(color) });
-}
-
-std::shared_ptr<matcher> matcher_factory::create_DI_C_matcher(std::vector<stream_interface*> profiles)
-{
-    auto color = find_profile(RS2_STREAM_COLOR, 0, profiles);
-    if (!color)
-    {
-        LOG_DEBUG("Created default matcher");
-        return create_timestamp_matcher(profiles);
-    }
-
-    return create_timestamp_composite_matcher({ create_DI_matcher(profiles),
-        create_identity_matcher(profiles[2]) });
-}
-
-std::shared_ptr<matcher> matcher_factory::create_DLR_matcher(std::vector<stream_interface*> profiles)
-{
-    auto depth = find_profile(RS2_STREAM_DEPTH, 0, profiles);
-    auto left = find_profile(RS2_STREAM_INFRARED, 1, profiles);
-    auto right = find_profile(RS2_STREAM_INFRARED, 2, profiles);
-
-    if (!depth || !left || !right)
-    {
-        LOG_DEBUG("Created default matcher");
-        return create_timestamp_matcher(profiles);
-    }
-    return create_frame_number_matcher({ depth , left , right });
-}
-
-std::shared_ptr<matcher> matcher_factory::create_DI_matcher(std::vector<stream_interface*> profiles)
-{
-    auto depth = find_profile(RS2_STREAM_DEPTH, 0, profiles);
-    auto ir = find_profile(RS2_STREAM_INFRARED, 1, profiles);
-
-    if (!depth || !ir)
-    {
-        LOG_DEBUG("Created default matcher");
-        return create_timestamp_matcher(profiles);
-    }
-    return create_frame_number_matcher({ depth , ir });
-}
-
-std::shared_ptr<matcher> matcher_factory::create_frame_number_matcher(std::vector<stream_interface*> profiles)
-{
-    std::vector<std::shared_ptr<matcher>> matchers;
-    for (auto& p : profiles)
-        matchers.push_back(std::make_shared<identity_matcher>(p->get_unique_id(), p->get_stream_type()));
-
-    return create_frame_number_composite_matcher(matchers);
-}
-std::shared_ptr<matcher> matcher_factory::create_timestamp_matcher(std::vector<stream_interface*> profiles)
-{
-    std::vector<std::shared_ptr<matcher>> matchers;
-    for (auto& p : profiles)
-        matchers.push_back(std::make_shared<identity_matcher>(p->get_unique_id(), p->get_stream_type()));
-
-    return create_timestamp_composite_matcher(matchers);
-}
-
-std::shared_ptr<matcher> matcher_factory::create_identity_matcher(stream_interface *profile)
-{
-    return std::make_shared<identity_matcher>(profile->get_unique_id(), profile->get_stream_type());
-}
-
-std::shared_ptr<matcher> matcher_factory::create_frame_number_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
-{
-    return std::make_shared<frame_number_composite_matcher>(matchers);
-}
-std::shared_ptr<matcher> matcher_factory::create_timestamp_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
-{
-    return std::make_shared<timestamp_composite_matcher>(matchers);
-}
-
-device::device(std::shared_ptr<context> ctx,
-               const platform::backend_device_group group,
-               bool device_changed_notifications)
-    : _context(ctx), _group(group), _is_valid(true),
-      _device_changed_notifications(device_changed_notifications)
-{
-    _profiles_tags = lazy<std::vector<tagged_profile>>([this]() { return get_profiles_tags(); });
-
-    if (_device_changed_notifications)
-    {
-        auto cb = new devices_changed_callback_internal([this](rs2_device_list* removed, rs2_device_list* added)
-        {
-            // Update is_valid variable when device is invalid
-            std::lock_guard<std::mutex> lock(_device_changed_mtx);
-            for (auto& dev_info : removed->list)
+        std::weak_ptr< std::atomic< bool > > weak_alive = _is_alive;
+        std::weak_ptr< const device_info > weak_dev_info = _dev_info;
+        _device_change_subscription = get_context()->on_device_changes(
+            [weak_alive, weak_dev_info]( std::vector< std::shared_ptr< device_info > > const & removed,
+                                         std::vector< std::shared_ptr< device_info > > const & added )
             {
-                if (dev_info.info->get_device_data() == _group)
-                {
-                    _is_valid = false;
+                // The callback can be called from one thread while the object is being destroyed by another.
+                // Check if members can still be accessed.
+                auto alive = weak_alive.lock();
+                if( ! alive || ! *alive )
                     return;
-                }
-            }
-        });
+                auto this_dev_info = weak_dev_info.lock();
+                if( ! this_dev_info )
+                    return;
 
-        _callback_id = _context->register_internal_device_callback({ cb, [](rs2_devices_changed_callback* p) { p->release(); } });
+                // Update is_valid variable when device is invalid
+                for( auto & dev_info : removed )
+                {
+                    if( dev_info->is_same_as( this_dev_info ) )
+                    {
+                        *alive = false;
+                        return;
+                    }
+                }
+            } );
     }
 }
 
 device::~device()
 {
-    if (_device_changed_notifications)
-    {
-        _context->unregister_internal_device_callback(_callback_id);
-    }
     _sensors.clear();
 }
 
@@ -175,7 +88,8 @@ int device::assign_sensor(const std::shared_ptr<sensor_interface>& sensor_base, 
     }
     catch (std::out_of_range)
     {
-        throw invalid_value_exception(to_string() << "Cannot assign sensor - invalid subdevice value" << idx);
+        throw invalid_value_exception( rsutils::string::from()
+                                       << "Cannot assign sensor - invalid subdevice value" << idx );
     }
 }
 
@@ -221,7 +135,8 @@ const sensor_interface& device::get_sensor(size_t subdevice) const
 
 void device::hardware_reset()
 {
-    throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
+    throw not_implemented_exception( rsutils::string::from()
+                                     << __FUNCTION__ << " is not implemented for this device!" );
 }
 
 std::shared_ptr<matcher> device::create_matcher(const frame_holder& frame) const
@@ -238,7 +153,9 @@ std::pair<uint32_t, rs2_extrinsics> device::get_extrinsics(const stream_interfac
     rs2_extrinsics ext{};
     if (environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(*pin_stream, stream, &ext) == false)
     {
-        throw std::runtime_error(to_string() << "Failed to fetch extrinsics between pin stream (" << pin_stream->get_unique_id() << ") to given stream (" << stream.get_unique_id() << ")");
+        throw std::runtime_error( rsutils::string::from()
+                                  << "Failed to fetch extrinsics between pin stream (" << pin_stream->get_unique_id()
+                                  << ") to given stream (" << stream.get_unique_id() << ")" );
     }
     return std::make_pair(pair.first, ext);
 }
@@ -269,7 +186,7 @@ std::vector<rs2_format> device::map_supported_color_formats(rs2_format source_fo
     {
     case RS2_FORMAT_YUYV:
         target_formats.push_back(RS2_FORMAT_YUYV);
-        target_formats.push_back(RS2_FORMAT_Y16);
+        target_formats.push_back(RS2_FORMAT_Y8);
         break;
     case RS2_FORMAT_UYVY:
         target_formats.push_back(RS2_FORMAT_UYVY);
@@ -278,6 +195,23 @@ std::vector<rs2_format> device::map_supported_color_formats(rs2_format source_fo
         LOG_ERROR("Format is not supported for mapping");
     }
     return target_formats;
+}
+
+format_conversion device::get_format_conversion() const
+{
+    auto context = get_context();
+    if( ! context )
+        return format_conversion::full;
+    std::string const format_conversion( "format-conversion", 17 );
+    std::string const full( "full", 4 );
+    auto const value = context->get_settings().nested( format_conversion ).default_value( full );
+    if( value == full )
+        return format_conversion::full;
+    if( value == "basic" )
+        return format_conversion::basic;
+    if( value == "raw" )
+        return format_conversion::raw;
+    throw invalid_value_exception( "invalid " + format_conversion + " value '" + value + "'" );
 }
 
 void device::tag_profiles(stream_profiles profiles) const

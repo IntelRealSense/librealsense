@@ -39,21 +39,21 @@ struct Int8MultiArray_
    typedef  ::std_msgs::MultiArrayLayout_<ContainerAllocator>  _layout_type;
   _layout_type layout;
 
-   typedef std::vector<int8_t, typename ContainerAllocator::template rebind<int8_t>::other >  _data_type;
+   typedef std::vector<int8_t, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< int8_t > >  _data_type;
   _data_type data;
 
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::Int8MultiArray_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::Int8MultiArray_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::Int8MultiArray_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::Int8MultiArray_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Int8MultiArray_
 
 typedef ::std_msgs::Int8MultiArray_<std::allocator<void> > Int8MultiArray;
 
-typedef boost::shared_ptr< ::std_msgs::Int8MultiArray > Int8MultiArrayPtr;
-typedef boost::shared_ptr< ::std_msgs::Int8MultiArray const> Int8MultiArrayConstPtr;
+typedef std::shared_ptr< ::std_msgs::Int8MultiArray > Int8MultiArrayPtr;
+typedef std::shared_ptr< ::std_msgs::Int8MultiArray const> Int8MultiArrayConstPtr;
 
 // constants requiring out of line definition
 
@@ -85,32 +85,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Int8MultiArray_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Int8MultiArray_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Int8MultiArray_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Int8MultiArray_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Int8MultiArray_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Int8MultiArray_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

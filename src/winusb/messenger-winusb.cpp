@@ -10,7 +10,6 @@
 #include "usb/usb-enumerator.h"
 #include "types.h"
 
-#include <atlstr.h>
 #include <Windows.h>
 #include <Sddl.h>
 #include <string>
@@ -93,9 +92,9 @@ namespace librealsense
 
             bool res;
             if (USB_ENDPOINT_DIRECTION_IN(endpoint->get_address()))
-                res = WinUsb_ReadPipe(h, endpoint->get_address(), const_cast<unsigned char*>(buffer), length, &length_transferred, NULL);
+                res = WinUsb_ReadPipe(h, endpoint->get_address(), const_cast<unsigned char*>(buffer), length, &length_transferred, NULL) != 0;
             else
-                res = WinUsb_WritePipe(h, endpoint->get_address(), const_cast<unsigned char*>(buffer), length, &length_transferred, NULL);
+                res = WinUsb_WritePipe(h, endpoint->get_address(), const_cast<unsigned char*>(buffer), length, &length_transferred, NULL) != 0;
             if (!res)
             {
                 auto lastResult = GetLastError();

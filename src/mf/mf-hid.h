@@ -2,7 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "../backend.h"
+#include "../platform/hid-device.h"
+#include "../platform/hid-device-info.h"
 #include "win/win-helpers.h"
 
 #include <Sensorsapi.h>
@@ -18,16 +19,17 @@ namespace librealsense
             wmf_hid_sensor(const hid_device_info& device_info, CComPtr<ISensor> pISensor) :
                 _hid_device_info(device_info), _pISensor(pISensor) 
             {
-                BSTR fName{};
-
-                auto res = pISensor->GetFriendlyName(&fName);
-                if (FAILED(res))
+                BSTR fName;
+                auto res = pISensor->GetFriendlyName( &fName );
+                if( FAILED( res ) )
                 {
-                    fName = L"Unidentified HID Sensor";
+                    _name = CW2A( L"Unidentified HID Sensor" );
                 }
-
-                _name = CW2A(fName);
-                SysFreeString(fName);
+                else
+                {
+                    _name = CW2A( fName );
+                    SysFreeString( fName );
+                }
             };
 
             const std::string& get_sensor_name() const { return _name; }
@@ -65,6 +67,7 @@ namespace librealsense
             void start_capture(hid_callback callback) override;
             std::vector<hid_sensor> get_sensors() override; // Get opened sensors
             std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name, const std::string& report_name, custom_sensor_report_field report_field) override;
+            void set_gyro_scale_factor( double scale_factor ) override;
 
         private:
             // Don't move the position of wmf_backend member. This object must be destroyed only after COM objects.
@@ -76,6 +79,8 @@ namespace librealsense
 
             CComPtr<ISensorEvents> _cb;
             std::vector<hid_profile> _hid_profiles;
+            //10.0 was used for D400 before FW support to gyro sensitivity control
+            double _gyro_scale_factor = 10.0;
         };
     }
 }

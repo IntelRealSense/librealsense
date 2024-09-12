@@ -17,22 +17,3 @@ Additional platforms are tested and supported on demand, driven by community req
 ## D400 Stereoscopic Depth Cameras' Features
 Please check the Supported Features matrix at https://dev.intelrealsense.com/docs/supported-features-matrix
 
-
-## SR300 Notes:
-
-* Global Timestamp mechanism is not yet available for the SR300
-* D400 JSON presets are not applicable to SR300 devices, since they rely on completely different technology
-* Multicamera is technically supported similar to D400 but SR300 devices suffer from destructive interference, hence should not share field of view
-* On-Chip Calibration is not applicable to the SR300 since the structured light module does not lose depth calibration over time
-
-## T265 Tracking Module Notes:
-
-* Tracking module is currently not available on Android
-
-## L500 Camera Notes:
-* On Chip calibration is only relevant for D400 stereo cameras
-
-The following features are not available for L500 and can be added upon demand:
-* Win7 support
-* pre-compiled binaries for: Android (7+) & JAVA, LabView and Node.js
-* LabView wrapper

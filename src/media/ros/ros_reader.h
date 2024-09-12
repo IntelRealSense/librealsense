@@ -2,13 +2,24 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
+
 #include <core/serialization.h>
 #include "rosbag/view.h"
 #include "ros_file_format.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     using namespace device_serializer;
+
+    class frame_source;
+    class info_container;
+    class options_interface;
+    class options_container;
+    class processing_block_interface;
+    class recommended_proccesing_blocks_snapshot;
 
     class ros_reader: public device_serializer::reader
     {
@@ -32,11 +43,10 @@ namespace librealsense
             typename ROS_TYPE::ConstPtr msg_instnance_ptr = msg.instantiate<ROS_TYPE>();
             if (msg_instnance_ptr == nullptr)
             {
-                throw io_exception(to_string()
-                    << "Invalid file format, expected "
-                    << rs2rosinternal::message_traits::DataType<ROS_TYPE>::value()
-                    << " message but got: " << msg.getDataType()
-                    << "(Topic: " << msg.getTopic() << ")");
+                throw io_exception(
+                    rsutils::string::from()
+                    << "Invalid file format, expected " << rs2rosinternal::message_traits::DataType< ROS_TYPE >::value()
+                    << " message but got: " << msg.getDataType() << "(Topic: " << msg.getTopic() << ")" );
             }
             return msg_instnance_ptr;
         }
@@ -78,16 +88,13 @@ namespace librealsense
         bool try_read_stream_extrinsic(const stream_identifier& stream_id, uint32_t& group_id, rs2_extrinsics& extrinsic) const;
         static void update_sensor_options(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version);
         void update_proccesing_blocks(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version, std::string pid, std::string sensor_name);
-        void update_l500_depth_sensor(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version, std::string pid, std::string sensor_name);
         void add_sensor_extension(snapshot_collection & sensor_extensions, std::string sensor_name);
        
         bool is_depth_sensor(std::string sensor_name);
         bool is_color_sensor(std::string sensor_name);
         bool is_motion_module_sensor(std::string sensor_name);
         bool is_fisheye_module_sensor(std::string sensor_name);
-        bool is_ds5_PID(int pid);
-        bool is_sr300_PID(int pid);
-        bool is_l500_PID(int pid);
+        bool is_ds_PID(int pid);
         std::shared_ptr<recommended_proccesing_blocks_snapshot> read_proccesing_blocks_for_version_under_4(std::string pid, std::string sensor_name, std::shared_ptr<options_interface> options);
         std::shared_ptr<recommended_proccesing_blocks_snapshot> read_proccesing_blocks(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp,
             std::shared_ptr<options_interface> options, uint32_t file_version, std::string pid, std::string sensor_name);
@@ -108,25 +115,11 @@ namespace librealsense
         static std::pair<rs2_option, std::shared_ptr<librealsense::option>> create_property(const rosbag::MessageInstance& property_message_instance);
         /*Starting version 3*/
         static std::pair<rs2_option, std::shared_ptr<librealsense::option>> create_option(const rosbag::Bag& file, const rosbag::MessageInstance& value_message_instance);
-        static std::shared_ptr<librealsense::processing_block_interface> create_processing_block(const rosbag::MessageInstance& value_message_instance, bool& depth_to_disparity, std::shared_ptr<options_interface> options);
 
-        struct l500_data_per_resolution
-        {
-            float2 res_raw;
-            float2 zo_raw;
-            float2 res_world;
-            float2 zo_world;
-        };
-
-        struct l500_depth_data
-        {
-            float num_of_resolution;
-            l500_data_per_resolution data[MAX_NUM_OF_DEPTH_RESOLUTIONS];
-            float baseline;
-        };
-
-        l500_depth_data create_l500_intrinsic_depth(const rosbag::MessageInstance& value_message_instance);
-        ivcam2::intrinsic_depth ros_l500_depth_data_to_intrinsic_depth(ros_reader::l500_depth_data data);
+        std::shared_ptr< processing_block_interface >
+        create_processing_block( const rosbag::MessageInstance & value_message_instance,
+                                 bool & depth_to_disparity,
+                                 std::shared_ptr< options_interface > options );
 
         static notification create_notification(const rosbag::Bag& file, const rosbag::MessageInstance& message_instance);
         static std::shared_ptr<options_container> read_sensor_options(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, uint32_t file_version);
@@ -143,5 +136,6 @@ namespace librealsense
         std::vector<std::string>                m_enabled_streams_topics;
         std::shared_ptr<context>                m_context;
         uint32_t                                m_version;
+        float                                   m_legacy_depth_units;
     };
 }

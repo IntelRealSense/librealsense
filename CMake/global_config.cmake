@@ -1,6 +1,6 @@
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-set(CMAKE_CXX_STANDARD 11)
+
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
@@ -18,19 +18,13 @@ if(ENABLE_CCACHE)
 endif()
 
 macro(global_set_flags)
-    set(LRS_TARGET realsense2)
     set(LRS_LIB_NAME ${LRS_TARGET})
 
     add_definitions(-DELPP_THREAD_SAFE)
-    add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
     if (BUILD_GLSL_EXTENSIONS)
         set(LRS_GL_TARGET realsense2-gl)
         set(LRS_GL_LIB_NAME ${LRS_GL_TARGET})
-    endif()
-
-    if (ENABLE_ZERO_COPY)
-        add_definitions(-DZERO_COPY)
     endif()
 
     if (BUILD_EASYLOGGINGPP)
@@ -65,23 +59,15 @@ macro(global_set_flags)
         add_definitions(-DBUILD_SHARED_LIBS)
     endif()
 
-    if (BUILD_INTERNAL_UNIT_TESTS)
-        add_definitions(-DBUILD_INTERNAL_UNIT_TESTS)
-    endif()
-
     if (BUILD_WITH_CUDA)
         include(CMake/cuda_config.cmake)
     endif()
 
     if(BUILD_PYTHON_BINDINGS)
         include(libusb_config)
+        include(CMake/external_pybind11.cmake)
     endif()
 
-    if(BUILD_NETWORK_DEVICE)
-        add_definitions(-DNET_DEVICE)
-        set(LRS_NET_TARGET realsense2-net)
-    endif()
-    
     if(CHECK_FOR_UPDATES)
         if (ANDROID_NDK_TOOLCHAIN_INCLUDED)
             message(STATUS "Android build do not support CHECK_FOR_UPDATES flag, turning it off..")
@@ -94,7 +80,7 @@ macro(global_set_flags)
             add_definitions(-DCHECK_FOR_UPDATES)
         endif()
     endif()
-    
+        
     add_definitions(-D${BACKEND} -DUNICODE)
 endmacro()
 
@@ -117,15 +103,5 @@ macro(global_target_config)
     )
 
 
-
 endmacro()
 
-macro(add_tm2)
-    message(STATUS "Building with TM2")
-    include(libusb_config)
-    target_link_libraries(${LRS_TARGET} PRIVATE usb)
-    if(USE_EXTERNAL_USB)
-        add_dependencies(${LRS_TARGET} libusb)
-    endif()
-    target_compile_definitions(${LRS_TARGET} PRIVATE WITH_TRACKING=1)
-endmacro()

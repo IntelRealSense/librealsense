@@ -50,16 +50,11 @@
 #include "ros/message_event.h"
 #include "ros/serialization.h"
 
-//#include "ros/subscription_callback_helper.h"
-
 #include <ios>
 #include <map>
 #include <queue>
 #include <set>
 #include <stdexcept>
-
-#include <boost/format.hpp>
-//#include <boost/iterator/iterator_facade.hpp>
 
 #include "../../../console_bridge/include/console_bridge/console.h"
 
@@ -378,7 +373,7 @@ void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& strea
         break;
     }
     default:
-        throw BagFormatException((boost::format("Unhandled version: %1%") % version_).str());
+        throw BagFormatException( "Unhandled version: " + std::to_string( version_ ) );
     }
 }
 
@@ -402,7 +397,7 @@ std::shared_ptr<T> Bag::instantiateBuffer(IndexEntry const& index_entry) const {
 
         std::map<uint32_t, ConnectionInfo*>::const_iterator connection_iter = connections_.find(connection_id);
         if (connection_iter == connections_.end())
-            throw BagFormatException((boost::format("Unknown connection ID: %1%") % connection_id).str());
+            throw BagFormatException( "Unknown connection ID: " + std::to_string( connection_id ) );
         ConnectionInfo* connection_info = connection_iter->second;
 
         std::shared_ptr<T> p = std::make_shared<T>();
@@ -434,12 +429,12 @@ std::shared_ptr<T> Bag::instantiateBuffer(IndexEntry const& index_entry) const {
 
         std::map<std::string, uint32_t>::const_iterator topic_conn_id_iter = topic_connection_ids_.find(topic);
         if (topic_conn_id_iter == topic_connection_ids_.end())
-            throw BagFormatException((boost::format("Unknown topic: %1%") % topic).str());
+            throw BagFormatException( "Unknown topic: " + topic );
         uint32_t connection_id = topic_conn_id_iter->second;
 
         std::map<uint32_t, ConnectionInfo*>::const_iterator connection_iter = connections_.find(connection_id);
         if (connection_iter == connections_.end())
-            throw BagFormatException((boost::format("Unknown connection ID: %1%") % connection_id).str());
+            throw BagFormatException( "Unknown connection ID: " + std::to_string( connection_id ) );
         ConnectionInfo* connection_info = connection_iter->second;
 
         std::shared_ptr<T> p = std::make_shared<T>();
@@ -463,7 +458,7 @@ std::shared_ptr<T> Bag::instantiateBuffer(IndexEntry const& index_entry) const {
         return p;
     }
     default:
-        throw BagFormatException((boost::format("Unhandled version: %1%") % version_).str());
+        throw BagFormatException( "Unhandled version: " + std::to_string( version_ ) );
     }
 }
 

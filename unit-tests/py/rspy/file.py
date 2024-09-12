@@ -13,6 +13,7 @@ if system == 'Linux'  and  "microsoft" not in platform.uname()[3].lower():
 else:
     linux = False
 
+
 def inside_dir( root ):
     """
     Yield all files found in root, using relative names ('root/a' would be yielded as 'a')
@@ -21,6 +22,25 @@ def inside_dir( root ):
         for leaf in leafs:
             # We have to stick to Unix conventions because CMake on Windows is fubar...
             yield os.path.relpath( path + '/' + leaf, root ).replace( '\\', '/' )
+
+
+def is_inside( file, directory ):
+    """
+    :param file: The file/directory we're checking
+    :param directory: The parent directory
+
+    :return: True if the file resides somewhere inside the directory (even several directories in)
+
+    NOTE: A directory is considered inside itself! is_inside( dir, dir ) is True
+    """
+    directory = os.path.join( os.path.realpath( directory ), '' )
+    file = os.path.realpath( file )
+
+    # Return True if the common prefix of both is equal to directory
+    # E.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
+    common = os.path.commonprefix( [file, directory] )
+    return common == directory or os.path.join( common, '' ) == directory
+
 
 def find( dir, mask ):
     """

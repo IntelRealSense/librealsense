@@ -1,19 +1,22 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <librealsense2/rs.hpp>
-#include "ux-window.h"
+#include "notifications.h"
+#include <rsutils/number/float3.h>
 
-namespace librealsense
-{
-    struct float3x3;
-}
 
 namespace rs2
 {
+    class ux_window;
+
     class calibration_model
     {
+        using float3x3 = rsutils::number::float3x3;
+
     public:
-        calibration_model(rs2::device dev);
+        calibration_model(rs2::device dev, std::shared_ptr<notifications_model> not_model);
 
         bool supports();
 
@@ -22,7 +25,7 @@ namespace rs2
         void open() { to_open = true; }
 
     private:
-        void draw_float4x4(std::string name, librealsense::float3x3& feild, const librealsense::float3x3& original, bool& changed);
+        void draw_float4x4(std::string name, float3x3 & feild, const float3x3& original, bool& changed);
         void draw_float(std::string name, float& x, const float& orig, bool& changed);
 
         rs2::device dev;
@@ -33,5 +36,7 @@ namespace rs2
         std::vector<uint8_t> _original;
 
         int selected_resolution = 0;
+
+        std::weak_ptr<notifications_model> _not_model;
     };
 }

@@ -3,9 +3,13 @@
 
 #pragma once
 
-#include "sensor.h"
+#include "uvc-sensor.h"
 #include <mutex>
-#include "command_transfer.h"
+#include "platform/command-transfer.h"
+#include <string>
+#include <algorithm>
+#include <vector>
+
 
 namespace librealsense
 {
@@ -194,13 +198,13 @@ namespace librealsense
     class locked_transfer
     {
     public:
-        locked_transfer(std::shared_ptr<platform::command_transfer> command_transfer, uvc_sensor& uvc_ep)
+        locked_transfer(std::shared_ptr<platform::command_transfer> command_transfer, const std::shared_ptr< uvc_sensor > & uvc_ep)
             :_command_transfer(command_transfer),
             _uvc_sensor_base(uvc_ep)
         {}
 
         std::vector<uint8_t> send_receive(
-            const std::vector<uint8_t>& data,
+            uint8_t const * pb, size_t cb,
             int timeout_ms = 5000,
             bool require_response = true)
         {
@@ -208,41 +212,51 @@ namespace librealsense
             {
                 if (ptr) _heap.deallocate(ptr);
             });
-            if (!token.get()) throw;
+            if( !token.get() ) throw io_exception( "heap allocation failed" );
 
             std::lock_guard<std::recursive_mutex> lock(_local_mtx);
-            return _uvc_sensor_base.invoke_powered([&]
-                (platform::uvc_device& dev)
+            auto strong_uvc = _uvc_sensor_base.lock();
+            if( ! strong_uvc )
+                return std::vector< uint8_t >();
+
+            return strong_uvc->invoke_powered([&] ( platform::uvc_device & dev )
                 {
                     std::lock_guard<platform::uvc_device> lock(dev);
-                    return _command_transfer->send_receive(data, timeout_ms, require_response);
+                    return _command_transfer->send_receive(pb, cb, timeout_ms, require_response);
                 });
         }
 
         ~locked_transfer()
         {
-            _heap.wait_until_empty();
+            try
+            {
+                _heap.wait_until_empty();
+            }
+            catch(...)
+            {
+                LOG_DEBUG( "Error while waiting for an empty heap" );
+            }
         }
     private:
         std::shared_ptr<platform::command_transfer> _command_transfer;
-        uvc_sensor& _uvc_sensor_base;
+        std::weak_ptr< uvc_sensor> _uvc_sensor_base;
         std::recursive_mutex _local_mtx;
         small_heap<int, 256> _heap;
     };
 
     struct command
     {
-        uint8_t cmd;
-        int     param1;
-        int     param2;
-        int     param3;
-        int     param4;
+        uint8_t  cmd;
+        uint32_t param1;
+        uint32_t param2;
+        uint32_t param3;
+        uint32_t param4;
         std::vector<uint8_t> data;
         int     timeout_ms = 5000;
         bool    require_response = true;
 
-        explicit command(uint8_t cmd, int param1 = 0, int param2 = 0,
-                int param3 = 0, int param4 = 0, int timeout_ms = 5000,
+        explicit command(uint8_t cmd, uint32_t param1 = 0, uint32_t param2 = 0,
+                uint32_t param3 = 0, uint32_t param4 = 0, int timeout_ms = 5000,
                 bool require_response = true)
             : cmd(cmd), param1(param1),
               param2(param2),
@@ -256,52 +270,10 @@ namespace librealsense
 
     class hw_monitor
     {
-        struct hwmon_cmd
-        {
-            uint8_t     cmd;
-            int         param1;
-            int         param2;
-            int         param3;
-            int         param4;
-            uint8_t     data[HW_MONITOR_BUFFER_SIZE];
-            int         sizeOfSendCommandData;
-            long        timeOut;
-            bool        oneDirection;
-            uint8_t     receivedCommandData[HW_MONITOR_BUFFER_SIZE];
-            size_t      receivedCommandDataLength;
-            uint8_t     receivedOpcode[4];
-
-            explicit hwmon_cmd(uint8_t cmd_id)
-                : cmd(cmd_id),
-                  param1(0),
-                  param2(0),
-                  param3(0),
-                  param4(0),
-                  sizeOfSendCommandData(0),
-                  timeOut(5000),
-                  oneDirection(false),
-                  receivedCommandDataLength(0)
-            {}
-
-
-            explicit hwmon_cmd(const command& cmd)
-                : cmd(cmd.cmd),
-                  param1(cmd.param1),
-                  param2(cmd.param2),
-                  param3(cmd.param3),
-                  param4(cmd.param4),
-                  sizeOfSendCommandData(std::min((uint16_t)cmd.data.size(), HW_MONITOR_BUFFER_SIZE)),
-                  timeOut(cmd.timeout_ms),
-                  oneDirection(!cmd.require_response),
-                  receivedCommandDataLength(0)
-            {
-                librealsense::copy(data, cmd.data.data(), sizeOfSendCommandData);
-            }
-        };
-
+    protected:
         struct hwmon_cmd_details
         {
-            bool                                         oneDirection;
+            bool                                         require_response;
             std::array<uint8_t, HW_MONITOR_BUFFER_SIZE>  sendCommandData;
             int                                          sizeOfSendCommandData;
             long                                         timeOut;
@@ -310,17 +282,21 @@ namespace librealsense
             size_t                                       receivedCommandDataLength;
         };
 
-        void execute_usb_command(uint8_t *out, size_t outSize, uint32_t& op, uint8_t* in, size_t& inSize) const;
+        void execute_usb_command(uint8_t const *out, size_t outSize, uint32_t& op, uint8_t* in, 
+            size_t& inSize, bool require_response) const;
         static void update_cmd_details(hwmon_cmd_details& details, size_t receivedCmdLen, unsigned char* outputBuffer);
         void send_hw_monitor_command(hwmon_cmd_details& details) const;
 
         std::shared_ptr<locked_transfer> _locked_transfer;
+
+        static const size_t size_of_command_without_data = 24U;
+
     public:
         explicit hw_monitor(std::shared_ptr<locked_transfer> locked_transfer)
             : _locked_transfer(std::move(locked_transfer))
         {}
 
-         static void fill_usb_buffer( int opCodeNumber,
+        static void fill_usb_buffer( int opCodeNumber,
                                       int p1,
                                       int p2,
                                       int p3,
@@ -330,19 +306,68 @@ namespace librealsense
                                       uint8_t * bufferToSend,
                                       int & length );
 
-        std::vector< uint8_t > send( std::vector< uint8_t > const & data ) const;
-        std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
+        static command build_command_from_data(const std::vector<uint8_t> data);
+
+        virtual std::vector<uint8_t> send( std::vector<uint8_t> const & data ) const;
+        virtual std::vector<uint8_t> send( command const & cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
+        static std::vector<uint8_t> build_command(uint32_t opcode,
+            uint32_t param1 = 0,
+            uint32_t param2 = 0,
+            uint32_t param3 = 0,
+            uint32_t param4 = 0,
+            uint8_t const * data = nullptr,
+            size_t dataLength = 0);
+
         void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
-        static std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4);
+
+        template<typename T>
+        std::string get_firmware_version_string( const std::vector< uint8_t > & buff,
+                                                 size_t index,
+                                                 size_t length = 4,
+                                                 bool reversed = true )
+        {
+            std::stringstream formattedBuffer;
+            auto component_bytes_size = sizeof( T );
+            std::string s = "";
+            if( buff.size() < index + ( length * component_bytes_size ))
+            {
+                // Don't throw as we want to be back compatible even w/o a working version
+                LOG_ERROR( "GVD FW version cannot be read!" );
+                return formattedBuffer.str();
+            }
+
+            // We iterate through the version components (major.minor.patch.build) and append each
+            // string value to the result string
+            std::vector<int> components_value;
+            for( auto i = 0; i < length; i++ )
+            {
+                size_t component_index = index + ( i * component_bytes_size );
+
+                // We use int on purpose as types like uint8_t doesn't work as expected with << operator
+                int component_value =  *reinterpret_cast< const T * >( buff.data() + component_index );
+                components_value.push_back(component_value);
+            }
+
+            if( reversed )
+                std::reverse( components_value.begin(), components_value.end() );
+            
+            for( auto & element : components_value )
+            {
+                formattedBuffer << s << element;
+                s = ".";
+            }
+
+            return formattedBuffer.str();
+        }
+
         static std::string get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 6);
-        bool is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const;
 
         template <typename T>
         T get_gvd_field(const std::vector<uint8_t>& data, size_t index)
         {
             T rv = 0;
             if (index + sizeof(T) >= data.size())
-                throw new std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
+                throw std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
                     std::to_string(data.size()) + ", index: " + std::to_string(index));
             for (int i = 0; i < sizeof(T); i++)
                 rv += data[index + i] << (i * 8);

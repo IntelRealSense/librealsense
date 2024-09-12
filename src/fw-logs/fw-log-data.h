@@ -74,27 +74,24 @@ namespace librealsense
         class fw_log_data
         {
         public:
-            fw_log_data(void);
-            ~fw_log_data(void);
+            uint32_t _magic_number = 0;
+            uint32_t _severity = 0;
+            uint32_t _file_id = 0;
+            uint32_t _group_id = 0;
+            uint32_t _event_id = 0;
+            uint32_t _line = 0;
+            uint32_t _sequence = 0;
+            uint32_t _p1 = 0;
+            uint32_t _p2 = 0;
+            uint32_t _p3 = 0;
+            uint64_t _timestamp = 0;
+            double _delta = 0.0;
 
-            uint32_t _magic_number;
-            uint32_t _severity;
-            uint32_t _file_id;
-            uint32_t _group_id;
-            uint32_t _event_id;
-            uint32_t _line;
-            uint32_t _sequence;
-            uint32_t _p1;
-            uint32_t _p2;
-            uint32_t _p3;
-            uint64_t _timestamp;
-            double _delta;
+            uint32_t _thread_id = 0;
 
-            uint32_t _thread_id;
-
-            std::string _message;
-            std::string _file_name;
-            std::string _thread_name;
+            std::string _message = "";
+            std::string _file_name = "";
+            std::string _thread_name = "";
 
             rs2_log_severity get_severity() const;
             const std::string& get_message() const;

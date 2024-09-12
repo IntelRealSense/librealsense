@@ -2,6 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "hdr-merge.h"
+#include <src/core/depth-frame.h>
 
 namespace librealsense
 {
@@ -88,7 +89,7 @@ namespace librealsense
         }
 
         // discard merged frame if not relevant
-        discard_depth_merged_frame_if_needed(f);
+        discard_depth_merged_frame_if_needed(depth_frame);
 
         // 3. check if size of this vector is at least 2 (if not - return latest merge frame)
         if (_framesets.size() >= 2)
@@ -125,17 +126,19 @@ namespace librealsense
             // criteria for discarding saved merged_depth_frame:
             // 1 - frame counter for merged depth is greater than the input frame
             // 2 - resolution change
+            // 3 - delta between input frame counter and merged depth counter >= SEQUENTIAL_FRAMES_THRESHOLD
             auto depth_merged_frame_counter = _depth_merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
             auto input_frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
 
             auto merged_d_profile = _depth_merged_frame.get_profile().as<rs2::video_stream_profile>();
             auto new_d_profile = f.get_profile().as<rs2::video_stream_profile>();
 
+            bool counter_diff_over_threshold_detected = ((input_frame_counter - depth_merged_frame_counter) >= SEQUENTIAL_FRAMES_THRESHOLD);
             bool restart_pipe_detected = (depth_merged_frame_counter > input_frame_counter);
             bool resolution_change_detected = (merged_d_profile.width() != new_d_profile.width()) ||
                 (merged_d_profile.height() != new_d_profile.height());
 
-            if (restart_pipe_detected || resolution_change_detected)
+            if (restart_pipe_detected || resolution_change_detected || counter_diff_over_threshold_detected)
             {
                 _depth_merged_frame = nullptr;
             }
@@ -187,7 +190,12 @@ namespace librealsense
         if (new_f)
         {
             auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());
+            if (!ptr)
+                throw std::runtime_error("Frame interface is not depth frame");
+
             auto orig = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)first_depth.get());
+            if (!orig)
+                throw std::runtime_error("Frame interface is not depth frame");
 
             auto d0 = (uint16_t*)first_depth.get_data();
             auto d1 = (uint16_t*)second_depth.get_data();
@@ -257,6 +265,13 @@ namespace librealsense
         // checking frame counter of first depth and ir are the same
         if (use_ir)
         {
+            // on devices that does not support meta data on IR frames, do not use IR for hdr merging
+            if (!first_ir.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER)  ||
+                !second_ir.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER) ||
+                !first_ir.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID)    ||
+                !second_ir.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
+            return false;
+
             int depth_frame_counter = static_cast<int>(first_depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
             int ir_frame_counter = static_cast<int>(first_ir.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
             use_ir = (depth_frame_counter == ir_frame_counter);

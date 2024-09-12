@@ -23,7 +23,7 @@ namespace librealsense
     protected:
         yuy2_converter(const char* name, rs2_format target_format) :
             color_converter(name, target_format) {};
-        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
+        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size) override;
     };
 
     class LRS_EXTENSION_API uyvy_converter : public color_converter
@@ -35,7 +35,7 @@ namespace librealsense
     protected:
         uyvy_converter(const char* name, rs2_format target_format, rs2_stream target_stream) :
             color_converter(name, target_format, target_stream) {};
-        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
+        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size) override;
     };
 
     class LRS_EXTENSION_API mjpeg_converter : public color_converter
@@ -47,7 +47,7 @@ namespace librealsense
     protected:
         mjpeg_converter(const char* name, rs2_format target_format) :
             color_converter(name, target_format) {};
-        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
+        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size) override;
     };
 
     class LRS_EXTENSION_API bgr_to_rgb : public color_converter
@@ -59,6 +59,18 @@ namespace librealsense
     protected:
         bgr_to_rgb(const char* name) :
             color_converter(name, RS2_FORMAT_RGB8, RS2_STREAM_INFRARED) {};
-        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
+        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size) override;
+    };
+
+    class LRS_EXTENSION_API m420_converter : public color_converter
+    {
+    public:
+        m420_converter(rs2_format target_format) :
+            m420_converter("M420 Converter", target_format) {};
+
+    protected:
+        m420_converter(const char* name, rs2_format target_format) :
+            color_converter(name, target_format) {};
+        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size) override;
     };
 }

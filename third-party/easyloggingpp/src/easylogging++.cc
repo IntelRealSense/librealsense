@@ -1,24 +1,20 @@
 //
 //  Bismillah ar-Rahmaan ar-Raheem
 //
-//  Easylogging++ v9.96.5
+//  Easylogging++ v9.96.7
 //  Cross-platform logging library for C++ applications
 //
-//  Copyright (c) 2012-2018 Muflihun Labs
+//  Copyright (c) 2012-2018 Amrayn Web Services
 //  Copyright (c) 2012-2018 @abumusamq
 //
 //  This library is released under the MIT Licence.
-//  https://github.com/muflihun/easyloggingpp/blob/master/LICENSE
+//  https://github.com/amrayn/easyloggingpp/blob/master/LICENSE
 //
-//  https://github.com/muflihun/easyloggingpp
-//  https://muflihun.github.io/easyloggingpp
+//  https://amrayn.com
 //  http://muflihun.com
 //
 
 #include "easylogging++.h"
-#ifdef ANDROID
-#include <android/log.h>
-#endif
 
 #if defined(AUTO_INITIALIZE_EASYLOGGINGPP)
 INITIALIZE_EASYLOGGINGPP
@@ -68,7 +64,7 @@ static const char* kDateTimeFormatSpecifierForFilename            =      "%datet
 // Date/time
 static const char* kDays[7]                         =      { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
 static const char* kDaysAbbrev[7]                   =      { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-static const char* kMonths[12]                      =      { "January", "February", "March", "Apri", "May", "June", "July", "August",
+static const char* kMonths[12]                      =      { "January", "February", "March", "April", "May", "June", "July", "August",
                                                              "September", "October", "November", "December"
                                                            };
 static const char* kMonthsAbbrev[12]                =      { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
@@ -83,7 +79,7 @@ static const char* kNullPointer                            =      "nullptr";
 #if ELPP_VARIADIC_TEMPLATES_SUPPORTED
 #endif  // ELPP_VARIADIC_TEMPLATES_SUPPORTED
 static const base::type::VerboseLevel kMaxVerboseLevel     =      9;
-static const char* kUnknownUser                            =      "user";
+static const char* kUnknownUser                            =      "unknown-user";
 static const char* kUnknownHost                            =      "unknown-host";
 
 
@@ -296,7 +292,7 @@ Configurations::Configurations(const std::string& configurationFile, bool useDef
 }
 
 bool Configurations::parseFromFile(const std::string& configurationFile, Configurations* base) {
-  // We initial assertion with true because if we have assertion diabled, we want to pass this
+  // We initial assertion with true because if we have assertion disabled, we want to pass this
   // check and if assertion is enabled we will have values re-assigned any way.
   bool assertionPassed = true;
   ELPP_ASSERT((assertionPassed = base::utils::File::pathExists(configurationFile.c_str(), true)) == true,
@@ -603,7 +599,7 @@ void LogBuilder::convertToColoredOutput(base::type::string_t* logLine, Level lev
 
 // Logger
 
-Logger::Logger(const std::string& id, base::LogStreamsReferenceMap* logStreamsReference) :
+Logger::Logger(const std::string& id, base::LogStreamsReferenceMapPtr logStreamsReference) :
   m_id(id),
   m_typedConfigurations(nullptr),
   m_parentApplicationName(std::string()),
@@ -613,7 +609,7 @@ Logger::Logger(const std::string& id, base::LogStreamsReferenceMap* logStreamsRe
 }
 
 Logger::Logger(const std::string& id, const Configurations& configurations,
-               base::LogStreamsReferenceMap* logStreamsReference) :
+               base::LogStreamsReferenceMapPtr logStreamsReference) :
   m_id(id),
   m_typedConfigurations(nullptr),
   m_parentApplicationName(std::string()),
@@ -649,35 +645,22 @@ Logger& Logger::operator=(const Logger& logger) {
 }
 
 void Logger::configure(const Configurations& configurations) {
-#if ELPP_ASYNC_LOGGING
-    if (ELPP) {
-        base::threading::ScopedLock scopedLockConfig(ELPP->configLock()); 
-        performConfig(configurations);
+  m_isConfigured = false;  // we set it to false in case if we fail
+  initUnflushedCount();
+  if (m_typedConfigurations != nullptr) {
+    Configurations* c = const_cast<Configurations*>(m_typedConfigurations->configurations());
+    if (c->hasConfiguration(Level::Global, ConfigurationType::Filename)) {
+      flush();
     }
-    else
-        performConfig(configurations);
-#else
-    performConfig(configurations);
-#endif  // ELPP_ASYNC_LOGGING
-}
-
-void Logger::performConfig(const Configurations& configurations) {
-    m_isConfigured = false;  // we set it to false in case if we fail
-    initUnflushedCount();
-    if (m_typedConfigurations != nullptr) {
-        Configurations* c = const_cast<Configurations*>(m_typedConfigurations->configurations());
-        if (c->hasConfiguration(Level::Global, ConfigurationType::Filename)) {
-            flush();
-        }
-    }
-    base::threading::ScopedLock scopedLock(lock());
-    if (m_configurations != configurations) {
-        m_configurations.setFromBase(const_cast<Configurations*>(&configurations));
-    }
-    base::utils::safeDelete(m_typedConfigurations);
-    m_typedConfigurations = new base::TypedConfigurations(&m_configurations, m_logStreamsReference);
-    resolveLoggerFormatSpec();
-    m_isConfigured = true;
+  }
+  base::threading::ScopedLock scopedLock(lock());
+  if (m_configurations != configurations) {
+    m_configurations.setFromBase(const_cast<Configurations*>(&configurations));
+  }
+  base::utils::safeDelete(m_typedConfigurations);
+  m_typedConfigurations = new base::TypedConfigurations(&m_configurations, m_logStreamsReference);
+  resolveLoggerFormatSpec();
+  m_isConfigured = true;
 }
 
 void Logger::reconfigure(void) {
@@ -811,22 +794,22 @@ bool File::createPath(const std::string& path) {
   if (path[0] == '/') {
     builtPath = "/";
   }
-  currPath = STRTOK(currPath, base::consts::kFilePathSeperator, 0);
+  currPath = STRTOK(currPath, base::consts::kFilePathSeparator, 0);
 #elif ELPP_OS_WINDOWS
   // Use secure functions API
   char* nextTok_ = nullptr;
-  currPath = STRTOK(currPath, base::consts::kFilePathSeperator, &nextTok_);
+  currPath = STRTOK(currPath, base::consts::kFilePathSeparator, &nextTok_);
   ELPP_UNUSED(nextTok_);
 #endif  // ELPP_OS_UNIX
   while (currPath != nullptr) {
     builtPath.append(currPath);
-    builtPath.append(base::consts::kFilePathSeperator);
+    builtPath.append(base::consts::kFilePathSeparator);
 #if ELPP_OS_UNIX
     status = mkdir(builtPath.c_str(), ELPP_LOG_PERMS);
-    currPath = STRTOK(nullptr, base::consts::kFilePathSeperator, 0);
+    currPath = STRTOK(nullptr, base::consts::kFilePathSeparator, 0);
 #elif ELPP_OS_WINDOWS
     status = _mkdir(builtPath.c_str());
-    currPath = STRTOK(nullptr, base::consts::kFilePathSeperator, &nextTok_);
+    currPath = STRTOK(nullptr, base::consts::kFilePathSeparator, &nextTok_);
 #endif  // ELPP_OS_UNIX
   }
   if (status == -1) {
@@ -947,7 +930,7 @@ void Str::replaceFirstWithEscape(base::type::string_t& str, const base::type::st
   std::size_t foundAt = base::type::string_t::npos;
   while ((foundAt = str.find(replaceWhat, foundAt + 1)) != base::type::string_t::npos) {
     if (foundAt > 0 && str[foundAt - 1] == base::consts::kFormatSpecifierChar) {
-      str.erase(foundAt > 0 ? foundAt - 1 : 0, 1);
+      str.erase(foundAt - 1, 1);
       ++foundAt;
     } else {
       str.replace(foundAt, replaceWhat.length(), replaceWith);
@@ -1030,7 +1013,7 @@ char* Str::clearBuff(char buff[], std::size_t lim) {
   return buff;
 }
 
-/// @brief Converst wchar* to char*
+/// @brief Converts wchar* to char*
 ///        NOTE: Need to free return value after use!
 char* Str::wcharPtrToCharPtr(const wchar_t* line) {
   std::size_t len_ = wcslen(line) + 1;
@@ -1516,7 +1499,7 @@ void LogFormat::parseFromFormat(const base::type::string_t& userFormat) {
         if (hasFlag(flag)) {
           // If we already have flag we remove the escape chars so that '%%' is turned to '%'
           // even after specifier resolution - this is because we only replaceFirst specifier
-          formatCopy.erase(foundAt > 0 ? foundAt - 1 : 0, 1);
+          formatCopy.erase(foundAt - 1, 1);
           ++foundAt;
         }
       } else {
@@ -1541,7 +1524,7 @@ void LogFormat::parseFromFormat(const base::type::string_t& userFormat) {
   // For date/time we need to extract user's date format first
   std::size_t dateIndex = std::string::npos;
   if ((dateIndex = formatCopy.find(base::consts::kDateTimeFormatSpecifier)) != std::string::npos) {
-    while (dateIndex > 0 && formatCopy[dateIndex - 1] == base::consts::kFormatSpecifierChar) {
+    while (dateIndex != std::string::npos && dateIndex > 0 && formatCopy[dateIndex - 1] == base::consts::kFormatSpecifierChar) {
       dateIndex = formatCopy.find(base::consts::kDateTimeFormatSpecifier, dateIndex + 1);
     }
     if (dateIndex != std::string::npos) {
@@ -1632,7 +1615,7 @@ void LogFormat::updateFormatSpec(void) {
 // TypedConfigurations
 
 TypedConfigurations::TypedConfigurations(Configurations* configurations,
-    base::LogStreamsReferenceMap* logStreamsReference) {
+    LogStreamsReferenceMapPtr logStreamsReference) {
   m_configurations = configurations;
   m_logStreamsReference = logStreamsReference;
   build(m_configurations);
@@ -1708,7 +1691,7 @@ void TypedConfigurations::build(Configurations* configurations) {
       // We do not yet configure filename but we will configure in another
       // loop. This is because if file cannot be created, we will force ToFile
       // to be false. Because configuring logger is not necessarily performance
-      // sensative operation, we can live with another loop; (by the way this loop
+      // sensitive operation, we can live with another loop; (by the way this loop
       // is not very heavy either)
     } else if (conf->configurationType() == ConfigurationType::Format) {
       setValue(conf->level(), base::LogFormat(conf->level(),
@@ -1797,12 +1780,14 @@ std::string TypedConfigurations::resolveFilename(const std::string& filename) {
 }
 
 void TypedConfigurations::insertFile(Level level, const std::string& fullFilename) {
+  if( fullFilename.empty() )
+    return;
   std::string resolvedFilename = resolveFilename(fullFilename);
   if (resolvedFilename.empty()) {
-    std::cerr << "Could not load empty file for logging, please re-check your configurations for level ["
-              << LevelHelper::convertToString(level) << "]";
+    std::cerr << "Could not load empty file (fullFIlename= '" << fullFilename << "') for logging, please re - check your configurations for level["
+              << LevelHelper::convertToString(level) << "]" << std::endl;
   }
-  std::string filePath = base::utils::File::extractPathFromFilename(resolvedFilename, base::consts::kFilePathSeperator);
+  std::string filePath = base::utils::File::extractPathFromFilename(resolvedFilename, base::consts::kFilePathSeparator);
   if (filePath.size() < resolvedFilename.size()) {
     base::utils::File::createPath(filePath);
   }
@@ -1902,6 +1887,7 @@ bool RegisteredHitCounters::validateNTimes(const char* filename, base::type::Lin
 RegisteredLoggers::RegisteredLoggers(const LogBuilderPtr& defaultLogBuilder) :
   m_defaultLogBuilder(defaultLogBuilder) {
   m_defaultConfigurations.setToDefault();
+  m_logStreamsReference = std::make_shared<base::LogStreamsReferenceMap>();
 }
 
 Logger* RegisteredLoggers::get(const std::string& id, bool forceCreation) {
@@ -1913,7 +1899,7 @@ Logger* RegisteredLoggers::get(const std::string& id, bool forceCreation) {
       ELPP_ASSERT(validId, "Invalid logger ID [" << id << "]. Not registering this logger.");
       return nullptr;
     }
-    logger_ = new Logger(id, m_defaultConfigurations, &m_logStreamsReference);
+    logger_ = new Logger(id, m_defaultConfigurations, m_logStreamsReference);
     logger_->m_logBuilder = m_defaultLogBuilder;
     registerNew(id, logger_);
     LoggerRegistrationCallback* callback = nullptr;
@@ -1943,8 +1929,8 @@ bool RegisteredLoggers::remove(const std::string& id) {
 
 void RegisteredLoggers::unsafeFlushAll(void) {
   ELPP_INTERNAL_INFO(1, "Flushing all log files");
-  for (base::LogStreamsReferenceMap::iterator it = m_logStreamsReference.begin();
-       it != m_logStreamsReference.end(); ++it) {
+  for (base::LogStreamsReferenceMap::iterator it = m_logStreamsReference->begin();
+       it != m_logStreamsReference->end(); ++it) {
     if (it->second.get() == nullptr) continue;
     it->second->flush();
   }
@@ -2084,21 +2070,26 @@ Storage::Storage(const LogBuilderPtr& defaultLogBuilder) :
   m_registeredLoggers(new base::RegisteredLoggers(defaultLogBuilder)),
   m_flags(ELPP_DEFAULT_LOGGING_FLAGS),
   m_vRegistry(new base::VRegistry(0, &m_flags)),
+
 #if ELPP_ASYNC_LOGGING
-    m_asyncLogWriteQueue(new base::AsyncLogQueue()),
-    m_asyncLogReadQueue(new base::AsyncLogQueue()),
+  m_asyncLogQueue(new base::AsyncLogQueue()),
   m_asyncDispatchWorker(asyncDispatchWorker),
 #endif  // ELPP_ASYNC_LOGGING
+
   m_preRollOutCallback(base::defaultPreRollOutCallback) {
   // Register default logger
   m_registeredLoggers->get(std::string(base::consts::kDefaultLoggerId));
   // We register default logger anyway (worse case it's not going to register) just in case
   m_registeredLoggers->get("default");
+
+#if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
   // Register performance logger and reconfigure format
   Logger* performanceLogger = m_registeredLoggers->get(std::string(base::consts::kPerformanceLoggerId));
   m_registeredLoggers->get("performance");
   performanceLogger->configurations()->setGlobally(ConfigurationType::Format, std::string("%datetime %level %msg"));
   performanceLogger->reconfigure();
+#endif // defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
+
 #if defined(ELPP_SYSLOG)
   // Register syslog logger and reconfigure format
   Logger* sysLogLogger = m_registeredLoggers->get(std::string(base::consts::kSysLogLoggerId));
@@ -2108,10 +2099,8 @@ Storage::Storage(const LogBuilderPtr& defaultLogBuilder) :
   addFlag(LoggingFlag::AllowVerboseIfModuleNotSpecified);
 #if ELPP_ASYNC_LOGGING
   installLogDispatchCallback<base::AsyncLogDispatchCallback>(std::string("AsyncLogDispatchCallback"));
-  ELPP_INTERNAL_INFO(1, "ELPP ASYNC logger selected");
 #else
   installLogDispatchCallback<base::DefaultLogDispatchCallback>(std::string("DefaultLogDispatchCallback"));
-  ELPP_INTERNAL_INFO(1, "ELPP sync logger selected");
 #endif  // ELPP_ASYNC_LOGGING
 #if defined(ELPP_FEATURE_ALL) || defined(ELPP_FEATURE_PERFORMANCE_TRACKING)
   installPerformanceTrackingCallback<base::DefaultPerformanceTrackingCallback>
@@ -2131,9 +2120,8 @@ Storage::~Storage(void) {
   installLogDispatchCallback<base::DefaultLogDispatchCallback>(std::string("DefaultLogDispatchCallback"));
   ELPP_INTERNAL_INFO(5, "Destroying asyncDispatchWorker");
   base::utils::safeDelete(m_asyncDispatchWorker);
-  ELPP_INTERNAL_INFO(5, "Destroying asyncLogQueues");
-  base::utils::safeDelete(m_asyncLogWriteQueue);
-  base::utils::safeDelete(m_asyncLogReadQueue);
+  ELPP_INTERNAL_INFO(5, "Destroying asyncLogQueue");
+  base::utils::safeDelete(m_asyncLogQueue);
 #endif  // ELPP_ASYNC_LOGGING
   ELPP_INTERNAL_INFO(5, "Destroying registeredHitCounters");
   base::utils::safeDelete(m_registeredHitCounters);
@@ -2199,16 +2187,18 @@ void Storage::setApplicationArguments(int argc, char** argv) {
 } // namespace base
 
 // LogDispatchCallback
-void LogDispatchCallback::handle(const LogDispatchData* data) {
 #if defined(ELPP_THREAD_SAFE)
+void LogDispatchCallback::handle(const LogDispatchData* data) {
   base::threading::ScopedLock scopedLock(m_fileLocksMapLock);
   std::string filename = data->logMessage()->logger()->typedConfigurations()->filename(data->logMessage()->level());
   auto lock = m_fileLocks.find(filename);
   if (lock == m_fileLocks.end()) {
     m_fileLocks.emplace(std::make_pair(filename, std::unique_ptr<base::threading::Mutex>(new base::threading::Mutex)));
   }
-#endif
 }
+#else
+void LogDispatchCallback::handle(const LogDispatchData* /*data*/) {}
+#endif
 
 base::threading::Mutex& LogDispatchCallback::fileHandle(const LogDispatchData* data) {
   auto it = m_fileLocks.find(data->logMessage()->logger()->typedConfigurations()->filename(data->logMessage()->level()));
@@ -2229,26 +2219,6 @@ void DefaultLogDispatchCallback::handle(const LogDispatchData* data) {
 }
 
 void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
-#ifdef ANDROID
-  if (m_data->logMessage()->logger()->m_typedConfigurations->toStandardOutput(m_data->logMessage()->level())) {
-    int androidLogPriority = ANDROID_LOG_FATAL;
-    if (m_data->logMessage()->level() == Level::Fatal)
-      androidLogPriority = ANDROID_LOG_FATAL;
-    else if (m_data->logMessage()->level() == Level::Error)
-      androidLogPriority = ANDROID_LOG_ERROR;
-    else if (m_data->logMessage()->level() == Level::Warning)
-      androidLogPriority = ANDROID_LOG_WARN;
-    else if (m_data->logMessage()->level() == Level::Info)
-      androidLogPriority = ANDROID_LOG_INFO;
-    else if (m_data->logMessage()->level() == Level::Debug)
-      androidLogPriority = ANDROID_LOG_DEBUG;
-    else
-      androidLogPriority = ANDROID_LOG_FATAL;
-
-    __android_log_print(androidLogPriority, "librealsense", "%s", logLine.c_str());
-  }
-#endif
-
   if (m_data->dispatchAction() == base::DispatchAction::NormalLog) {
     if (m_data->logMessage()->logger()->m_typedConfigurations->toFile(m_data->logMessage()->level())) {
       base::type::fstream_t* fs = m_data->logMessage()->logger()->m_typedConfigurations->fileStream(
@@ -2312,11 +2282,15 @@ void DefaultLogDispatchCallback::dispatch(base::type::string_t&& logLine) {
 void AsyncLogDispatchCallback::handle(const LogDispatchData* data) {
   base::type::string_t logLine = data->logMessage()->logger()->logBuilder()->build(data->logMessage(),
                                  data->dispatchAction() == base::DispatchAction::NormalLog);
+  if (data->dispatchAction() == base::DispatchAction::NormalLog
+      && data->logMessage()->logger()->typedConfigurations()->toStandardOutput(data->logMessage()->level())) {
+    if (ELPP->hasFlag(LoggingFlag::ColoredTerminalOutput))
+      data->logMessage()->logger()->logBuilder()->convertToColoredOutput(&logLine, data->logMessage()->level());
+    ELPP_COUT << ELPP_COUT_LINE(logLine);
+  }
   // Save resources and only queue if we want to write to file otherwise just ignore handler
-  auto conf = data->logMessage()->logger()->typedConfigurations();
-  if (conf->toStandardOutput(data->logMessage()->level()) ||
-      conf->toFile(data->logMessage()->level())) {
-    ELPP->asyncLogWriteQueue()->push(AsyncLogItem(*(data->logMessage()), *data, logLine));
+  if (data->logMessage()->logger()->typedConfigurations()->toFile(data->logMessage()->level())) {
+    ELPP->asyncLogQueue()->push(AsyncLogItem(*(data->logMessage()), *data, logLine));
   }
 }
 
@@ -2328,76 +2302,61 @@ AsyncDispatchWorker::AsyncDispatchWorker() {
 AsyncDispatchWorker::~AsyncDispatchWorker() {
   setContinueRunning(false);
   ELPP_INTERNAL_INFO(6, "Stopping dispatch worker - Cleaning log queue");
-  if (m_asyncWorkerThread.joinable())
-      m_asyncWorkerThread.join();
-  else
-      ELPP_INTERNAL_INFO(6, "logger not joinable");
   clean();
   ELPP_INTERNAL_INFO(6, "Log queue cleaned");
 }
 
 bool AsyncDispatchWorker::clean(void) {
-  std::unique_lock<std::mutex> lk(_mtx);
-  try
-  {
-      fetchLogQueue();
-      emptyQueue();
-  }
-  catch(...){}
+  std::mutex m;
+  std::unique_lock<std::mutex> lk(m);
+  cv.wait(lk, [] { return !ELPP->asyncLogQueue()->empty(); });
+  emptyQueue();
   lk.unlock();
   cv.notify_one();
-  return (ELPP && ELPP->asyncLogWriteQueue() && ELPP->asyncLogWriteQueue()->empty() && ELPP->asyncLogReadQueue() && ELPP->asyncLogReadQueue()->empty());
+  return ELPP->asyncLogQueue()->empty();
 }
 
 void AsyncDispatchWorker::emptyQueue(void) {
-    if (ELPP && ELPP->asyncLogReadQueue()) {
-        for (auto i=0UL; i < ELPP->asyncLogReadQueue()->size(); i++) {
-            AsyncLogItem data = ELPP->asyncLogReadQueue()->next();
-            handle(&data);
-        }
-    }
+  while (!ELPP->asyncLogQueue()->empty()) {
+    AsyncLogItem data = ELPP->asyncLogQueue()->next();
+    handle(&data);
+    base::threading::msleep(100);
+  }
 }
 
 void AsyncDispatchWorker::start(void) {
+  base::threading::msleep(5000); // 5s (why?)
   setContinueRunning(true);
-  m_asyncWorkerThread = std::thread(&AsyncDispatchWorker::run, this);
+  std::thread t1(&AsyncDispatchWorker::run, this);
+  t1.join();
 }
 
 void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
   LogDispatchData* data = logItem->data();
   LogMessage* logMessage = logItem->logMessage();
   Logger* logger = logMessage->logger();
-  //base::threading::ScopedLock scopedLock(logger->lock());
   base::TypedConfigurations* conf = logger->typedConfigurations();
   base::type::string_t logLine = logItem->logLine();
   if (data->dispatchAction() == base::DispatchAction::NormalLog) {
-      if (conf) {
-          if (conf->toFile(logMessage->level())) {
-              base::type::fstream_t* fs = conf->fileStream(logMessage->level());
-              if (fs != nullptr) {
-                  fs->write(logLine.c_str(), logLine.size());
-                  if (fs->fail()) {
-                      ELPP_INTERNAL_ERROR("Unable to write log to file ["
-                          << conf->filename(logMessage->level()) << "].\n"
-                          << "Few possible reasons (could be something else):\n" << "      * Permission denied\n"
-                          << "      * Disk full\n" << "      * Disk is not writable", true);
-                  }
-                  else {
-                      if (ELPP->hasFlag(LoggingFlag::ImmediateFlush) || (logger->isFlushNeeded(logMessage->level()))) {
-                          logger->flush(logMessage->level(), fs);
-                      }
-                  }
-
-              }
-              else {
-                  ELPP_INTERNAL_ERROR("Log file for [" << LevelHelper::convertToString(logMessage->level()) << "] "
-                      << "has not been configured but [TO_FILE] is configured to TRUE. [Logger ID: " << logger->id() << "]", false);
-              }
+    if (conf->toFile(logMessage->level())) {
+      base::type::fstream_t* fs = conf->fileStream(logMessage->level());
+      if (fs != nullptr) {
+        fs->write(logLine.c_str(), logLine.size());
+        if (fs->fail()) {
+          ELPP_INTERNAL_ERROR("Unable to write log to file ["
+                              << conf->filename(logMessage->level()) << "].\n"
+                              << "Few possible reasons (could be something else):\n" << "      * Permission denied\n"
+                              << "      * Disk full\n" << "      * Disk is not writable", true);
+        } else {
+          if (ELPP->hasFlag(LoggingFlag::ImmediateFlush) || (logger->isFlushNeeded(logMessage->level()))) {
+            logger->flush(logMessage->level(), fs);
           }
-          else if (conf->toStandardOutput(logMessage->level())) {
-              ELPP_COUT << ELPP_COUT_LINE(logLine);
-          }
-      } 
+        }
+      } else {
+        ELPP_INTERNAL_ERROR("Log file for [" << LevelHelper::convertToString(logMessage->level()) << "] "
+                            << "has not been configured but [TO_FILE] is configured to TRUE. [Logger ID: " << logger->id() << "]", false);
+      }
+    }
   }
 #  if defined(ELPP_SYSLOG)
   else if (data->dispatchAction() == base::DispatchAction::SysLog) {
@@ -2426,30 +2385,11 @@ void AsyncDispatchWorker::handle(AsyncLogItem* logItem) {
 #  endif  // defined(ELPP_SYSLOG)
 }
 
-// This method is used in order to transfer all the logs:
-// from the "write queue" - queue in which all the logs are added by the other threads
-// to the "read queue" - queue from which the logs are read and dispatched by the async logger's thread
-// This double buffer mechanism minimizes the inter-thread locking time, improving log's bandwidth and 
-// preventing costly stalls due to log flushes to HD.
-void AsyncDispatchWorker::fetchLogQueue()
-{
-    if (ELPP && ELPP->asyncLogWriteQueue() && ELPP->asyncLogWriteQueue()->size()) {
-        base::threading::ScopedLock scopedLockW(ELPP->asyncLogWriteQueue()->lock());
-        base::threading::ScopedLock scopedLockR(ELPP->asyncLogReadQueue()->lock());
-        ELPP->asyncLogWriteQueue()->appendTo(ELPP->asyncLogReadQueue());
-        ELPP->asyncLogWriteQueue()->clear();
-    }
-}
-
 void AsyncDispatchWorker::run(void) {
-    while (continueRunning()) {
-        if (ELPP) {
-            base::threading::ScopedLock scopedLock(ELPP->configLock());
-            emptyQueue();
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        fetchLogQueue();    
-    }
+  while (continueRunning()) {
+    emptyQueue();
+    base::threading::msleep(10); // 10ms
+  }
 }
 #endif  // ELPP_ASYNC_LOGGING
 
@@ -2545,7 +2485,7 @@ void LogDispatcher::dispatch(void) {
   }
 #ifndef ELPP_NO_GLOBAL_LOCK
   // see https://github.com/muflihun/easyloggingpp/issues/580
-  // global lock is turned off by default unless
+  // global lock is turned on by default unless
   // ELPP_NO_GLOBAL_LOCK is defined
   base::threading::ScopedLock scopedLock(ELPP->lock());
 #endif
@@ -2570,7 +2510,7 @@ void LogDispatcher::dispatch(void) {
 
 void MessageBuilder::initialize(Logger* logger) {
   m_logger = logger;
-  m_containerLogSeperator = ELPP->hasFlag(LoggingFlag::NewLineForContainer) ?
+  m_containerLogSeparator = ELPP->hasFlag(LoggingFlag::NewLineForContainer) ?
                             ELPP_LITERAL("\n    ") : ELPP_LITERAL(", ");
 }
 
@@ -2595,7 +2535,6 @@ MessageBuilder& MessageBuilder::operator<<(const wchar_t* msg) {
 // Writer
 
 Writer& Writer::construct(Logger* logger, bool needLock) {
-  if (!ELPP) return *this;
   m_logger = logger;
   initializeLogger(logger->id(), false, needLock);
   m_messageBuilder.initialize(m_logger);
@@ -2603,7 +2542,6 @@ Writer& Writer::construct(Logger* logger, bool needLock) {
 }
 
 Writer& Writer::construct(int count, const char* loggerIds, ...) {
-  if (!ELPP) return *this;
   if (ELPP->hasFlag(LoggingFlag::MultiLoggerSupport)) {
     va_list loggersList;
     va_start(loggersList, loggerIds);
@@ -2651,7 +2589,6 @@ void Writer::initializeLogger(const std::string& loggerId, bool lookup, bool nee
 }
 
 void Writer::processDispatch() {
-  if (!ELPP) return;
 #if ELPP_LOGGING_ENABLED
   if (ELPP->hasFlag(LoggingFlag::MultiLoggerSupport)) {
     bool firstDispatched = false;
@@ -2693,30 +2630,35 @@ void Writer::processDispatch() {
 }
 
 void Writer::triggerDispatch(void) {
-  if (m_proceed) {
-    if (m_msg == nullptr) {
-      LogMessage msg(m_level, m_file, m_line, m_func, m_verboseLevel,
-                     m_logger);
-      base::LogDispatcher(m_proceed, &msg, m_dispatchAction).dispatch();
-    } else {
-      base::LogDispatcher(m_proceed, m_msg, m_dispatchAction).dispatch();
-    }
-  }
-  if (m_logger != nullptr) {
-    m_logger->stream().str(ELPP_LITERAL(""));
-    m_logger->releaseLock();
-  }
-  if (m_proceed && m_level == Level::Fatal
-      && !ELPP->hasFlag(LoggingFlag::DisableApplicationAbortOnFatalLog)) {
-    base::Writer(Level::Warning, m_file, m_line, m_func).construct(1, base::consts::kDefaultLoggerId)
-        << "Aborting application. Reason: Fatal log at [" << m_file << ":" << m_line << "]";
-    std::stringstream reasonStream;
-    reasonStream << "Fatal log at [" << m_file << ":" << m_line << "]"
-                 << " If you wish to disable 'abort on fatal log' please use "
-                 << "el::Loggers::addFlag(el::LoggingFlag::DisableApplicationAbortOnFatalLog)";
-    base::utils::abort(1, reasonStream.str());
-  }
-  m_proceed = false;
+  try {
+	  if (m_proceed) {
+	    if (m_msg == nullptr) {
+	      LogMessage msg(m_level, m_file, m_line, m_func, m_verboseLevel,
+	                     m_logger);
+	      base::LogDispatcher(m_proceed, &msg, m_dispatchAction).dispatch();
+	    } else {
+	      base::LogDispatcher(m_proceed, m_msg, m_dispatchAction).dispatch();
+	    }
+	  }
+	  if (m_logger != nullptr) {
+	    m_logger->stream().str(ELPP_LITERAL(""));
+	    m_logger->releaseLock();
+	  }
+	  if (m_proceed && m_level == Level::Fatal
+	      && !ELPP->hasFlag(LoggingFlag::DisableApplicationAbortOnFatalLog)) {
+	    base::Writer(Level::Warning, m_file, m_line, m_func).construct(1, base::consts::kDefaultLoggerId)
+	        << "Aborting application. Reason: Fatal log at [" << m_file << ":" << m_line << "]";
+	    std::stringstream reasonStream;
+	    reasonStream << "Fatal log at [" << m_file << ":" << m_line << "]"
+	                 << " If you wish to disable 'abort on fatal log' please use "
+	                 << "el::Loggers::addFlag(el::LoggingFlag::DisableApplicationAbortOnFatalLog)";
+	    base::utils::abort(1, reasonStream.str());
+	  }
+	  m_proceed = false;
+	  }
+	catch(std::exception & ){
+		// Extremely low memory situation; don't let exception be unhandled.
+	}
 }
 
 // PErrorWriter
@@ -2745,7 +2687,7 @@ PerformanceTracker::PerformanceTracker(const std::string& blockName,
   m_level(level), m_hasChecked(false), m_lastCheckpointId(std::string()), m_enabled(false) {
 #if !defined(ELPP_DISABLE_PERFORMANCE_TRACKING) && ELPP_LOGGING_ENABLED
   // We store it locally so that if user happen to change configuration by the end of scope
-  // or before calling checkpoint, we still depend on state of configuraton at time of construction
+  // or before calling checkpoint, we still depend on state of configuration at time of construction
   el::Logger* loggerPtr = ELPP->registeredLoggers()->get(loggerId, false);
   m_enabled = loggerPtr != nullptr && loggerPtr->m_typedConfigurations->performanceTracking(m_level);
   if (m_enabled) {
@@ -2854,7 +2796,7 @@ std::ostream& operator<<(std::ostream& os, const StackTrace& st) {
 }
 
 void StackTrace::generateNew(void) {
-#if ELPP_STACKTRACE
+#ifdef HAVE_EXECINFO
   m_stack.clear();
   void* stack[kMaxStack];
   unsigned int size = backtrace(stack, kMaxStack);
@@ -3073,7 +3015,7 @@ const Configurations* Loggers::defaultConfigurations(void) {
   return ELPP->registeredLoggers()->defaultConfigurations();
 }
 
-const base::LogStreamsReferenceMap* Loggers::logStreamsReference(void) {
+const base::LogStreamsReferenceMapPtr Loggers::logStreamsReference(void) {
   return ELPP->registeredLoggers()->logStreamsReference();
 }
 
@@ -3146,9 +3088,6 @@ bool Loggers::configureFromArg(const char* argKey) {
 }
 
 void Loggers::flushAll(void) {
-#if ELPP_ASYNC_LOGGING
-    ELPP->asyncDispatchWorker()->clean();
-#endif
   ELPP->registeredLoggers()->flushAll();
 }
 
@@ -3173,11 +3112,11 @@ void Loggers::clearVModules(void) {
 // VersionInfo
 
 const std::string VersionInfo::version(void) {
-  return std::string("9.96.5");
+  return std::string("9.96.7");
 }
 /// @brief Release date of current version
 const std::string VersionInfo::releaseDate(void) {
-  return std::string("07-09-2018 0950hrs");
+  return std::string("24-11-2018 0728hrs");
 }
 
 } // namespace el

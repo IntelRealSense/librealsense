@@ -3,10 +3,15 @@
 
 #pragma once
 
-#include "rendering.h"
-#include "opengl3.h"
+#include <matrix4.h>  // common/
+#include <opengl3.h>  // common/
 #include "synthetic-stream-gl.h"
-#include "proc/synthetic-stream.h"
+#include "../proc/synthetic-stream.h"
+
+namespace rs2 {
+    class texture_buffer;
+}
+
 
 namespace librealsense
 {

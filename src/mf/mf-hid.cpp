@@ -15,7 +15,6 @@
 #include "metadata.h"
 
 #include <PortableDeviceTypes.h>
-//#include <PortableDeviceClassExtension.h>
 #include <PortableDevice.h>
 #include <Windows.h>
 #include <Sensorsapi.h>
@@ -24,7 +23,7 @@
 #include <initguid.h>
 #include <propkeydef.h>
 #include <comutil.h>
-#include <string>
+#include <rsutils/string/from.h>
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
@@ -42,7 +41,7 @@ namespace librealsense
         public:
             virtual ~sensor_events() = default;
 
-            explicit sensor_events(hid_callback callback) : m_cRef(0), _callback(callback) {}
+            explicit sensor_events(hid_callback callback, double gyro_scale_factor = 10.0) : m_cRef(0), _callback(callback), _gyro_scale_factor(gyro_scale_factor) {}
 
             STDMETHODIMP QueryInterface(REFIID iid, void** ppv)
             {
@@ -168,11 +167,9 @@ namespace librealsense
                     CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Z_DEGREES_PER_SECOND, &var));
                     rawZ = var.dblVal;
 
-                    static constexpr double gyro_transform_factor = 10.0;
-
-                    rawX *= gyro_transform_factor;
-                    rawY *= gyro_transform_factor;
-                    rawZ *= gyro_transform_factor;
+                    rawX *= _gyro_scale_factor;
+                    rawY *= _gyro_scale_factor;
+                    rawZ *= _gyro_scale_factor;
                 }
                 else
                 {
@@ -199,9 +196,9 @@ namespace librealsense
                 meta_data.report_type.imu_report.imu_counter = imu_count;
                 meta_data.report_type.imu_report.usb_counter = usb_count;
 
-                data.x = static_cast<int16_t>(rawX);
-                data.y = static_cast<int16_t>(rawY);
-                data.z = static_cast<int16_t>(rawZ);
+                data.x = static_cast<int32_t>(rawX);
+                data.y = static_cast<int32_t>(rawY);
+                data.z = static_cast<int32_t>(rawZ);
                 data.ts_low = customTimestampLow;
                 data.ts_high = customTimestampHigh;
 
@@ -266,6 +263,7 @@ namespace librealsense
         private:
             long m_cRef;
             hid_callback _callback;
+            double _gyro_scale_factor = 10.0;
         };
 
         void wmf_hid_device::open(const std::vector<hid_profile>&iio_profiles)
@@ -300,6 +298,51 @@ namespace librealsense
                             }
 
                             pPropsToSet->Release();
+
+                            //currently implemented only for Gyro sensitivity
+                            if( profile_to_open.sensor_name == "HID Sensor Class Device: Gyroscope" )
+                            {
+                                // creating IPortableDeviceValues container for <Data Field, Sensitivity> tuples
+                                IPortableDeviceValues * pInSensitivityValues;
+                                CHECK_HR( CoCreateInstance( CLSID_PortableDeviceValues,
+                                                         NULL,
+                                                         CLSCTX_INPROC_SERVER,
+                                                         IID_PPV_ARGS( &pInSensitivityValues ) ));
+
+                                PROPVARIANT pv;
+                                PropVariantInit( &pv );
+                                // COM type for double
+                                pv.vt = VT_R8;  
+                                pv.dblVal = (double)profile_to_open.sensitivity;
+                                pInSensitivityValues->SetValue(
+                                    SENSOR_DATA_TYPE_ANGULAR_VELOCITY_X_DEGREES_PER_SECOND,
+                                    &pv );
+                                pInSensitivityValues->SetValue(
+                                    SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Y_DEGREES_PER_SECOND,
+                                    &pv );
+                                pInSensitivityValues->SetValue(
+                                    SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Z_DEGREES_PER_SECOND,
+                                    &pv );
+                                // creating IPortableDeviceValues container holding <SENSOR_PROPERTY_CHANGE_SENSITIVITY,pInSensitivityValues> tuple
+                                IPortableDeviceValues * pInValues = NULL; //Input
+                                CHECK_HR(CoCreateInstance( CLSID_PortableDeviceValues,
+                                                            NULL,
+                                                            CLSCTX_INPROC_SERVER,
+                                                            IID_PPV_ARGS( &pInValues ) ));
+
+                                pInValues->SetIPortableDeviceValuesValue( SENSOR_PROPERTY_CHANGE_SENSITIVITY,
+                                                                            pInSensitivityValues );
+                                
+                                IPortableDeviceValues * pOutValues = NULL; //Output
+                                // set sensitivity
+                                hr = connected_sensor->get_sensor()->SetProperties( pInValues, &pOutValues );
+                                if( SUCCEEDED( hr ) )
+                                    PropVariantClear( &pv );
+
+                                pInValues->Release();
+
+                            }
+                            
                         }
                     }
                 }
@@ -328,7 +371,7 @@ namespace librealsense
         void wmf_hid_device::start_capture(hid_callback callback)
         {
             // Hack, start default profile
-            _cb = new sensor_events(callback);
+            _cb = new sensor_events(callback, _gyro_scale_factor);
             ISensorEvents* sensorEvents = nullptr;
             CHECK_HR(_cb->QueryInterface(IID_PPV_ARGS(&sensorEvents)));
 
@@ -362,6 +405,11 @@ namespace librealsense
             return std::vector<uint8_t>();
         }
 
+        void wmf_hid_device::set_gyro_scale_factor(double scale_factor) 
+        {
+            _gyro_scale_factor = scale_factor;
+        }
+
         void wmf_hid_device::foreach_hid_device(std::function<void(hid_device_info, CComPtr<ISensor>)> action)
         {
             /* Enumerate all HID devices and run action function on each device */
@@ -376,7 +424,7 @@ namespace librealsense
                 CHECK_HR(CoCreateInstance(CLSID_SensorManager, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pSensorManager)));
 
                 /* Retrieves a collection containing all sensors associated with category SENSOR_CATEGORY_ALL */
-                LOG_HR(res=pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL, &pSensorCollection));
+                res=pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL, &pSensorCollection);
                 if (SUCCEEDED(res))
                 {
                     /* Retrieves the count of sensors in the collection */
@@ -388,10 +436,18 @@ namespace librealsense
                         if (SUCCEEDED(pSensorCollection->GetAt(i, &pSensor.p)))
                         {
                             /* Retrieve SENSOR_PROPERTY_FRIENDLY_NAME which is the sensor name that is intended to be seen by the user */
-                            BSTR fName{};
-                            LOG_HR(res = pSensor->GetFriendlyName(&fName));
-                            if (FAILED(res))
-                                fName= L"Unidentified HID sensor";
+                            std::string sensor_id;
+                            {
+                                BSTR fName;
+                                LOG_HR( res = pSensor->GetFriendlyName( &fName ) );
+                                if( FAILED( res ) )
+                                    sensor_id = "Unidentified HID sensor";
+                                else
+                                {
+                                    sensor_id = rsutils::string::windows::win_to_utf( fName );
+                                    SysFreeString( fName );
+                                }
+                            }
 
                             /* Retrieve SENSOR_PROPERTY_PERSISTENT_UNIQUE_ID which is a GUID that uniquely identifies the sensor on the current computer */
                             SENSOR_ID id{};
@@ -425,8 +481,8 @@ namespace librealsense
                                         {
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_DEVICE_PATH))
                                             {
-                                                info.device_path = win_to_utf( propertyValue.pwszVal );
-                                                info.id = win_to_utf( fName );
+                                                info.device_path = rsutils::string::windows::win_to_utf( propertyValue.pwszVal );
+                                                info.id = sensor_id;
 
                                                 uint16_t vid, pid, mi;
                                                 std::string uid, guid;
@@ -455,13 +511,13 @@ namespace librealsense
                                                         // Leave it empty: it won't be matched against anything
                                                     }
 
-                                                    info.pid = to_string() << std::hex << pid;
-                                                    info.vid = to_string() << std::hex << vid;
+                                                    info.pid = rsutils::string::from() << std::hex << pid;
+                                                    info.vid = rsutils::string::from() << std::hex << vid;
                                                 }
                                             }
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_SERIAL_NUMBER))
                                             {
-                                                auto str = win_to_utf( propertyValue.pwszVal );
+                                                auto str = rsutils::string::windows::win_to_utf( propertyValue.pwszVal );
                                                 std::transform(begin(str), end(str), begin(str), ::tolower);
                                                 info.serial_number = str;
                                             }
@@ -473,11 +529,14 @@ namespace librealsense
                             }
 
                             action(info, pSensor);
-
-                            SysFreeString(fName);
                         }
+                        //Releasing resources
+                        safe_release(pSensor);
                     }
                 }
+                // ERROR_NOT_FOUND is normal if no sensors are available
+                else if( res != HRESULT_FROM_WIN32( ERROR_NOT_FOUND ) )
+                    LOG_HR_STR( "pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL)", res );
             }
             catch (...)
             {

@@ -22,10 +22,8 @@ extern "C" {
 /**
 * Firmware size constants
 */
-    const int signed_fw_size = 0x18031C;
-    const int signed_sr300_size = 0x0C025C;
-    const int unsigned_fw_size = 0x200000;
-    const int unsigned_sr300_size = 0x100000;
+    const unsigned int signed_fw_size = 0x18031C;
+    const unsigned int unsigned_fw_size = 0x200000;
 
 /**
  * librealsense Recorder is intended for effective unit-testing
@@ -85,6 +83,7 @@ typedef struct rs2_software_video_frame
     rs2_timestamp_domain domain;
     int frame_number;
     const rs2_stream_profile* profile;
+    float depth_units;
 } rs2_software_video_frame;
 
 /** \brief All the parameters required to define a motion frame. */
@@ -134,6 +133,7 @@ struct rs2_software_device_destruction_callback;
 
 /**
  * Create librealsense context that will try to record all operations over librealsense into a file
+ * \deprecated
  * \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
  * \param[in] filename string representing the name of the file to record
  * \param[in] section  string representing the name of the section within existing recording
@@ -145,6 +145,7 @@ rs2_context* rs2_create_recording_context(int api_version, const char* filename,
 /**
  * Create librealsense context that given a file will respond to calls exactly as the recording did
  * if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
+ * \deprecated
  * \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
  * \param[in] filename string representing the name of the file to play back from
  * \param[in] section  string representing the name of the section within existing recording
@@ -154,15 +155,16 @@ rs2_context* rs2_create_recording_context(int api_version, const char* filename,
 rs2_context* rs2_create_mock_context(int api_version, const char* filename, const char* section, rs2_error** error);
 
 /**
-* Create librealsense context that given a file will respond to calls exactly as the recording did
-* if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
-* \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
-* \param[in] filename string representing the name of the file to play back from
-* \param[in] section  string representing the name of the section within existing recording
-* \param[in] min_api_version reject any file that was recorded before this version
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            context object, should be released by rs2_delete_context
-*/
+ * Create librealsense context that given a file will respond to calls exactly as the recording did
+ * if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown
+ * \deprecated
+ * \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
+ * \param[in] filename string representing the name of the file to play back from
+ * \param[in] section  string representing the name of the section within existing recording
+ * \param[in] min_api_version reject any file that was recorded before this version
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            context object, should be released by rs2_delete_context
+ */
 rs2_context* rs2_create_mock_context_versioned(int api_version, const char* filename, const char* section, const char* min_api_version, rs2_error** error);
 
 /**

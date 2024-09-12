@@ -2,8 +2,12 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "measurement.h"
-
+#include "ux-window.h"
+#include <rs-config.h>
 #include <librealsense2/hpp/rs_export.hpp>
+
+#include "opengl3.h"
+
 
 using namespace rs2;
 
@@ -11,9 +15,10 @@ void measurement::enable() {
     measurement_active = true;
     config_file::instance().set(configurations::viewer::is_measuring, true);
 }
-void measurement::disable() { 
-    state.points.clear(); 
+void measurement::disable() {
+    state.points.clear();
     state.edges.clear();
+    state.polygons.clear();
     measurement_active = false;
     config_file::instance().set(configurations::viewer::is_measuring, false);
 }
@@ -78,7 +83,7 @@ void measurement::add_point(interest_point p)
     {
         commit_state();
 
-        if (state.points.size() >= 2 && !shift) 
+        if (state.points.size() >= 2 && !shift)
         {
             state.points.clear();
             state.edges.clear();
@@ -111,7 +116,7 @@ void measurement::add_point(interest_point p)
                 for (auto&& idx : path) poly.push_back(state.points[idx].pos);
 
                 auto area = calculate_area(poly);
-                log_function(to_string() << "Measured area of " << area_to_string(area));
+                log_function( rsutils::string::from() << "Measured area of " << area_to_string(area));
             }
         }
 
@@ -119,7 +124,7 @@ void measurement::add_point(interest_point p)
         {
             auto dist = state.points[last].pos - state.points[prev].pos;
             state.edges.push_back(std::make_pair(last, prev));
-            log_function(to_string() << "Measured distance of " << length_to_string(dist.length()));
+            log_function( rsutils::string::from() << "Measured distance of " << length_to_string(dist.length()));
         }
 
         last_hovered_point = int(state.points.size() - 1);
@@ -130,7 +135,7 @@ void measurement::add_point(interest_point p)
 
 std::string measurement::area_to_string(float area)
 {
-    return to_string() << std::setprecision(2) << area << " m";
+    return rsutils::string::from() << std::setprecision(2) << area << " m";
 }
 
 std::string measurement::length_to_string(float distance)
@@ -140,23 +145,23 @@ std::string measurement::length_to_string(float distance)
     {
         if (distance < 0.01f)
         {
-            label = to_string() << std::setprecision(3) << distance * 1000.f << " mm";
+            label = rsutils::string::from() << std::setprecision(3) << distance * 1000.f << " mm";
         } else if (distance < 1.f) {
-            label = to_string() << std::setprecision(3) << distance * 100.f << " cm";
+            label = rsutils::string::from() << std::setprecision(3) << distance * 100.f << " cm";
         } else {
-            label = to_string() << std::setprecision(3) << distance << " m";
+            label = rsutils::string::from() << std::setprecision(3) << distance << " m";
         }
-    } else 
+    } else
     {
         if (distance < 0.0254f)
         {
-            label = to_string() << std::setprecision(3) << distance * 1000.f << " mm";
+            label = rsutils::string::from() << std::setprecision(3) << distance * 1000.f << " mm";
         } else if (distance < 0.3048f) {
-            label = to_string() << std::setprecision(3) << distance / 0.0254 << " in";
+            label = rsutils::string::from() << std::setprecision(3) << distance / 0.0254 << " in";
         } else if (distance < 0.9144) {
-            label = to_string() << std::setprecision(3) << distance / 0.3048f << " ft";
+            label = rsutils::string::from() << std::setprecision(3) << distance / 0.3048f << " ft";
         } else {
-            label = to_string() << std::setprecision(3) << distance / 0.9144 << " yd";
+            label = rsutils::string::from() << std::setprecision(3) << distance / 0.9144 << " yd";
         }
     }
     return label;
@@ -179,12 +184,12 @@ float measurement::calculate_area(std::vector<float3> poly)
     auto a = poly[1] - poly[0];
     auto b = poly[2] - poly[0];
     auto n = cross(a, b);
-    return abs(total * n.normalize()) / 2;
+    return std::abs( total * n.normalized() ) / 2;
 }
 
-void draw_sphere(const float3& pos, float r, int lats, int longs) 
+void draw_sphere(const float3& pos, float r, int lats, int longs)
 {
-    for(int i = 0; i <= lats; i++) 
+    for(int i = 0; i <= lats; i++)
     {
         float lat0 = float(M_PI) * (-0.5f + (float) (i - 1) / lats);
         float z0  = sin(lat0);
@@ -195,7 +200,7 @@ void draw_sphere(const float3& pos, float r, int lats, int longs)
         float zr1 = cos(lat1);
 
         glBegin(GL_QUAD_STRIP);
-        for(int j = 0; j <= longs; j++) 
+        for(int j = 0; j <= longs; j++)
         {
             float lng = 2.f * float(M_PI) * (float) (j - 1) / longs;
             float x = cos(lng);
@@ -235,26 +240,26 @@ void measurement::draw_label(ux_window& win, float3 pos, float distance, int hei
     auto size = ImGui::CalcTextSize(label.c_str());
     if (is_area) ImGui::PopFont();
 
-    std::string win_id = to_string() << "measurement_" << id;
+    std::string win_id = rsutils::string::from() << "measurement_" << id;
     id++;
 
     auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
 
-    if (!is_area) 
+    if (!is_area)
     {
         ImGui::PushStyleColor(ImGuiCol_Text, regular_blue);
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, almost_white_bg);  
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, almost_white_bg);
     }
     else
     {
         ImGui::PushStyleColor(ImGuiCol_Text, white);
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);  
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
     }
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10);
     ImGui::SetNextWindowPos(ImVec2(w_pos.x - size.x / 2, height - w_pos.y - size.y / 2 - 5));
     ImGui::SetNextWindowSize(ImVec2(size.x + 20, size.y - 15));
     ImGui::Begin(win_id.c_str(), nullptr, flags);
-    
+
     if (is_area) ImGui::PushFont(win.get_large_font());
     ImGui::Text("%s", label.c_str());
     if (is_area) {
@@ -319,7 +324,7 @@ void measurement::mouse_pick(ux_window& win, float3 picked, float3 normal)
     }
 
     if (is_enabled())
-    {   
+    {
         if (point_hovered(win) < 0 && hovered_edge_id < 0)
             win.cross_hovered();
     }
@@ -333,11 +338,11 @@ void measurement::update_input(ux_window& win, const rs2::rect& viewer_rect)
         restore_state();
 
     input_ctrl.prev_mouse_down = input_ctrl.mouse_down;
-    
+
     auto rect_copy = viewer_rect;
     rect_copy.y += 60;
     input_ctrl.click = false;
-    if (win.get_mouse().mouse_down[0] && !input_ctrl.mouse_down) 
+    if (win.get_mouse().mouse_down[0] && !input_ctrl.mouse_down)
     {
         input_ctrl.mouse_down = true;
         input_ctrl.down_pos = win.get_mouse().cursor;
@@ -346,7 +351,7 @@ void measurement::update_input(ux_window& win, const rs2::rect& viewer_rect)
     if (input_ctrl.mouse_down && !win.get_mouse().mouse_down[0])
     {
         input_ctrl.mouse_down = false;
-        if (win.time() - input_ctrl.selection_started < 0.5 && 
+        if (win.time() - input_ctrl.selection_started < 0.5 &&
             (win.get_mouse().cursor - input_ctrl.down_pos).length() < 100)
         {
             if (rect_copy.contains(win.get_mouse().cursor))
@@ -374,7 +379,7 @@ int measurement::point_hovered(ux_window& win)
     return -1;
 }
 
-float distance_to_line(rs2::float2 a, rs2::float2 b, rs2::float2 p) 
+float distance_to_line(rs2::float2 a, rs2::float2 b, rs2::float2 p)
 {
     const float l2 = dot(b - a, b - a);
     if (l2 == 0.0) return (p - a).length();
@@ -456,10 +461,10 @@ void measurement::draw(ux_window& win)
 
         auto axis1 = cross(vec3d{ _normal.x, _normal.y, _normal.z }, vec3d{ 0.f, 1.f, 0.f });
         auto faxis1 = float3 { axis1.x, axis1.y, axis1.z };
-        faxis1.normalize();
+        faxis1.normalized();
         auto axis2 = cross(vec3d{ _normal.x, _normal.y, _normal.z }, axis1);
         auto faxis2 = float3 { axis2.x, axis2.y, axis2.z };
-        faxis2.normalize();
+        faxis2.normalized();
 
         matrix4 basis = matrix4::identity();
         basis(0, 0) = faxis1.x;
@@ -491,7 +496,7 @@ void measurement::draw(ux_window& win)
             float4 xy4 { cosf(t2) * size, sinf(t2) * size, 0.f, 1.f };
             xy4 = basis * xy4;
             xy4 = float4 { _picked.x + xy4.x, _picked.y + xy4.y, _picked.z  + xy4.z, 1.f };
-            //glVertex3fv(&_picked.x); 
+            //glVertex3fv(&_picked.x);
 
             glColor4f(white.x, white.y, white.z, 0.5f);
             glVertex3fv(&xy1.x);
@@ -510,7 +515,7 @@ void measurement::draw(ux_window& win)
 
         if (state.points.size() == 1 || (shift && state.points.size()))
         {
-            auto p0 = (last_hovered_point >= 0 && last_hovered_point < state.points.size()) 
+            auto p0 = (last_hovered_point >= 0 && last_hovered_point < state.points.size())
                 ? state.points[last_hovered_point] : state.points.back();
             draw_ruler(win, _picked, p0.pos, win.framebuf_height(), 2);
         }
@@ -608,7 +613,7 @@ void measurement::draw(ux_window& win)
             glColor4f(white.x, white.y, white.z, dragging_point_index == i ? 0.8f : 0.1f);
         else
             glColor4f(white.x, white.y, white.z, 0.6f);
-        
+
         draw_sphere(points.pos, dragging_point_index == i ? 0.012f : 0.008f, 20, 20);
         i++;
     }
@@ -622,13 +627,13 @@ void measurement::draw(ux_window& win)
         {
             dragging_measurement_point = false;
             input_ctrl.click_time = 0;
-            
+
             for (auto&& e : state.edges)
             {
                 if (e.first == dragging_point_index || e.second == dragging_point_index)
                 {
                     auto dist = state.points[e.first].pos - state.points[e.second].pos;
-                    log_function(to_string() << "Adjusted measurement to " << length_to_string(dist.length()));
+                    log_function( rsutils::string::from() << "Adjusted measurement to " << length_to_string(dist.length()));
                 }
             }
 
@@ -640,7 +645,7 @@ void measurement::draw(ux_window& win)
                     for (auto&& idx : path) poly.push_back(state.points[idx].pos);
 
                     auto area = calculate_area(poly);
-                    log_function(to_string() << "Adjusted area of " << area_to_string(area));
+                    log_function( rsutils::string::from() << "Adjusted area of " << area_to_string(area));
                 }
             }
 
@@ -659,11 +664,11 @@ void measurement::draw(ux_window& win)
 
 void measurement::show_tooltip(ux_window& win)
 {
-    if (mouse_picked_event.eval())
+    if (mouse_picked_event.eval() && ImGui::IsWindowHovered())
     {
         if (display_mouse_picked_tooltip() && hovered_edge_id  < 0)
         {
-            std::string tt = to_string() << std::fixed << std::setprecision(3) 
+            std::string tt = rsutils::string::from() << std::fixed << std::setprecision(3)
                 << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
             ImGui::SetTooltip("%s", tt.c_str());
         }

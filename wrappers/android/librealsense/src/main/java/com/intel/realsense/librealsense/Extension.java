@@ -46,7 +46,7 @@ public enum Extension {
     COLOR_SENSOR(42),
     MOTION_SENSOR(43),
     FISHEYE_SENSOR(44),
-    DEPTH_HUFFMAN_DECODER(45),
+    DEPTH_HUFFMAN_DECODER(45), /* Deprecated */
     SERIALIZABLE(46),
     FW_LOGGER(47),
     AUTO_CALIBRATION_FILTER(48),
@@ -54,7 +54,8 @@ public enum Extension {
     CALIBRATED_SENSOR(50),
     HDR_MERGE(51),
     SEQUENCE_ID_FILTER(52),
-    MAX_USABLE_RANGE_SENSOR(53);
+    MAX_USABLE_RANGE_SENSOR(53),
+    FRAMESET(54);
 
 
     private final int mValue;

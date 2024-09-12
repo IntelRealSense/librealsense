@@ -1,21 +1,22 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/rsutil.h"
+#include <librealsense2/rs.hpp>
 
 #include "synthetic-stream-gl.h"
 #include "environment.h"
-#include "proc/occlusion-filter.h"
+#include "../proc/occlusion-filter.h"
 #include "pointcloud-gl.h"
 #include "option.h"
 #include "environment.h"
-#include "context.h"
+#include "stream.h"
+#include <src/pose.h>
 
 #include <iostream>
 #include <chrono>
 
 #include "opengl3.h"
+#include <glad/glad.h>
 
 using namespace rs2;
 using namespace librealsense;
@@ -388,10 +389,17 @@ void pointcloud_gl::create_gpu_resources()
 
 pointcloud_gl::~pointcloud_gl()
 {
-    perform_gl_action([&]()
+    try
     {
-        cleanup_gpu_resources();
-    }, []{});
+        perform_gl_action( [&]()
+        {
+            cleanup_gpu_resources();
+        }, [] {} );
+    }
+    catch(...)
+    {
+        LOG_DEBUG( "Error while cleaning up gpu resources" );
+    }
 }
 
 pointcloud_gl::pointcloud_gl()
@@ -409,12 +417,11 @@ pointcloud_gl::pointcloud_gl()
 const librealsense::float3* pointcloud_gl::depth_to_points(
         rs2::points output,
         const rs2_intrinsics &depth_intrinsics, 
-        const rs2::depth_frame& depth_frame,
-        float depth_scale)
+        const rs2::depth_frame& depth_frame)
 {
     perform_gl_action([&]{
         _depth_data = depth_frame;
-        _depth_scale = depth_scale;
+        _depth_scale = depth_frame.get_units();
         _depth_intr = depth_intrinsics;
     }, [&]{
         _enabled = false;
@@ -436,6 +443,8 @@ void pointcloud_gl::get_texture_map(
         auto frame_ref = (frame_interface*)output.get();
 
         auto gf = dynamic_cast<gpu_addon_interface*>(frame_ref);
+        if (!gf)
+            throw std::runtime_error("Frame interface is not gpu addon interface");
 
         uint32_t depth_texture;
 

@@ -67,7 +67,7 @@ int main() try
     depth_sensor.set_option(RS2_OPTION_EXPOSURE, 18);  // setting exposure to 18, so sequence 2 will be set to low exposure
     depth_sensor.set_option(RS2_OPTION_GAIN, 16); // setting gain to 16, so sequence 2 will be set to low gain
 
-    // turning ON the HDR with the above configuration 
+    // turning ON the HDR with the above configuration
     depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
 
     // Declare depth colorizer for pretty visualization of depth data
@@ -77,7 +77,7 @@ int main() try
     rs2::pipeline pipe;
 
     // Start streaming with depth and infrared configuration
-    // The HDR merging algorithm can work with both depth and infrared,or only with depth, 
+    // The HDR merging algorithm can work with both depth and infrared,or only with depth,
     // but the resulting stream is better when both depth and infrared are used.
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH);
@@ -93,21 +93,21 @@ int main() try
     // flag used to see the original stream or the merged one
     int frames_without_hdr_metadata_params = 0;
 
-    // init parameters to set view's window 
+    // init parameters to set view's window
     unsigned width = 1280;
     unsigned height = 720;
     std::string title = "RealSense HDR Example";
     unsigned tiles_in_row = 4;
     unsigned tiles_in_col = 2;
 
-    // init view window 
+    // init view window
     window app(width, height, title.c_str(), tiles_in_row, tiles_in_col);
 
     // init ImGui with app (window object)
     ImGui_ImplGlfw_Init(app, false);
 
     // init hdr_widgets object
-    // hdr_widgets holds the sliders, the text boxes and the frames_map 
+    // hdr_widgets holds the sliders, the text boxes and the frames_map
     hdr_widgets hdr_widgets(depth_sensor);
 
     while (app) // application is still alive
@@ -129,10 +129,10 @@ int main() try
             continue;
         }
 
-        // merging the frames from the different HDR sequence IDs 
+        // merging the frames from the different HDR sequence IDs
         auto merged_frame = merging_filter.process(data).apply_filter(color_map);   // Find and colorize the depth data;
 
-        //get frames data 
+        //get frames data
         auto hdr_seq_size = frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE);
         auto hdr_seq_id = frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
 

@@ -3,6 +3,7 @@
 
 #include "algo.h"
 #include "option.h"
+#include "core/video-frame.h"
 
 using namespace librealsense;
 
@@ -79,10 +80,14 @@ auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& ex
 
                 double values[2] = {};
 
-                values[0] = frame->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE) ?
-                            static_cast<double>(frame->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) : _exposure_option.query();
-                values[1] = frame->supports_frame_metadata(RS2_FRAME_METADATA_GAIN_LEVEL) ?
-                            static_cast<double>(frame->get_frame_metadata(RS2_FRAME_METADATA_GAIN_LEVEL)) : _gain_option.query();
+                rs2_metadata_type actual_exposure_md;
+                values[0] = frame->find_metadata( RS2_FRAME_METADATA_ACTUAL_EXPOSURE, &actual_exposure_md )
+                              ? static_cast< double >( actual_exposure_md )
+                              : _exposure_option.query();
+                rs2_metadata_type gain_level_md;
+                values[1] = frame->find_metadata( RS2_FRAME_METADATA_GAIN_LEVEL, &gain_level_md )
+                              ? static_cast< double >( gain_level_md )
+                              : _gain_option.query();
 
                 values[0] /= 1000.; // Fisheye exposure value by extension control-
                                     // is in units of MicroSeconds, from FW version 5.6.3.0
@@ -538,7 +543,7 @@ void auto_exposure_algorithm::histogram_score(std::vector<int>& h, const int tot
         for (int i = 0; i <= 255; ++i)
         {
             m1 += h[i] * i;
-            m2 += h[i] * sqr(i);
+            m2 += static_cast< int64_t >( h[i] ) * sqr( i );
         }
     }
     else
@@ -546,7 +551,7 @@ void auto_exposure_algorithm::histogram_score(std::vector<int>& h, const int tot
         for (int i = under_exposure_limit + 1; i < over_exposure_limit; ++i)
         {
             m1 += h[i] * i;
-            m2 += h[i] * sqr(i);
+            m2 += static_cast< int64_t >( h[i] ) * sqr( i );
         }
     }
     score.main_mean = (float)((double)m1 / nn);
@@ -561,12 +566,9 @@ void auto_exposure_algorithm::histogram_score(std::vector<int>& h, const int tot
     }
 }
 
-rect_gaussian_dots_target_calculator::rect_gaussian_dots_target_calculator(int width, int height)
-    : _width(width), _height(height)
+rect_gaussian_dots_target_calculator::rect_gaussian_dots_target_calculator(int width, int height, int roi_start_x, int roi_start_y, int roi_width, int roi_height)
+    : _full_width(width), _full_height(height), _roi_start_x(roi_start_x), _roi_start_y(roi_start_y), _width(roi_width), _height(roi_height)
 {
-    if (width != 256 || height != 144)
-        throw std::runtime_error(to_string() << "Only 256x144 resolution is supported!");
-
     _wt = _width - _tsize;
     _ht = _height - _tsize;
     _size = _width * _height;
@@ -579,7 +581,7 @@ rect_gaussian_dots_target_calculator::rect_gaussian_dots_target_calculator(int w
     _ncc.resize(_size);
     memset(_ncc.data(), 0, _size * sizeof(double));
 
-    _buf.resize(_patch_size * _patch_size);
+    _buf.resize(_patch_size);
 }
 
 rect_gaussian_dots_target_calculator::~rect_gaussian_dots_target_calculator()
@@ -599,7 +601,19 @@ bool rect_gaussian_dots_target_calculator::calculate(const uint8_t* img, float* 
         ret = validate_corners(img);
 
     if (ret)
-        calculate_rect_sides(target_dims);
+    {
+        if (target_dims_size == 4)
+            calculate_rect_sides(target_dims);
+        else if (target_dims_size == 8)
+        {
+            int j = 0;
+            for (int i = 0; i < 4; ++i)
+            {
+                target_dims[j++] = static_cast<float>(_corners[i].x + _roi_start_x);
+                target_dims[j++] = static_cast<float>(_corners[i].y + _roi_start_y);
+            }
+        }
+    }
 
     return ret;
 }
@@ -608,26 +622,39 @@ void rect_gaussian_dots_target_calculator::normalize(const uint8_t* img)
 {
     uint8_t min_val = 255;
     uint8_t max_val = 0;
-    const uint8_t* p = img;
-    for (int i = 0; i < _size; ++i)
+
+    int jumper = _full_width - _width;
+    const uint8_t* p = img + _roi_start_y * _full_width + _roi_start_x;
+    for (int j = 0; j < _height; ++j)
     {
-        if (*p < min_val)
-            min_val = *p;
+        for (int i = 0; i < _width; ++i)
+        {
+            if (*p < min_val)
+                min_val = *p;
 
-        if (*p > max_val)
-            max_val = *p;
+            if (*p > max_val)
+                max_val = *p;
 
-        ++p;
+            ++p;
+        }
+
+        p += jumper;
     }
 
     if (max_val > min_val)
     {
-        double factor = 1.0f / (max_val - min_val);
+        double factor = 1.0 / (max_val - min_val);
 
         p = img;
         double* q = _img.data();
-        for (int i = 0; i < _size; ++i)
-            *q++ = 1.0f - (*p++ - min_val) * factor;
+        p = img + _roi_start_y * _full_width + _roi_start_x;
+        for (int j = 0; j < _height; ++j)
+        {
+            for (int i = 0; i < _width; ++i)
+                *q++ = 1.0f - (*p++ - min_val) * factor;
+
+            p += jumper;
+        }
     }
 }
 
@@ -640,9 +667,9 @@ void rect_gaussian_dots_target_calculator::calculate_ncc()
     const double* pt = nullptr;
     const double* qi = nullptr;
 
-    double sum = 0.0f;
-    double mean = 0.0f;
-    double norm = 0.0f;
+    double sum = 0.0;
+    double mean = 0.0;
+    double norm = 0.0;
 
     double min_val = 2.0;
     double max_val = -2.0;
@@ -682,7 +709,7 @@ void rect_gaussian_dots_target_calculator::calculate_ncc()
 
             pt = _template.data();
             pit = _imgt.data();
-            sum = 0.0f;
+            sum = 0.0;
             for (int k = 0; k < _tsize2; ++k)
                 sum += *pit++ * *pt++;
 
@@ -703,7 +730,7 @@ void rect_gaussian_dots_target_calculator::calculate_ncc()
 
     if (max_val > min_val)
     {
-        double factor = 1.0f / (max_val - min_val);
+        double factor = 1.0 / (max_val - min_val);
         double div = 1.0 - _thresh;
         pncc = _ncc.data();
         for (int i = 0; i < _size; ++i)
@@ -746,7 +773,7 @@ bool rect_gaussian_dots_target_calculator::find_corners()
     _pts[1].x = 0;
     _pts[1].y = 0;
     peak = 0.0f;
-    p = _ncc.data() + _htsize * _width;
+    p = _ncc.data() + (_htsize * _width);
     for (int j = _htsize; j < _hheight; ++j)
     {
         p += _hwidth;
@@ -770,7 +797,7 @@ bool rect_gaussian_dots_target_calculator::find_corners()
     _pts[2].x = 0;
     _pts[2].y = 0;
     peak = 0.0f;
-    p = _ncc.data() + _hheight * _width;
+    p = _ncc.data() + (_hheight * _width);
     for (int j = _hheight; j < _height - _htsize; ++j)
     {
         p += _htsize;
@@ -794,7 +821,7 @@ bool rect_gaussian_dots_target_calculator::find_corners()
     _pts[3].x = 0;
     _pts[3].y = 0;
     peak = 0.0f;
-    p = _ncc.data() + _hheight * _width;
+    p = _ncc.data() + (_hheight * _width);
     for (int j = _hheight; j < _height - _htsize; ++j)
     {
         p += _hwidth;
@@ -827,69 +854,51 @@ void rect_gaussian_dots_target_calculator::refine_corners()
     // upper left
     int pos = (_pts[0].y - hs) * _width + _pts[0].x - hs;
 
-    _corners[0].x = static_cast<double>(_pts[0].x - hs);
+    _corners[0].x = static_cast<double>(_pts[0].x) - hs;
     minimize_x(_ncc.data() + pos, _patch_size, f, _corners[0].x);
 
-    _corners[0].y = static_cast<double>(_pts[0].y - hs);
+    _corners[0].y = static_cast<double>(_pts[0].y) - hs;
     minimize_y(_ncc.data() + pos, _patch_size, f, _corners[0].y);
 
     // upper right
     pos = (_pts[1].y - hs) * _width + _pts[1].x - hs;
 
-    _corners[1].x = static_cast<double>(_pts[1].x - hs);
+    _corners[1].x = static_cast<double>(_pts[1].x) - hs;
     minimize_x(_ncc.data() + pos, _patch_size, f, _corners[1].x);
 
-    _corners[1].y = static_cast<double>(_pts[1].y - hs);
+    _corners[1].y = static_cast<double>(_pts[1].y) - hs;
     minimize_y(_ncc.data() + pos, _patch_size, f, _corners[1].y);
 
     // lower left
     pos = (_pts[2].y - hs) * _width + _pts[2].x - hs;
 
-    _corners[2].x = static_cast<double>(_pts[2].x - hs);
+    _corners[2].x = static_cast<double>(_pts[2].x) - hs;
     minimize_x(_ncc.data() + pos, _patch_size, f, _corners[2].x);
 
-    _corners[2].y = static_cast<double>(_pts[2].y - hs);
+    _corners[2].y = static_cast<double>(_pts[2].y) - hs;
     minimize_y(_ncc.data() + pos, _patch_size, f, _corners[2].y);
 
     // lower right
     pos = (_pts[3].y - hs) * _width + _pts[3].x - hs;
 
-    _corners[3].x = static_cast<double>(_pts[3].x - hs);
+    _corners[3].x = static_cast<double>(_pts[3].x) - hs;
     minimize_x(_ncc.data() + pos, _patch_size, f, _corners[3].x);
 
-    _corners[3].y = static_cast<double>(_pts[3].y - hs);
+    _corners[3].y = static_cast<double>(_pts[3].y) - hs;
     minimize_y(_ncc.data() + pos, _patch_size, f, _corners[3].y);
 }
 
 bool rect_gaussian_dots_target_calculator::validate_corners(const uint8_t* img)
 {
-    uint8_t peaks[4] = { 0 };
-    int idx = 0;
-    int x = 0;
-    int y = 0;
-    for (int i = 0; i < 4; ++i)
-    {
-        y = static_cast<int>(_corners[i].y + 0.5f);
-        x = static_cast<int>(_corners[i].x + 0.5f);
-        idx = y * _width + x;
-        peaks[i] = img[idx];
-    }
-
-    static const int peak_diff_thresh = 12;
     bool ok = true;
-    for (int j = 0; j < 4; ++j)
-    {
-        for (int i = 0; i < 4; ++i)
-        {
-            if (std::abs(peaks[i] - peaks[j]) > peak_diff_thresh)
-            {
-                ok = false;
-                break;
-            }
 
-            if (!ok)
-                break;
-        }
+    static const int pos_diff_threshold = 4;
+    if( std::abs( _corners[0].x - _corners[2].x ) > pos_diff_threshold
+        || std::abs( _corners[1].x - _corners[3].x ) > pos_diff_threshold
+        || std::abs( _corners[0].y - _corners[1].y ) > pos_diff_threshold
+        || std::abs( _corners[2].y - _corners[3].y ) > pos_diff_threshold )
+    {
+        ok = false;
     }
 
     return ok;
@@ -995,7 +1004,7 @@ double rect_gaussian_dots_target_calculator::subpixel_agj(double* f, int s)
 
     double right_mv = 0.0f;
     if (x_0 == s - 1)
-        right_mv = static_cast<double>(s - 1);
+        right_mv = static_cast<double>(s) - 1;
     else
     {
         x_1 = x_0 + 1;
@@ -1003,4 +1012,22 @@ double rect_gaussian_dots_target_calculator::subpixel_agj(double* f, int s)
     }
 
     return (left_mv + right_mv) / 2;
+}
+
+// return 1 if target pattern is found and its location is calculated, zero otherwise.
+int rect_calculator::extract_target_dims(const rs2_frame* frame_ref, float4& rect_sides)
+{
+    int ret = 0;
+    rs2_error* e = nullptr;
+
+    //Target dimension array size is predefined. 4 for RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES and 8 for RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES.
+    int dim_size = _roi ? 4 : 8;
+    rs2_calib_target_type tgt_type = _roi ? RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES : RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES;
+    rs2_extract_target_dimensions(frame_ref, tgt_type, reinterpret_cast<float*>(&rect_sides), dim_size, &e);
+    if (e == nullptr)
+    {
+        ret = 1;
+    }
+
+    return ret;
 }

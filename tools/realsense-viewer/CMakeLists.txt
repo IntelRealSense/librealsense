@@ -1,23 +1,21 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-#  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
 
-project(RealsenseToolsRealSenseViewer)
+project(realsense-viewer)
+
+if(WIN32)
+    add_executable( ${PROJECT_NAME} WIN32 "" )
+else()
+    add_executable( ${PROJECT_NAME} "" )
+endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
-if(${BUILD_EASYLOGGINGPP})
-set( ELPP_DIR ../../third-party/easyloggingpp/src )
-    include_directories( ${ELPP_DIR} )
-    set( ELPP_FILES
-        ${ELPP_DIR}/easylogging++.cc
-        ${ELPP_DIR}/easylogging++.h
-    )
-endif()
+using_easyloggingpp( ${PROJECT_NAME} SHARED )
 
 include(../../common/CMakeLists.txt)
 
@@ -55,7 +53,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     ../../common/os.cpp
 )
 
-SET(DELAYED 
+SET(DELAYED
     realsense2d.dll
     realsense2-gld.dll
     realsense2.dll
@@ -96,6 +94,9 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
     check_vino_version()
     if(OPENVINO2019)
         set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ie_cpu_extension)
+    elseif(OPENVINO_NGRAPH)
+        include(${INTEL_OPENVINO_DIR}/deployment_tools/ngraph/cmake/ngraphConfig.cmake)
+        set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ${NGRAPH_LIBRARIES})
     else()
         set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES})
     endif()
@@ -107,6 +108,8 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
     if(OPENVINO2019)
     # We need additional access to ext_list.hpp, for CPU extension support:
     include_directories( "${IE_ROOT_DIR}/src/extension" )
+    elseif(OPENVINO_NGRAPH)
+    include_directories( "${INTEL_OPENVINO_DIR}/deployment_tools/ngraph/include" )
     endif()
 
     set(OPENVINO_FILES
@@ -134,11 +137,21 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
     include(../../wrappers/openvino/dl_vino_model.cmake)
     # Download model files -- these will go into build/tools/realsense-viewer, which is also
     # where the sample is run from in Visual Studio
+
+    if(OPENVINO2019)
     dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
     dl_vino_model( "face-detection-adas-0001.bin"            "1625f05ada1d8e78e36856def7124f78cd0a6c2a" )
     dl_vino_model( "face-detection-adas-0001.xml"            "11c36f6e4488b2f5437ccff9f330d02545087ab3" )
     dl_vino_model( "age-gender-recognition-retail-0013.bin"  "206f6e97e53cd600fcac7d31e1c56accbbe461b9" )
     dl_vino_model( "age-gender-recognition-retail-0013.xml"  "2654d7f1638d575b8d1886f8128deae2ea79ee55" )
+    else()
+    # Newer model files with IRv10, 2020.1 and later
+    dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
+    dl_vino_model( "face-detection-adas-0001.bin"  "065e9015297c7adbc650ebfc17176477cd0a4279" )
+    dl_vino_model( "face-detection-adas-0001.xml"  "331be642a248213f586ec1d1b71c223435a437e3" )
+    dl_vino_model( "age-gender-recognition-retail-0013.bin"  "206f6e97e53cd600fcac7d31e1c56accbbe461b9" )
+    dl_vino_model( "age-gender-recognition-retail-0013.xml"  "36bde5d4d42d29515abe871f69097ffcf4ff6414" )
+    endif()
 
     list(APPEND DELAYED
         cpu_extension.dll
@@ -156,12 +169,12 @@ endif()
 
 # config-ui
 if(WIN32)
-    add_executable(realsense-viewer WIN32
-        ${RS_VIEWER_CPP}
-        ${ELPP_FILES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
-        ../../common/windows-app-bootstrap.cpp
+    target_sources( ${PROJECT_NAME}
+        PRIVATE
+            ${RS_VIEWER_CPP}
+            ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
+            ../../common/windows-app-bootstrap.cpp
         )
 
     source_group("3rd Party" FILES
@@ -183,20 +196,23 @@ if(WIN32)
     #list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")  - Requires cmake v3.12
     PREPEND(DELAYED " /DELAYLOAD:" ${DELAYED})
     string(REPLACE ";" " " LD_FLAGS_STR "${DELAYED}")
-    set_target_properties(realsense-viewer PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
+    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
 
 else()
-    add_executable(realsense-viewer
-        ${RS_VIEWER_CPP}
-        ${ELPP_FILES}
-    )
+    target_sources( ${PROJECT_NAME}
+        PRIVATE
+            ${RS_VIEWER_CPP}
+        )
 endif()
 
 if(OPENVINO2019)
     target_compile_definitions(realsense-viewer PRIVATE OPENVINO2019)
 endif()
 
-source_group("EasyLogging++" FILES ${ELPP_FILES})
+if(OPENVINO_NGRAPH)
+    target_compile_definitions(realsense-viewer PRIVATE OPENVINO_NGRAPH)
+endif()
+
 source_group("SW-Update" FILES ${SW_UPDATE_FILES})
 
 include_directories(
@@ -209,40 +225,36 @@ include_directories(
     )
 
 
-set_property(TARGET realsense-viewer PROPERTY CXX_STANDARD 11)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
 set(RS_VIEWER_LIBS ${GTK3_LIBRARIES} Threads::Threads realsense2-gl)
 
 if (CHECK_FOR_UPDATES)
     message( STATUS "Check for updates capability added to realsense-viewer" )
-    add_dependencies(realsense-viewer libcurl)
+    add_dependencies(${PROJECT_NAME} libcurl)
     set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} curl)
 endif()
 
 if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
-    target_link_libraries(realsense-viewer fw)
+    target_link_libraries(${PROJECT_NAME} fw)
 endif()
 
-if(BUILD_NETWORK_DEVICE)
-    add_definitions(-DNETWORK_DEVICE)
-    set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} realsense2-net)
-endif()
+target_link_libraries( ${PROJECT_NAME} ${DEPENDENCIES} ${RS_VIEWER_LIBS} tclap )
 
-target_link_libraries(realsense-viewer ${DEPENDENCIES} ${RS_VIEWER_LIBS})
-
-set_target_properties (realsense-viewer PROPERTIES
+set_target_properties (${PROJECT_NAME} PROPERTIES
     FOLDER Tools
 )
 
-target_include_directories(realsense-viewer PRIVATE ../../src)
+target_include_directories(${PROJECT_NAME} PRIVATE ../../src)
 
 install(
-    TARGETS
-
-    realsense-viewer
-
-    RUNTIME DESTINATION
-    ${CMAKE_INSTALL_BINDIR}
+    TARGETS ${PROJECT_NAME}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+#https://cmake.org/cmake/help/latest/command/install.html
+install(DIRECTORY presets/
+    DESTINATION $ENV{HOME}/Documents/librealsense2/presets
+    FILES_MATCHING PATTERN "*.preset"
 )
 endif()

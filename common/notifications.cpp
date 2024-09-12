@@ -7,23 +7,20 @@
 #endif
 #endif
 
+#include "notifications.h"
+#include <imgui_internal.h>
+#include "model-views.h"
+#include "os.h"
+#include "viewer.h"
+#include "metadata-helper.h"
+#include "ux-window.h"
+
 #include <thread>
 #include <algorithm>
 #include <regex>
 #include <cmath>
 
 #include <opengl3.h>
-
-#include "notifications.h"
-#include <imgui_internal.h>
-
-#include "model-views.h"
-
-#include "os.h"
-
-#include "viewer.h"
-
-#include "metadata-helper.h"
 
 using namespace std;
 using namespace chrono;
@@ -35,7 +32,7 @@ namespace rs2
         rs2_notification_category category)
         : _description(description),
           _severity(severity),
-          _category(category) 
+          _category(category)
     {
         _timestamp = (double)std::chrono::high_resolution_clock::now().time_since_epoch().count();
     }
@@ -150,7 +147,7 @@ namespace rs2
             auto mouse = win.get_mouse();
             if (pbar.contains(mouse.cursor))
             {
-                std::string progress_str = to_string() << progress << "%";
+                std::string progress_str = rsutils::string::from() << progress << "%";
                 ImGui::SetTooltip("%s", progress_str.c_str());
             }
         }
@@ -197,7 +194,7 @@ namespace rs2
 
     void notification_model::draw_text(const char* msg, int x, int y, int h)
     {
-        std::string text_name = to_string() << "##notification_text_" << index;
+        std::string text_name = rsutils::string::from() << "##notification_text_" << index;
         ImGui::PushTextWrapPos(x + width - 100.f);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
         ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
@@ -261,7 +258,7 @@ namespace rs2
     {
         ImGui::SetCursorScreenPos({ float(x + width - 105), float(y + height - 25) });
 
-        string id = to_string() << "Dismiss" << "##" << index;
+        string id = rsutils::string::from() << "Dismiss" << "##" << index;
 
         ImGui::PushStyleColor(ImGuiCol_Text, black);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
@@ -273,7 +270,7 @@ namespace rs2
         ImGui::SetNextWindowPos({ float(x + width - 125), float(y + height - 25) });
         ImGui::SetNextWindowSize({ 120, 70 });
 
-        std::string dismiss_popup = to_string() << "Dismiss Options" << "##" << index;
+        std::string dismiss_popup = rsutils::string::from() << "Dismiss Options" << "##" << index;
         if (ImGui::BeginPopup(dismiss_popup.c_str()))
         {
             if (ImGui::Selectable("Just this time"))
@@ -311,12 +308,12 @@ namespace rs2
         }
     }
 
-    std::function<void()> notification_model::draw(ux_window& win, int w, int y, 
+    std::function<void()> notification_model::draw(ux_window& win, int w, int y,
         std::shared_ptr<notification_model>& selected, std::string& error_message)
     {
         std::function<void()> action;
         while(dispatch_queue.try_dequeue(&action)) action();
-        
+
         std::function<void()> follow_up = []{};
 
         if (visible)
@@ -391,7 +388,7 @@ namespace rs2
 
             if (enable_click)
             {
-                std::string button_name = to_string() << "##" << index;
+                std::string button_name = rsutils::string::from() << "##" << index;
 
                 ImGui::PushStyleColor(ImGuiCol_Button, transparent);
 
@@ -408,7 +405,7 @@ namespace rs2
 
             if (count > 1)
             {
-                std::string count_str = to_string() << "x " << count;
+                std::string count_str = rsutils::string::from() << "x " << count;
                 ImGui::SetCursorScreenPos({ float(x + width - 22 - count_str.size() * 5), float(y + 7) });
                 ImGui::Text("%s", count_str.c_str());
             }
@@ -426,7 +423,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Button, transparent);
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, transparent);
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, transparent);
-                string id = to_string() << textual_icons::dotdotdot << "##" << index;
+                string id = rsutils::string::from() << textual_icons::dotdotdot << "##" << index;
                 if (ImGui::Button(id.c_str()))
                 {
                     selected = shared_from_this();
@@ -443,7 +440,7 @@ namespace rs2
             {
                 draw_dismiss(win, x, y);
             }
-            
+
             unset_color_scheme();
         }
 
@@ -451,7 +448,7 @@ namespace rs2
         {
             draw_expanded(win, error_message);
         }
-        
+
 
         return follow_up;
     }
@@ -498,7 +495,7 @@ namespace rs2
                 m->enable_expand = false;
                 m->enable_dismiss = false;
             }
-            
+
             pending_notifications.push_back(m);
 
             if (pending_notifications.size() > (size_t)MAX_SIZE)
@@ -564,7 +561,7 @@ namespace rs2
                         n->to_close = false;
                         return true;
                     }
-                    return ((n->get_age_in_ms() > n->get_max_lifetime_ms() && 
+                    return ((n->get_age_in_ms() > n->get_max_lifetime_ms() &&
                             !n->pinned && !n->expanded) || n->to_close);
                 }), end(pending_notifications));
 
@@ -572,7 +569,7 @@ namespace rs2
                 for (auto& noti : pending_notifications)
                 {
                     modal_notification_found = modal_notification_found || noti->expanded;
-                    if (pinned_drawn && noti->pinned && !noti->forced) 
+                    if (pinned_drawn && noti->pinned && !noti->forced)
                     {
                         continue;
                     }
@@ -612,7 +609,7 @@ namespace rs2
                     << std::fixed << selected->timestamp
                     << "\nSeverity: " << selected->severity
                     << "\nDescription: ";
-                    
+
                 for (auto&& part : parts) ss << part << "\n";
 
                 auto s = ss.str();
@@ -631,7 +628,7 @@ namespace rs2
                 {
                     std::string clip = "";
                     auto lines = split_string(selected->message, '\n');
-                    for (auto line : lines)
+                    for (auto & line : lines)
                     {
                         if (line.size() && line[0] == '$') clip += line.substr(2) + "\n";
                     }
@@ -664,13 +661,13 @@ namespace rs2
             }
             catch (...) {}
         }
-        
+
         ImGui::PopFont();
 
         return modal_notification_found;
     }
 
-    version_upgrade_model::version_upgrade_model(int version) 
+    version_upgrade_model::version_upgrade_model(int version)
         : process_notification_model(nullptr), _version(version)
     {
         enable_expand = false;
@@ -678,7 +675,7 @@ namespace rs2
         update_state = 2;
         //pinned = true;
         _progress_bar.last_progress_time = system_clock::now();
-    } 
+    }
 
     void version_upgrade_model::set_color_scheme(float t) const
     {
@@ -701,7 +698,7 @@ namespace rs2
 
         ImGui::SetCursorScreenPos({ float(x + 20), float(y + 16) });
         ImGui::Text("Welcome to"); ImGui::SameLine();
-        std::string txt = to_string() << "librealsense " << RS2_API_VERSION_STR << "!";
+        std::string txt = rsutils::string::from() << "librealsense " << RS2_API_VERSION_STR << "!";
 
         ImGui::PushStyleColor(ImGuiCol_Text, alpha(white, 1.f - t));
         ImGui::Text("%s", txt.c_str());
@@ -710,9 +707,9 @@ namespace rs2
 
         ImGui::SetCursorScreenPos({ float(x + 17), float(y + 41) });
 
-        std::string link = to_string() << "https://github.com/IntelRealSense/librealsense/wiki/Release-Notes#release-" << _version; 
+        std::string link = rsutils::string::from() << "https://github.com/IntelRealSense/librealsense/wiki/Release-Notes#release-" << _version;
 
-        ImGui::PushStyleColor(ImGuiCol_Text, alpha(white, 1.f - t));
+        ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_blue, 1.f - t));
         if (ImGui::Button("What's new"))
         {
             open_url(link.c_str());
@@ -759,21 +756,32 @@ namespace rs2
 
     void notification_model::invoke(std::function<void()> action)
     {
-        single_consumer_queue<bool> q;
-        dispatch_queue.enqueue([&q, &action](){
+        // We use a weak_ptr for making sure the queue object is
+        // alive when we access it from the dispatcher thread
+        auto sptr_q = std::make_shared<single_consumer_queue<bool>> ();
+        std::weak_ptr<single_consumer_queue<bool>> wptr_q( sptr_q );
+
+        dispatch_queue.enqueue([wptr_q, &action](){
             try
             {
                 action();
-                q.enqueue(true);
+                auto q = wptr_q.lock();
+                if( ! q )
+                    return;
+                q->enqueue( true );
             }
             catch(...)
             {
-                q.enqueue(false);
+                auto q = wptr_q.lock();
+                if( ! q )
+                    return;
+                q->enqueue(false);
             }
         });
         bool res;
-        if (!q.dequeue(&res, 100000) || !res)
+        if (!sptr_q->dequeue(&res, 100000) || !res)
             throw std::runtime_error("Invoke operation failed!");
+
     }
 
     void process_manager::start(invoker invoke)
@@ -781,7 +789,7 @@ namespace rs2
         auto cleanup = [invoke]() {
         };
 
-        log(to_string() << "Started " << _process_name << " process");
+        log( rsutils::string::from() << "Started " << _process_name << " process" );
 
         auto me = shared_from_this();
         std::weak_ptr<process_manager> ptr(me);
@@ -806,7 +814,7 @@ namespace rs2
             }
             catch (...)
             {
-                self->fail(to_string() << "Unknown error during " << self->_process_name << " process!");
+                self->fail( rsutils::string::from() << "Unknown error during " << self->_process_name << " process!" );
                 cleanup();
             }
         });
@@ -845,8 +853,7 @@ namespace rs2
 
             ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1.f - t));
 
-            std::string s = to_string() << "Saving 3D view to " <<
-                get_file_name(get_manager().get_filename());
+            std::string s = "Saving 3D view to " + get_file_name( get_manager().get_filename() );
             ImGui::Text("%s", s.c_str());
 
             ImGui::PopStyleColor();
@@ -857,13 +864,12 @@ namespace rs2
 
             ImGui::SetCursorScreenPos({ float(x + 10), float(y + 35) });
             ImGui::PushFont(win.get_large_font());
-            std::string txt = to_string() << textual_icons::throphy;
+            std::string txt = rsutils::string::from() << textual_icons::throphy;
             ImGui::Text("%s", txt.c_str());
             ImGui::PopFont();
 
             ImGui::SetCursorScreenPos({ float(x + 40), float(y + 35) });
-            std::string s = to_string() << "Finished saving 3D view  to " <<
-                get_file_name(get_manager().get_filename());
+            std::string s = "Finished saving 3D view  to " + get_file_name( get_manager().get_filename() );
 
             ImGui::Text("%s", s.c_str());
         }
@@ -979,7 +985,7 @@ namespace rs2
         auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
         ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
-        std::string button_name = to_string() << "Enable" << "##enable_metadata" << index;
+        std::string button_name = rsutils::string::from() << "Enable" << "##enable_metadata" << index;
 
         const auto bar_width = width - 115;
         if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
@@ -1000,7 +1006,7 @@ namespace rs2
         // Make sure we don't spam calibration remainders too often:
         time_t rawtime;
         time(&rawtime);
-        std::string str = to_string() << "notifications." << delay_id << ".next";
+        std::string str = rsutils::string::from() << "notifications." << delay_id << ".next";
         long long next_time = config_file::instance().get_or_default(str.c_str(), (long long)0);
 
         return rawtime < next_time;
@@ -1011,14 +1017,14 @@ namespace rs2
         // Make sure we don't spam calibration remainders too often:
         time_t rawtime;
         time(&rawtime);
-        std::string str = to_string() << "notifications." << delay_id << ".next";
+        std::string str = rsutils::string::from() << "notifications." << delay_id << ".next";
         config_file::instance().set(str.c_str(), (long long)(rawtime + days * 60 * 60 * 24));
     }
     void notification_model::reset_delay()
     {
         if( is_delayed() )
         {
-            std::string str = to_string() << "notifications." << delay_id << ".next";
+            std::string str = rsutils::string::from() << "notifications." << delay_id << ".next";
             config_file::instance().remove( str.c_str());
         }
     }
@@ -1064,7 +1070,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1.f - t));
         ImGui::Text("We strongly recommend you upgrade \nyour software\n");
         ImGui::PopStyleColor();
-        
+
         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
 
         auto sat = 1.f
@@ -1077,11 +1083,11 @@ namespace rs2
         const auto bar_width = width - 115;
 
         ImGui::PushStyleColor(ImGuiCol_Text, alpha(white, 1.f - t));
-        std::string button_name = to_string() << "Learn More..." << "##" << index;
+        std::string button_name = rsutils::string::from() << "Learn More..." << "##" << index;
         if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
         {
             bool should_dismiss = true;
-            try 
+            try
             {
                 open_url(_recommended_version_link.c_str());
             }
@@ -1138,14 +1144,73 @@ namespace rs2
 
         ImGui::SetCursorScreenPos({ float(x + 10), float(y + 35) });
         ImGui::PushFont(win.get_large_font());
-        std::string txt = to_string() << textual_icons::throphy;
+        std::string txt = rsutils::string::from() << textual_icons::throphy;
         ImGui::Text("%s", txt.c_str());
         ImGui::PopFont();
 
         ImGui::SetCursorScreenPos({ float(x + 40), float(y + 35) });
         ImGui::Text("SW/FW Versions All Up To Date");
-        
+
         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
     }
 
+    ucal_disclaimer_model::ucal_disclaimer_model()
+        : notification_model()
+    {
+        enable_expand = false;
+        enable_dismiss = true;
+        enable_complex_dismiss = true; // Allow to inhibit the disclaimer
+        pinned = false;
+
+    }
+
+    void ucal_disclaimer_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
+    {
+        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 4) });
+
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x), float(y) },
+            { float(x + width), float(y + 25) }, ImColor(orange));
+
+        ImGui::Text("Self-Calibration - Disclaimer");
+        ImGui::SetCursorScreenPos({ float(x + 5), float(y + 27) });
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        std::string message = "For D415 please refer to the links for details:";
+        draw_text(message.c_str(), x, y, 30);
+        ImGui::PopStyleColor();
+
+        ImGui::SetCursorScreenPos({ float(x + 10), float(y + 47) });
+        hyperlink(win, "1. Self-Calibration Whitepaper", "https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras");
+        ImGui::SetCursorScreenPos({ float(x + 10), float(y + 67) });
+        hyperlink(win, "2. Firmware Releases / Errata", "https://dev.intelrealsense.com/docs/firmware-releases");
+
+    }
+
+    fl_cal_limitation_model::fl_cal_limitation_model()
+        : notification_model()
+    {
+        enable_expand = false;
+        enable_dismiss = true;
+        enable_complex_dismiss = false;
+        pinned = false;
+        message = "Focal-Length Calibration for this device\n"
+            " requires USB3 connection.\n"
+            "Please switch the connection port and rerun";
+    }
+
+    void fl_cal_limitation_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
+    {
+        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 4) });
+
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x), float(y) },
+            { float(x + width), float(y + 25) }, ImColor(grey));
+
+        ImGui::Text("User Notification");
+
+        ImGui::SetCursorScreenPos({ float(x + 5), float(y + 25) });
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x+2), float(y+27) },
+            { float(x + width), float(y + 79) }, ImColor(orange));
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        draw_text(get_title().c_str(), x, y, height - 50);
+        ImGui::PopStyleColor();
+    }
 }

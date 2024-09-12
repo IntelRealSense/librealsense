@@ -1,16 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-#include "types.h"
+
 #include "log.h"
 
-#include <fstream>
 
 #ifdef BUILD_EASYLOGGINGPP
 INITIALIZE_EASYLOGGINGPP
 
 namespace librealsense
 {
-    char log_name[] = "librealsense";
+    char log_name[] = LIBREALSENSE_ELPP_ID;
     static logger_type<log_name> logger;
 }
 
@@ -24,7 +23,7 @@ void librealsense::log_to_file(rs2_log_severity min_severity, const char * file_
     logger.log_to_file(min_severity, file_path);
 }
 
-void librealsense::log_to_callback( rs2_log_severity min_severity, log_callback_ptr callback )
+void librealsense::log_to_callback( rs2_log_severity min_severity, rs2_log_callback_sptr callback )
 {
     logger.log_to_callback( min_severity, callback );
 }
@@ -51,7 +50,7 @@ void librealsense::log_to_file(rs2_log_severity min_severity, const char * file_
     throw std::runtime_error("log_to_file is not supported without BUILD_EASYLOGGINGPP");
 }
 
-void librealsense::log_to_callback(rs2_log_severity min_severity, log_callback_ptr callback)
+void librealsense::log_to_callback(rs2_log_severity min_severity, rs2_log_callback_sptr callback)
 {
     throw std::runtime_error("log_to_callback is not supported without BUILD_EASYLOGGINGPP");
 }

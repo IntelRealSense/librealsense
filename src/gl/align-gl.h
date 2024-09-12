@@ -18,6 +18,7 @@ namespace rs2
 {
     class stream_profile;
     class visualizer_2d;
+    class texture_buffer;
 }
 
 namespace librealsense 

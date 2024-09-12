@@ -133,13 +133,13 @@ public:
     return size;
   }
 
-  typedef boost::shared_ptr< ::roslib::Header_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::roslib::Header_<ContainerAllocator>  const> ConstPtr;
+  typedef std::shared_ptr< ::roslib::Header_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::roslib::Header_<ContainerAllocator>  const> ConstPtr;
 }; // struct Header
 typedef  ::roslib::Header_<std::allocator<void> > Header;
 
-typedef boost::shared_ptr< ::roslib::Header> HeaderPtr;
-typedef boost::shared_ptr< ::roslib::Header const> HeaderConstPtr;
+typedef std::shared_ptr< ::roslib::Header> HeaderPtr;
+typedef std::shared_ptr< ::roslib::Header const> HeaderConstPtr;
 
 
 template<typename ContainerAllocator>
@@ -239,7 +239,7 @@ struct Printer< ::roslib::Header_<ContainerAllocator> >
     s << indent << "stamp: ";
     Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.stamp);
     s << indent << "frame_id: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.frame_id);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.frame_id);
   }
 };
 

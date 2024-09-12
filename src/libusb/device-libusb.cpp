@@ -38,7 +38,7 @@ namespace librealsense
                         {
                             if(inf.altsetting->bInterfaceSubClass == RS2_USB_SUBCLASS_VIDEO_CONTROL)
                                 curr_ctrl_intf = curr_inf;
-                            if(inf.altsetting->bInterfaceSubClass == RS2_USB_SUBCLASS_VIDEO_STREAMING)
+                            if(inf.altsetting->bInterfaceSubClass == RS2_USB_SUBCLASS_VIDEO_STREAMING && curr_ctrl_intf)
                                 curr_ctrl_intf->add_associated_interface(curr_inf);
                             break;
                         }

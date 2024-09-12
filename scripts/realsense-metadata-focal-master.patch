@@ -1,19 +1,21 @@
-From 91f4e0a84b9754fd98a8b8a086fdc628bf4a6493 Mon Sep 17 00:00:00 2001
-From: ev-mp <ev_mp@yahoo.com>
-Date: Fri, 19 Jun 2020 12:34:08 +0300
-Signed-off-by: Evgeni <evgeni.raikhel@intel.com>
-Subject: [PATCH] Enabling UVC Metadata attributes with Ubuntu 20.04. Kernel 5.4
+From e6e4fd91cdfdb0b9cbb439916ebd12d61f1ff1b4 Mon Sep 17 00:00:00 2001
+From: Dmitry Perchanov <dmitry.perchanov@intel.com>
+Date: Mon, 21 Aug 2023 15:10:57 +0300
+Subject: [PATCH] Enabling UVC Metadata attributes with Ubuntu 20.04. Kernel
+ 5.4
 
+Co-developed-by: Evgeni Raikhel <evgeni.raikhel@intel.com>
+Signed-off-by: Dmitry Perchanov <dmitry.perchanov@intel.com>
 ---
- drivers/media/usb/uvc/uvc_driver.c | 234 +++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvc_driver.c | 279 +++++++++++++++++++++++++++++
  drivers/media/usb/uvc/uvcvideo.h   |   2 +-
- 2 files changed, 235 insertions(+), 1 deletion(-)
+ 2 files changed, 280 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 443ecea63bd8..d3a5c5f8abb9 100644
+index 3be9bc97f..386832678 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -2945,6 +2945,258 @@ static const struct usb_device_id uvc_ids[] = {
+@@ -2916,6 +2916,285 @@ static const struct usb_device_id uvc_ids[] = {
  	  .bInterfaceSubClass	= 1,
  	  .bInterfaceProtocol	= 0,
  	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
@@ -233,6 +235,15 @@ index 443ecea63bd8..d3a5c5f8abb9 100644
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++	/* Intel D555e Depth Camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x8086,
++	  .idProduct		= 0x0b56,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
++	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
 +	  /* Intel D405 */
 +	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
@@ -269,14 +280,32 @@ index 443ecea63bd8..d3a5c5f8abb9 100644
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++	  /* Intel D585 Depth Camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0b6a,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
++	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++	  /* Intel 585 Camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0b6b,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
++	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
  	/* Generic USB Video Class */
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_UNDEFINED) },
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_15) },
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 1aa8493a24d1..2b22379756d8 100644
+index a3dfacf06..898eebe42 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -199,7 +199,7 @@
+@@ -181,7 +181,7 @@
  /* Maximum number of packets per URB. */
  #define UVC_MAX_PACKETS		32
  /* Maximum status buffer size in bytes of interrupt URB. */
@@ -286,5 +315,5 @@ index 1aa8493a24d1..2b22379756d8 100644
  #define UVC_CTRL_CONTROL_TIMEOUT	500
  #define UVC_CTRL_STREAMING_TIMEOUT	5000
 -- 
-2.17.1
+2.34.1
 

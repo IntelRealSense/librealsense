@@ -1,6 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
+#include "print_helpers.h"
+#include "rosbag_content.h"
+#include "files_container.h"
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -16,6 +20,7 @@
 
 #include <os.h>
 
+#include <glad/glad.h>
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -26,10 +31,6 @@
 #define NOMINMAX
 #endif
 #endif
-
-#include "print_helpers.h"
-#include "rosbag_content.h"
-#include "files_container.h"
 
 using namespace rosbag_inspector;
 
@@ -387,7 +388,7 @@ inline void sort(sort_type m_sort_type, const std::string& in, const std::string
     }
 }
 
-int main(int argc, const char** argv)
+int main(int argc, const char** argv) try
 {
     if (!glfwInit())
     {
@@ -435,6 +436,16 @@ int main(int argc, const char** argv)
     ImGui_ImplGlfw_Shutdown();
     glfwTerminate();
     return 0;
+}
+catch( const std::exception & e )
+{
+    std::cerr << e.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch( ... )
+{
+    std::cerr << "some error" << std::endl;
+    return EXIT_FAILURE;
 }
 
 #ifdef WIN32

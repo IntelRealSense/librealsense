@@ -1,62 +1,56 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-import sys, os, re
+import sys, os, re, platform
+from time import perf_counter as timestamp
+
+
+def usage():
+    ourname = os.path.basename( sys.argv[0] )
+    print( 'Syntax: devices [actions|flags]' )
+    print( '        Control the LibRS devices connected' )
+    print( 'Actions (only one)' )
+    print( '        --list         Enumerate devices (default action)' )
+    print( '        --recycle      Recycle all' )
+    print( 'Flags:' )
+    print( '        --all          Enable all port [requires hub]' )
+    print( '        --port <#>     Enable only this port [requires hub]' )
+    print( '        --ports        Show physical port for each device (rather than the RS string)' )
+    sys.exit(2)
+
 try:
     from rspy import log
 except ModuleNotFoundError:
     if __name__ != '__main__':
         raise
     #
-    def usage():
-        ourname = os.path.basename( sys.argv[0] )
-        print( 'Syntax: devices [actions|flags]' )
-        print( '        Control the LibRS devices connected' )
-        print( 'Actions (only one)' )
-        print( '        --list         Enumerate devices (default action)' )
-        print( '        --recycle      Recycle all' )
-        print( 'Flags:' )
-        print( '        --all          Enable all port [requires acroname]' )
-        print( '        --port <#>     Enable only this port [requires acroname]' )
-        sys.exit(2)
-    #
     # We need to tell Python where to look for rspy
     rspy_dir = os.path.dirname( os.path.abspath( __file__ ))
     py_dir   = os.path.dirname( rspy_dir )
     sys.path.append( py_dir )
     from rspy import log
-    #
-    # And where to look for pyrealsense2
-    from rspy import repo
-    pyrs_dir = repo.find_pyrs_dir()
-    sys.path.append( pyrs_dir )
+#
+# And where to look for pyrealsense2
+from rspy import repo
+pyrs_dir = repo.find_pyrs_dir()
+sys.path.insert( 1, pyrs_dir )
 
+MAX_ENUMERATION_TIME = 10  # [sec]
 
-# We need both pyrealsense2 and acroname. We can work without acroname, but
-# without rs no devices at all will be returned.
+# We need both pyrealsense2 and hub. We can work without hub, but
+# without pyrealsense2 no devices at all will be returned.
+from rspy import device_hub
 try:
     import pyrealsense2 as rs
     log.d( rs )
-    #
-    # Have to add site-packages, just in case: if -S was used, or parent script played with
-    # sys.path (as run-unit-tests does), then we may not have it!
-    sys.path += [os.path.join( os.path.dirname( sys.executable ), 'lib', 'site-packages')]
-    #
-    try:
-        from rspy import acroname
-    except ModuleNotFoundError:
-        # Error should have already been printed
-        # We assume there's no brainstem library, meaning no acroname either
-        log.d( 'sys.path=', sys.path )
-        acroname = None
-    #
+    hub = device_hub.create()
     sys.path = sys.path[:-1]  # remove what we added
 except ModuleNotFoundError:
     log.w( 'No pyrealsense2 library is available! Running as if no cameras available...' )
     import sys
     log.d( 'sys.path=', sys.path )
     rs = None
-    acroname = None
+    hub = None
 
 import time
 
@@ -71,19 +65,27 @@ class Device:
         self._name = None
         if dev.supports( rs.camera_info.name ):
             self._name = dev.get_info( rs.camera_info.name )
+            if self._name.startswith( 'Intel RealSense ' ):
+                self._name = self._name[16:]
         self._product_line = None
         if dev.supports( rs.camera_info.product_line ):
             self._product_line = dev.get_info( rs.camera_info.product_line )
         self._physical_port = dev.supports( rs.camera_info.physical_port ) and dev.get_info( rs.camera_info.physical_port ) or None
-        self._usb_location = _get_usb_location( self._physical_port )
+
+        self._usb_location = None
+        try:
+            self._usb_location = _get_usb_location(self._physical_port)
+        except Exception as e:
+            log.e('Failed to get usb location:', e)
         self._port = None
-        if acroname:
+        if hub:
             try:
-                self._port = _get_port_by_loc( self._usb_location )
+                self._port = hub.get_port_by_location(self._usb_location)
             except Exception as e:
-                log.e( 'Failed to get device port:', e )
-                log.d( '    physical port is', self._physical_port )
-                log.d( '    USB location is', self._usb_location )
+                log.e('Failed to get device port:', e)
+                log.d('    physical port is', self._physical_port)
+                log.d('    USB location is', self._usb_location)
+
         self._removed = False
 
     @property
@@ -136,14 +138,14 @@ def map_unknown_ports():
     Fill in unknown ports in devices by enabling one port at a time, finding out which device
     is there.
     """
-    if not acroname:
+    if not hub:
         return
     global _device_by_sn
     devices_with_unknown_ports = [device for device in _device_by_sn.values() if device.port is None]
     if not devices_with_unknown_ports:
         return
     #
-    ports = acroname.ports()
+    ports = hub.ports()
     known_ports = [device.port for device in _device_by_sn.values() if device.port is not None]
     unknown_ports = [port for port in ports if port not in known_ports]
     try:
@@ -155,7 +157,7 @@ def map_unknown_ports():
         #
         for known_port in known_ports:
             if known_port not in ports:
-                log.e( "A device was found on port", known_port, "but the port is not reported as used by Acroname!" )
+                log.e( "A device was found on port", known_port, "but the port is not reported as used by the hub!" )
         #
         if len( unknown_ports ) == 1:
             device = devices_with_unknown_ports[0]
@@ -163,7 +165,7 @@ def map_unknown_ports():
             device._port = unknown_ports[0]
             return
         #
-        acroname.disable_ports( ports )
+        hub.disable_ports( ports )
         wait_until_all_ports_disabled()
         #
         # Enable one port at a time to try and find what device is connected to it
@@ -171,9 +173,9 @@ def map_unknown_ports():
         for port in unknown_ports:
             #
             log.d( 'enabling port', port )
-            acroname.enable_ports( [port], disable_other_ports=True )
+            hub.enable_ports( [port], disable_other_ports=True )
             sn = None
-            for retry in range( 5 ):
+            for retry in range( MAX_ENUMERATION_TIME ):
                 if len( enabled() ) == 1:
                     sn = list( enabled() )[0]
                     break
@@ -192,34 +194,38 @@ def map_unknown_ports():
                 else:
                     log.w( "Device with serial number", sn, "was found in port", port,
                             "but was not in context" )
-            acroname.disable_ports( [port] )
+            hub.disable_ports( [port] )
             wait_until_all_ports_disabled()
     finally:
         log.debug_unindent()
 
 
-def query( monitor_changes = True ):
+def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
     """
     Start a new LRS context, and collect all devices
     :param monitor_changes: If True, devices will update dynamically as they are removed/added
+    :param recycle_ports: True to recycle all ports before querying devices; False to leave as-is
+    :param hub_reset: Whether we want to reset the hub - this might be a better way to
+        recycle the ports in certain cases that leave the ports in a bad state
     """
     global rs
     if not rs:
         return
     #
     # Before we can start a context and query devices, we need to enable all the ports
-    # on the acroname, if any:
-    if acroname:
-        if not acroname.hub:
-            acroname.connect()  # MAY THROW!
-            acroname.enable_ports( sleep_on_change = 5 )  # make sure all connected!
+    # on the hub, if any:
+    if hub:
+        if not hub.is_connected():
+            hub.connect(hub_reset)
+        if recycle_ports:
+            hub.disable_ports( sleep_on_change = 5 )
+            hub.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
-    _context = rs.context()
+    _context = rs.context( { 'dds': False } )
     _device_by_sn = dict()
     try:
-        log.d( 'discovering devices ...' )
         log.debug_indent()
         for retry in range(3):
             try:
@@ -236,7 +242,11 @@ def query( monitor_changes = True ):
             # The FW update ID is always available, it seems, and is the ASIC serial number
             # whereas the Serial Number is the OPTIC serial number and is only available in
             # non-recovery devices. So we use the former...
-            sn = dev.get_info( rs.camera_info.firmware_update_id )
+            try:
+                sn = dev.get_info( rs.camera_info.firmware_update_id )
+            except RuntimeError as e:
+                log.e( f'Found device with S/N {sn} but trying to get fw-update-id failed: {e}' )
+                continue
             device = Device( sn, dev )
             _device_by_sn[sn] = device
             log.d( '... port {}:'.format( device.port is None and '?' or device.port ), sn, dev )
@@ -285,33 +295,53 @@ def enabled():
     return { device.serial_number for device in _device_by_sn.values() if device.enabled }
 
 
-def by_product_line( product_line ):
+def by_product_line( product_line, ignored_products ):
     """
     :param product_line: The product line we're interested in, as a string ("L500", etc.)
+    :param ignored_products: List of products we want to ignore. e.g. ['D455', 'D457', etc.]
     :return: A set of device serial-numbers
     """
     global _device_by_sn
-    return { device.serial_number for device in _device_by_sn.values() if device.product_line == product_line }
+    result = set()
+    for device in _device_by_sn.values():
+        if device.product_line == product_line:
+            for ignored_product in ignored_products:
+                if ignored_product in device.name:
+                    break
+            else:
+                result.add(device.serial_number)
+    return result
 
 
-def by_name( name ):
+def by_name( name, ignored_products ):
     """
     :param name: Part of the product name to search for ("L515" would match "Intel RealSense L515")
+    :param ignored_products: List of products we want to ignore. e.g. ['D455', 'D457', etc.]
     :return: A set of device serial-numbers
     """
     global _device_by_sn
-    return { device.serial_number for device in _device_by_sn.values() if device.name  and  device.name.find( name ) >= 0 }
+    result = set()
+    ignored_list_as_str = " ".join(ignored_products)
+    if name not in ignored_list_as_str:
+        for device in _device_by_sn.values():
+            if device.name and device.name.find( name ) >= 0:
+                result.add(device.serial_number)
+    return result
 
-
-def _get_sns_from_spec( spec ):
+def by_spec( spec, ignored_products ):
     """
     Helper function for by_configuration. Yields all serial-numbers matching the given spec
+    :param spec: A product name/line (as a string) we want to get serial number of, or an actual s/n
+    :param ignored_products: List of products we want to ignore. e.g. ['D455', 'D457', etc.]
+    :return: A set of device serial-numbers
     """
     if spec.endswith( '*' ):
-        for sn in by_product_line( spec[:-1] ):
+        for sn in by_product_line( spec[:-1], ignored_products ):
             yield sn
+    elif get( spec ):
+        yield spec   # the device serial number
     else:
-        for sn in by_name( spec ):
+        for sn in by_name( spec, ignored_products ):
             yield sn
 
 
@@ -324,7 +354,7 @@ def expand_specs( specs ):
     """
     expanded = set()
     for spec in specs:
-        sns = {sn for sn in _get_sns_from_spec( spec )}
+        sns = {sn for sn in by_spec( spec )}
         if sns:
             expanded.update( sns )
         else:
@@ -354,43 +384,74 @@ def load_specs_from_file( filename ):
     return exceptions
 
 
-def by_configuration( config, exceptions = None ):
+def by_configuration( config, exceptions=None, inclusions=None ):
     """
     Yields the serial numbers fitting the given configuration. If configuration includes an 'each' directive
     will yield all fitting serial numbers one at a time. Otherwise yields one set of serial numbers fitting the configuration
 
-    :param config: A test:device line collection of arguments (e.g., [L515 D400*])
+    :param config: A test:device line collection of arguments (e.g., [L515 D400*]) or serial numbers
     :param exceptions: A collection of serial-numbers that serve as exceptions that will never get matched
+    :param inclusions: A collection of serial-numbers from which to match - nothing else will get matched
 
-    If no device matches the configuration devices specified, a RuntimeError will be
-    raised!
+    If no device matches the configuration devices specified, a RuntimeError will be raised unless
+    'inclusions' is provided and the configuration is simple, and an empty set yielded to signify.
     """
     exceptions = exceptions or set()
-    if len( config ) == 1 and re.fullmatch( r'each\(.+\)', config[0], re.IGNORECASE ):
-        spec = config[0][5:-1]
-        for sn in _get_sns_from_spec( spec ):
-            if sn not in exceptions:
-                yield { sn }
+    # split the current config to two lists:
+    #     1) new_config (the wanted products)
+    #     2) ignored_products (strings starting with !)
+    # For example: "each(D400*) !D457" ---> new_config = ['each(D400*)'], ignored_products = ['D457']
+    new_config = []
+    ignored_products = []
+    for p in config:
+        if p[0] == '!':
+            ignored_products.append(p[1:])  # remove the '!'
+        else:
+            new_config.append(p)
+
+    nothing_matched = True
+    if len( new_config ) > 0 and re.fullmatch( r'each\(.+\)', new_config[0], re.IGNORECASE ):
+        spec = new_config[0][5:-1]
+        for sn in by_spec( spec, ignored_products ):
+            if sn in exceptions:
+                continue
+            if inclusions and sn not in inclusions:
+                continue
+            nothing_matched = False
+            yield { sn }
     else:
         sns = set()
-        for spec in config:
+        for spec in new_config:
             old_len = len(sns)
-            for sn in _get_sns_from_spec( spec ):
+            for sn in by_spec( spec, ignored_products ):
                 if sn in exceptions:
+                    continue
+                if inclusions and sn not in inclusions:
                     continue
                 if sn not in sns:
                     sns.add( sn )
                     break
             new_len = len(sns)
             if new_len == old_len:
-                error = 'no device matches configuration "' + spec + '"'
-                if old_len:
-                    error += ' (after already matching ' + str(sns) + ')'
-                if exceptions:
-                    error += ' (-' + str(exceptions) + ')'
-                raise RuntimeError( error )
+                # No new device matches the spec:
+                #   - if no inclusions were specified, this is always an error
+                #   - with inclusions, it's not an error only if it's the only spec
+                if not inclusions or len(new_config) > 1:
+                    error = 'no device matches configuration "' + spec + '"'
+                    if old_len:
+                        error += ' (after already matching ' + str(sns) + ')'
+                    if ignored_products:
+                        error += ' (!' + str(ignored_products) + ')'
+                    if exceptions:
+                        error += ' (-' + str(exceptions) + ')'
+                    if inclusions:
+                        error += ' (+' + str(inclusions) + ')'
+                    raise RuntimeError( error )
         if sns:
+            nothing_matched = False
             yield sns
+    if nothing_matched and inclusions:
+        yield set()  # let the caller decide how to deal with it
 
 
 def get_first( sns ):
@@ -433,10 +494,10 @@ def recovery():
     return { device.serial_number for device in _device_by_sn.values() if device.handle.is_update_device() }
 
 
-def enable_only( serial_numbers, recycle = False, timeout = 5 ):
+def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME ):
     """
     Enable only the devices corresponding to the given serial-numbers. This can work either
-    with or without Acroname: without, the devices will simply be HW-reset, but other devices
+    with or without a hub: without, the devices will simply be HW-reset, but other devices
     will still be present.
 
     NOTE: will raise an exception if any SN is unknown!
@@ -448,22 +509,23 @@ def enable_only( serial_numbers, recycle = False, timeout = 5 ):
                     re-enabling
     :param timeout: The maximum seconds to wait to make sure the devices are indeed online
     """
-    if acroname:
+    if hub:
         #
         ports = [ get( sn ).port for sn in serial_numbers ]
         #
         if recycle:
             #
-            log.d( 'recycling ports via acroname:', ports )
+            log.d( 'recycling ports via hub:', ports )
             #
-            acroname.disable_ports( acroname.ports() )
-            _wait_until_removed( serial_numbers, timeout = timeout )
+            enabled_devices = enabled()
+            hub.disable_ports( )
+            _wait_until_removed( enabled_devices, timeout = timeout )
             #
-            acroname.enable_ports( ports )
+            hub.enable_ports( ports )
             #
         else:
             #
-            acroname.enable_ports( ports, disable_other_ports = True )
+            hub.enable_ports( ports, disable_other_ports = True )
         #
         _wait_for( serial_numbers, timeout = timeout )
         #
@@ -472,15 +534,14 @@ def enable_only( serial_numbers, recycle = False, timeout = 5 ):
         hw_reset( serial_numbers )
         #
     else:
-        log.d( 'no acroname; ports left as-is' )
+        log.d( 'no hub; ports left as-is' )
 
 
 def enable_all():
     """
-    Enables all ports on an Acroname -- without an Acroname, this does nothing!
+    Enables all ports on the hub -- without a hub, this does nothing!
     """
-    if acroname:
-        acroname.enable_ports()
+    hub.enable_ports()
 
 
 def _wait_until_removed( serial_numbers, timeout = 5 ):
@@ -502,12 +563,13 @@ def _wait_until_removed( serial_numbers, timeout = 5 ):
             return True
         #
         if timeout <= 0:
+            log.e( "timed out waiting for devices to be removed" )
             return False
         timeout -= 1
         time.sleep( 1 )
 
 
-def _wait_for( serial_numbers, timeout = 5 ):
+def _wait_for( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     """
     Wait until the given serial numbers are all online
 
@@ -516,6 +578,7 @@ def _wait_for( serial_numbers, timeout = 5 ):
     :return: True if all have come online; False if timeout was reached
     """
     did_some_waiting = False
+
     while True:
         #
         have_all_devices = True
@@ -534,16 +597,15 @@ def _wait_for( serial_numbers, timeout = 5 ):
         #
         if timeout <= 0:
             if did_some_waiting:
-                log.d( 'timed out' )
+                log.d( 'timed out waiting for a device connection' )
             return False
         timeout -= 1
         time.sleep( 1 )
         did_some_waiting = True
 
-
-def hw_reset( serial_numbers, timeout = 5 ):
+def hw_reset( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     """
-    Recycles the given devices manually, using a hardware-reset (rather than any acroname port
+    Recycles the given devices manually, using a hardware-reset (rather than any hub port
     reset). The devices are sent a HW-reset command and then we'll wait until they come back
     online.
 
@@ -553,22 +615,30 @@ def hw_reset( serial_numbers, timeout = 5 ):
     :param timeout: Maximum # of seconds to wait for the devices to come back online
     :return: True if all devices have come back online before timeout
     """
+
+    usb_serial_numbers = { sn for sn in serial_numbers if _device_by_sn[sn].port is not None }
+
     for sn in serial_numbers:
         dev = get( sn ).handle
         dev.hardware_reset()
     #
-    _wait_until_removed( serial_numbers )
+
+    if usb_serial_numbers:
+        _wait_until_removed( usb_serial_numbers )
+    else:
+        # normally we will get here with a mipi device,
+        # we want to allow some time for the device to reinitialize as it was not disconnected
+        time.sleep(3)
     #
     return _wait_for( serial_numbers, timeout = timeout )
 
 
+
 ###############################################################################################
-import platform
 if 'windows' in platform.system().lower():
-    #
     def _get_usb_location( physical_port ):
         """
-        Helper method to get windows USB location from registry
+        Helper method to get Windows USB location from registry
         """
         if not physical_port:
             return None
@@ -601,24 +671,7 @@ if 'windows' in platform.system().lower():
         # location example: 0000.0014.0000.016.003.004.003.000.000
         # and, for T265: Port_#0002.Hub_#0006
         return result[0]
-    #
-    def _get_port_by_loc( usb_location ):
-        """
-        """
-        if usb_location:
-            #
-            # T265 locations look differently...
-            match = re.fullmatch( r'Port_#(\d+)\.Hub_#(\d+)', usb_location, re.IGNORECASE )
-            if match:
-                # We don't know how to get the port from these yet!
-                return None #int(match.group(2))
-            else:
-                split_location = [int(x) for x in usb_location.split('.')]
-                # only the last two digits are necessary
-                return acroname.get_port_from_usb( split_location[-5], split_location[-4] )
-    #
 else:
-    #
     def _get_usb_location( physical_port ):
         """
         """
@@ -628,65 +681,84 @@ else:
         # u'/sys/devices/pci0000:00/0000:00:14.0/usb2/2-3/2-3.3/2-3.3.1/2-3.3.1:1.0/video4linux/video0'
         #
         split_location = physical_port.split( '/' )
-        port_location = split_location[-4]
+        if len(split_location) > 4:
+            port_location = split_location[-4]
+        elif len(split_location) == 1:
+            # Recovery devices may have only the relevant port: e.g., L515 Recovery has "2-2.4.4-84"
+            port_location = physical_port
+        else:
+            raise RuntimeError( f"invalid physical port '{physical_port}'" )
         # location example: 2-3.3.1
         return port_location
-    #
-    def _get_port_by_loc( usb_location ):
-        """
-        """
-        if usb_location:
-            split_port_location = usb_location.split( '.' )
-            first_port_coordinate = int( split_port_location[-2] )
-            second_port_coordinate = int( split_port_location[-1] )
-            port = acroname.get_port_from_usb( first_port_coordinate, second_port_coordinate )
-            return port
 
 
 ###############################################################################################
 if __name__ == '__main__':
     import os, sys, getopt
+
     try:
         opts,args = getopt.getopt( sys.argv[1:], '',
-            longopts = [ 'help', 'recycle', 'all', 'list', 'port=' ])
+            longopts = [ 'help', 'recycle', 'all', 'none', 'list', 'port=', 'ports' ])
     except getopt.GetoptError as err:
         print( '-F-', err )   # something like "option -a not recognized"
         usage()
     if args:
         usage()
-    if acroname:
-        if not acroname.hub:
-            acroname.connect()
-    action = 'list'
-    for opt,arg in opts:
-        if opt in ('--list'):
-            action = 'list'
-        elif opt in ('--all'):
-            if not acroname:
-                log.f( 'No acroname available' )
-            acroname.enable_ports( sleep_on_change = 5 )
-        elif opt in ('--port'):
-            if not acroname:
-                log.f( 'No acroname available' )
-            all_ports = acroname.all_ports()
-            str_ports = arg.split(',')
-            ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
-            if len(ports) != len(str_ports):
-                log.f( 'Invalid ports', str_ports )
-            acroname.enable_ports( ports, disable_other_ports = True, sleep_on_change = 5 )
-        elif opt in ('--recycle'):
-            action = 'recycle'
-    if action == 'list':
-        query()
-        for sn in all():
-            device = get( sn )
-            print( '{port} {name:30} {sn:20} {handle}'.format(
-                sn = sn,
-                name = device.name,
-                port = device.port is None and '?' or device.port,
-                handle = device.handle
-                ))
-    elif action == 'recycle':
-        log.f( 'Not implemented yet' )
+    try:
+        if hub:
+            if not hub.is_connected():
+                hub.connect()
+
+        action = 'list'
+        def get_handle(dev):
+            return dev.handle
+        def get_phys_port(dev):
+            return dev.physical_port or "???"
+        printer = get_handle
+        for opt,arg in opts:
+            if opt in ('--list'):
+                action = 'list'
+            elif opt in ('--port'):
+                if not hub:
+                    log.f( 'No hub available' )
+                all_ports = hub.all_ports()
+                str_ports = arg.split(',')
+                ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
+                if len(ports) != len(str_ports):
+                    log.f( 'Invalid ports', str_ports )
+                hub.enable_ports( ports, disable_other_ports=False )
+                action = 'none'
+            elif opt in ('--ports'):
+                printer = get_phys_port
+            elif opt in ('--all'):
+                if not hub:
+                    log.f( 'No hub available' )
+                hub.enable_ports()
+                action = 'none'
+            elif opt in ('--none'):
+                if not hub:
+                    log.f( 'No hub available' )
+                hub.disable_ports()
+                action = 'none'
+            elif opt in ('--recycle'):
+                action = 'recycle'
+            else:
+                usage()
+        #
+        if action == 'list':
+            query( monitor_changes=False, recycle_ports=False, hub_reset=False )
+            for sn in all():
+                device = get( sn )
+                print( '{port} {name:30} {sn:20} {handle}'.format(
+                    sn = sn,
+                    name = device.name,
+                    port = device.port is None and '?' or device.port,
+                    handle = printer(device)
+                    ))
+        elif action == 'recycle':
+            hub.recycle_ports()
+    finally:
+        # Disconnect from the hub -- if we don't it might crash on Linux...
+        hub.disconnect()
 
 

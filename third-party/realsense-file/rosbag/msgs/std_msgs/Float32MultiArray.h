@@ -39,7 +39,7 @@ struct Float32MultiArray_
    typedef  ::std_msgs::MultiArrayLayout_<ContainerAllocator>  _layout_type;
   _layout_type layout;
 
-   typedef std::vector<float, typename ContainerAllocator::template rebind<float>::other >  _data_type;
+   typedef std::vector<float, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< float > >  _data_type;
   _data_type data;
 
 
@@ -85,32 +85,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Float32MultiArray_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Float32MultiArray_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Float32MultiArray_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Float32MultiArray_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Float32MultiArray_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Float32MultiArray_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

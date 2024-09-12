@@ -9,9 +9,9 @@
  For example usecase of alignment, please check out align-advanced and measure demos.
  The need for spatial alignment (from here "align") arises from the fact
  that not all camera streams are captured from a single viewport.
- Align process lets the user translate images from one viewport to another. 
+ Align process lets the user translate images from one viewport to another.
  That said, results of align are synthetic streams, and suffer from several artifacts:
- 1. Sampling - mapping stream to a different viewport will modify the resolution of the frame 
+ 1. Sampling - mapping stream to a different viewport will modify the resolution of the frame
                to match the resolution of target viewport. This will either cause downsampling or
                upsampling via interpolation. The interpolation used needs to be of type
                Nearest Neighbor to avoid introducing non-existing values.
@@ -59,7 +59,7 @@ int main(int argc, char * argv[]) try
     rs2::align align_to_depth(RS2_STREAM_DEPTH);
     rs2::align align_to_color(RS2_STREAM_COLOR);
 
-    float       alpha = 0.5f;               // Transparancy coefficient 
+    float       alpha = 0.5f;               // Transparancy coefficient
     direction   dir = direction::to_depth;  // Alignment direction
 
     while (app) // Application still alive?

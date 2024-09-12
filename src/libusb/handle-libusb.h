@@ -8,7 +8,9 @@
 
 #include <chrono>
 
-#include <libusb.h>
+#include "libusb.h"
+
+#include <rsutils/string/from.h>
 
 namespace librealsense
 {
@@ -52,6 +54,16 @@ namespace librealsense
                     throw std::runtime_error(msg.str());
                 }
 
+                sts = libusb_set_auto_detach_kernel_driver(_handle, true); // detach from kernel driver when claimed and re-attach when released.
+                if(sts != LIBUSB_SUCCESS)
+                {
+                    auto rs_sts =  libusb_status_to_rs(sts);
+                    std::stringstream msg;
+                    msg << "failed to set kernel driver auto detach: " << (int)interface->get_number() << ", error: " << usb_status_to_string.at(rs_sts);
+                    LOG_ERROR(msg.str());
+                    throw std::runtime_error(msg.str());
+                }
+
                 claim_interface_or_throw(interface->get_number());
                 for(auto&& i : interface->get_associated_interfaces())
                     claim_interface_or_throw(i->get_number());
@@ -64,6 +76,7 @@ namespace librealsense
                 _context->stop_event_handler();
                 for(auto&& i : _first_interface->get_associated_interfaces())
                     libusb_release_interface(_handle, i->get_number());
+                libusb_release_interface(_handle, _first_interface->get_number());
                 libusb_close(_handle);
             }
 
@@ -77,22 +90,41 @@ namespace librealsense
             {
                 auto rs_sts = claim_interface(interface);
                 if(rs_sts != RS2_USB_STATUS_SUCCESS)
-                    throw std::runtime_error(to_string() << "Unable to claim interface " << (int)interface << ", error: " << usb_status_to_string.at(rs_sts));
+                    throw std::runtime_error(rsutils::string::from() << "Unable to claim interface " << (int)interface << ", error: " << usb_status_to_string.at(rs_sts));
             }
 
             usb_status claim_interface(uint8_t interface)
             {
-                //libusb_set_auto_detach_kernel_driver(h, true);
-
-                 if (libusb_kernel_driver_active(_handle, interface) == 1)//find out if kernel driver is attached
-                     if (libusb_detach_kernel_driver(_handle, interface) == 0)// detach driver from device if attached.
-                         LOG_DEBUG("handle_libusb - detach kernel driver");
-
+               
                 auto sts = libusb_claim_interface(_handle, interface);
-                if(sts != LIBUSB_SUCCESS)
+
+                if (sts != LIBUSB_SUCCESS)
                 {
-                    auto rs_sts =  libusb_status_to_rs(sts);
-                    LOG_ERROR("failed to claim usb interface: " << (int)interface << ", error: " << usb_status_to_string.at(rs_sts));
+                    // If we try to claim the USB device and get 'USB_STATUS_BUSY' error we will
+                    // retry 2 times more with some short delay between each try
+                    if( sts == LIBUSB_ERROR_BUSY )
+                    {
+                        auto retry_counter = 2;
+                        do
+                        {
+                            LOG_WARNING( "failed to claim usb interface, interface "
+                                         << (int)interface << ", is busy - retrying..." );
+                            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+
+                            sts = libusb_claim_interface( _handle, interface );
+                            if( sts == LIBUSB_SUCCESS )
+                            {
+                                LOG_DEBUG( "retrying success, interface = " << (int)interface );
+                                return RS2_USB_STATUS_SUCCESS;
+                            }
+                        }
+                        while( sts == LIBUSB_ERROR_BUSY && --retry_counter > 0 );
+                    }
+
+                    auto rs_sts = libusb_status_to_rs(sts);
+                    LOG_ERROR( "failed to claim usb interface: "
+                               << (int)interface << ", error: "
+                               << usb_status_to_string.at( rs_sts ) );
                     return rs_sts;
                 }
 

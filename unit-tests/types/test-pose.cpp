@@ -1,26 +1,17 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include <easylogging++.h>
-#ifdef BUILD_SHARED_LIBS
-// With static linkage, ELPP is initialized by librealsense, so doing it here will
-// create errors. When we're using the shared .so/.dll, the two are separate and we have
-// to initialize ours if we want to use the APIs!
-INITIALIZE_EASYLOGGINGPP
-#endif
+//#test:donotrun:jetson
 
-// Let Catch define its own main() function
-#define CATCH_CONFIG_MAIN
+#include <src/pose.h>
+
+#include <rsutils/easylogging/easyloggingpp.h>
+
 #include "../catch.h"
-
 #include "../approx.h"
-
-//#cmake:add-file ../../src/types.h
-#include <types.h>
+#include "rot.h"
 
 using namespace librealsense;
-
-#include "rot.h"
 
 
 TEST_CASE( "pose vs extrinsics", "[types]" )

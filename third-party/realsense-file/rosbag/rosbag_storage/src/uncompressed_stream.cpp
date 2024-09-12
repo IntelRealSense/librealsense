@@ -37,10 +37,7 @@
 #include <iostream>
 #include <cstring>
 
-#include <boost/format.hpp>
-
 using std::string;
-using boost::format;
 using rs2rosinternal::Exception;
 
 namespace rosbag {
@@ -54,7 +51,8 @@ CompressionType UncompressedStream::getCompressionType() const {
 void UncompressedStream::write(void* ptr, size_t size) {
     size_t result = fwrite(ptr, 1, size, getFilePointer());
     if (result != size)
-        throw BagIOException((format("Error writing to file: writing %1% bytes, wrote %2% bytes") % size % result).str());
+        throw BagIOException( "Error writing to file: writing " + std::to_string( size ) + " bytes, wrote "
+                              + std::to_string( result ) + " bytes" );
 
     advanceOffset(size);
 }
@@ -81,7 +79,8 @@ void UncompressedStream::read(void* ptr, size_t size) {
             // Read the remaining data from the file
             int result = static_cast<int>(fread((char*) ptr + static_cast<int>(nUnused), 1, static_cast<int>(size), getFilePointer()));
             if ((size_t) result != size)
-                throw BagIOException((format("Error reading from file + unused: wanted %1% bytes, read %2% bytes") % size % result).str());
+                throw BagIOException( "Error reading from file + unused: wanted " + std::to_string( size )
+                                      + " bytes, read " + std::to_string( result ) + " bytes" );
 
             advanceOffset(size);
 
@@ -99,7 +98,8 @@ void UncompressedStream::read(void* ptr, size_t size) {
     // No unused data - read from stream
     int result = static_cast<int>(fread( ptr, 1, static_cast<int>(size), getFilePointer()));
     if ((size_t) result != size)
-        throw BagIOException((format("Error reading from file: wanted %1% bytes, read %2% bytes") % size % result).str());
+        throw BagIOException( "Error reading from file: wanted " + std::to_string( size ) + " bytes, read "
+                              + std::to_string( result ) + " bytes" );
 
     advanceOffset(size);
 }

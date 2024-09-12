@@ -75,10 +75,10 @@ struct CameraInfo_
    typedef uint32_t _width_type;
   _width_type width;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _distortion_model_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _distortion_model_type;
   _distortion_model_type distortion_model;
 
-   typedef std::vector<double, typename ContainerAllocator::template rebind<double>::other >  _D_type;
+   typedef std::vector<double, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< double > >  _D_type;
   _D_type D;
 
    typedef std::array<double, 9>  _K_type;
@@ -142,32 +142,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::CameraInfo_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::CameraInfo_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::CameraInfo_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::CameraInfo_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::CameraInfo_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::CameraInfo_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 
@@ -426,7 +426,7 @@ struct Printer< ::sensor_msgs::CameraInfo_<ContainerAllocator> >
     s << indent << "width: ";
     Printer<uint32_t>::stream(s, indent + "  ", v.width);
     s << indent << "distortion_model: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.distortion_model);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.distortion_model);
     s << indent << "D[]" << std::endl;
     for (size_t i = 0; i < v.D.size(); ++i)
     {
