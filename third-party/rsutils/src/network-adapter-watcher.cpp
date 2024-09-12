@@ -196,10 +196,11 @@ public:
 #else
         if( _th.joinable() )
         {
-            if( write( _done, &_done, sizeof( &_done ) ) != sizeof( &_done ) )
+            if( write( _done, &_done, sizeof( _done ) ) != sizeof( _done ) )
                 /* to avoid compiler warning about not using return value */;
             _th.join();
         }
+        close( _socket );
         close( _done );
 #endif
     }
