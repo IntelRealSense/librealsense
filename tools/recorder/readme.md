@@ -14,7 +14,7 @@ The goal is to offer a command line recorder with low latency and zero frame dro
 |Flag   |Description   |Default|
 |---|---|---|
 |`-t X`|Stop recording after X seconds|10|
-|`-f <filename>`|Save recording to <filename>|"test.bag"|
+|`-f <filename>`|Save recording to <filename>|(required)|
 
 For example:
 `rs-record -f ./test1.bag -t 60`

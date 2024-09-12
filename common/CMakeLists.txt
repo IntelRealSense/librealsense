@@ -3,6 +3,7 @@
 
 set(COMMON_SRC
     "${CMAKE_CURRENT_LIST_DIR}/animated.h"
+    "${CMAKE_CURRENT_LIST_DIR}/cli.h"
     "${CMAKE_CURRENT_LIST_DIR}/float2.h"
     "${CMAKE_CURRENT_LIST_DIR}/float3.h"
     "${CMAKE_CURRENT_LIST_DIR}/float4.h"

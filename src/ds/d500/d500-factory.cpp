@@ -211,13 +211,13 @@ public:
         std::vector< tagged_profile > tags;
 
         tags.push_back( { RS2_STREAM_COLOR, -1,
-                          848, 480, RS2_FORMAT_RGB8, 30,
+                          896, 504, RS2_FORMAT_RGB8, 30,
                           profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT } );
         tags.push_back( { RS2_STREAM_DEPTH, -1,
-                          848, 480, RS2_FORMAT_Z16, 30,
+                          896, 504, RS2_FORMAT_Z16, 30,
                           profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT } );
         tags.push_back( { RS2_STREAM_INFRARED, -1,
-                          848, 480, RS2_FORMAT_Y8, 30,
+                          896, 504, RS2_FORMAT_Y8, 30,
                           profile_tag::PROFILE_TAG_SUPERSET } );
         tags.push_back( { RS2_STREAM_GYRO, -1,
                           0, 0, RS2_FORMAT_MOTION_XYZ32F, (int)odr::IMU_FPS_200,
