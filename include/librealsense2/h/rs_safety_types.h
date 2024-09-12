@@ -25,6 +25,15 @@ typedef struct sc_2d_pixel
     uint16_t j;
 } sc_2d_pixel;
 
+typedef struct float3_row_major { float x, y, z; } float3_row_major;
+typedef struct float3x3_row_major { float3_row_major x, y, z; } float3x3_row_major;
+
+typedef struct rs2_extrinsics_row_major
+{
+    float3x3_row_major rotation; // Rotation matrix
+    float3_row_major translation; // Metric units
+} rs2_extrinsics_row_major;
+
 typedef struct rs2_safety_preset_header
 {
     uint16_t version; // major.minor. Big-endian
