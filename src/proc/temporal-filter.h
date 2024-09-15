@@ -33,6 +33,9 @@ namespace librealsense
 
             unsigned char mask = 1 << _cur_frame_index;
 
+            // Copy locally, to remove need for a lock.
+            float alpha = _alpha_param;
+            float one_minus_alpha = 1.f - alpha;
             // pass one -- go through image and update all
             for (size_t i = 0; i < _current_frm_size_pixels; i++)
             {
@@ -53,7 +56,7 @@ namespace librealsense
                         if (diff < delta_z)
                         {  // old and new val agree
                             history[i] |= mask;
-                            float filtered = _alpha_param * cur_val + _one_minus_alpha * prev_val;
+                            float filtered = alpha * cur_val + one_minus_alpha * prev_val;
                             T result = static_cast<T>(filtered);
                             frame[i] = result;
                             _last_frame[i] = result;
@@ -92,7 +95,6 @@ namespace librealsense
         uint8_t                 _persistence_param;
 
         float                   _alpha_param;               // The normalized weight of the current pixel
-        float                   _one_minus_alpha;
         uint8_t                 _delta_param;               // A threshold when a filter is invoked
         size_t                  _width, _height, _stride;
         size_t                  _bpp;
