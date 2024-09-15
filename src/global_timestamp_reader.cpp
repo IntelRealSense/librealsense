@@ -194,8 +194,9 @@ namespace librealsense
         {
             LOG_DEBUG("time_diff_keeper::stop: stop object.");
             _active_object.stop();
-            _coefs.reset();
             _is_ready = false;
+            std::lock_guard< std::recursive_mutex > lock( _read_mtx );
+            _coefs.reset();
         }
     }
 

@@ -186,6 +186,7 @@ void hid_sensor::start( rs2_frame_callback_sptr callback )
     _hid_device->start_capture(
         [this, last_frame_number, last_timestamp]( const platform::sensor_data & sensor_data ) mutable
         {
+            std::lock_guard< std::mutex > lock( _configure_lock );
             const auto system_time = time_service::get_time();  // time frame was received from the backend
             auto timestamp_reader = _hid_iio_timestamp_reader.get();
             static const std::string custom_sensor_name = "custom";
