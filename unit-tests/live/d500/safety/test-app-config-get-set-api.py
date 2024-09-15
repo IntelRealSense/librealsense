@@ -18,7 +18,7 @@ app_config_json_str = '''
 			"temporal_safety_features_selection": 0,
 			"mechanisms_thresholds": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			"mechanisms_sampling_interval": [0, 0, 0, 0, 0, 0, 0, 0],
-			"tc_consecutives_failures_threshold": 0
+			"tc_consecutives_failures_threshold": 3
 		},
 		"dev_rules_selection": 0,
 		"depth_pipe_safety_checks_override": 0,
