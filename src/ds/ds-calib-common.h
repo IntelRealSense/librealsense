@@ -132,7 +132,7 @@ namespace librealsense
                 uint8_t step_count;
                 uint8_t accuracy;
                 uint8_t reserved;
-            };
+            } field;
 
             uint32_t as_uint32 = 0;
         };
@@ -144,7 +144,7 @@ namespace librealsense
                 uint8_t scan_parameter : 1;
                 uint8_t reserved : 2;
                 uint8_t data_sampling : 1;
-            };
+            } field;
 
             uint32_t as_uint32 = 0;
         };

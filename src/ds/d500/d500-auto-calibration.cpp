@@ -14,6 +14,8 @@
 
 namespace librealsense
 {
+    static constexpr const size_t hwm_header_size = 4;
+
     static const std::string calibration_state_strings[] = {
         "Idle",
         "In Process",
@@ -92,7 +94,7 @@ namespace librealsense
                                                                         rs2_update_progress_callback_sptr progress_callback )
     {
         bool is_d555 = false;
-        auto dev = As< device >( this );
+        auto dev = As< device >( _debug_dev );
         std::string pid_str = dev ? dev->get_info( RS2_CAMERA_INFO_PRODUCT_ID ) : "";
         if( pid_str == "0B56" || pid_str == "DDS" )
             is_d555 = true;
@@ -169,17 +171,17 @@ namespace librealsense
         LOG_DEBUG("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
 
         ds_calib_common::param4 p4;
-        p4.scan_parameter = scan_parameter;
-        p4.data_sampling = data_sampling;
+        p4.field.scan_parameter = scan_parameter;
+        p4.field.data_sampling = data_sampling;
 
         // Begin auto-calibration
         auto cmd = _debug_dev->build_command( ds::AUTO_CALIB, ds_calib_common::PY_RX_CALIB_BEGIN, speed, 0, p4.as_uint32 );
-        std::vector< uint8_t > res = _debug_dev->send_receive_raw_data( cmd ); // TODO - need to remove res first 4 bytes?
+        _debug_dev->send_receive_raw_data( cmd );
 
         ds_calib_common::dsc_check_status_result result = get_calibration_status(timeout_ms, [progress_callback, speed](int count)
         {
             if( progress_callback )
-                progress_callback->on_update_progress( count++ * ( 2.f * static_cast< int >( speed ) ) );  // Currently this number does not reflect the actual progress
+                progress_callback->on_update_progress( count * speed * 1.2f );  // Currently this number does not reflect the actual progress
         });
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -189,7 +191,7 @@ namespace librealsense
             ds_calib_common::handle_calibration_error( result.status );
         }
 
-        res = get_calibration_results(health);
+        std::vector< uint8_t > res = get_calibration_results( health );
 
         if (progress_callback)
             progress_callback->on_update_progress(static_cast<float>(100));
@@ -327,13 +329,13 @@ namespace librealsense
         auto p2 = static_cast< uint32_t >( ground_truth_mm ) * 100;
 
         ds_calib_common::param3 p3;
-        p3.average_step_count = average_step_count;
-        p3.step_count = step_count;
-        p3.accuracy = accuracy;
+        p3.field.average_step_count = average_step_count;
+        p3.field.step_count = step_count;
+        p3.field.accuracy = accuracy;
 
         ds_calib_common::param4 p4;
-        p4.scan_parameter = scan_parameter;
-        p4.data_sampling = data_sampling;
+        p4.field.scan_parameter = scan_parameter;
+        p4.field.data_sampling = data_sampling;
 
         // Log the current preset
         //auto advanced_mode = dynamic_cast< ds_advanced_mode_base * >( this );
@@ -345,7 +347,7 @@ namespace librealsense
         //}
 
         auto cmd = _debug_dev->build_command( ds::AUTO_CALIB, ds_calib_common::TARE_CALIB_BEGIN, p2, p3.as_uint32, p4.as_uint32 );
-        _debug_dev->send_receive_raw_data( cmd ); // TODO - need to remove res first 4 bytes?
+        _debug_dev->send_receive_raw_data( cmd );
 
         ds_calib_common::TareCalibrationResult result;
 
@@ -365,12 +367,13 @@ namespace librealsense
             try
             {
                 auto cmd = _debug_dev->build_command( ds::AUTO_CALIB, ds_calib_common::TARE_CALIB_CHECK_STATUS );
-                res = _debug_dev->send_receive_raw_data( cmd ); // TODO - need to remove res first 4 bytes?
-                if( res.size() < sizeof( ds_calib_common::TareCalibrationResult ) )
+                res = _debug_dev->send_receive_raw_data( cmd );
+                if( res.size() < sizeof( ds_calib_common::TareCalibrationResult ) + hwm_header_size )
                 {
                     throw std::runtime_error( "Not enough data from CALIB_STATUS!" );
                 }
 
+                res.erase( res.begin(), res.begin() + hwm_header_size );  // Slicing HWM command header
                 result = *reinterpret_cast< ds_calib_common::TareCalibrationResult * >( res.data() );
                 done = result.status != ds_calib_common::STATUS_RESULT_NOT_READY;
             }
@@ -433,17 +436,28 @@ namespace librealsense
 
     void d500_auto_calibrated::set_calibration_table(const std::vector<uint8_t>& calibration)
     {
-        if (_curr_calibration.size() != sizeof(ds::table_header) && // First time setting table, only header set by get_calibration_table
-            _curr_calibration.size() != sizeof(ds::d500_coefficients_table)) // Table was previously set
-            throw std::runtime_error(rsutils::string::from() <<
-                "Current calibration table has unexpected size " << _curr_calibration.size());
+        auto table_header = reinterpret_cast< const ds::table_header * >( calibration.data() );
 
-        if (calibration.size() != sizeof(ds::d500_coefficients_table) - sizeof(ds::table_header))
-            throw std::runtime_error(rsutils::string::from() <<
-                "Setting calibration table with unexpected size" << calibration.size());
+        size_t expected_size = sizeof( ds::d500_coefficients_table );
+        if( table_header->table_type == static_cast< uint16_t >( ds::d500_calibration_table_id::rgb_calibration_id ) )
+            expected_size = sizeof( ds::d500_rgb_calibration_table );
 
-        _curr_calibration.resize(sizeof(ds::table_header)); // Remove previously set calibration, keep header.
-        _curr_calibration.insert(_curr_calibration.end(), calibration.begin(), calibration.end());
+        if( calibration.size() != expected_size )
+            throw std::runtime_error( rsutils::string::from()
+                                      << "Setting calibration table with unexpected size" << calibration.size()
+                                      << " while expecting " << expected_size );
+
+        _curr_calibration = calibration;
+
+        // Send updated calibration to RAM so it can be used. Will be saved only on write_calibration()
+        auto cmd = _debug_dev->build_command( ds::SET_HKR_CONFIG_TABLE,
+                                              static_cast< int >( ds::d500_calib_location::d500_calib_ram_memory ),
+                                              static_cast< int >( table_header->table_type ),
+                                              static_cast< int >( ds::d500_calib_type::d500_calib_dynamic ),
+                                              0,
+                                              _curr_calibration.data(),
+                                              _curr_calibration.size() );
+        _debug_dev->send_receive_raw_data( cmd );
     }
 
     void d500_auto_calibrated::reset_to_factory_calibration() const
@@ -472,10 +486,8 @@ namespace librealsense
         std::vector< uint8_t > ret;
         const float correction_factor = 0.5f;
 
-        auto table_data = get_calibration_table(); // Table is returned without the header
-        auto full_table = _curr_calibration; // During get_calibration_table header is saved in _curr_calibration
-        full_table.insert( full_table.end(), table_data.begin(), table_data.end() );
-        auto table = reinterpret_cast< librealsense::ds::d500_coefficients_table * >( full_table.data() );
+        auto calib_table = get_calibration_table();
+        auto table = reinterpret_cast< librealsense::ds::d500_coefficients_table * >( calib_table.data() );
 
         float ratio_to_apply = ds_calib_common::get_focal_length_correction_factor( left_rect_sides,
                                                                                     right_rect_sides,
@@ -501,9 +513,7 @@ namespace librealsense
             table->right_coefficients_table.base_instrinsics.fy *= ratio_to_apply;
         }
 
-        //Return data without header
-        table_data.assign( full_table.begin() + sizeof( ds::table_header ), full_table.end() );
-        return table_data;
+        return calib_table;
     }
 
     std::vector<uint8_t> d500_auto_calibrated::run_uv_map_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
@@ -579,14 +589,15 @@ namespace librealsense
             {
                 // Check calibration status
                 auto cmd = _debug_dev->build_command( ds::AUTO_CALIB, ds_calib_common::PY_RX_CALIB_CHECK_STATUS );
-                auto res = _debug_dev->send_receive_raw_data( cmd ); // TODO - need to remove res first 4 bytes?
-                if( res.size() < sizeof( ds_calib_common::dsc_check_status_result ) )
+                auto res = _debug_dev->send_receive_raw_data( cmd );
+                if( res.size() < sizeof( ds_calib_common::dsc_check_status_result ) + hwm_header_size )
                 {
                     if( ! ( ( retries++ ) % 5 ) ) // Add log debug once a sec
                         LOG_DEBUG( "Not enough data from CALIB_STATUS!" );
                 }
                 else
                 {
+                    res.erase( res.begin(), res.begin() + hwm_header_size ); // Slicing HWM command header
                     result = *reinterpret_cast< ds_calib_common::dsc_check_status_result * >( res.data() );
                     done = ! wait_for_final_results || result.status != ds_calib_common::STATUS_RESULT_NOT_READY;
                 }
@@ -598,7 +609,7 @@ namespace librealsense
 
             if( progress_func )
             {
-                progress_func( count );
+                progress_func( count++ );
             }
 
             now = std::chrono::high_resolution_clock::now();
@@ -617,10 +628,11 @@ namespace librealsense
     {
         // Get new calibration from the firmware
         auto cmd = _debug_dev->build_command( ds::AUTO_CALIB, ds_calib_common::GET_CALIBRATION_RESULT );
-        auto res = _debug_dev->send_receive_raw_data( cmd );  // TODO - need to remove res first 4 bytes?
-        if( res.size() < sizeof( ds_calib_common::dsc_result ) )
+        auto res = _debug_dev->send_receive_raw_data( cmd );
+        if( res.size() < sizeof( ds_calib_common::dsc_result ) + hwm_header_size )
             throw std::runtime_error( "Not enough data from CALIB_STATUS!" );
 
+        res.erase( res.begin(), res.begin() + hwm_header_size );  // Slicing HWM command header
         auto * header = reinterpret_cast< ds::table_header * >( res.data() + sizeof( ds_calib_common::dsc_result ) );
         if( res.size() < sizeof( ds_calib_common::dsc_result ) + sizeof( ds::table_header ) + header->table_size )
             throw std::runtime_error( "Table truncated in CALIB_STATUS!" );
@@ -629,9 +641,9 @@ namespace librealsense
         calib.resize( sizeof( ds::table_header ) + header->table_size, 0 );
         memcpy( calib.data(), header, calib.size() );  // Copy to new_calib
 
-        auto reslt = reinterpret_cast< ds_calib_common::dsc_result * >( res.data() );
+        auto result = reinterpret_cast< ds_calib_common::dsc_result * >( res.data() );
         if( health )
-            *health = reslt->healthCheck;
+            *health = result->healthCheck;
 
         return calib;
     }
