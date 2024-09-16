@@ -196,9 +196,12 @@ public:
 #else
         if( _th.joinable() )
         {
-            if( write( _done, &_done, sizeof( _done ) ) != sizeof( _done ) )
-                /* to avoid compiler warning about not using return value */;
-            _th.join();
+            uint64_t incr = 1;  // must be 8-byte integer value
+            auto rv = write( _done, &incr, sizeof( incr ) );
+            if( rv != sizeof( incr ) )
+                LOG_WARNING( "failed to write to network adapter watcher done event: " << rv );
+            else
+                _th.join();
         }
         close( _socket );
         close( _done );
