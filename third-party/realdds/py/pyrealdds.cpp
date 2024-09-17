@@ -623,22 +623,42 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< image_msg, std::shared_ptr< image_msg > >( message, "image" )
         .def( py::init<>() )
         .def_static( "create_topic", &image_msg::create_topic )
-        .def_readwrite( "data", &image_msg::raw_data )
-        .def_readwrite( "width", &image_msg::width )
-        .def_readwrite( "height", &image_msg::height )
-        .def_readwrite( "timestamp", &image_msg::timestamp )
+        .def_property(
+            "data",
+            []( image_msg const & self ) { return self.raw().data(); },
+            []( image_msg & self, std::vector< uint8_t > bytes ) { self.raw().data( std::move( bytes ) ); } )
+        .def_property( "width", &image_msg::width, &image_msg::set_width )
+        .def_property( "height", &image_msg::height, &image_msg::set_height )
+        .def_property( "step", &image_msg::step, &image_msg::set_step )
+        .def_property( "timestamp", &image_msg::timestamp, &image_msg::set_timestamp )
+        .def_property_readonly( "is_bigendian", &image_msg::is_bigendian )
+        .def_property( "encoding", &image_msg::encoding, &image_msg::set_encoding )
+        .def_property( "frame_id", &image_msg::frame_id, &image_msg::set_frame_id )
         .def( "__bool__", &image_msg::is_valid )
         .def( "__repr__",
               []( image_msg const & self )
               {
                   std::ostringstream os;
                   os << "<" SNAME ".image_msg";
-                  if( self.width > 0 && self.height > 0 )
+                  if( self.is_valid() )
                   {
-                      os << ' ' << self.width << 'x' << self.height;
-                      os << 'x' << (self.raw_data.size() / (self.width * self.height));
+                      if( ! self.frame_id().empty() )
+                          os << " " << self.frame_id();
+                      if( ! self.encoding().empty() )
+                          os << " '" << self.encoding() << "'";
+                      os << " " << self.width() << 'x' << self.height();
+                      if( ! self.step() )
+                          os << " STEP 0";
+                      else if( self.step() % self.width() )
+                          os << " STEP " << self.step();
+                      else if( self.raw().data().size() % self.step() )
+                          os << " SIZE " << self.raw().data().size();
+                      //else
+                      //    os << ' ' << ( self.raw().data().size() / ( self.width() * self.height() ) ) << " Bpp";
+                      if( self.is_bigendian() )
+                          os << " BE";
                   }
-                  os << " @ " << realdds::time_to_string( self.timestamp );
+                  os << " @ " << realdds::time_to_string( self.timestamp() );
                   os << ">";
                   return os.str();
               } )
@@ -801,6 +821,8 @@ PYBIND11_MODULE(NAME, m) {
         .def( "is_valid", &dds_video_encoding::is_valid )
         .def( "to_rs2", &dds_video_encoding::to_rs2 )
         .def( "from_rs2", &dds_video_encoding::from_rs2 )
+        .def( py::self == py::self )
+        .def( py::self != py::self )
         .def( "__bool__", &dds_video_encoding::is_valid )
         .def( "__repr__", []( dds_video_encoding const & self ) { return self.to_string(); } );
     video_encoding.attr( "z16" ) = dds_video_encoding( "16UC1" );
@@ -884,18 +906,7 @@ PYBIND11_MODULE(NAME, m) {
               []( dds_video_stream_server & self, dds_video_encoding encoding, int width, int height ) {
                   self.start_streaming( { encoding, height, width } );
               } )
-        .def( "publish_image",
-              []( dds_video_stream_server & self, image_msg const & img )
-              {
-                  // We don't have C++ 'std::move' explicit semantics in Python, so we create a copy.
-                  // Notice there's no copy constructor on purpose (!) so we do it manually...
-                  image_msg img_copy;
-                  img_copy.raw_data = img.raw_data;
-                  img_copy.timestamp = img.timestamp;
-                  img_copy.width = img.width;
-                  img_copy.height = img.height;
-                  self.publish_image( std::move( img_copy ) );
-              } );
+        .def( "publish_image", &dds_video_stream_server::publish_image );
 
     using realdds::dds_depth_stream_server;
     py::class_< dds_depth_stream_server, std::shared_ptr< dds_depth_stream_server > >( m, "depth_stream_server", video_stream_server_base )
