@@ -176,8 +176,7 @@ namespace rs2
             ImGui::PopStyleColor(2); // button color
 
             auto apply = [&]() {
-                config_file::instance() = temp_cfg;
-                update_configuration();
+                config_file::instance() = temp_cfg; // save the selected options in the export menu
             };
 
             ImGui::PushStyleColor(ImGuiCol_Button, button_color);
