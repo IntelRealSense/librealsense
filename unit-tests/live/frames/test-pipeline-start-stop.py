@@ -4,6 +4,8 @@
 # test:donotrun:!nightly
 # Currently, we exclude D457 as it's failing
 # test:device each(D400*) !D457
+# On D455 and other units with IMU it takes ~4 seconds per iteration
+# test:timeout 220
 
 import pyrealsense2 as rs
 from rspy.stopwatch import Stopwatch
@@ -14,9 +16,10 @@ import time
 ITERATIONS_COUNT = 50
 
 dev, ctx = test.find_first_device_or_exit()
+pipe = rs.pipeline(ctx)
+pipe.set_device(dev)
 
-def run_and_verify_frame_received():
-    pipe = rs.pipeline(ctx)
+def run_and_verify_frame_received():    
     start_call_stopwatch = Stopwatch()
     pipe.start()
     # wait_for_frames will throw if no frames received so no assert is needed
@@ -28,7 +31,9 @@ def run_and_verify_frame_received():
 
 ################################################################################################
 test.start("Testing pipeline start/stop")
+iteration_stopwatch = Stopwatch()
 for i in range( ITERATIONS_COUNT ):
+    iteration_stopwatch.reset()
     log.out("starting iteration #", i + 1, "/", ITERATIONS_COUNT)
     # When we had this line enabled and we used it on "run_and_verify_frame_received" the pipeline failed on second iteration on D455
     # IR frames do not arrive on 2-nd iteration
@@ -36,6 +41,8 @@ for i in range( ITERATIONS_COUNT ):
 
     #cfg.enable_all_streams()
     run_and_verify_frame_received()
+    iteration_time = iteration_stopwatch.get_elapsed()
+    log.out("iteration took ", iteration_time, " [sec]")
 test.finish()
 
 ################################################################################################

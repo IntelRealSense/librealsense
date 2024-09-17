@@ -47,7 +47,7 @@ hid_sensor::hid_sensor(
     : super( "Raw Motion Module", dev )
     , _sensor_name_and_hid_profiles( sensor_name_and_hid_profiles )
     , _fps_and_sampling_frequency_per_rs2_stream( fps_and_sampling_frequency_per_rs2_stream )
-    , _hid_device( hid_device )
+    , _hid_device( std::move( hid_device ) )
     , _is_configured_stream( RS2_STREAM_COUNT )
     , _hid_iio_timestamp_reader( std::move( hid_iio_timestamp_reader ) )
     , _custom_hid_timestamp_reader( std::move( custom_hid_timestamp_reader ) )
@@ -120,7 +120,7 @@ void hid_sensor::open( const stream_profiles & requests )
         _configured_profiles.insert( std::make_pair( sensor_name, request ) );
         _is_configured_stream[request->get_stream_type()] = true;
         configured_hid_profiles.push_back( platform::hid_profile{
-            sensor_name,
+            std::move( sensor_name ),
             fps_to_sampling_frequency(request->get_stream_type(), request->get_framerate()),
             get_imu_sensitivity_values( request->get_stream_type() ) } );
     }
@@ -135,16 +135,18 @@ void hid_sensor::open( const stream_profiles & requests )
 
 void hid_sensor::close()
 {
-    std::lock_guard< std::mutex > lock( _configure_lock );
     if( _is_streaming )
         throw wrong_api_call_sequence_exception( "close() failed. Hid device is streaming!" );
     else if( ! _is_opened )
         throw wrong_api_call_sequence_exception( "close() failed. Hid device was not opened!" );
 
     _hid_device->close();
-    _configured_profiles.clear();
-    _is_configured_stream.clear();
-    _is_configured_stream.resize( RS2_STREAM_COUNT );
+    {
+        std::lock_guard< std::mutex > lock( _configure_lock );
+        _configured_profiles.clear();
+        _is_configured_stream.clear();
+        _is_configured_stream.resize( RS2_STREAM_COUNT );
+    }
     _is_opened = false;
     if( Is< librealsense::global_time_interface >( _owner ) )
     {
@@ -175,7 +177,7 @@ void hid_sensor::start( rs2_frame_callback_sptr callback )
     else if( ! _is_opened )
         throw wrong_api_call_sequence_exception( "start_streaming(...) failed. Hid device was not opened!" );
 
-    _source.set_callback( callback );
+    _source.set_callback( std::move( callback ) );
     _source.init( _metadata_parsers );
     _source.set_sensor( _source_owner->shared_from_this() );
 
@@ -186,12 +188,15 @@ void hid_sensor::start( rs2_frame_callback_sptr callback )
     _hid_device->start_capture(
         [this, last_frame_number, last_timestamp]( const platform::sensor_data & sensor_data ) mutable
         {
-            std::lock_guard< std::mutex > lock( _configure_lock );
             const auto system_time = time_service::get_time();  // time frame was received from the backend
             auto timestamp_reader = _hid_iio_timestamp_reader.get();
             static const std::string custom_sensor_name = "custom";
             auto && sensor_name = sensor_data.sensor.name;
-            auto && request = _configured_profiles[sensor_name];
+            std::shared_ptr< stream_profile_interface > request;
+            {
+                std::lock_guard< std::mutex > lock( _configure_lock );
+                request = _configured_profiles[sensor_name];
+            }
             bool is_custom_sensor = false;
             static const uint32_t custom_source_id_offset = 16;
             uint8_t custom_gpio = 0;
@@ -277,15 +282,16 @@ void hid_sensor::start( rs2_frame_callback_sptr callback )
 
 void hid_sensor::stop()
 {
-    std::lock_guard< std::mutex > lock( _configure_lock );
     if( ! _is_streaming )
         throw wrong_api_call_sequence_exception( "stop_streaming() failed. Hid device is not streaming!" );
 
-
     _hid_device->stop_capture();
     _is_streaming = false;
-    _source.flush();
-    _source.reset();
+    {
+        std::lock_guard< std::mutex > lock( _configure_lock );
+        _source.flush();
+        _source.reset();
+    }
     _hid_iio_timestamp_reader->reset();
     _custom_hid_timestamp_reader->reset();
     raise_on_before_streaming_changes( false );
