@@ -15,7 +15,6 @@ set(PYRS_CPP
     pyrs_pipeline.cpp
     pyrs_processing.cpp
     pyrs_record_playback.cpp
-    pyrs_safety.cpp
     pyrs_sensor.cpp
     pyrs_types.cpp
     pyrsutil.cpp

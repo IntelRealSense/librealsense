@@ -6,7 +6,6 @@
 
 #include "rs.h"
 #include "hpp/rs_types.hpp"
-#include "hpp/rs_safety_types.hpp"
 #include "hpp/rs_context.hpp"
 #include "hpp/rs_device.hpp"
 #include "hpp/rs_frame.hpp"

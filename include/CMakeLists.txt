@@ -6,7 +6,6 @@ target_sources( ${PROJECT_NAME}
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/rs.h"
 
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_types.h"
-        "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_safety_types.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_context.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_device.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_frame.h"
@@ -21,7 +20,6 @@ target_sources( ${PROJECT_NAME}
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_advanced_mode_command.h"
 
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_types.hpp"
-        "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_safety_types.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_context.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_device.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_serializable_device.hpp"

@@ -949,16 +949,12 @@ namespace librealsense
     {
     public:
         void update(std::shared_ptr< extension_snapshot > ext) override {}
-        void set_safety_preset(int index, const rs2_safety_preset& sp) const override {};
-        rs2_safety_preset get_safety_preset(int index) const override { return rs2_safety_preset(); }
-        std::string safety_preset_to_json_string(rs2_safety_preset const& sp) const override { return ""; }
-        rs2_safety_preset json_string_to_safety_preset(const std::string& json_str) const override { return rs2_safety_preset(); }
-        void set_safety_interface_config(const rs2_safety_interface_config& sic) const override {};
-        rs2_safety_interface_config get_safety_interface_config(rs2_calib_location loc) const override { return rs2_safety_interface_config(); }
-        std::string safety_interface_config_to_json_string(const rs2_safety_interface_config& sic) const override { return ""; }
-        rs2_safety_interface_config json_string_to_safety_interface_config(const std::string& json_str) const override { return rs2_safety_interface_config(); }
+        std::string get_safety_preset(int index) const override { return ""; }
+        void set_safety_preset(int index, const std::string& sp_json_str) const override {}
+        std::string get_safety_interface_config(rs2_calib_location loc) const override {return ""; };
+        void set_safety_interface_config(const std::string& sic_json_str) const override {};
         std::string get_application_config() const override { return ""; }
-        void set_application_config(const std::string& application_config_json_str) const override { }
+        void set_application_config(const std::string& application_config_json_str) const override {}
 
     };
 

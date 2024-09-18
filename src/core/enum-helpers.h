@@ -82,8 +82,6 @@ RS2_ENUM_HELPERS( rs2_safety_mode, SAFETY_MODE )
 RS2_ENUM_HELPERS( rs2_d500_intercam_sync_mode, D500_INTERCAM_SYNC )
 RS2_ENUM_HELPERS( rs2_point_cloud_label, POINT_CLOUD_LABEL )
 RS2_ENUM_HELPERS( rs2_calib_location, CALIB_LOCATION )
-RS2_ENUM_HELPERS( rs2_safety_pin_direction, SAFETY_PIN_DIRECTION )
-RS2_ENUM_HELPERS( rs2_safety_pin_functionality, SAFETY_PIN_FUNCTIONALITY )
 RS2_ENUM_HELPERS( rs2_gyro_sensitivity, GYRO_SENSITIVITY )
 
 

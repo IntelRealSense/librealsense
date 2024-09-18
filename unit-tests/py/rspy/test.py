@@ -297,6 +297,29 @@ def check_equal( result, expected, on_fail=LOG ):
 
 check_equal_lists = check_equal
 
+# Helper function to compare two floating-point numbers within an epsilon tolerance
+# E.g. float compare for values like 10.0 == 10.000000001, should return True.
+def compare_floats(a, b, epsilon=1e-9):
+    return math.isclose(a, b, abs_tol=epsilon)
+
+# Recursive function to compare two JSON objects with epsilon for floats
+def check_equal_jsons(json1, json2, epsilon=1e-9):
+    if isinstance(json1, dict) and isinstance(json2, dict):
+        if json1.keys() != json2.keys():
+            return False
+        return all(check_equal_jsons(json1[key], json2[key], epsilon) for key in json1)
+
+    elif isinstance(json1, list) and isinstance(json2, list):
+        if len(json1) != len(json2):
+            return False
+        return all(check_equal_jsons(item1, item2, epsilon) for item1, item2 in zip(json1, json2))
+
+    elif isinstance(json1, float) and isinstance(json2, float):
+        return compare_floats(json1, json2, epsilon)
+
+    else:
+        return json1 == json2
+
 
 def check_between( result, min, max, on_fail=LOG ):
     """

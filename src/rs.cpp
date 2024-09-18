@@ -4532,109 +4532,60 @@ void rs2_set_calibration_config(
     auto_calib->set_calibration_config(calibration_config_json_str);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, calibration_config_json_str)
-void rs2_get_safety_preset(const rs2_sensor* sensor,
-    int index,
-    rs2_safety_preset* sp,
-    rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(sp);
-    VALIDATE_RANGE(index, 0, 63);
-    auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
-    auto ret_data = safety_sensor->get_safety_preset(index);
-    *sp = ret_data;
-}
-HANDLE_EXCEPTIONS_AND_RETURN( , sensor, index, sp)
 
-void rs2_set_safety_preset(const rs2_sensor* sensor,
+const rs2_raw_data_buffer* rs2_get_safety_preset(
+    const rs2_sensor* sensor,
     int index,
-    rs2_safety_preset const * sp,
     rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_RANGE(index, 0, 63);
     auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
-    safety_sensor->set_safety_preset(index, *sp);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, index, sp)
-
-void rs2_json_string_to_safety_preset(
-    rs2_sensor const* sensor,
-    const char* json_str,
-    rs2_safety_preset* sp,
-    rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(sp);
-    auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
-    *sp = safety_sensor->json_string_to_safety_preset(json_str);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, sp)
-
-const rs2_raw_data_buffer* rs2_safety_preset_to_json_string(
-    rs2_sensor const* sensor,
-    rs2_safety_preset const* sp,
-    rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(sp);
-    auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
-    auto ret_str = safety_sensor->safety_preset_to_json_string(*sp);
+    auto ret_str = safety_sensor->get_safety_preset(index);
     std::vector<uint8_t> vec(ret_str.begin(), ret_str.end());
     return new rs2_raw_data_buffer{ std::move(vec) };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, sp)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, index)
 
-void rs2_get_safety_interface_config(const rs2_sensor* sensor,
-    rs2_safety_interface_config* sic, rs2_calib_location loc,
+void rs2_set_safety_preset(
+    const rs2_sensor* sensor,
+    int index,
+    const char* sp_json_str,
     rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(sic);
+    VALIDATE_RANGE(index, 0, 63);
+    VALIDATE_NOT_NULL(sp_json_str);
+    auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
+    safety_sensor->set_safety_preset(index, sp_json_str);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, index, sp_json_str)
+
+const rs2_raw_data_buffer* rs2_get_safety_interface_config(
+    const rs2_sensor* sensor,
+    rs2_calib_location loc,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
     VALIDATE_RANGE(loc, RS2_CALIB_LOCATION_FIRST, RS2_CALIB_LOCATION_COUNT);
     auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
-    auto ret_data = safety_sensor->get_safety_interface_config(loc);
-    *sic = ret_data;
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, sic)
-
-void rs2_set_safety_interface_config(const rs2_sensor* sensor,
-    rs2_safety_interface_config const* sic,
-    rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(sensor);
-    auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
-    safety_sensor->set_safety_interface_config(*sic);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, sic)
-
-
-void rs2_json_string_to_safety_interface_config(
-    rs2_sensor const* sensor,
-    const char* json_str,
-    rs2_safety_interface_config* sic,
-    rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(sic);
-    auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
-    *sic = safety_sensor->json_string_to_safety_interface_config(json_str);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, sic)
-
-const rs2_raw_data_buffer* rs2_safety_interface_config_to_json_string(
-    rs2_sensor const* sensor,
-    rs2_safety_interface_config const* sic,
-    rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(sic);
-    auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
-    auto ret_str = safety_sensor->safety_interface_config_to_json_string(*sic);
+    auto ret_str = safety_sensor->get_safety_interface_config(loc);
     std::vector<uint8_t> vec(ret_str.begin(), ret_str.end());
     return new rs2_raw_data_buffer{ std::move(vec) };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, sic)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, loc)
+
+void rs2_set_safety_interface_config(
+    const rs2_sensor* sensor,
+    const char* sic_json_str,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(sic_json_str);
+    auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
+    safety_sensor->set_safety_interface_config(sic_json_str);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, sic_json_str)
 
 const rs2_raw_data_buffer* rs2_get_application_config(
     rs2_sensor const* sensor,

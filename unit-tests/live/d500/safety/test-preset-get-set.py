@@ -26,16 +26,8 @@ test.finish()
 tw.start_wrapper(dev)
 #############################################################################################
 
-
-test.start("Writing safety preset to random index, then reading and comparing safety presets JSONs")
-index = random.randint(1, 63)
-log.out( "writing to index = ", index )
-
-# Save previous safety preset to restore it at the end
-previous_result = safety_sensor.get_safety_preset(index)
-
-# Safety Preset JSON String representation to be written
-sp_json_str = """
+# Safety Preset JSON String representation to be written on all indexes
+valid_sp_json_str = """
 {
     "safety_preset":
     {
@@ -78,7 +70,6 @@ sp_json_str = """
                 "safety_trigger_confidence": 3
             }
         },
-
         "masking_zones": 
         {
             "0":
@@ -87,10 +78,10 @@ sp_json_str = """
                 "minimal_range": 0,
                 "region_of_interests":
                 {
-                    "p0": {"i": 0,   "j": 0},
-                    "p1": {"i": 0,   "j": 320},
-                    "p2": {"i": 200, "j": 320},
-                    "p3": {"i": 200, "j": 0}
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
                 }
             },
             "1":
@@ -99,10 +90,10 @@ sp_json_str = """
                 "minimal_range": 0,
                 "region_of_interests":
                 {
-                    "p0": {"i": 0, "j": 0},
-                    "p1": {"i": 0, "j": 0},
-                    "p2": {"i": 0, "j": 0},
-                    "p3": {"i": 0, "j": 0}
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 0],
+                    "vertex_2": [0, 0],
+                    "vertex_3": [0, 0]
                 }
             },
             "2":
@@ -111,10 +102,10 @@ sp_json_str = """
                 "minimal_range": 0,
                 "region_of_interests":
                 {
-                    "p0": {"i": 0, "j": 0},
-                    "p1": {"i": 0, "j": 0},
-                    "p2": {"i": 0, "j": 0},
-                    "p3": {"i": 0, "j": 0}
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 0],
+                    "vertex_2": [0, 0],
+                    "vertex_3": [0, 0]
                 }
             },
             "3":
@@ -123,10 +114,10 @@ sp_json_str = """
                 "minimal_range": 0,
                 "region_of_interests":
                 {
-                    "p0": {"i": 0, "j": 0},
-                    "p1": {"i": 0, "j": 0},
-                    "p2": {"i": 0, "j": 0},
-                    "p3": {"i": 0, "j": 0}
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 0],
+                    "vertex_2": [0, 0],
+                    "vertex_3": [0, 0]
                 }
             },
             "4":
@@ -135,10 +126,10 @@ sp_json_str = """
                 "minimal_range": 0,
                 "region_of_interests":
                 {
-                    "p0": {"i": 0, "j": 0},
-                    "p1": {"i": 0, "j": 0},
-                    "p2": {"i": 0, "j": 0},
-                    "p3": {"i": 0, "j": 0}
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 0],
+                    "vertex_2": [0, 0],
+                    "vertex_3": [0, 0]
                 }
             },
             "5":
@@ -147,10 +138,10 @@ sp_json_str = """
                 "minimal_range": 0,
                 "region_of_interests":
                 {
-                    "p0": {"i": 0, "j": 0},
-                    "p1": {"i": 0, "j": 0},
-                    "p2": {"i": 0, "j": 0},
-                    "p3": {"i": 0, "j": 0}
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 0],
+                    "vertex_2": [0, 0],
+                    "vertex_3": [0, 0]
                 }
             },
             "6":
@@ -159,10 +150,10 @@ sp_json_str = """
                 "minimal_range": 0,
                 "region_of_interests":
                 {
-                    "p0": {"i": 0, "j": 0},
-                    "p1": {"i": 0, "j": 0},
-                    "p2": {"i": 0, "j": 0},
-                    "p3": {"i": 0, "j": 0}
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 0],
+                    "vertex_2": [0, 0],
+                    "vertex_3": [0, 0]
                 }
             },
             "7":
@@ -171,27 +162,27 @@ sp_json_str = """
                 "minimal_range": 0,
                 "region_of_interests":
                 {
-                    "p0": {"i": 0, "j": 0},
-                    "p1": {"i": 0, "j": 0},
-                    "p2": {"i": 0, "j": 0},
-                    "p3": {"i": 0, "j": 0}
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 0],
+                    "vertex_2": [0, 0],
+                    "vertex_3": [0, 0]
                 }
             }
         },
 
         "environment": 
         {
-            "safety_trigger_duration" : 1,
+            "safety_trigger_duration" : 1.0,
             "zero_safety_monitoring" : 0,
             "hara_history_continuation" : 0,
-            "angular_velocity" : 0,
-            "payload_weight" : 0,
-            "surface_inclination" : 15,
+            "angular_velocity" : 0.0,
+            "payload_weight" : 0.0,
+            "surface_inclination" : 15.0,
             "surface_height" : 0.05,
-            "diagnostic_zone_fill_rate_threshold" : 255,
-            "floor_fill_threshold" : 255,
-            "depth_fill_threshold" : 255,
-            "diagnostic_zone_height_median_threshold" : 255,
+            "diagnostic_zone_fill_rate_threshold" : 90,
+            "floor_fill_threshold" : 90,
+            "depth_fill_threshold" : 90,
+            "diagnostic_zone_height_median_threshold" : 90,
             "vision_hara_persistency" : 1,
             "crypto_signature" : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         }
@@ -199,27 +190,38 @@ sp_json_str = """
 }
 """
 
-# Remove new-lines and spaces from JSON string (facing encoding issues without these lines)
-sp_json_str = ''.join(line.strip() for line in sp_json_str.split('\n'))
-sp_json_str = sp_json_str.replace(' ', '')
+#############################################################################################
 
-# Convert json string to Safety Preset struct
-sp = safety_sensor.json_string_to_safety_preset(sp_json_str)
+test.start("Init all safety zones")
+for x in range(64):
+    log.d("Init preset ID =", x)
+    safety_sensor.set_safety_preset(x, valid_sp_json_str)
+test.finish()
+
+#############################################################################################
+
+test.start("Writing safety preset to random index, then reading and comparing safety presets JSONs")
+
+# changing some small value to create new SP
+safety_preset_json_obj = json.loads(valid_sp_json_str)
+safety_preset_json_obj["safety_preset"]["environment"]["diagnostic_zone_fill_rate_threshold"] = 99
+new_safety_preset = json.dumps(safety_preset_json_obj)
+
+# generate random index
+index = random.randint(1, 63)
+log.out( "writing to index = ", index )
+
+# Save previous safety preset to restore it at the end
+previous_result = safety_sensor.get_safety_preset(index)
 
 # write the above sp table to the device
-safety_sensor.set_safety_preset(index, sp)
+safety_sensor.set_safety_preset(index, new_safety_preset)
 
 # read the table from the device
 read_result = safety_sensor.get_safety_preset(index)
 
 # verify the tables are equal
-test.check_equal(read_result, sp)
-
-# verify the JSON objects are equal (comparing JSON object because
-# the JSON string can have different order of inner fields
-read_result_json_str = safety_sensor.safety_preset_to_json_string(read_result)
-sp_json_str = safety_sensor.safety_preset_to_json_string(sp)
-test.check_equal(json.loads(sp_json_str), json.loads(read_result_json_str))
+test.check_equal_jsons(json.loads(new_safety_preset), json.loads(read_result))
 
 # restore original table
 safety_sensor.set_safety_preset(index, previous_result)

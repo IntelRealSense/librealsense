@@ -39,7 +39,7 @@ namespace librealsense
     /*
     vertex class
     handles JSON representing 2D Vertex (x,y)
-    JSON schema: [ float, float ]
+    JSON schema: [ uint16_t, uint16_t ]
     */
     class vertex
     {
@@ -184,6 +184,16 @@ namespace librealsense
             }
             j["translation"] = m_translation;
             return j;
+        }
+
+        std::array<std::array<float, 3>, 3> get_rotation() const
+        {
+            return m_rotation;
+        }
+
+        std::array<float, 3> get_translation() const
+        {
+            return m_translation;
         }
 
     private:

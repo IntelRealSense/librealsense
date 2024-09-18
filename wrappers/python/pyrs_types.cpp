@@ -66,25 +66,7 @@ void init_types(py::module &m) {
 
     BIND_ENUM(m, rs2_calib_location, RS2_CALIB_LOCATION_COUNT, "Calib Location")
 
-    py::class_<float3_row_major> float3(m, "float3"); // No docstring in C++
-    float3.def(py::init<>())
-        .def(py::init<float, float, float>())
-        .def_readwrite("x", &float3_row_major::x, "x")
-        .def_readwrite("y", &float3_row_major::y, "y")
-        .def_readwrite("z", &float3_row_major::z, "z");
-
-    py::class_<float3x3_row_major> float3x3(m, "float3x3"); // No docstring in C++
-    float3x3.def(py::init<>())
-        .def(py::init<float3_row_major, float3_row_major, float3_row_major>())
-        .def_readwrite("x", &float3x3_row_major::x, "x")
-        .def_readwrite("y", &float3x3_row_major::y, "y")
-        .def_readwrite("z", &float3x3_row_major::z, "z");
-
-    py::class_<rs2_extrinsics_row_major> extrinsics_table(m, "extrinsics_table"); // No docstring in C++
-    extrinsics_table.def(py::init<>())
-        .def(py::init<float3x3_row_major, float3_row_major>())
-        .def_readwrite("rotation", &rs2_extrinsics_row_major::rotation, "Rotation Value")
-        .def_readwrite("translation", &rs2_extrinsics_row_major::translation, "Translation Value");
+    BIND_ENUM(m, rs2_safety_mode, RS2_SAFETY_MODE_COUNT, "Safety Mode")
 
     /** end rs_types.hpp **/
 }
