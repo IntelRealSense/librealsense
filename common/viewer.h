@@ -64,7 +64,7 @@ namespace rs2
     public:
         void reset_camera(float3 pos = { 0.0f, 0.0f, -1.0f });
 
-        void update_configuration();
+        void update_configuration(config_file* new_cfg = nullptr);
 
         const float panel_width = 340.f;
         const float panel_y = 50.f;
