@@ -88,10 +88,18 @@ namespace librealsense
                 sum_xy += (crnt_sample._x * crnt_sample._y);
                 sum_x2 += (crnt_sample._x * crnt_sample._x);
             }
-            b = (sum_y*sum_x2 - sum_x * sum_xy) / (n*sum_x2 - sum_x * sum_x);
-            a = (n*sum_xy - sum_x * sum_y) / (n*sum_x2 - sum_x * sum_x);
-
-            if (_last_request_time - _prev_time < _time_span_ms)
+            double denom = n * sum_x2 - sum_x * sum_x;
+            if( denom > std::numeric_limits< double >::epsilon() )
+            {
+                b = (sum_y * sum_x2 - sum_x * sum_xy) / denom;
+                a = (n * sum_xy - sum_x * sum_y) / denom;
+            }
+            else
+            {
+                a = _dest_a;
+                b = _dest_b;
+            }
+            if( _last_request_time - _prev_time < _time_span_ms )
             {
                 dt = (_last_request_time - _prev_time) / _time_span_ms;
             }
@@ -194,8 +202,9 @@ namespace librealsense
         {
             LOG_DEBUG("time_diff_keeper::stop: stop object.");
             _active_object.stop();
-            _coefs.reset();
             _is_ready = false;
+            std::lock_guard< std::recursive_mutex > lock( _read_mtx );
+            _coefs.reset();
         }
     }
 

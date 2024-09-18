@@ -178,8 +178,7 @@ namespace rs2
             ImGui::PopStyleColor(2); // button color
 
             auto apply = [&]() {
-                config_file::instance() = temp_cfg;
-                update_configuration();
+                update_configuration(&temp_cfg);
             };
 
             ImGui::PushStyleColor(ImGuiCol_Button, button_color);
@@ -872,8 +871,10 @@ namespace rs2
         _hidden_options.emplace(RS2_OPTION_REGION_OF_INTEREST);
     }
 
-    void viewer_model::update_configuration()
+    void viewer_model::update_configuration(config_file* new_cfg)
     {
+        if (new_cfg)
+            config_file::instance() = *new_cfg;
         rs2_error* e = nullptr;
         auto version = rs2_get_api_version(&e);
         if (e) rs2::error::handle(e);
@@ -3011,13 +3012,12 @@ namespace rs2
                 }
 
                 auto apply = [&](){
-                    config_file::instance() = temp_cfg;
                     window.on_reload_complete = [this](){
                         _skybox.reset();
                     };
                     if (reload_required) window.reload();
                     else if (refresh_required) window.refresh();
-                    update_configuration();
+                    update_configuration(&temp_cfg);
 
                     if (refresh_updates)
                         for (auto&& dev : devices)

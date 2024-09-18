@@ -208,6 +208,7 @@ try
     bool const golden = golden_arg.isSet();
 
     // Create a RealSense context and look for a device
+    settings["dds"]["enabled"] = true;
     rs2::context ctx( settings.dump() );
 
     rs2::device device;

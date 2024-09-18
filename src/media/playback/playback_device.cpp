@@ -382,12 +382,14 @@ void playback_device::resume()
             return;
 
         auto total_duration = m_reader->query_duration();
-        if (m_last_published_timestamp >= total_duration)
-            m_last_published_timestamp = device_serializer::nanoseconds(0);
-        m_reader->reset();
-        m_reader->seek_to_time(m_last_published_timestamp);
-        while (m_last_published_timestamp != device_serializer::nanoseconds(0) && !m_reader->read_next_data()->is<serialized_frame>());
-
+        {
+            std::lock_guard< std::mutex > locker( m_last_published_timestamp_mutex );
+            if( m_last_published_timestamp >= total_duration )
+                m_last_published_timestamp = device_serializer::nanoseconds(0);
+            m_reader->reset();
+            m_reader->seek_to_time(m_last_published_timestamp);
+            while (m_last_published_timestamp != device_serializer::nanoseconds(0) && !m_reader->read_next_data()->is<serialized_frame>());
+        }
         m_is_paused = false;
         catch_up();
 
@@ -562,6 +564,7 @@ void playback_device::do_loop(T action)
                 }
             }
 
+            std::lock_guard<std::mutex> locker(m_last_published_timestamp_mutex);
             m_last_published_timestamp = device_serializer::nanoseconds(0);
         }
 
