@@ -326,7 +326,8 @@ namespace librealsense
         sensor_msgs::Image image;
 
         auto labeled_points_frame = dynamic_cast<librealsense::labeled_points*>(frame.frame);
-        assert(labeled_points_frame != nullptr);
+        if (!labeled_points_frame) 
+            throw std::bad_cast();
 
         convert(RS2_FORMAT_Y8, image.encoding);
         image.is_bigendian = is_big_endian();

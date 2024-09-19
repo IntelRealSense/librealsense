@@ -293,23 +293,26 @@ namespace rs2
                 {
                     // stopping stream before starting fw update
                     auto fw_update_manager = dynamic_cast<firmware_update_manager*>(update_manager.get());
-                    std::for_each(fw_update_manager->get_device_model().subdevices.begin(),
-                        fw_update_manager->get_device_model().subdevices.end(),
-                        [&](const std::shared_ptr<subdevice_model>& sm)
-                        {
-                            if (sm->streaming)
+                    if (fw_update_manager) 
+                    {
+                        std::for_each(fw_update_manager->get_device_model().subdevices.begin(),
+                            fw_update_manager->get_device_model().subdevices.end(),
+                            [&](const std::shared_ptr<subdevice_model>& sm)
                             {
-                                try
+                                if (sm->streaming)
                                 {
-                                    sm->stop(fw_update_manager->get_protected_notification_model());
+                                    try
+                                    {
+                                        sm->stop(fw_update_manager->get_protected_notification_model());
+                                    }
+                                    catch (...)
+                                    {
+                                        // avoiding exception that can be sent by stop method
+                                        // this could happen if the sensor is not streaming and the stop method is called - for example
+                                    }
                                 }
-                                catch (...)
-                                {
-                                    // avoiding exception that can be sent by stop method
-                                    // this could happen if the sensor is not streaming and the stop method is called - for example
-                                }
-                            }
-                        });
+                            });
+                    }
 
                     auto _this = shared_from_this();
                     auto invoke = [_this](std::function<void()> action) {

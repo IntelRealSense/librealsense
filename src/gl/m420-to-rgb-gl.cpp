@@ -119,10 +119,15 @@ m420_to_rgb::m420_to_rgb()
 
 m420_to_rgb::~m420_to_rgb()
 {
-    perform_gl_action([&]()
+    try {
+        perform_gl_action([&]()
+            {
+                cleanup_gpu_resources();
+            }, [] {});
+    }
+    catch (std::bad_weak_ptr)
     {
-        cleanup_gpu_resources();
-    }, []{});
+    }
 }
 
 rs2::frame m420_to_rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)
@@ -157,6 +162,8 @@ rs2::frame m420_to_rgb::process_frame(const rs2::frame_source& src, const rs2::f
         if (!res) return;
         
         auto gf = dynamic_cast<gpu_addon_interface*>((frame_interface*)res.get());
+        if (!gf) 
+            throw std::bad_cast();
         
         uint32_t yuy_texture;
         
