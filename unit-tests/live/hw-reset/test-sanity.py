@@ -33,9 +33,9 @@ def device_changed( info ):
 test.start( "HW reset - verify disconnect & reconnect" )
 
 t = Timer( 10 )
-dev = test.find_first_device_or_exit()
-context = rs.context()
-context.set_devices_changed_callback( device_changed )
+dev, ctx = test.find_first_device_or_exit()
+ctx.set_devices_changed_callback( device_changed )
+time.sleep(1)
 log.out( "Sending HW-reset command" )
 dev.hardware_reset()
 

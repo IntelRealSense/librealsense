@@ -107,7 +107,7 @@ int main( int argc, char ** argv ) try
 
     if( ! machine_readable && ! snapshot )
     {
-        std::cout << "rs-dds-sniffer listening on domain " << domain;
+        std::cout << rsutils::os::executable_name() << " listening on domain " << sniffer.get_participant().domain_id();
         std::cout << " (press Ctrl+C to stop)";
         std::cout << std::endl;
     }

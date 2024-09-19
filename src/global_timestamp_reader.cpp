@@ -88,10 +88,18 @@ namespace librealsense
                 sum_xy += (crnt_sample._x * crnt_sample._y);
                 sum_x2 += (crnt_sample._x * crnt_sample._x);
             }
-            b = (sum_y*sum_x2 - sum_x * sum_xy) / (n*sum_x2 - sum_x * sum_x);
-            a = (n*sum_xy - sum_x * sum_y) / (n*sum_x2 - sum_x * sum_x);
-
-            if (_last_request_time - _prev_time < _time_span_ms)
+            double denom = n * sum_x2 - sum_x * sum_x;
+            if( denom > std::numeric_limits< double >::epsilon() )
+            {
+                b = (sum_y * sum_x2 - sum_x * sum_xy) / denom;
+                a = (n * sum_xy - sum_x * sum_y) / denom;
+            }
+            else
+            {
+                a = _dest_a;
+                b = _dest_b;
+            }
+            if( _last_request_time - _prev_time < _time_span_ms )
             {
                 dt = (_last_request_time - _prev_time) / _time_span_ms;
             }
@@ -124,6 +132,11 @@ namespace librealsense
         return y;
     }
 
+
+    // Method update_samples_base
+    // Aim: This method is used in our code to update global timestamp.
+    // It updates the relative origin of the HW timestamp if it had a rewind,
+    // so that the global timestamp can be correctly computed
     bool CLinearCoefficients::update_samples_base(double x)
     {
         static const double max_device_time(pow(2, 32) * TIMESTAMP_USEC_TO_MSEC);
@@ -139,13 +152,13 @@ namespace librealsense
         LOG_DEBUG(__FUNCTION__ << "(" << base_x << ")");
 
         double a, b;
-        get_a_b(x+base_x, a, b);
+        get_a_b(x + base_x, a, b);
         for (auto &&sample : _last_values)
         {
             sample._x -= base_x;
         }
         _prev_time -= base_x;
-        _base_sample._y += a * base_x;
+        _base_sample._x -= base_x;
         return true;
     }
 
@@ -189,8 +202,9 @@ namespace librealsense
         {
             LOG_DEBUG("time_diff_keeper::stop: stop object.");
             _active_object.stop();
-            _coefs.reset();
             _is_ready = false;
+            std::lock_guard< std::recursive_mutex > lock( _read_mtx );
+            _coefs.reset();
         }
     }
 

@@ -155,7 +155,7 @@ void dds_device_broadcaster::broadcast() const
     try
     {
         topics::flexible_msg msg( _device_info.to_json() );
-        LOG_DEBUG( "[" << _device_info.debug_name() << "] broadcasting device-info " << _device_info.to_json().dump(4) );
+        LOG_DEBUG( "[" << _device_info.debug_name() << "] broadcasting device-info " << std::setw( 4 ) << _device_info.to_json() );
         std::move( msg ).write_to( *_writer );
 
         // If a broadcast callback is asked for, we wait for acks and call it on the first broadcast (and never again)

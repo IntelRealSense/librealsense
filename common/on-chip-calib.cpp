@@ -132,6 +132,9 @@ namespace rs2
         if( it != _sub->options_metadata.end() )  // Option supported
         {
             it->second.set_option( RS2_OPTION_EMITTER_ENABLED, value, ignored_error_message );
+            if( it->second.value_as_float() != value )
+                throw std::runtime_error( rsutils::string::from()
+                                          << "Failed to set laser " << ( value == off_value ? "off" : "on" ) );
         }
     }
 
@@ -143,6 +146,9 @@ namespace rs2
         if( it != _sub->options_metadata.end() )  // Option supported
         {
             it->second.set_option( RS2_OPTION_THERMAL_COMPENSATION, value, ignored_error_message );
+            if( it->second.value_as_float() != value )
+                throw std::runtime_error( rsutils::string::from()
+                                          << "Failed to set laser " << ( value == off_value ? "off" : "on" ) );
         }
     }
 

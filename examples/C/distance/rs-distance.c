@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017-24 Intel Corporation. All Rights Reserved.
 
 /* Include the librealsense C header files */
 #include <librealsense2/rs.h>
@@ -75,7 +75,7 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    while (1)
+    while (1)  // Until user presses Ctrl+C
     {
         // This call waits until a new composite_frame is available
         // composite_frame holds a set of frames. It is used to prevent frame drops
@@ -117,18 +117,4 @@ int main()
 
         rs2_release_frame(frames);
     }
-
-    // Stop the pipeline streaming
-    rs2_pipeline_stop(pipeline, &e);
-    check_error(e);
-
-    // Release resources
-    rs2_delete_pipeline_profile(pipeline_profile);
-    rs2_delete_config(config);
-    rs2_delete_pipeline(pipeline);
-    rs2_delete_device(dev);
-    rs2_delete_device_list(device_list);
-    rs2_delete_context(ctx);
-
-    return EXIT_SUCCESS;
 }

@@ -35,10 +35,10 @@ namespace librealsense
 
             config(const config& other)
             {
+                std::lock_guard< std::mutex > lock( other._mtx ); // So other configuration won't change while reading (streams enabled/disabled)
                 _device_request = other._device_request;
                 _stream_requests = other._stream_requests;
                 _enable_all_streams = other._enable_all_streams;
-                _stream_requests = other._stream_requests;
                 _resolved_profile = nullptr;
                 _playback_loop = other._playback_loop;
             }
@@ -57,7 +57,7 @@ namespace librealsense
 
             device_request _device_request;
             std::map<std::pair<rs2_stream, int>, stream_profile> _stream_requests;
-            std::mutex _mtx;
+            mutable std::mutex _mtx;
             bool _enable_all_streams = false;
             std::shared_ptr<profile> _resolved_profile;
             bool _playback_loop = false;

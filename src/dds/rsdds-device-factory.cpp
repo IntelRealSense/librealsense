@@ -24,6 +24,9 @@
 #include <mutex>
 
 
+using rsutils::json;
+
+
 namespace librealsense {
 
 
@@ -72,6 +75,9 @@ struct domain_context
 {
     rsutils::shared_ptr_singleton< realdds::dds_participant > participant;
     rsutils::shared_ptr_singleton< rsdds_watcher_singleton > device_watcher;
+    int query_devices_max = 0;
+    int query_devices_min = 0;
+    std::mutex wait_mutex;
 };
 //
 // Domains are mapped by ID:
@@ -85,8 +91,7 @@ rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & c
     : super( ctx )
 {
     auto dds_settings = ctx->get_settings().nested( std::string( "dds", 3 ) );
-    if( ! dds_settings.exists()
-        || dds_settings.is_object() && dds_settings.nested( std::string( "enabled", 7 ) ).default_value( true ) )
+    if( dds_settings.nested( std::string( "enabled", 7 ) ).default_value( false ) )
     {
         auto domain_id = dds_settings.nested( std::string( "domain", 6 ) ).default_value< realdds::dds_domain_id >( 0 );
         auto participant_name_j = dds_settings.nested( std::string( "participant", 11 ) );
@@ -116,14 +121,22 @@ rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & c
             // Max bytes to be sent to network per period; [1, 2147483647]; default=0 -> no limit.
             // -> We allow 256 buffers, each the size of the UDP max-message-size
             dfu_flow_control->max_bytes_per_period = 256 * 1470; // qos.transport().user_transports.front()->maxMessageSize;
-            // -> Every 100ms
-            dfu_flow_control->period_ms = 100;  // default=100
+            // -> Every 250ms
+            dfu_flow_control->period_ms = 250;  // default=100
             // Further override with settings from device/dfu
             realdds::override_flow_controller_from_json( *dfu_flow_control, dds_settings.nested( "device", "dfu" ) );
             qos.flow_controllers().push_back( dfu_flow_control );
 
             // qos will get further overriden with the settings we pass in
             _participant->init( domain_id, qos, dds_settings.default_object() );
+
+            // allow a certain number of seconds to wait for devices to appear (if set to 0, no waiting will occur)
+            domain.query_devices_max
+                = dds_settings.nested( std::string( "query-devices-max", 17 ), &json::is_number_integer )
+                      .default_value( 5 );
+            domain.query_devices_min
+                = dds_settings.nested( std::string( "query-devices-min", 17 ), &json::is_number_integer )
+                      .default_value( 3 );
         }
         else if( participant_name_j.exists() && participant_name != _participant->name() )
         {
@@ -162,6 +175,63 @@ std::vector< std::shared_ptr< device_info > > rsdds_device_factory::query_device
     if( _watcher_singleton )
     {
         unsigned const mask = context::combine_device_masks( requested_mask, get_context()->get_device_mask() );
+
+        auto participant = _watcher_singleton->get_device_watcher()->get_participant();
+        domain_context * p_domain = nullptr;
+        {
+            std::lock_guard< std::mutex > lock( domain_context_by_id_mutex );
+            auto it = domain_context_by_id.find( participant->domain_id() );
+            if( it != domain_context_by_id.end() )
+                p_domain = &it->second;
+        }
+        if( p_domain )
+        {
+            std::lock_guard< std::mutex > lock( p_domain->wait_mutex );
+            if( p_domain->query_devices_max > 0 )
+            {
+                // Wait for devices the first time (per domain)
+                // Do this with the mutex locked: if multiple threads all try to query_devices, the others will also
+                // wait until we're done
+                int timeout = p_domain->query_devices_max;
+                p_domain->query_devices_max = 0;
+
+                // We have to wait a minimum amount of time; this time really depends on several factors including
+                // network variables:
+                //      - the camera's announcement-period needs to fit into this time (e.g., if the camera announces
+                //        every 10 seconds then we might miss its announcement if we only wait 5); our cameras currently
+                //        have a period of 1.5 seconds
+                if( timeout <= p_domain->query_devices_min )
+                {
+                    timeout = p_domain->query_devices_min;
+                    LOG_DEBUG( "waiting " << timeout << " seconds for devices on domain " << participant->domain_id() << " ..." );
+                }
+                else
+                {
+                    LOG_DEBUG( "waiting " << p_domain->query_devices_min << '-' << timeout
+                                          << " seconds for devices on domain " << participant->domain_id() << " ..." );
+                }
+
+                // New devices take a bit of time (less than 2 seconds, though) to initialize, but they'll be preceeded
+                // with a new participant notification. So we set up a separate timer and short-circuit if the minimum
+                // time has elapsed and we haven't seen any new participants in the last 2 seconds:
+                auto listener = participant->create_listener();
+                std::atomic< int > seconds_left( p_domain->query_devices_min );
+                listener->on_participant_added( [&]( realdds::dds_guid, char const * )
+                                                { seconds_left = std::max( seconds_left.load(), 2 ); } );
+
+                while( true )
+                {
+                    std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+                    if( --timeout <= 0 )
+                        break;  // max time exceeded - can't wait any more
+                    if( --seconds_left <= 0 )
+                    {
+                        LOG_DEBUG( "query_devices wait stopped with " << timeout << " seconds left" );
+                        break;
+                    }
+                }
+            }
+        }
 
         _watcher_singleton->get_device_watcher()->foreach_device(
             [&]( std::shared_ptr< realdds::dds_device > const & dev ) -> bool

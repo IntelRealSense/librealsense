@@ -26,6 +26,8 @@
 #include <rsutils/string/from.h>
 #include <rsutils/number/crc32.h>
 
+#include <src/ds/d500/d500-auto-calibration.h>
+#include <src/ds/d500/d500-debug-protocol-calibration-engine.h>
 using rsutils::json;
 
 
@@ -142,8 +144,9 @@ static rs2_extrinsics to_rs2_extrinsics( const std::shared_ptr< realdds::extrins
 
 
 dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const & dev_info,
-                                    std::shared_ptr< realdds::dds_device > const & dev )
+                                    std::shared_ptr< realdds::dds_device > const & dev)
     : software_device( dev_info )
+    , auto_calibrated_proxy()
     , _dds_dev( dev )
 {
     LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
@@ -386,6 +389,29 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             LOG_WARNING( "Invalid 'device/matcher' value " << matcher_j );
     }
     set_matcher_type( matcher );
+
+    if (supports_info(RS2_CAMERA_INFO_PRODUCT_LINE) && 
+        !strcmp(get_info(RS2_CAMERA_INFO_PRODUCT_LINE).c_str(), "D500"))
+        set_auto_calibration_capability(std::make_shared<d500_auto_calibrated>(
+            std::make_shared<d500_debug_protocol_calibration_engine>(this)));
+            
+    _calibration_changed_subscription = _dds_dev->on_calibration_changed(
+        [this]( std::shared_ptr< const realdds::dds_stream > const & stream )
+        {
+            auto it = _stream_name_to_profiles.find( stream->name() );
+            if( it == _stream_name_to_profiles.end() )
+                throw std::runtime_error( rsutils::string::from() << "no such stream?!" );
+
+            if( auto video_stream = std::dynamic_pointer_cast< const realdds::dds_video_stream >( stream ) )
+            {
+                for( auto & profile : it->second )
+                    set_video_profile_intrinsics( profile, video_stream );
+            }
+            else
+            {
+                throw std::runtime_error( rsutils::string::from() << "non-video stream calibrations not supported" );
+            }
+        } );
 }
 
 
@@ -404,7 +430,7 @@ int dds_device_proxy::get_index_from_stream_name( const std::string & name ) con
 }
 
 
-void dds_device_proxy::set_profile_intrinsics( std::shared_ptr< stream_profile_interface > & profile,
+void dds_device_proxy::set_profile_intrinsics( std::shared_ptr< stream_profile_interface > const & profile,
                                                const std::shared_ptr< realdds::dds_stream > & stream ) const
 {
     if( auto video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( stream ) )
@@ -418,8 +444,8 @@ void dds_device_proxy::set_profile_intrinsics( std::shared_ptr< stream_profile_i
 }
 
 
-void dds_device_proxy::set_video_profile_intrinsics( std::shared_ptr< stream_profile_interface > profile,
-                                                     std::shared_ptr< realdds::dds_video_stream > stream ) const
+void dds_device_proxy::set_video_profile_intrinsics( std::shared_ptr< stream_profile_interface > const & profile,
+                                                     std::shared_ptr< const realdds::dds_video_stream > const & stream ) const
 {
     auto vsp = std::dynamic_pointer_cast< video_stream_profile >( profile );
     int const w = vsp->get_width();
@@ -429,8 +455,8 @@ void dds_device_proxy::set_video_profile_intrinsics( std::shared_ptr< stream_pro
     if( 1 == stream_intrinsics.size() )
     {
         // A single set of intrinsics will get scaled to any profile resolution
-        vsp->set_intrinsics( [intrinsics = *stream_intrinsics.begin(), w, h]()
-                             { return to_rs2_intrinsics( intrinsics.scaled_to( w, h ) ); } );
+        auto intr = stream_intrinsics.begin()->scaled_to( w, h );
+        vsp->set_intrinsics( [intr = to_rs2_intrinsics( intr )]() { return intr; } );
     }
     else
     {

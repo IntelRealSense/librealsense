@@ -6,25 +6,20 @@
 #include "d500-private.h"
 #include "hw_monitor_extended_buffers.h"
 
-#include "algo.h"
-#include "error-handling.h"
 #include "core/debug.h"
-#include "core/advanced_mode.h"
-#include "device.h"
 #include "global_timestamp_reader.h"
 #include "fw-update/fw-update-device-interface.h"
-#include "ds/d500/d500-auto-calibration.h"
-#include "ds/ds-options.h"
 
 #include "ds/ds-device-common.h"
 #include "backend-device.h"
+#include "d500-auto-calibration.h"
 
 #include <rsutils/lazy.h>
 
 
 namespace librealsense
 {
-    class d400_thermal_monitor;
+    class ds_thermal_monitor;
     class ds_devices_common;
     class d500_info;
 
@@ -113,7 +108,7 @@ namespace librealsense
         rsutils::lazy< std::vector< uint8_t > > _new_calib_table_raw;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
-        std::shared_ptr<d400_thermal_monitor> _thermal_monitor;
+        std::shared_ptr<ds_thermal_monitor> _thermal_monitor;
         std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _left_right_extrinsics;
         rsutils::lazy< std::vector< uint8_t > > _color_calib_table_raw;
         std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _color_extrinsic;

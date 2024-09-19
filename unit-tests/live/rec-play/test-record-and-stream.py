@@ -59,7 +59,6 @@ def try_streaming(default_profile):
 def play_recording(default_profile):
     global depth_sensor
 
-    ctx = rs.context()
     playback = ctx.load_device(file_name)
     depth_sensor = playback.first_depth_sensor()
     frame_queue = try_streaming(default_profile)
@@ -70,7 +69,7 @@ with test.closure("Record, stream and playback using sensor interface with frame
     temp_dir = tempfile.mkdtemp()
     file_name = os.path.join(temp_dir, "recording.bag")
 
-    dev = test.find_first_device_or_exit()
+    dev, ctx = test.find_first_device_or_exit()
     depth_sensor = dev.first_depth_sensor()
     default_profile = find_default_profile()
     record(file_name, default_profile)

@@ -211,9 +211,4 @@ namespace rs2
 inline std::ostream & operator << (std::ostream & o, rs2_vector v) { return o << v.x << ", " << v.y << ", " << v.z; }
 inline std::ostream & operator << (std::ostream & o, rs2_quaternion q) { return o << q.x << ", " << q.y << ", " << q.z << ", " << q.w; }
 
-inline bool operator==(rs2_calibration_config const& self, rs2_calibration_config const& other)
-{
-    return !std::memcmp(&self, &other, sizeof(rs2_calibration_config));
-}
-
 #endif // LIBREALSENSE_RS2_TYPES_HPP

@@ -11,4 +11,6 @@ target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} tclap)
 include_directories(${CMAKE_BINARY_DIR})
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools)
 
+using_easyloggingpp( ${PROJECT_NAME} SHARED )
+
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

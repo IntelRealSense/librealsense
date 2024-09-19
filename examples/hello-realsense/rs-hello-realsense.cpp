@@ -1,15 +1,20 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019-24 Intel Corporation. All Rights Reserved.
 
-#include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
-#include <iostream>             // for cout
+#include <librealsense2/rs.hpp> // RealSense Cross Platform API
+#include <iostream>
+
+#include <common/cli.h>
 
 // Hello RealSense example demonstrates the basics of connecting to a RealSense device
 // and taking advantage of depth data
 int main(int argc, char * argv[]) try
 {
+    auto settings = rs2::cli( "hello-realsense example" )
+        .process( argc, argv );
+
     // Create a Pipeline - this serves as a top-level API for streaming and processing frames
-    rs2::pipeline p;
+    rs2::pipeline p( settings.dump() );
 
     // Configure and start the pipeline
     p.start();

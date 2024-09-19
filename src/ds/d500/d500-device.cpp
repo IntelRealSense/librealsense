@@ -10,8 +10,9 @@
 #include "d500-private.h"
 #include "d500-options.h"
 #include "d500-info.h"
-#include "ds/ds-options.h"
-#include "ds/ds-timestamp.h"
+#include <src/ds/ds-options.h>
+#include <src/ds/ds-timestamp.h>
+#include <src/ds/ds-thermal-monitor.h>
 #include <src/depth-sensor.h>
 #include "stream.h"
 #include "environment.h"
@@ -30,6 +31,8 @@
 
 #include <vector>
 #include <string>
+
+#include <src/ds/d500/d500-debug-protocol-calibration-engine.h>
 
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
@@ -152,11 +155,17 @@ namespace librealsense
                 set_frame_metadata_modifier([&](frame_additional_data& data) {data.depth_units = _depth_units.load(); });
 
                 synthetic_sensor::open(requests);
-                }); //group_multiple_fw_calls
+
+                if( _owner && _owner->_thermal_monitor )
+                    _owner->_thermal_monitor->update( true );
+            }); //group_multiple_fw_calls
         }
 
         void close() override
         {
+            if( _owner && _owner->_thermal_monitor )
+                _owner->_thermal_monitor->update( false );
+
             synthetic_sensor::close();
         }
 
@@ -360,6 +369,7 @@ namespace librealsense
 
     d500_device::d500_device( std::shared_ptr< const d500_info > const & dev_info )
         : backend_device(dev_info), global_time_interface(),
+          d500_auto_calibrated(std::make_shared<d500_debug_protocol_calibration_engine>(this)),
           _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
@@ -397,7 +407,7 @@ namespace librealsense
                 std::make_shared< locked_transfer >( get_backend()->create_usb_device( group.usb_devices.front() ),
                                                      raw_sensor ) );
         }
-        set_hw_monitor_for_auto_calib( _hw_monitor );
+
         _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor);
 
         // Define Left-to-Right extrinsics calculation (lazy)
@@ -709,10 +719,31 @@ namespace librealsense
 
     bool d500_device::check_symmetrization_enabled() const
     {
-        command cmd{ ds::MRD, 0x80000004, 0x80000008 };
-        auto res = _hw_monitor->send(cmd);
-        uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
-        return val == 1;
+        // The following try catch block has been added to avoid
+        // device's constructor failure for users working with new librealsense
+        // version and old fw version (which would not have the stream pipe config table)
+        // Only the content of the try statements should be kept, after some time.
+        try
+        {
+            using namespace ds;
+            command cmd(GET_HKR_CONFIG_TABLE,
+                static_cast<int>(d500_calib_location::d500_calib_ram_memory),
+                static_cast<int>(d500_calibration_table_id::stream_pipe_config_id),
+                static_cast<int>(d500_calib_type::d500_calib_dynamic));
+            auto res = _hw_monitor->send(cmd);
+       
+            if (res.size() != sizeof(d500_stream_pipe_config_table))
+                throw invalid_value_exception("Stream Config table has unexpected length");
+            auto stream_pipe_config_table = check_calib<d500_stream_pipe_config_table>(res);
+            return stream_pipe_config_table->is_depth_symmetrization_enabled == 1;
+        }
+        catch (...)
+        {
+            command cmd{ ds::MRD, 0x80000004, 0x80000008 };
+            auto res = _hw_monitor->send(cmd);
+            uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
+            return val == 1;
+        }
     }
     
     void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, ds::d500_gvd_parsed_fields* parsed_fields) const

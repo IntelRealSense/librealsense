@@ -50,7 +50,7 @@ std::string from::datetime( char const * format )
 {
     time_t t = time( nullptr );
     tm buf;
-#ifdef WIN32
+#ifdef _WIN32
     localtime_s( &buf, &t );
     auto time = &buf;
 #else

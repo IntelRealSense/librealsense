@@ -69,7 +69,7 @@
     do                                                                                                                 \
     {                                                                                                                  \
         auto logger__ = el::Loggers::getLogger( rsutils::g_librealsense_elpp_id );                                     \
-        if( logger__ && logger__->enabled( el::Level::LEVEL ) )                                                        \
+        if( logger__ && logger__->typedConfigurations() &&  logger__->enabled( el::Level::LEVEL ) )                    \
         {                                                                                                              \
             std::ostringstream os__;                                                                                   \
             os__ << __VA_ARGS__;                                                                                       \

@@ -7,7 +7,7 @@
 
 // 3rd party header for writing png files
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include <third-party/stb_image_write.h>
 
 #include "../converter.hpp"
 

@@ -21,7 +21,7 @@ namespace librealsense
                     result = *it;
                     switch (info.pid)
                     {
-                    case D555E_PID:
+                    case D555_PID:
                         found = (result.mi == 6);
                         break;
                     default:
@@ -228,7 +228,7 @@ namespace librealsense
             intrinsics.width = width;
             intrinsics.height = height;
 
-            // For D555e, model will be brown and we need the unrectified intrinsics
+            // For D555, model will be brown and we need the unrectified intrinsics
             // For SC, model will be brown_and_fisheye and we need the rectified
             // NOTE that update_table_to_correct_fisheye_distortion() changes the model to brown, so we use reserved[3]
             // as a flag to indicate this happened
@@ -284,7 +284,7 @@ namespace librealsense
             res += "--- --- ---\n";
             res += "baseline:\t" + std::to_string(baseline) + "\n";
             res += "translation_dir:\t" + std::to_string(translation_dir) + "\n";
-            res += "realignement_essential:\t" + std::to_string(realignement_essential) + "\n";
+            res += "realignment_essential:\t" + std::to_string(realignment_essential) + "\n";
             res += "vertical_shift:\t" + std::to_string(vertical_shift) + "\n";
             res += "--- rectified intrinsics ---\n";
             res += rectified_intrinsics.to_string();

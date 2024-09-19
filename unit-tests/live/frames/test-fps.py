@@ -66,7 +66,7 @@ tested_fps = [6, 15, 30, 60, 90]
 time_to_test_fps = [20, 13, 10, 5, 4]
 test.check_equal( len(tested_fps), len(time_to_test_fps) )
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 product_line = dev.get_info(rs.camera_info.product_line)
 
 #####################################################################################################

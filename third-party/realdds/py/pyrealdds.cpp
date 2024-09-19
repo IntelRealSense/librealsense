@@ -32,6 +32,7 @@
 #include <realdds/dds-metadata-syncer.h>
 #include <realdds/dds-serialization.h>
 #include <realdds/dds-sample.h>
+#include <realdds/dds-network-adapter-watcher.h>
 
 #include <rsutils/os/special-folder.h>
 #include <rsutils/os/executable-name.h>
@@ -120,6 +121,17 @@ json load_rs_settings( json const & local_settings )
 }
 
 
+py::list network_adapter_list()
+{
+    auto const ips = realdds::dds_network_adapter_watcher::current_ips();
+    py::list obj( ips.size() );
+    int i = 0;
+    for( auto & ip : ips )
+        obj[i++] = ip;
+    return std::move( obj );
+}
+
+
 }  // namespace
 
 
@@ -141,6 +153,19 @@ PYBIND11_MODULE(NAME, m) {
            py::arg( "enable" ),
            py::arg( "nested-string" ) = "",
            py::arg( "logger" ) = LIBREALSENSE_ELPP_ID );
+
+    m.def(
+        "json_dump",  // pretty print, using our own output; also available in pyrsutils - here for convenience
+        []( rsutils::json const & j, size_t indent )
+        {
+            std::ostringstream os;
+            if( indent )
+                os << std::setw( indent );
+            os << j;
+            return os.str();
+        },
+        py::arg( "json" ),
+        py::arg( "indent" ) = 4 );
 
     using realdds::dds_guid;
     py::class_< dds_guid >( m, "guid" )
@@ -210,6 +235,9 @@ PYBIND11_MODULE(NAME, m) {
     m.def( "timestr", []( dds_time t, dds_nsec start ) { return timestr( t, start ).to_string(); } );
     m.def( "timestr", []( dds_nsec t, dds_time start ) { return timestr( t, start ).to_string(); } );
     m.def( "timestr", []( dds_time t ) { return timestr( t ).to_string(); } );
+
+
+    m.def( "network_adapter_list", &network_adapter_list );
 
 
     py::class_< dds_participant::listener,
@@ -395,15 +423,15 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_topic_reader;
     py::class_< dds_topic_reader, std::shared_ptr< dds_topic_reader > >( m, "topic_reader" )
         .def( py::init< std::shared_ptr< dds_topic > const & >() )
-        .def( FN_FWD( dds_topic_reader, on_data_available, (dds_topic_reader &), (), callback( self ); ) )
+        .def( FN_FWD( dds_topic_reader, on_data_available, (dds_topic_reader *), (), callback( self ); ) )
         .def( FN_FWD( dds_topic_reader,
                       on_subscription_matched,
-                      (dds_topic_reader &, int),
+                      (dds_topic_reader *, int),
                       ( eprosima::fastdds::dds::SubscriptionMatchedStatus const & status ),
                       callback( self, status.current_count_change ); ) )
         .def( FN_FWD( dds_topic_reader,
                       on_sample_lost,
-                      (dds_topic_reader &, int, int),
+                      (dds_topic_reader *, int, int),
                       (eprosima::fastdds::dds::SampleLostStatus const & status),
                       callback( self, status.total_count, status.total_count_change ); ) )
         .def( "topic", &dds_topic_reader::topic )
@@ -442,7 +470,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "guid", &dds_topic_writer::guid )
         .def( FN_FWD( dds_topic_writer,
                       on_publication_matched,
-                      (dds_topic_writer &, int),
+                      (dds_topic_writer *, int),
                       ( eprosima::fastdds::dds::PublicationMatchedStatus const & status ),
                       callback( self, status.current_count_change ); ) )
         .def( "topic", &dds_topic_writer::topic )
@@ -790,7 +818,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "stream", &dds_stream_profile::stream )
         .def( "to_string", &dds_stream_profile::to_string )
         .def( "details_to_string", &dds_stream_profile::details_to_string )
-        .def( "to_json", []( dds_stream_profile const & self ) { return self.to_json().dump(); } )
+        .def( "to_json", []( dds_stream_profile const & self ) { return self.to_json(); } )
         .def( "__repr__", []( dds_stream_profile const & self ) {
             std::ostringstream os;
             std::string self_as_string = self.to_string();  // <video 0xUID ...>
@@ -924,12 +952,12 @@ PYBIND11_MODULE(NAME, m) {
         .def( "broadcast", &dds_device_server::broadcast )
         .def( "broadcast_disconnect", &dds_device_server::broadcast_disconnect, py::arg( "ack-timeout" ) = dds_time() )
         .def( FN_FWD( dds_device_server, on_set_option,
-                      (dds_device_server &, std::shared_ptr< realdds::dds_option > const &, json_ref &&),
+                      (dds_device_server *, std::shared_ptr< realdds::dds_option > const &, json_ref &&),
                       ( std::shared_ptr< realdds::dds_option > const & option, json & value ),
                       callback( self, option, json_ref{ value } ); ) )
         .def( FN_FWD_R( dds_device_server, on_control,
                         false,
-                        (dds_device_server &, std::string const &, py::object &&, json_ref &&),
+                        (dds_device_server *, std::string const &, py::object &&, json_ref &&),
                         ( std::string const & id, json const & control, json & reply ),
                         return callback( self, id, json_to_py( control ), json_ref{ reply } ); ) );
 
@@ -954,9 +982,10 @@ PYBIND11_MODULE(NAME, m) {
         video_stream_client_base( m, "video_stream", stream_client_base );
     video_stream_client_base  //
         .def( "set_intrinsics", &dds_video_stream::set_intrinsics )
+        .def( "get_intrinsics", &dds_video_stream::get_intrinsics )
         .def( FN_FWD( dds_video_stream,
                       on_data_available,
-                      ( dds_video_stream &, image_msg &&, dds_sample && ),
+                      ( dds_video_stream *, image_msg &&, dds_sample && ),
                       ( image_msg && i, dds_sample && sample ),
                       callback( self, std::move( i ), std::move( sample ) ); ) );
 
@@ -981,7 +1010,12 @@ PYBIND11_MODULE(NAME, m) {
         motion_stream_client_base( m, "motion_stream", stream_client_base );
     motion_stream_client_base
         .def( "set_gyro_intrinsics", &dds_motion_stream::set_gyro_intrinsics )
-        .def( "set_accel_intrinsics", &dds_motion_stream::set_accel_intrinsics );
+        .def( "set_accel_intrinsics", &dds_motion_stream::set_accel_intrinsics )
+        .def( FN_FWD( dds_motion_stream,
+                      on_data_available,
+                      ( dds_motion_stream *, imu_msg &&, dds_sample && ),
+                      ( imu_msg && i, dds_sample && sample ),
+                      callback( self, std::move( i ), std::move( sample ) ); ) );
 
 
     using subscription = rsutils::subscription;
@@ -1093,12 +1127,12 @@ PYBIND11_MODULE(NAME, m) {
         .def( "is_stopped", &dds_device_watcher::is_stopped )
         .def( FN_FWD( dds_device_watcher,
                       on_device_added,
-                      ( dds_device_watcher const &, std::shared_ptr< dds_device > const & ),
+                      ( dds_device_watcher const *, std::shared_ptr< dds_device > const & ),
                       ( std::shared_ptr< dds_device > const & dev ),
                       callback( self, dev ); ) )
         .def( FN_FWD( dds_device_watcher,
                       on_device_removed,
-                      ( dds_device_watcher const &, std::shared_ptr< dds_device > const & ),
+                      ( dds_device_watcher const *, std::shared_ptr< dds_device > const & ),
                       ( std::shared_ptr< dds_device > const & dev ),
                       callback( self, dev ); ) )
         .def( "devices",
@@ -1186,7 +1220,7 @@ PYBIND11_MODULE(NAME, m) {
                       on_frame_ready,
                       ( dds_metadata_syncer::frame_type, json const & ),
                       ( dds_metadata_syncer::frame_holder && fh, std::shared_ptr< const json > const & metadata ),
-                      callback( self.get_frame( fh ), metadata ? *metadata : json() ); ) )
+                      callback( self->get_frame( fh ), metadata ? *metadata : json() ); ) )
         .def( FN_FWD( dds_metadata_syncer,
                       on_metadata_dropped,
                       ( dds_metadata_syncer::key_type, json const & ),
