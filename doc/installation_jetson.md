@@ -41,10 +41,10 @@ In order to enable the full capabilities of RealSense devices certain modificati
 NVIDIA's L4T delivers an Ubuntu-based distribution with a customized kernel based on version 4.9/5.10. The way the kernel is configured and deployed is different from a desktop Ubuntu image with two notable differences being the list of kernel modules included in default configuration and the way a new image is flashed.
 
 And while it is possible to rebuild and flash a new kernel image the procedure can be perceived as challenging and shall be performed with extra caution.
-This guide comes with a script that allows to modify the kernel modules with Librealsense2-related patches without replacing the kernel image. The script has been verified with **Jetson AGX Xavier™** board using L4T versions 4.6.1 (Sept 2020) and 5.0.2. Scroll to the end of the guide for details.
+This guide comes with a script that allows to modify the kernel modules with Librealsense2-related patches without replacing the kernel image. The script has been verified with **Jetson AGX Xavier™** board using L4T versions 5.0.2 (Sept 2020) and 6.0. Scroll to the end of the guide for details.
 
 ### 4. Install with Debian Packages
- The minimum JetPack SDK required to run the precompiled Debians is [JetPack version 4.4.1](https://developer.nvidia.com/jetpack-sdk-441-archive) ( L4T 32.4.4 , CUDA version 10.2).
+ The minimum JetPack SDK required to run the precompiled Debians is [JetPack version 5.0.2](https://developer.nvidia.com/jetpack-sdk-441-archive) ( L4T 35.1 , CUDA version 11.4).
 
 Note that a lower version may not work due to non compatible CUDA versions limitation.
 
@@ -92,7 +92,7 @@ You can also double-TAB after typing `rs-` to see the full list of SDK examples.
 
 ⮕ Use the V4L Native backend by applying the kernel patching
 
-The method was verified with **Jetson AGX Orin™** with JetPack 6.0, **Jetson AGX Xavier™** boards with JetPack **4.4**[L4T 32.4.3], **4.6.1**[L4T 32.7.1] and **5.0.2**[L4T 35.1.0].
+The method was verified with **Jetson AGX Orin™** with JetPack 6.0, **Jetson AGX Xavier™** boards with JetPack **5.0.2**[L4T 35.1.0].
 
 For **Jetson Nano™** setup, please see the following user instructions [NVIDIA Jetson Nano with Intel RealSense Depth Camera Using ROS2 Humble | by Kabilankb | May, 2024 | Medium](https://medium.com/@kabilankb2003/nvidia-jetson-nano-with-intel-realsense-depth-camera-using-ros2-humble-c5926566a4d8)
 
