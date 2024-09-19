@@ -38,7 +38,6 @@ namespace librealsense
         depth_processing_block("Temporal Filter"),
         _persistence_param(persistence_default),
         _alpha_param(temp_alpha_default),
-        _one_minus_alpha(1- _alpha_param),
         _delta_param(temp_delta_default),
         _width(0), _height(0), _stride(0), _bpp(0),
         _extension_type(RS2_EXTENSION_DEPTH_FRAME),
@@ -146,7 +145,6 @@ namespace librealsense
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _alpha_param = val;
-        _one_minus_alpha = 1.f - _alpha_param;
         _cur_frame_index = 0;
         _last_frame.clear();
         _history.clear();

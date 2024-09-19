@@ -4,4 +4,4 @@ if (POLICY CMP0072)
 endif()
 
 find_package(OpenGL REQUIRED)
-set(DEPENDENCIES realsense2 glfw ${OPENGL_LIBRARIES})
+list( APPEND DEPENDENCIES glfw ${OPENGL_LIBRARIES} )

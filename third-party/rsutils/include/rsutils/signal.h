@@ -112,7 +112,11 @@ public:
     }
 
     // How many subscriptions are active
-    size_t size() const { return _impl->subscribers.size(); }
+    size_t size() const
+    {
+        std::lock_guard< std::mutex > locker( _impl->mutex );
+        return _impl->subscribers.size();
+    }
 };
 
 

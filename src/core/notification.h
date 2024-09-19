@@ -47,7 +47,7 @@ public:
 
 private:
     rs2_notifications_callback_sptr _callback;
-    std::mutex _callback_mutex;
+    mutable std::mutex _callback_mutex;
     dispatcher _dispatcher;
 };
 

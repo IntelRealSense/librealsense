@@ -1,7 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017-24 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
+
+#include <common/cli.h>
+
 #include <iostream>
 #include <map>
 #include <chrono>
@@ -11,7 +14,8 @@
 // The callback example demonstrates asynchronous usage of the pipeline
 int main(int argc, char * argv[]) try
 {
-    //rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
+    auto settings = rs2::cli( "rs-callback example" )
+        .process( argc, argv );
 
     std::map<int, int> counters;
     std::map<int, std::string> stream_names;
@@ -37,7 +41,7 @@ int main(int argc, char * argv[]) try
     };
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors.
-    rs2::pipeline pipe;
+    rs2::pipeline pipe( settings.dump() );
 
     // Start streaming through the callback with default recommended configuration
     // The default video configuration contains Depth and Color streams

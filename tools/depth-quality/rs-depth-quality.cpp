@@ -1,15 +1,27 @@
 ﻿// License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-24 Intel Corporation. All Rights Reserved.
 
-#include <numeric>
-#include <librealsense2/rs.hpp>
 #include "depth-quality-model.h"
+
+#include <common/cli.h>
+
+#include <librealsense2/rs.hpp>
+#include <numeric>
 
 int main(int argc, const char * argv[]) try
 {
-    rs2::context ctx;
+    rs2::cli cmd( "rs-depth-quality" );
+    auto settings = cmd.process( argc, argv );
+
+    rs2::context ctx( settings.dump() );
     rs2::ux_window window("Depth Quality Tool", ctx);
-    rs2::depth_quality::tool_model model(ctx);
+    
+#ifdef BUILD_EASYLOGGINGPP
+    bool const disable_log_to_console = cmd.debug_arg.getValue();
+#else
+    bool const disable_log_to_console = false;
+#endif
+    rs2::depth_quality::tool_model model( ctx, disable_log_to_console );
 
     using namespace rs2::depth_quality;
 

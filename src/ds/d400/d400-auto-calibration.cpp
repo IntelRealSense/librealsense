@@ -5,12 +5,12 @@
 #include <rsutils/json.h>
 #include "d400-device.h"
 #include "d400-private.h"
-#include "d400-thermal-monitor.h"
 #include "d400-auto-calibration.h"
 #include "librealsense2/rsutil.h"
 #include "algo.h"
 #include <src/core/video-frame.h>
 #include <src/ds/ds-calib-common.h>
+#include <src/ds/ds-thermal-monitor.h>
 
 #include <rsutils/string/from.h>
 
@@ -2409,12 +2409,12 @@ namespace librealsense
 
     std::string auto_calibrated::get_calibration_config() const
     {
-        throw std::runtime_error(rsutils::string::from() << "Calibration Config not applicable for this device");
+        throw not_implemented_exception(rsutils::string::from() << "Calibration Config not applicable for this device");
     }
 
     void auto_calibrated::set_calibration_config(const std::string& calibration_config_json_str) const
     {
-        throw std::runtime_error(rsutils::string::from() << "Calibration Config not applicable for this device");
+        throw not_implemented_exception(rsutils::string::from() << "Calibration Config not applicable for this device");
     }
 
     void auto_calibrated::set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm)

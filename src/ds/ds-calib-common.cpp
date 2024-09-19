@@ -100,7 +100,7 @@ namespace librealsense
                 rect_sides_arr.emplace_back( rec_sides_cur );
             }
 
-            rs2_release_frame( f );
+            ff = {}; // Release the frame, don't need it for progress callback
 
             if( progress_callback )
                 progress_callback->on_update_progress( static_cast< float >( ++progress ) );

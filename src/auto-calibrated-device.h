@@ -5,6 +5,7 @@
 #include "types.h"
 #include "core/extension.h"
 #include <vector>
+#include <core/debug.h>
 
 
 namespace librealsense

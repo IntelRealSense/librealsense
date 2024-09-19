@@ -60,6 +60,4 @@ if(BUILD_UNIT_TESTS)
 endif()
 
 
-if(BUILD_LEGACY_LIVE_TEST)
-    include(./live-test.cmake)
-endif()
+

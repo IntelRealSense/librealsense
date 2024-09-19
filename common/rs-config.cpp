@@ -6,6 +6,7 @@
 #include <librealsense2/rs.h>
 #include <rsutils/os/special-folder.h>
 #include <rsutils/json.h>
+#include <rsutils/json-config.h>
 #include <fstream>
 
 using json = rsutils::json;
@@ -69,7 +70,7 @@ void config_file::save(const char* filename)
     try
     {
         std::ofstream out(filename);
-        out << _j.dump( 2 );
+        out << std::setw( 2 ) << _j;
         out.close();
     }
     catch (...)
@@ -89,9 +90,9 @@ config_file::config_file( std::string const & filename )
 {
     try
     {
-        std::ifstream t(_filename);
-        if (!t.good()) return;
-        _j = json::parse( t );
+        auto j = rsutils::json_config::load_from_file( filename );
+        if( j.exists() )
+            _j = std::move( j );
     }
     catch(...)
     {

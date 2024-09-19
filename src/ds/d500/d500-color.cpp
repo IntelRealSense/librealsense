@@ -4,7 +4,7 @@
 #include <cstddef>
 #include "metadata.h"
 
-#include "ds/ds-timestamp.h"
+#include <src/ds/ds-timestamp.h>
 #include "proc/color-formats-converter.h"
 #include "d500-options.h"
 #include "d500-color.h"
@@ -13,6 +13,7 @@
 #include "platform/platform-utils.h"
 #include <src/fourcc.h>
 #include <src/metadata-parser.h>
+#include <src/ds/ds-thermal-monitor.h>
 
 #include <src/ds/features/auto-exposure-roi-feature.h>
 
@@ -152,6 +153,9 @@ namespace librealsense
         _ds_color_common->register_standard_options();
 
         color_ep.register_pu(RS2_OPTION_HUE);
+
+        if( _thermal_monitor )
+            _thermal_monitor->add_observer( [&]( float ) { _color_calib_table_raw.reset(); } );
     }
 
     void d500_color::register_metadata()

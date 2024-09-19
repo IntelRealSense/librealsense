@@ -123,6 +123,7 @@ namespace librealsense
             RECPARAMSGET = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
             LASERONCONST = 0x7F,     // Enable Laser On constantly (GS SKU Only)
             AUTO_CALIB = 0x80,      // auto calibration commands
+            HKR_THERMAL_COMPENSATION = 0x84, // Control HKR thermal compensation
             GETAELIMITS = 0x89,   //Auto Exp/Gain Limit command FW version >= 5.13.0.200
             SETAELIMITS = 0x8A,   //Auto Exp/Gain Limit command FW version >= 5.13.0.200
 
@@ -318,6 +319,16 @@ namespace librealsense
                                                << "Calibration data invalid, buffer too small : expected "
                                                << sizeof( table_header ) << " , actual: " << raw_data.size() );
             }
+
+            // Make sure the table size does not exceed the actual data we have!
+            if( header->table_size + sizeof( table_header ) > raw_data.size() )
+            {
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Calibration table size does not fit inside reply: expected "
+                                               << ( raw_data.size() - sizeof( table_header ) ) << " but got "
+                                               << header->table_size );
+            }
+
             // verify the parsed table
             if (table->header.crc32 != rsutils::number::calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {

@@ -395,4 +395,12 @@ void software_sensor::add_processing_block( std::shared_ptr< processing_block_in
 }
 
 
+std::vector< rs2_option > software_sensor::get_supported_options() const
+{
+    // Override the default options_container behavior: software sensors return the options in the same order they were
+    // registered!
+    return _ordered_options;
+}
+
+
 }  // namespace librealsense

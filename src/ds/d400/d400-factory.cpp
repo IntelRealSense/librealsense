@@ -21,7 +21,7 @@
 #include "d400-active.h"
 #include "d400-color.h"
 #include "d400-motion.h"
-#include "d400-thermal-monitor.h"
+#include <src/ds/ds-thermal-monitor.h>
 #include "sync.h"
 
 #include <src/platform/platform-utils.h>
@@ -649,6 +649,40 @@ namespace librealsense
 
             return tags;
         };
+
+        void hardware_reset() override 
+        {
+            d400_device::hardware_reset();
+            //limitation: the user must hold the context from which the device was created
+            //creating fake notification to trigger invoke_devices_changed_callbacks, causing disconnection and connection
+            auto dev_info = this->get_device_info();
+            auto non_const_device_info = std::const_pointer_cast< librealsense::device_info >( dev_info );
+            std::vector< std::shared_ptr< device_info > > devices{ non_const_device_info };
+            auto ctx = std::weak_ptr< context >( get_context() );
+            std::thread fake_notification(
+                [ ctx, devs = std::move( devices ) ]()
+                {
+                    try
+                    {
+                        if( auto strong = ctx.lock() )
+                        {
+                            strong->invoke_devices_changed_callbacks( devs, {} );
+                            // MIPI devices do not re-enumerate so we need to give them some time to restart
+                            std::this_thread::sleep_for( std::chrono::milliseconds( 3000 ) );
+                        }
+                        if( auto strong = ctx.lock() )
+                            strong->invoke_devices_changed_callbacks( {}, devs );
+                    }
+                    catch( const std::exception & e )
+                    {
+                        LOG_ERROR( e.what() );
+                        return;
+                    }
+                } ); 
+            fake_notification.detach();
+        }
+
+
     };
 
     // AWGCT
@@ -1033,7 +1067,7 @@ namespace librealsense
                                public d400_motion,
                                public ds_advanced_mode_base,
                                public firmware_logger_device,
-                               public d400_thermal_tracking
+                               public ds_thermal_tracking
     {
     public:
         rs455_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
@@ -1047,7 +1081,7 @@ namespace librealsense
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
                   dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
-            , d400_thermal_tracking( d400_device::_thermal_monitor )
+            , ds_thermal_tracking( d400_device::_thermal_monitor )
         {
             if( _fw_version >= firmware_version( 5, 16, 0, 0 ) )
                 register_feature(
@@ -1157,37 +1191,11 @@ namespace librealsense
             auto& devices = g.first;
             auto& hids = g.second;
 
-            bool all_sensors_present = mi_present(devices, 0);
+            bool is_mi_0_present = mi_present(devices, 0);
 
             // Device with multi sensors can be enabled only if all sensors (RGB + Depth) are present
             auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::d400_multi_sensors_pid), std::end(ds::d400_multi_sensors_pid), pid) != std::end(ds::d400_multi_sensors_pid); };
-            bool is_device_multisensor = false;
             auto is_pid_of_mipi_device = [](int pid) { return std::find(std::begin(ds::d400_mipi_device_pid), std::end(ds::d400_mipi_device_pid), pid) != std::end(ds::d400_mipi_device_pid); };
-            bool is_mipi_device = false;
-            for (auto&& uvc : devices)
-            {
-                if (is_pid_of_multisensor_device(uvc.pid))
-                    is_device_multisensor = true;
-                if (is_pid_of_mipi_device(uvc.pid))
-                    is_mipi_device = true;
-            }
-
-            if(is_device_multisensor)
-            {
-                if(!is_mipi_device)
-                {
-                    // usb devices: all sensors mi=0, except  RGB mi=3
-                    all_sensors_present = all_sensors_present &&
-                                          mi_present(devices, 3);
-                }
-                else
-                {
-                    // mipi devices: all sensors mi=0, except  Accel/Gyro mi=4
-                    all_sensors_present = all_sensors_present &&
-                                           mi_present(devices, 4);
-                }
-            }
-
 
 #if !defined(__APPLE__) // Not supported by macos
             auto is_pid_of_hid_sensor_device = [](int pid) { return std::find(std::begin(ds::d400_hid_sensors_pid),
@@ -1198,16 +1206,9 @@ namespace librealsense
                 if (is_pid_of_hid_sensor_device(uvc.pid))
                     is_device_hid_sensor = true;
             }
-
-            // Device with hids can be enabled only if both hids (gyro and accelerometer) are present
-            // Assuming that hids amount of 2 and above guarantee that gyro and accelerometer are present
-            if (is_device_hid_sensor)
-            {
-                all_sensors_present &= (hids.size() >= 2);
-            }
 #endif
 
-            if (!devices.empty() && all_sensors_present)
+            if (!devices.empty() && is_mi_0_present)
             {
                 platform::usb_device_info hwm;
 

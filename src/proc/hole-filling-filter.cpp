@@ -53,7 +53,6 @@ namespace librealsense
                                                << "Unsupported mode for hole filling selected: value " << val
                                                << " is out of range." );
 
-            std::lock_guard<std::mutex> lock(_mutex);
             _hole_filling_mode = static_cast<uint8_t>(val);
         });
 

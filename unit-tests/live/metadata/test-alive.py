@@ -100,7 +100,7 @@ def is_value_keep_increasing(metadata_type, number_frames_to_test=50) -> bool:
 
 queue_capacity = 1
 frame_queue = None
-device = test.find_first_device_or_exit()
+device, _ = test.find_first_device_or_exit()
 
 # We're using dictionary because we need save a profile and his sensor.
 # The key value is profile and value is his sensor.

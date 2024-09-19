@@ -7,7 +7,9 @@
 #include <src/core/debug.h>
 #include "sid_index.h"
 #include "rsdds-serializable.h"
+#include <src/auto-calibrated-proxy.h>
 
+#include <rsutils/json-fwd.h>
 #include <memory>
 #include <vector>
 
@@ -42,19 +44,21 @@ class dds_device_proxy
     , public updatable                // unsigned, non-recovery-mode
     , public update_device_interface  // signed, recovery-mode
     , public dds_serializable
+    , public auto_calibrated_proxy
 {
     std::shared_ptr< realdds::dds_device > _dds_dev;
     std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
     std::map< std::string, std::shared_ptr< librealsense::stream > > _stream_name_to_librs_stream;
     std::map< std::string, std::shared_ptr< dds_sensor_proxy > > _stream_name_to_owning_sensor;
-
+    
+    rsutils::subscription _calibration_changed_subscription;
     rsutils::subscription _metadata_subscription;
 
     int get_index_from_stream_name( const std::string & name ) const;
-    void set_profile_intrinsics( std::shared_ptr< stream_profile_interface > & profile,
+    void set_profile_intrinsics( std::shared_ptr< stream_profile_interface > const & profile,
                                  const std::shared_ptr< realdds::dds_stream > & stream ) const;
-    void set_video_profile_intrinsics( std::shared_ptr< stream_profile_interface > profile,
-                                       std::shared_ptr< realdds::dds_video_stream > stream ) const;
+    void set_video_profile_intrinsics( std::shared_ptr< stream_profile_interface > const & profile,
+                                       std::shared_ptr< const realdds::dds_video_stream > const & stream ) const;
     void set_motion_profile_intrinsics( std::shared_ptr< stream_profile_interface > profile,
                                        std::shared_ptr< realdds::dds_motion_stream > stream ) const;
 

@@ -176,8 +176,7 @@ namespace rs2
             ImGui::PopStyleColor(2); // button color
 
             auto apply = [&]() {
-                config_file::instance() = temp_cfg;
-                update_configuration();
+                update_configuration(&temp_cfg);
             };
 
             ImGui::PushStyleColor(ImGuiCol_Button, button_color);
@@ -794,8 +793,10 @@ namespace rs2
         _hidden_options.emplace(RS2_OPTION_REGION_OF_INTEREST);
     }
 
-    void viewer_model::update_configuration()
+    void viewer_model::update_configuration(config_file* new_cfg)
     {
+        if (new_cfg)
+            config_file::instance() = *new_cfg;
         rs2_error* e = nullptr;
         auto version = rs2_get_api_version(&e);
         if (e) rs2::error::handle(e);
@@ -1680,42 +1681,45 @@ namespace rs2
                 {
                     case RS2_STREAM_GYRO: /* Fall Through */
                     case RS2_STREAM_ACCEL:
-                    {
-                        auto motion = streams[stream].texture->get_last_frame().as<motion_frame>();
-                        if (motion.get())
+                        if( rs2::frame frame = streams[stream].texture->get_last_frame() )
                         {
-                            auto axis = motion.get_motion_data();
-                            stream_mv.show_stream_imu( font1,
-                                                       stream_rect,
-                                                       axis,
-                                                       mouse,
-                                                       stream_type == RS2_STREAM_GYRO ? "Radians/Sec" : "Meter/Sec^2" );
+                            auto motion = frame.as< motion_frame >();
+                            if( motion.get() )
+                            {
+                                auto axis = motion.get_motion_data();
+                                stream_mv.show_stream_imu( font1,
+                                                           stream_rect,
+                                                           axis,
+                                                           mouse,
+                                                           stream_type == RS2_STREAM_GYRO ? "Radians/Sec" : "Meter/Sec^2" );
+                            }
                         }
                         break;
-                    }
+
                     case RS2_STREAM_MOTION:
-                    {
-                        auto & motion = *reinterpret_cast< const rs2_combined_motion * >(
-                            streams[stream].texture->get_last_frame().get_data() );
-                        auto height = stream_mv.show_stream_imu( font1,
-                                                                 stream_rect,
-                                                                 { (float)motion.linear_acceleration.x,
-                                                                   (float)motion.linear_acceleration.y,
-                                                                   (float)motion.linear_acceleration.z },
-                                                                 mouse,
-                                                                 "Meter/Sec^2",
-                                                                 "Linear Acceletion" );
-                        stream_mv.show_stream_imu( font1,
-                                                   stream_rect,
-                                                   { (float)motion.angular_velocity.x,
-                                                     (float)motion.angular_velocity.y,
-                                                     (float)motion.angular_velocity.z },
-                                                   mouse,
-                                                   "Radians/Sec",
-                                                   "Angular Velocity",
-                                                   height + 9 );
+                        if( rs2::frame frame = streams[stream].texture->get_last_frame() )
+                        {
+                            auto & motion = *reinterpret_cast< const rs2_combined_motion * >( frame.get_data() );
+                            auto height = stream_mv.show_stream_imu( font1,
+                                                                     stream_rect,
+                                                                     { (float)motion.linear_acceleration.x,
+                                                                       (float)motion.linear_acceleration.y,
+                                                                       (float)motion.linear_acceleration.z },
+                                                                     mouse,
+                                                                     "Meter/Sec^2",
+                                                                     "Linear Acceletion" );
+                            stream_mv.show_stream_imu( font1,
+                                                       stream_rect,
+                                                       { (float)motion.angular_velocity.x,
+                                                         (float)motion.angular_velocity.y,
+                                                         (float)motion.angular_velocity.z },
+                                                       mouse,
+                                                       "Radians/Sec",
+                                                       "Angular Velocity",
+                                                       height + 9 );
+                        }
                         break;
-                    }
+
                     case RS2_STREAM_POSE:
                     {
                         if (streams[stream].show_stream_details)
@@ -2879,13 +2883,12 @@ namespace rs2
                 }
 
                 auto apply = [&](){
-                    config_file::instance() = temp_cfg;
                     window.on_reload_complete = [this](){
                         _skybox.reset();
                     };
                     if (reload_required) window.reload();
                     else if (refresh_required) window.refresh();
-                    update_configuration();
+                    update_configuration(&temp_cfg);
 
                     if (refresh_updates)
                         for (auto&& dev : devices)

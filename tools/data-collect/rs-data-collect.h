@@ -25,14 +25,13 @@ GYRO,1,1,200,MOTION_XYZ32F
 */
 
 #include <librealsense2/rs.hpp>
-#include "tclap/CmdLine.h"
+#include <common/cli.h>
 #include <fstream>
 #include <sstream>
 #include <map>
 
 
 using namespace std;
-using namespace TCLAP;
 
 namespace rs_data_collect
 {
@@ -178,11 +177,11 @@ namespace rs_data_collect
     {
     public:
         data_collector(std::shared_ptr<rs2::device> dev,
-            ValueArg<int>& timeout, ValueArg<int>& max_frames);
+            rs2::cli::value<int>& timeout, rs2::cli::value<int>& max_frames);
         ~data_collector(){};
         data_collector(const data_collector&);
 
-        void parse_and_configure(ValueArg<string>& config_file);
+        void parse_and_configure(rs2::cli::value<string>& config_file);
         void save_data_to_file(const string& out_filename);
         void collect_frame_attributes(rs2::frame f, std::chrono::time_point<std::chrono::high_resolution_clock> start_time);
         bool collecting(std::chrono::time_point<std::chrono::high_resolution_clock> start_time);

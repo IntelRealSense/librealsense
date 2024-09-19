@@ -1,15 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
-
+// Copyright(c) 2017-24 Intel Corporation. All Rights Reserved.
 #include <librealsense2/rs.hpp>
 #include "viewer.h"
 #include "os.h"
 #include "ux-window.h"
 #include "fw-update-helper.h"
 
-#include <rsutils/os/ensure-console.h>
-#include <tclap/CmdLine.h>
+#include <common/cli.h>
 
 #include <cstdarg>
 #include <thread>
@@ -285,61 +282,10 @@ bool refresh_devices(std::mutex& m,
 
 int main(int argc, const char** argv) try
 {
-    TCLAP::CmdLine cmd( "realsense-viewer", ' ', RS2_API_FULL_VERSION_STR );
-#ifdef BUILD_EASYLOGGINGPP
-    TCLAP::SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
-    cmd.add( debug_arg );
-#endif
-    TCLAP::SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)" );
-    cmd.add( only_sw_arg );
-    // There isn't always a console... so if we need to show an error/usage, we need to enable it:
-    class cmdline_output : public TCLAP::StdOutput
-    {
-        typedef TCLAP::StdOutput super;
-
-    public:
-        void usage( TCLAP::CmdLineInterface & c ) override
-        {
-            rsutils::os::ensure_console();
-            super::usage( c );
-        }
-
-        void version( TCLAP::CmdLineInterface & c ) override
-        {
-            rsutils::os::ensure_console();
-            super::version( c );
-        }
-
-        void failure( TCLAP::CmdLineInterface & c, TCLAP::ArgException & e ) override
-        {
-            rsutils::os::ensure_console();
-            super::failure( c, e );
-        }
-    } our_cmdline_output;
-    cmd.setOutput( &our_cmdline_output );
-    cmd.parse( argc, argv );
-
-#ifdef BUILD_EASYLOGGINGPP
-    if( debug_arg.getValue() )
-        rsutils::os::ensure_console();
-#if defined( WIN32 )
-    // In Windows, we have no console unless we start the viewer from one; without one, calling log_to_console will
-    // ensure a console, so we want to avoid it by default!
-    if( GetStdHandle( STD_OUTPUT_HANDLE ) )
-#endif
-        rs2::log_to_console( debug_arg.getValue() ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_INFO );
-#endif
+    rs2::cli cmd( "realsense-viewer" );
+    auto settings = cmd.process( argc, argv );
 
     std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
-
-    rsutils::json settings = rsutils::json::object();
-    if( only_sw_arg.getValue() )
-    {
-#if defined( BUILD_WITH_DDS )
-        settings["dds"]["enabled"];  // null: remove global dds:false or dds/enabled:false, if any
-#endif
-        settings["device-mask"] = RS2_PRODUCT_LINE_SW_ONLY | RS2_PRODUCT_LINE_ANY;
-    }
 
     context ctx( settings.dump() );
     ux_window window("Intel RealSense Viewer", ctx);
@@ -356,7 +302,7 @@ int main(int argc, const char** argv) try
     std::string ip_address;
 
 #ifdef BUILD_EASYLOGGINGPP
-    bool const disable_log_to_console = debug_arg.getValue();
+    bool const disable_log_to_console = cmd.debug_arg.getValue();
 #else
     bool const disable_log_to_console = false;
 #endif
@@ -461,8 +407,11 @@ int main(int argc, const char** argv) try
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::SetNextWindowPos({ 0, viewer_model.panel_y });
 
-        std::string add_source_button_text = rsutils::string::from()
-                                          << " " << textual_icons::plus_circle << "  Add Source\t\t\t\t\t\t\t\t\t\t\t";
+        std::string add_source_button_text = rsutils::string::from() 
+                                          << " " << textual_icons::plus_circle 
+                                          << "  Add Source (" << (device_names.size() - device_models->size()) 
+                                          << " available)\t\t\t\t\t\t\t\t\t\t\t";
+
         if (ImGui::Button(add_source_button_text.c_str(), { viewer_model.panel_width - 1, viewer_model.panel_y }))
             ImGui::OpenPopup("select");
 

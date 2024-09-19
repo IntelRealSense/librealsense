@@ -389,7 +389,8 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
         break;
 
     case 5:  // [name,value,[choices],default,description]
-        std::dynamic_pointer_cast< dds_enum_option >( option )->init_choices( j[2] );
+        if( auto e = std::dynamic_pointer_cast< dds_enum_option >( option ) )
+            e->init_choices( j[2] );
         option->init_default_value( j[3] );
         break;
 

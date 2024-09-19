@@ -7,6 +7,7 @@
 
 #include <src/core/matcher-factory.h>
 #include <src/proc/color-formats-converter.h>
+#include <src/core/advanced_mode.h>
 
 #include "d500-info.h"
 #include "d500-private.h"
@@ -16,6 +17,8 @@
 #include "d500-color.h"
 #include "d500-motion.h"
 #include "sync.h"
+#include <src/ds/ds-thermal-monitor.h>
+#include <src/ds/d500/d500-options.h>
 #include <src/ds/d500/d500-auto-calibration.h>
 
 #include <src/platform/platform-utils.h>
@@ -37,7 +40,7 @@ namespace librealsense
 {
 
 
-class d555e_device
+class d555_device
     : public d500_active
     , public d500_color
     , public d500_motion
@@ -45,7 +48,7 @@ class d555e_device
     , public extended_firmware_logger_device
 {
 public:
-    d555e_device( std::shared_ptr< const d500_info > dev_info )
+    d555_device( std::shared_ptr< const d500_info > dev_info )
         : device( dev_info )
         , backend_device( dev_info )
         , d500_device( dev_info )
@@ -57,8 +60,23 @@ public:
                                            d500_device::_hw_monitor,
                                            get_firmware_logs_command() )
     {
-        auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>( d500_device::_hw_monitor, ds::LASERONCONST, ds::LASERONCONST);
-        get_depth_sensor().register_option(RS2_OPTION_EMITTER_ALWAYS_ON,emitter_always_on_opt);
+        auto & depth_sensor = get_depth_sensor();
+        group_multiple_fw_calls(depth_sensor, [&]()
+        {
+            auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>( d500_device::_hw_monitor,
+                                                                                     ds::LASERONCONST, ds::LASERONCONST);
+            depth_sensor.register_option( RS2_OPTION_EMITTER_ALWAYS_ON, emitter_always_on_opt );
+
+            auto thermal_compensation_toggle = std::make_shared< d500_thermal_compensation_option >( d500_device::_hw_monitor );
+
+            // Monitoring SOC PVT (not OHM) because it correlates to D400 ASIC temperature and we keep the model the same.
+            auto temperature_sensor = depth_sensor.get_option_handler( RS2_OPTION_SOC_PVT_TEMPERATURE );
+
+            _thermal_monitor = std::make_shared< ds_thermal_monitor >( temperature_sensor, thermal_compensation_toggle );
+
+            depth_sensor.register_option( RS2_OPTION_THERMAL_COMPENSATION,
+                                          std::make_shared< thermal_compensation >( _thermal_monitor, thermal_compensation_toggle ) );
+        } );  // group_multiple_fw_calls
     }
 
     std::shared_ptr< matcher > create_matcher( const frame_holder & frame ) const override
@@ -76,13 +94,13 @@ public:
         std::vector< tagged_profile > tags;
 
         tags.push_back( { RS2_STREAM_COLOR, -1,
-                          848, 480, RS2_FORMAT_RGB8, 30,
+                          896, 504, RS2_FORMAT_RGB8, 30,
                           profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT } );
         tags.push_back( { RS2_STREAM_DEPTH, -1,
-                          848, 480, RS2_FORMAT_Z16, 30,
+                          896, 504, RS2_FORMAT_Z16, 30,
                           profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT } );
         tags.push_back( { RS2_STREAM_INFRARED, -1,
-                          848, 480, RS2_FORMAT_Y8, 30,
+                          896, 504, RS2_FORMAT_Y8, 30,
                           profile_tag::PROFILE_TAG_SUPERSET } );
         tags.push_back( { RS2_STREAM_GYRO, -1,
                           0, 0, RS2_FORMAT_MOTION_XYZ32F, (int)odr::IMU_FPS_200,
@@ -120,8 +138,8 @@ public:
         auto pid = _group.uvc_devices.front().pid;
         switch( pid )
         {
-        case ds::D555E_PID:
-            return std::make_shared< d555e_device >( dev_info );
+        case ds::D555_PID:
+            return std::make_shared< d555_device >( dev_info );
 
         default:
             throw std::runtime_error( rsutils::string::from() << "unsupported D500 PID 0x" << hexdump( pid ) );
@@ -143,22 +161,11 @@ public:
             auto& devices = g.first;
             auto& hids = g.second;
 
-            bool all_sensors_present = mi_present(devices, 0);
+            bool is_mi_0_present = mi_present(devices, 0);
 
             // Device with multi sensors can be enabled only if all sensors (RGB + Depth) are present
             auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::d500_multi_sensors_pid), 
                 std::end(ds::d500_multi_sensors_pid), pid) != std::end(ds::d500_multi_sensors_pid); };
-            bool is_device_multisensor = false;
-            for (auto&& uvc : devices)
-            {
-                if (is_pid_of_multisensor_device(uvc.pid))
-                    is_device_multisensor = true;
-            }
-
-            if(is_device_multisensor)
-            {
-                all_sensors_present = all_sensors_present && mi_present(devices, 3);
-            }
 
 
 #if !defined(__APPLE__) // Not supported by macos
@@ -170,16 +177,9 @@ public:
                 if (is_pid_of_hid_sensor_device(uvc.pid))
                     is_device_hid_sensor = true;
             }
-
-            // Device with hids can be enabled only if both hids (gyro and accelerometer) are present
-            // Assuming that hids amount of 2 and above guarantee that gyro and accelerometer are present
-            if (is_device_hid_sensor)
-            {
-                all_sensors_present &= (hids.size() >= 2);
-            }
 #endif
 
-            if (!devices.empty() && all_sensors_present)
+            if (!devices.empty() && is_mi_0_present)
             {
                 platform::usb_device_info hwm;
 
