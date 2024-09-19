@@ -125,7 +125,7 @@ m420_to_rgb::~m420_to_rgb()
                 cleanup_gpu_resources();
             }, [] {});
     }
-    catch (std::bad_weak_ptr)
+    catch (...)
     {
     }
 }
@@ -163,7 +163,7 @@ rs2::frame m420_to_rgb::process_frame(const rs2::frame_source& src, const rs2::f
         
         auto gf = dynamic_cast<gpu_addon_interface*>((frame_interface*)res.get());
         if (!gf) 
-            throw std::bad_cast();
+            throw invalid_value_exception("null pointer recieved from dynamic pointer casting.");
         
         uint32_t yuy_texture;
         

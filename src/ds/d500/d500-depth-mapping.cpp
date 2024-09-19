@@ -102,7 +102,7 @@ namespace librealsense
                 // getting access to safety sensor api
                 auto safety_device = dynamic_cast<d500_safety*>(this);
                 if (!safety_device)
-                    throw std::bad_cast();
+                    throw invalid_value_exception("null pointer recieved from dynamic pointer casting.");
                 auto& safety_sensor = dynamic_cast<d500_safety_sensor&>(safety_device->get_safety_sensor());
                 
                 // Pull extrinsic from safety interface config, according to HKR 0.9 QS
