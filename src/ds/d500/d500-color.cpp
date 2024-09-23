@@ -63,6 +63,11 @@ namespace librealsense
 
         std::vector<platform::uvc_device_info> color_devs_info = filter_by_mi(group.uvc_devices, 3);
 
+        if ( color_devs_info.empty() )
+        {
+            throw backend_exception("cannot access color sensor", RS2_EXCEPTION_TYPE_BACKEND);
+        }
+
         std::unique_ptr< frame_timestamp_reader > ds_timestamp_reader_backup( new ds_timestamp_reader() );
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds_timestamp_reader_backup)));
 

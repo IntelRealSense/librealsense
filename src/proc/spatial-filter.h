@@ -48,6 +48,7 @@ namespace librealsense
 
             // Disparity domain hole filling requires a second pass over the frame data
             // For depth domain a more efficient in-place hole filling is performed
+            // No need to lock the '_holes_filling_mode' or '_holes_filling_radius' as they are locked at the processing block scope
             if (_holes_filling_mode && fp)
                 intertial_holes_fill<T>(static_cast<T*>(frame_data));
         }
