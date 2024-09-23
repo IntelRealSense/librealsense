@@ -13,20 +13,54 @@ namespace librealsense
     class pin
     {
     public:
+        enum class Direction : uint8_t
+        {
+            In = 0,
+            Out = 1
+        };
+
+        enum class Functionality : uint8_t
+        {
+            pGND = 0,
+            p24VDC = 1,
+            pOSSD1_A = 2,
+            pOSSD1_B = 3,
+            pOSSD2_A = 4,
+            pOSSD2_B = 5,
+            pOSSD2_A_Feedback = 6,
+            pOSSD2_B_Feedback = 7,
+            pPresetSelect1_A = 8,
+            pPresetSelect1_B = 9,
+            pPresetSelect2_A = 10,
+            pPresetSelect2_B = 11,
+            pPresetSelect3_A = 12,
+            pPresetSelect3_B = 13,
+            pPresetSelect4_A = 14,
+            pPresetSelect4_B = 15,
+            pPresetSelect5_A = 16,
+            pPresetSelect5_B = 17,
+            pPresetSelect6_A = 18,
+            pPresetSelect6_B = 19,
+            pDeviceReady = 20,
+            pError = 21,
+            pReset = 22,
+            pRestartInterlock = 23
+        };
+
         pin() = default;
 
         pin(const json &j)
         {
             validate_json(j);
-            m_direction = j.at("direction");
-            m_functionality = j.at("functionality");
+            m_direction = string_to_direction(j.at("direction"));
+            m_functionality = string_to_functionality(j.at("functionality"));
         }
 
         json to_json() const
         {
             return {
-                {"direction", m_direction},
-                {"functionality", m_functionality}};
+                {"direction", direction_to_string(m_direction)},
+                {"functionality", functionality_to_string(m_functionality)}};
         }
 
     private:
@@ -45,8 +79,141 @@ namespace librealsense
             }
         }
 
-        uint8_t m_direction;
-        uint8_t m_functionality;
+        Direction string_to_direction(const std::string &dir) const
+        {
+            if (dir == "In")
+                return Direction::In;
+            else if (dir == "Out")
+                return Direction::Out;
+            else
+                throw std::invalid_argument("Invalid direction: " + dir);
+        }
+
+        std::string direction_to_string(Direction dir) const
+        {
+            switch (dir)
+            {
+            case Direction::In:
+                return "In";
+            case Direction::Out:
+                return "Out";
+            default:
+                throw std::invalid_argument("Invalid direction value");
+            }
+        }
+
+        Functionality string_to_functionality(const std::string &func) const
+        {
+            if (func == "pGND")
+                return Functionality::pGND;
+            if (func == "p24VDC")
+                return Functionality::p24VDC;
+            if (func == "pOSSD1_A")
+                return Functionality::pOSSD1_A;
+            if (func == "pOSSD1_B")
+                return Functionality::pOSSD1_B;
+            if (func == "pOSSD2_A")
+                return Functionality::pOSSD2_A;
+            if (func == "pOSSD2_B")
+                return Functionality::pOSSD2_B;
+            if (func == "pOSSD2_A_Feedback")
+                return Functionality::pOSSD2_A_Feedback;
+            if (func == "pOSSD2_B_Feedback")
+                return Functionality::pOSSD2_B_Feedback;
+            if (func == "pPresetSelect1_A")
+                return Functionality::pPresetSelect1_A;
+            if (func == "pPresetSelect1_B")
+                return Functionality::pPresetSelect1_B;
+            if (func == "pPresetSelect2_A")
+                return Functionality::pPresetSelect2_A;
+            if (func == "pPresetSelect2_B")
+                return Functionality::pPresetSelect2_B;
+            if (func == "pPresetSelect3_A")
+                return Functionality::pPresetSelect3_A;
+            if (func == "pPresetSelect3_B")
+                return Functionality::pPresetSelect3_B;
+            if (func == "pPresetSelect4_A")
+                return Functionality::pPresetSelect4_A;
+            if (func == "pPresetSelect4_B")
+                return Functionality::pPresetSelect4_B;
+            if (func == "pPresetSelect5_A")
+                return Functionality::pPresetSelect5_A;
+            if (func == "pPresetSelect5_B")
+                return Functionality::pPresetSelect5_B;
+            if (func == "pPresetSelect6_A")
+                return Functionality::pPresetSelect6_A;
+            if (func == "pPresetSelect6_B")
+                return Functionality::pPresetSelect6_B;
+            if (func == "pDeviceReady")
+                return Functionality::pDeviceReady;
+            if (func == "pError")
+                return Functionality::pError;
+            if (func == "pReset")
+                return Functionality::pReset;
+            if (func == "pRestartInterlock")
+                return Functionality::pRestartInterlock;
+            throw std::invalid_argument("Invalid functionality: " + func);
+        }
+
+        std::string functionality_to_string(Functionality func) const
+        {
+            switch (func)
+            {
+            case Functionality::pGND:
+                return "pGND";
+            case Functionality::p24VDC:
+                return "p24VDC";
+            case Functionality::pOSSD1_A:
+                return "pOSSD1_A";
+            case Functionality::pOSSD1_B:
+                return "pOSSD1_B";
+            case Functionality::pOSSD2_A:
+                return "pOSSD2_A";
+            case Functionality::pOSSD2_B:
+                return "pOSSD2_B";
+            case Functionality::pOSSD2_A_Feedback:
+                return "pOSSD2_A_Feedback";
+            case Functionality::pOSSD2_B_Feedback:
+                return "pOSSD2_B_Feedback";
+            case Functionality::pPresetSelect1_A:
+                return "pPresetSelect1_A";
+            case Functionality::pPresetSelect1_B:
+                return "pPresetSelect1_B";
+            case Functionality::pPresetSelect2_A:
+                return "pPresetSelect2_A";
+            case Functionality::pPresetSelect2_B:
+                return "pPresetSelect2_B";
+            case Functionality::pPresetSelect3_A:
+                return "pPresetSelect3_A";
+            case Functionality::pPresetSelect3_B:
+                return "pPresetSelect3_B";
+            case Functionality::pPresetSelect4_A:
+                return "pPresetSelect4_A";
+            case Functionality::pPresetSelect4_B:
+                return "pPresetSelect4_B";
+            case Functionality::pPresetSelect5_A:
+                return "pPresetSelect5_A";
+            case Functionality::pPresetSelect5_B:
+                return "pPresetSelect5_B";
+            case Functionality::pPresetSelect6_A:
+                return "pPresetSelect6_A";
+            case Functionality::pPresetSelect6_B:
+                return "pPresetSelect6_B";
+            case Functionality::pDeviceReady:
+                return "pDeviceReady";
+            case Functionality::pError:
+                return "pError";
+            case Functionality::pReset:
+                return "pReset";
+            case Functionality::pRestartInterlock:
+                return "pRestartInterlock";
+            default:
+                throw std::invalid_argument("Invalid functionality value");
+            }
+        }
+
+        Direction m_direction;
+        Functionality m_functionality;
     };
 
     class m12_safety_pins_configuration
@@ -118,15 +285,15 @@ namespace librealsense
         pin m_power;
         pin m_ossd1_b;
         pin m_ossd1_a;
-        pin m_gpio_0;
-        pin m_gpio_1;
-        pin m_gpio_2;
-        pin m_gpio_3;
         pin m_preset3_a;
         pin m_preset3_b;
         pin m_preset4_a;
         pin m_preset1_b;
         pin m_preset1_a;
+        pin m_gpio_0;
+        pin m_gpio_1;
+        pin m_gpio_3;
+        pin m_gpio_2;
         pin m_preset2_b;
         pin m_gpio_4;
         pin m_preset2_a;

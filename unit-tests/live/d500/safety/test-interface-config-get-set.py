@@ -11,96 +11,96 @@ from rspy import test, log, devices
 from rspy import tests_wrapper as tw
 import json
 
-valid_sic_table_as_json_str = '''
+valid_sic_table_as_json_str = """
 {
     "safety_interface_config":
     {
-        "m12_safety_pins_configuration": 
+        "m12_safety_pins_configuration":
         {
             "power":
             {
-                "direction": 0,
-                "functionality": 1
+                "direction": "In",
+                "functionality": "p24VDC"
             },
             "ossd1_b":
             {
-                "direction": 1,
-                "functionality": 3
+                "direction": "Out",
+                "functionality": "pOSSD1_B"
             },
             "ossd1_a":
             {
-                "direction": 1,
-                "functionality": 2
-            },
-            "gpio_0":
-            {
-                "direction": 0,
-                "functionality": 16
-            },
-            "gpio_1":
-            {
-                "direction": 0,
-                "functionality": 17
-            },
-            "gpio_2":
-            {
-                "direction": 0,
-                "functionality": 18
-            },
-            "gpio_3":
-            {
-                "direction": 0,
-                "functionality": 19
+                "direction": "Out",
+                "functionality": "pOSSD1_A"
             },
             "preset3_a":
             {
-                "direction": 0,
-                "functionality": 12
+                "direction": "In",
+                "functionality": "pPresetSelect3_A"
             },
             "preset3_b":
             {
-                "direction": 0,
-                "functionality": 13
+                "direction": "In",
+                "functionality": "pPresetSelect3_B"
             },
             "preset4_a":
             {
-                "direction": 0,
-                "functionality": 14
+                "direction": "In",
+                "functionality": "pPresetSelect4_A"
             },
             "preset1_b":
             {
-                "direction": 0,
-                "functionality": 9
+                "direction": "In",
+                "functionality": "pPresetSelect1_B"
             },
             "preset1_a":
             {
-                "direction": 0,
-                "functionality": 8
+                "direction": "In",
+                "functionality": "pPresetSelect1_A"
+            },
+            "gpio_0":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect5_A"
+            },
+            "gpio_1":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect5_B"
+            },
+            "gpio_3":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect6_B"
+            },
+            "gpio_2":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect6_A"
             },
             "preset2_b":
             {
-                "direction": 0,
-                "functionality": 11
+                "direction": "In",
+                "functionality": "pPresetSelect2_B"
             },
             "gpio_4":
             {
-                "direction": 1,
-                "functionality": 21
+                "direction": "Out",
+                "functionality": "pDeviceReady"
             },
             "preset2_a":
             {
-                "direction": 0,
-                "functionality": 10
+                "direction": "In",
+                "functionality": "pPresetSelect2_A"
             },
             "preset4_b":
             {
-                "direction": 0,
-                "functionality": 15
+                "direction": "In",
+                "functionality": "pPresetSelect4_B"
             },
             "ground":
             {
-                "direction": 0,
-                "functionality": 0
+                "direction": "In",
+                "functionality": "pGND"
             }
         },
         "gpio_stabilization_interval" : 150,
@@ -124,9 +124,9 @@ valid_sic_table_as_json_str = '''
         "smcu_arbitration_params":
         {
             "l_0_total_threshold": 100,
-            "l_0_sustained_rate_threshold": 10,
+            "l_0_sustained_rate_threshold": 20,
             "l_1_total_threshold": 100,
-            "l_1_sustained_rate_threshold": 10,
+            "l_1_sustained_rate_threshold": 20,
             "l_2_total_threshold": 10,
             "hkr_stl_timeout": 15,
             "mcu_stl_timeout": 10,
@@ -136,12 +136,12 @@ valid_sic_table_as_json_str = '''
         "crypto_signature": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     }
 }
-'''
+"""
 
 def change_config(sic_table_as_json_str):
-  sic_as_json_object = json.loads(json_string)
-  sic_as_json_object["smcu_arbitration_params"]["l_0_total_threshold"] = 90
-  sic_as_json_object["occupancy_grid_params"]["mid_range_quorum"] = 7
+  sic_as_json_object = json.loads(sic_table_as_json_str)
+  sic_as_json_object["safety_interface_config"]["smcu_arbitration_params"]["l_0_total_threshold"] = 90
+  sic_as_json_object["safety_interface_config"]["occupancy_grid_params"]["mid_range_quorum"] = 7
   return json.dumps(sic_as_json_object)
 
 #############################################################################################
@@ -177,7 +177,7 @@ json_we_read = json.loads(config_we_read)
 print(json_we_read)
 
 # checking the requested config has been written to the device
-test.check_equal(json_we_write, json_we_read)
+test.check_equal_jsons(json_we_write, json_we_read)
 test.finish()
 
 #############################################################################################
@@ -205,10 +205,10 @@ print(json_we_write)
 
 log.d("config after reboot:")
 json_we_read_after_reboot = json.loads(config_we_read)
-print_config(json_we_read_after_reboot)
+print(json_we_read_after_reboot)
 
 # checking our last write stay the same after reboot
-test.check_equal(json_we_write, json_we_read_after_reboot)
+test.check_equal_jsons(json_we_write, json_we_read_after_reboot)
 
 test.finish()
 
