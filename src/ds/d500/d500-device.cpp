@@ -388,7 +388,14 @@ namespace librealsense
         using namespace ds;
 
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
-        for( auto & info : filter_by_mi( all_device_infos, 0 ) )  // Filter just mi=0, DEPTH
+        auto depth_devs_info = filter_by_mi( all_device_infos, 0 );
+
+        if ( depth_devs_info.empty() )
+        {
+            throw backend_exception("cannot access depth sensor", RS2_EXCEPTION_TYPE_BACKEND);
+        }
+
+        for( auto & info : depth_devs_info )  // Filter just mi=0, DEPTH
             depth_devices.push_back( get_backend()->create_uvc_device( info ) );
 
         std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
