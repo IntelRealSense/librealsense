@@ -2,6 +2,7 @@
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #test:device D585S
+#test:priority 9
 
 import pyrealsense2 as rs
 import random
@@ -41,7 +42,7 @@ valid_sp_json_str = """
                     [-1.0,  0.0,  0.0],
                     [ 0.0, -1.0,  0.0]
                 ],
-                "translation": [0.0, 0.0, 0.28]
+                "translation": [0.0, 0.0, 0.27]
             },
             "robot_height": 1.0
         },
@@ -74,8 +75,8 @@ valid_sp_json_str = """
         {
             "0":
             {
-                "attributes": 1,
-                "minimal_range": 0,
+                "attributes": 0,
+                "minimal_range": 0.5,
                 "region_of_interests":
                 {
                     "vertex_0": [0, 0],
@@ -86,74 +87,74 @@ valid_sp_json_str = """
             },
             "1":
             {
-                "attributes": 1,
-                "minimal_range": 0,
+                "attributes": 0,
+                "minimal_range": 0.5,
                 "region_of_interests":
                 {
                     "vertex_0": [0, 0],
-                    "vertex_1": [0, 0],
-                    "vertex_2": [0, 0],
-                    "vertex_3": [0, 0]
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
                 }
             },
             "2":
             {
-                "attributes": 1,
-                "minimal_range": 0,
+                "attributes": 0,
+                "minimal_range": 0.5,
                 "region_of_interests":
                 {
                     "vertex_0": [0, 0],
-                    "vertex_1": [0, 0],
-                    "vertex_2": [0, 0],
-                    "vertex_3": [0, 0]
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
                 }
             },
             "3":
             {
-                "attributes": 1,
-                "minimal_range": 0,
+                "attributes": 0,
+                "minimal_range": 0.5,
                 "region_of_interests":
                 {
                     "vertex_0": [0, 0],
-                    "vertex_1": [0, 0],
-                    "vertex_2": [0, 0],
-                    "vertex_3": [0, 0]
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
                 }
             },
             "4":
             {
-                "attributes": 1,
-                "minimal_range": 0,
+                "attributes": 0,
+                "minimal_range": 0.5,
                 "region_of_interests":
                 {
                     "vertex_0": [0, 0],
-                    "vertex_1": [0, 0],
-                    "vertex_2": [0, 0],
-                    "vertex_3": [0, 0]
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
                 }
             },
             "5":
             {
-                "attributes": 1,
-                "minimal_range": 0,
+                "attributes": 0,
+                "minimal_range": 0.5,
                 "region_of_interests":
                 {
                     "vertex_0": [0, 0],
-                    "vertex_1": [0, 0],
-                    "vertex_2": [0, 0],
-                    "vertex_3": [0, 0]
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
                 }
             },
             "6":
             {
-                "attributes": 1,
-                "minimal_range": 0,
+                "attributes": 0,
+                "minimal_range": 0.5,
                 "region_of_interests":
                 {
                     "vertex_0": [0, 0],
-                    "vertex_1": [0, 0],
-                    "vertex_2": [0, 0],
-                    "vertex_3": [0, 0]
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
                 }
             },
             "7":
@@ -162,10 +163,10 @@ valid_sp_json_str = """
                 "minimal_range": 0,
                 "region_of_interests":
                 {
-                    "vertex_0": [0, 0],
-                    "vertex_1": [0, 0],
-                    "vertex_2": [0, 0],
-                    "vertex_3": [0, 0]
+                    "vertex_0": [500, 3300],
+                    "vertex_1": [800, 3300],
+                    "vertex_2": [800, 3100],
+                    "vertex_3": [500, 3100]
                 }
             }
         },
@@ -179,10 +180,10 @@ valid_sp_json_str = """
             "payload_weight" : 0.0,
             "surface_inclination" : 15.0,
             "surface_height" : 0.05,
-            "diagnostic_zone_fill_rate_threshold" : 90,
-            "floor_fill_threshold" : 90,
-            "depth_fill_threshold" : 90,
-            "diagnostic_zone_height_median_threshold" : 90,
+            "diagnostic_zone_fill_rate_threshold" : 255,
+            "floor_fill_threshold" : 255,
+            "depth_fill_threshold" : 255,
+            "diagnostic_zone_height_median_threshold" : 255,
             "vision_hara_persistency" : 1,
             "crypto_signature" : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         }
