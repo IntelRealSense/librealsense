@@ -36,7 +36,7 @@ namespace librealsense
      *             The metric shall be tracked in S.MCU to establish whether the SM failed to provide an update in a predefined manner
      *
      *         TC Consecutives failures threshold (uint8_t)
-     *             Range [1�255], Default = 3
+     *             Range [1-255], Default = 3
      *             Value 255 shall be used as infinite number (never fail)
      * 
      *         Reserved    64    uint8_t[64]    zero-ed
