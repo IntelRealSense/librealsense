@@ -43,12 +43,12 @@ jobs:
     steps:
 
       - name: setup ROS environment
-        uses: ros-tooling/setup-ros@a6ce30ecca1e5dcc10ae5e6a44fe2169115bf852
+        uses: ros-tooling/setup-ros@a6ce30ecca1e5dcc10ae5e6a44fe2169115bf852 #v0.7
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
 
       - name: build librealsense ROS 2
-        uses: ros-tooling/action-ros-ci@0c87ffc035492b66c9afb9159ca9664fb0b513e1
+        uses: ros-tooling/action-ros-ci@0c87ffc035492b66c9afb9159ca9664fb0b513e1 #v0.3
         with:
           target-ros2-distro: ${{ matrix.ros_distribution }}
           skip-tests: true
