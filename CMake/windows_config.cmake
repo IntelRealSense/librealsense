@@ -40,6 +40,34 @@ macro(os_set_flags)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
 
+        ###############
+        # According to SDLE we need to add the following flags for additional security:
+        # Debug & Release:
+        # /Gy: Enables function-level linking to reduce executable size.
+        # /DYNAMICBASE: Enables Address Space Layout Randomization (ASLR) to improve security.
+        # /GS: Enables buffer security checks to prevent buffer overflows.
+
+        # Release only:
+        # /WX: Treats all warnings as errors.
+        # /LTCG (/GL): Enables Link Time Code Generation to improve performance.
+        # /sdl: Enables additional security checks.
+        # /NXCOMPAT: Enables Data Execution Prevention (DEP) to prevent code execution in data areas.	
+		
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy /DYNAMICBASE /GS") 
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy /DYNAMICBASE /GS")
+		
+        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+            message(STATUS "Configuring for Debug build")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        else() # Release, RelWithDebInfo, or multi configuration generator is being used (aka not specifing build type, or building with VS)
+            message(STATUS "Configuring for Release build")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX /sdl") 
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX /sdl")
+            set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} /INCREMENTAL:NO /LTCG /NXCOMPAT") # ignoring '/INCREMENTAL' due to '/LTCG' specification
+        endif()
+		
+        #################
+        
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /wd4819")
         set(LRS_TRY_USE_AVX true)
         add_definitions(-D_UNICODE)
