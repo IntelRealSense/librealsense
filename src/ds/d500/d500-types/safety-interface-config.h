@@ -68,13 +68,13 @@ namespace librealsense
         {
             if (!j.is_object())
             {
-                throw std::invalid_argument("Invalid pin format");
+                throw librealsense::invalid_value_exception("Invalid pin format");
             }
             for (const auto &field : {"direction", "functionality"})
             {
                 if (!j.contains(field))
                 {
-                    throw std::invalid_argument(std::string("Invalid pin format: missing field: ") + field);
+                    throw librealsense::invalid_value_exception(std::string("Invalid pin format: missing field: ") + field);
                 }
             }
         }
@@ -86,7 +86,7 @@ namespace librealsense
             else if (dir == "Out")
                 return Direction::Out;
             else
-                throw std::invalid_argument("Invalid direction: " + dir);
+                throw librealsense::invalid_value_exception("Invalid direction: " + dir);
         }
 
         std::string direction_to_string(Direction dir) const
@@ -98,7 +98,7 @@ namespace librealsense
             case Direction::Out:
                 return "Out";
             default:
-                throw std::invalid_argument("Invalid direction value");
+                throw librealsense::invalid_value_exception("Invalid direction value");
             }
         }
 
@@ -152,7 +152,7 @@ namespace librealsense
                 return Functionality::pReset;
             if (func == "pRestartInterlock")
                 return Functionality::pRestartInterlock;
-            throw std::invalid_argument("Invalid functionality: " + func);
+            throw librealsense::invalid_value_exception("Invalid functionality: " + func);
         }
 
         std::string functionality_to_string(Functionality func) const
@@ -208,7 +208,7 @@ namespace librealsense
             case Functionality::pRestartInterlock:
                 return "pRestartInterlock";
             default:
-                throw std::invalid_argument("Invalid functionality value");
+                throw librealsense::invalid_value_exception("Invalid functionality value");
             }
         }
 
@@ -271,13 +271,13 @@ namespace librealsense
         {
             if (!j.is_object())
             {
-                throw std::invalid_argument("Invalid m12_safety_pins_configuration format");
+                throw librealsense::invalid_value_exception("Invalid m12_safety_pins_configuration format");
             }
             for (const auto &field : {"power", "ossd1_b", "ossd1_a", "gpio_0", "gpio_1", "gpio_2", "gpio_3", "preset3_a", "preset3_b", "preset4_a", "preset1_b", "preset1_a", "preset2_b", "gpio_4", "preset2_a", "preset4_b", "ground"})
             {
                 if (!j.contains(field))
                 {
-                    throw std::invalid_argument(std::string("Invalid m12_safety_pins_configuration format: missing field: ") + field);
+                    throw librealsense::invalid_value_exception(std::string("Invalid m12_safety_pins_configuration format: missing field: ") + field);
                 }
             }
         }
@@ -330,13 +330,13 @@ namespace librealsense
         {
             if (!j.is_object())
             {
-                throw std::invalid_argument("Invalid occupancy_grid_params format");
+                throw librealsense::invalid_value_exception("Invalid occupancy_grid_params format");
             }
             for (const auto &field : {"grid_cell_seed", "close_range_quorum", "mid_range_quorum", "long_range_quorum"})
             {
                 if (!j.contains(field))
                 {
-                    throw std::invalid_argument(std::string("Invalid occupancy_grid_params format: missing field: ") + field);
+                    throw librealsense::invalid_value_exception(std::string("Invalid occupancy_grid_params format: missing field: ") + field);
                 }
             }
         }
@@ -386,13 +386,13 @@ namespace librealsense
         {
             if (!j.is_object())
             {
-                throw std::invalid_argument("Invalid smcu_arbitration_params format");
+                throw librealsense::invalid_value_exception("Invalid smcu_arbitration_params format");
             }
             for (const auto &field : {"l_0_total_threshold", "l_0_sustained_rate_threshold", "l_1_total_threshold", "l_1_sustained_rate_threshold", "l_2_total_threshold", "hkr_stl_timeout", "mcu_stl_timeout", "sustained_aicv_frame_drops", "ossd_self_test_pulse_width"})
             {
                 if (!j.contains(field))
                 {
-                    throw std::invalid_argument(std::string("Invalid smcu_arbitration_params format: missing field: ") + field);
+                    throw librealsense::invalid_value_exception(std::string("Invalid smcu_arbitration_params format: missing field: ") + field);
                 }
             }
         }
@@ -445,7 +445,7 @@ namespace librealsense
         {
             if (!j.is_object())
             {
-                throw std::invalid_argument("Invalid safety_interface_config format: not a JSON object");
+                throw librealsense::invalid_value_exception("Invalid safety_interface_config format: not a JSON object");
             }
 
             // Check for all required fields
@@ -461,50 +461,50 @@ namespace librealsense
             {
                 if (!j.contains(field))
                 {
-                    throw std::invalid_argument("Invalid safety_interface_config format: missing field: " + field);
+                    throw librealsense::invalid_value_exception("Invalid safety_interface_config format: missing field: " + field);
                 }
             }
 
             // Validate m12_safety_pins_configuration
             if (!j["m12_safety_pins_configuration"].is_object())
             {
-                throw std::invalid_argument("Invalid format: m12_safety_pins_configuration must be a JSON object");
+                throw librealsense::invalid_value_exception("Invalid format: m12_safety_pins_configuration must be a JSON object");
             }
 
             // Validate gpio_stabilization_interval
             if (!j["gpio_stabilization_interval"].is_number_unsigned())
             {
-                throw std::invalid_argument("Invalid format: gpio_stabilization_interval must be an unsigned number");
+                throw librealsense::invalid_value_exception("Invalid format: gpio_stabilization_interval must be an unsigned number");
             }
 
             // Validate camera_position
             if (!j["camera_position"].is_object()) // Assuming camera_position is a complex object
             {
-                throw std::invalid_argument("Invalid format: camera_position must be a JSON object");
+                throw librealsense::invalid_value_exception("Invalid format: camera_position must be a JSON object");
             }
 
             // Validate occupancy_grid_params
             if (!j["occupancy_grid_params"].is_object())
             {
-                throw std::invalid_argument("Invalid format: occupancy_grid_params must be a JSON object");
+                throw librealsense::invalid_value_exception("Invalid format: occupancy_grid_params must be a JSON object");
             }
 
             // Validate smcu_arbitration_params
             if (!j["smcu_arbitration_params"].is_object())
             {
-                throw std::invalid_argument("Invalid format: smcu_arbitration_params must be a JSON object");
+                throw librealsense::invalid_value_exception("Invalid format: smcu_arbitration_params must be a JSON object");
             }
 
             // Validate crypto_signature (should be an array of 32 elements)
             if (!j["crypto_signature"].is_array() || j["crypto_signature"].size() != 32)
             {
-                throw std::invalid_argument("Invalid format: crypto_signature must be an array of 32 unsigned integers");
+                throw librealsense::invalid_value_exception("Invalid format: crypto_signature must be an array of 32 unsigned integers");
             }
             for (const auto &val : j["crypto_signature"])
             {
                 if (!val.is_number_unsigned())
                 {
-                    throw std::invalid_argument("Invalid format: crypto_signature contains non-unsigned values");
+                    throw librealsense::invalid_value_exception("Invalid format: crypto_signature contains non-unsigned values");
                 }
             }
         }

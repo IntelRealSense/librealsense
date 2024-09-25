@@ -35,17 +35,17 @@ namespace librealsense
         {
             if (!j.is_object() || j.size() != 2)
             {
-                throw std::invalid_argument(
+                throw librealsense::invalid_value_exception(
                     "Invalid platform_config format: platform_config must include 'transformation_link' "
                     "and 'robot_height'");
             }
             if (!j.at("transformation_link").is_object())
             {
-                throw std::invalid_argument("Invalid transformation_link format");
+                throw librealsense::invalid_value_exception("Invalid transformation_link format");
             }
             if (!j.at("robot_height").is_number_float())
             {
-                throw std::invalid_argument("Invalid robot_height type: robot_height must be float number");
+                throw librealsense::invalid_value_exception("Invalid robot_height type: robot_height must be float number");
             }
         }
 
@@ -119,13 +119,13 @@ namespace librealsense
         {
             if (!j.is_object())
             {
-                throw std::invalid_argument("Invalid zone_polygon format");
+                throw librealsense::invalid_value_exception("Invalid zone_polygon format");
             }
             for (const auto &field : {"p0", "p1", "p2", "p3"})
             {
                 if (!j.contains(field))
                 {
-                    throw std::invalid_argument(std::string("Invalid zone_polygon format: missing field: ") + field);
+                    throw librealsense::invalid_value_exception(std::string("Invalid zone_polygon format: missing field: ") + field);
                 }
             }
         }
@@ -162,13 +162,13 @@ namespace librealsense
         {
             if (!j.is_object())
             {
-                throw std::invalid_argument("Invalid safety zone format");
+                throw librealsense::invalid_value_exception("Invalid safety zone format");
             }
             for (const auto &field : {"zone_polygon", "safety_trigger_confidence"})
             {
                 if (!j.contains(field))
                 {
-                    throw std::invalid_argument(std::string("Invalid safety zone format: missing field: ") + field);
+                    throw librealsense::invalid_value_exception(std::string("Invalid safety zone format: missing field: ") + field);
                 }
             }
         };
@@ -204,13 +204,13 @@ namespace librealsense
         {
             if (!j.is_object())
             {
-                throw std::invalid_argument("Invalid safety zones format");
+                throw librealsense::invalid_value_exception("Invalid safety zones format");
             }
             for (const auto &field : {"danger_zone", "warning_zone"})
             {
                 if (!j.contains(field))
                 {
-                    throw std::invalid_argument(std::string("Invalid safety zone format: missing field: ") + field);
+                    throw librealsense::invalid_value_exception(std::string("Invalid safety zone format: missing field: ") + field);
                 }
             }
         }
@@ -246,13 +246,13 @@ namespace librealsense
         {
             if (!j.is_object())
             {
-                throw std::invalid_argument("Invalid masking zone format");
+                throw librealsense::invalid_value_exception("Invalid masking zone format");
             }
             for (const auto &field : {"attributes", "minimal_range", "region_of_interests"})
             {
                 if (!j.contains(field))
                 {
-                    throw std::invalid_argument(std::string("Invalid masking zone format: missing field: ") + field);
+                    throw librealsense::invalid_value_exception(std::string("Invalid masking zone format: missing field: ") + field);
                 }
             }
         }
@@ -293,13 +293,13 @@ namespace librealsense
         {
             if (!j.is_object())
             {
-                throw std::invalid_argument("Invalid masking zones format");
+                throw librealsense::invalid_value_exception("Invalid masking zones format");
             }
             for (const auto &field : {"0", "1", "2", "3", "4", "5", "6", "7"})
             {
                 if (!j.contains(field))
                 {
-                    throw std::invalid_argument(std::string("Invalid masking zones format: missing field: ") + field);
+                    throw librealsense::invalid_value_exception(std::string("Invalid masking zones format: missing field: ") + field);
                 }
             }
         }
@@ -358,7 +358,7 @@ namespace librealsense
         {
             if (!j.is_object() || j.size() != 13)
             {
-                throw std::invalid_argument(
+                throw librealsense::invalid_value_exception(
                     "Invalid environment format: environment must include 'safety_trigger_duration', "
                     "'zero_safety_monitoring', 'hara_history_continuation', 'angular_velocity', 'payload_weight', 'surface_inclination', "
                     "'surface_height', 'diagnostic_zone_fill_rate_threshold', 'floor_fill_threshold', 'depth_fill_threshold', 'diagnostic_zone_height_median_threshold', "
@@ -366,61 +366,61 @@ namespace librealsense
             }
             if (!j.at("safety_trigger_duration").is_number_float())
             {
-                throw std::invalid_argument("Invalid environment type: safety_trigger_duration must be float number");
+                throw librealsense::invalid_value_exception("Invalid environment type: safety_trigger_duration must be float number");
             }
             if (!j.at("zero_safety_monitoring").is_number_unsigned())
             {
-                throw std::invalid_argument("Invalid environment type: roi_num_of_sezero_safety_monitoringgments must be unsigned number");
+                throw librealsense::invalid_value_exception("Invalid environment type: roi_num_of_sezero_safety_monitoringgments must be unsigned number");
             }
             if (!j.at("hara_history_continuation").is_number_unsigned())
             {
-                throw std::invalid_argument("Invalid environment type: hara_history_continuation must be unsigned number");
+                throw librealsense::invalid_value_exception("Invalid environment type: hara_history_continuation must be unsigned number");
             }
             if (!j.at("angular_velocity").is_number_float())
             {
-                throw std::invalid_argument("Invalid environment type: angular_velocity must be float number");
+                throw librealsense::invalid_value_exception("Invalid environment type: angular_velocity must be float number");
             }
             if (!j.at("payload_weight").is_number_float())
             {
-                throw std::invalid_argument("Invalid environment type: payload_weight must be float number");
+                throw librealsense::invalid_value_exception("Invalid environment type: payload_weight must be float number");
             }
             if (!j.at("surface_inclination").is_number_float())
             {
-                throw std::invalid_argument("Invalid environment type: surface_inclination must be float number");
+                throw librealsense::invalid_value_exception("Invalid environment type: surface_inclination must be float number");
             }
             if (!j.at("surface_height").is_number_float())
             {
-                throw std::invalid_argument("Invalid environment type: surface_height must be float number");
+                throw librealsense::invalid_value_exception("Invalid environment type: surface_height must be float number");
             }
             if (!j.at("diagnostic_zone_fill_rate_threshold").is_number_unsigned())
             {
-                throw std::invalid_argument("Invalid environment type: diagnostic_zone_fill_rate_threshold must be unsigned number");
+                throw librealsense::invalid_value_exception("Invalid environment type: diagnostic_zone_fill_rate_threshold must be unsigned number");
             }
             if (!j.at("floor_fill_threshold").is_number_unsigned())
             {
-                throw std::invalid_argument("Invalid environment type: floor_fill_threshold must be unsigned number");
+                throw librealsense::invalid_value_exception("Invalid environment type: floor_fill_threshold must be unsigned number");
             }
             if (!j.at("depth_fill_threshold").is_number_unsigned())
             {
-                throw std::invalid_argument("Invalid environment type: depth_fill_threshold must be unsigned number");
+                throw librealsense::invalid_value_exception("Invalid environment type: depth_fill_threshold must be unsigned number");
             }
             if (!j.at("diagnostic_zone_height_median_threshold").is_number_unsigned())
             {
-                throw std::invalid_argument("Invalid environment type: diagnostic_zone_height_median_threshold must be unsigned number");
+                throw librealsense::invalid_value_exception("Invalid environment type: diagnostic_zone_height_median_threshold must be unsigned number");
             }
             if (!j.at("vision_hara_persistency").is_number_unsigned())
             {
-                throw std::invalid_argument("Invalid environment type: vision_hara_persistency must be unsigned number");
+                throw librealsense::invalid_value_exception("Invalid environment type: vision_hara_persistency must be unsigned number");
             }
             if (!j.at("crypto_signature").is_array() || j.at("crypto_signature").size() != 32)
             {
-                throw std::invalid_argument("Invalid environment format: crypto_signature must be an array of size=32");
+                throw librealsense::invalid_value_exception("Invalid environment format: crypto_signature must be an array of size=32");
             }
             for (size_t i = 0; i < 32; ++i)
             {
                 if (!j.at("crypto_signature")[i].is_number_unsigned())
                 {
-                    throw std::invalid_argument("Invalid environment type: all elements in crypto_signature array must be unsigned integers");
+                    throw librealsense::invalid_value_exception("Invalid environment type: all elements in crypto_signature array must be unsigned integers");
                 }
             }
         }
@@ -481,25 +481,25 @@ namespace librealsense
         {
             if (!j.is_object() || j.size() != 4)
             {
-                throw std::invalid_argument(
+                throw librealsense::invalid_value_exception(
                     "Invalid safety_preset format: safety_preset must include 'platform_config', "
                     "'safety_zones', 'masking_zones', and 'environment'");
             }
             if (!j.at("platform_config").is_object())
             {
-                throw std::invalid_argument("Invalid platform_config format");
+                throw librealsense::invalid_value_exception("Invalid platform_config format");
             }
             if (!j.at("safety_zones").is_object())
             {
-                throw std::invalid_argument("Invalid safety_zones format");
+                throw librealsense::invalid_value_exception("Invalid safety_zones format");
             }
             if (!j.at("masking_zones").is_object())
             {
-                throw std::invalid_argument("Invalid masking_zones format");
+                throw librealsense::invalid_value_exception("Invalid masking_zones format");
             }
             if (!j.at("environment").is_object())
             {
-                throw std::invalid_argument("Invalid environment format");
+                throw librealsense::invalid_value_exception("Invalid environment format");
             }
         }
 
