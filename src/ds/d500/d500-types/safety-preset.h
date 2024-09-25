@@ -20,6 +20,11 @@ namespace librealsense
             validate_json(j);
             m_transformation_link = camera_position(j.at("transformation_link"));
             m_robot_height = j.at("robot_height").get<float>();
+
+            for (size_t i = 0; i < m_reserved.size(); ++i)
+            {
+                m_reserved[i] = j.at("reserved")[i].get<uint8_t>();
+            }
         }
 
         rsutils::json to_json()
@@ -27,16 +32,17 @@ namespace librealsense
             json j;
             j["transformation_link"] = m_transformation_link.to_json();
             j["robot_height"] = m_robot_height;
+            j["reserved"] = m_reserved;
             return j;
         }
 
     private:
         void validate_json(const json &j) const
         {
-            if (!j.is_object() || j.size() != 2)
+            if (!j.is_object() || j.size() != 3)
             {
                 throw librealsense::invalid_value_exception(
-                    "Invalid platform_config format: platform_config must include 'transformation_link' "
+                    "Invalid platform_config format: platform_config must include 'transformation_link', 'reserved' " 
                     "and 'robot_height'");
             }
             if (!j.at("transformation_link").is_object())
@@ -47,6 +53,18 @@ namespace librealsense
             {
                 throw librealsense::invalid_value_exception("Invalid robot_height type: robot_height must be float number");
             }
+            if (!j.at("reserved").is_array() || j.at("reserved").size() != 20)
+            {
+                throw librealsense::invalid_value_exception("Invalid reserved format: reserved must be an array of size=20");
+            }
+            for (size_t i = 0; i < 20; ++i)
+            {
+                if (!j.at("reserved")[i].is_number_unsigned())
+                {
+                    throw librealsense::invalid_value_exception("Invalid reserved format: all elements in reserved array must be unsigned integers");
+                }
+            }
+
         }
 
         camera_position m_transformation_link; // Camera extrinsics: rotation 3x3 matrix (row major) + translation vecotr
@@ -83,7 +101,14 @@ namespace librealsense
     private:
         void validate_json(const json &j) const
         {
-            //SAMER TODO
+            if (!j.contains("x"))
+            {
+                throw std::invalid_argument("Invalid polygon_point format: missing 'x' field");
+            }
+            if (!j.contains("y"))
+            {
+                throw std::invalid_argument("Invalid polygon_point format: missing 'y' field");
+            }
         }
 
     private:
@@ -147,6 +172,12 @@ namespace librealsense
             validate_json(j);
             m_zone_polygon = zone_polygon(j.at("zone_polygon"));
             m_safety_trigger_confidence = j.at("safety_trigger_confidence").get<uint8_t>();
+
+            for (size_t i = 0; i < m_reserved.size(); ++i)
+            {
+                m_reserved[i] = j.at("reserved")[i].get<uint8_t>();
+            }
+
         }
 
         json to_json() const
@@ -154,6 +185,7 @@ namespace librealsense
             json j;
             j["zone_polygon"] = m_zone_polygon.to_json();
             j["safety_trigger_confidence"] = m_safety_trigger_confidence;
+            j["reserved"] = m_reserved;
             return j;
         };
 
@@ -164,13 +196,25 @@ namespace librealsense
             {
                 throw librealsense::invalid_value_exception("Invalid safety zone format");
             }
-            for (const auto &field : {"zone_polygon", "safety_trigger_confidence"})
+            for (const auto &field : {"zone_polygon", "safety_trigger_confidence", "reserved"})
             {
                 if (!j.contains(field))
                 {
                     throw librealsense::invalid_value_exception(std::string("Invalid safety zone format: missing field: ") + field);
                 }
             }
+            if (!j.at("reserved").is_array() || j.at("reserved").size() != 7)
+            {
+                throw librealsense::invalid_value_exception("Invalid safety zone format: reserved must be an array of size=7");
+            }
+            for (size_t i = 0; i < 7; ++i)
+            {
+                if (!j.at("reserved")[i].is_number_unsigned())
+                {
+                    throw librealsense::invalid_value_exception("Invalid safety zone format: all elements in reserved array must be unsigned integers");
+                }
+            }
+
         };
 
         zone_polygon m_zone_polygon;
@@ -318,6 +362,12 @@ namespace librealsense
             m_safety_trigger_duration = j.at("safety_trigger_duration").get<float>();
             m_zero_safety_monitoring = j.at("zero_safety_monitoring").get<uint8_t>();
             m_hara_history_continuation = j.at("hara_history_continuation").get<uint8_t>();
+
+            for (size_t i = 0; i < m_reserved1.size(); ++i)
+            {
+                m_reserved1[i] = j.at("reserved1")[i].get<uint8_t>();
+            }
+
             m_angular_velocity = j.at("angular_velocity").get<float>();
             m_payload_weight = j.at("payload_weight").get<float>();
             m_surface_inclination = j.at("surface_inclination").get<float>();
@@ -327,10 +377,17 @@ namespace librealsense
             m_depth_fill_threshold = j.at("depth_fill_threshold").get<uint8_t>();
             m_diagnostic_zone_height_median_threshold = j.at("diagnostic_zone_height_median_threshold").get<uint8_t>();
             m_vision_hara_persistency = j.at("vision_hara_persistency").get<uint8_t>();
+
             for (size_t i = 0; i < 32; ++i)
             {
                 m_crypto_signature[i] = j.at("crypto_signature")[i].get<uint8_t>();
             }
+
+            for (size_t i = 0; i < m_reserved2.size(); ++i)
+            {
+                m_reserved2[i] = j.at("reserved2")[i].get<uint8_t>();
+            }
+
         }
 
         json to_json() const
@@ -339,6 +396,7 @@ namespace librealsense
             j["safety_trigger_duration"] = m_safety_trigger_duration;
             j["zero_safety_monitoring"] = m_zero_safety_monitoring;
             j["hara_history_continuation"] = m_hara_history_continuation;
+            j["reserved1"] = m_reserved1;
             j["angular_velocity"] = m_angular_velocity;
             j["payload_weight"] = m_payload_weight;
             j["surface_inclination"] = m_surface_inclination;
@@ -349,20 +407,20 @@ namespace librealsense
             j["diagnostic_zone_height_median_threshold"] = m_diagnostic_zone_height_median_threshold;
             j["vision_hara_persistency"] = m_vision_hara_persistency;
             j["crypto_signature"] = m_crypto_signature;
-
+            j["reserved2"] = m_reserved2;
             return j;
         }
 
     private:
         void validate_json(const json &j) const
         {
-            if (!j.is_object() || j.size() != 13)
+            if (!j.is_object() || j.size() != 15)
             {
                 throw librealsense::invalid_value_exception(
                     "Invalid environment format: environment must include 'safety_trigger_duration', "
-                    "'zero_safety_monitoring', 'hara_history_continuation', 'angular_velocity', 'payload_weight', 'surface_inclination', "
+                    "'zero_safety_monitoring', 'hara_history_continuation', 'reserved1', 'angular_velocity', 'payload_weight', 'surface_inclination', "
                     "'surface_height', 'diagnostic_zone_fill_rate_threshold', 'floor_fill_threshold', 'depth_fill_threshold', 'diagnostic_zone_height_median_threshold', "
-                    "'vision_hara_persistency' and 'crypto_signature'");
+                    "'vision_hara_persistency', 'crypto_signature' and 'reserved2'");
             }
             if (!j.at("safety_trigger_duration").is_number_float())
             {
@@ -375,6 +433,17 @@ namespace librealsense
             if (!j.at("hara_history_continuation").is_number_unsigned())
             {
                 throw librealsense::invalid_value_exception("Invalid environment type: hara_history_continuation must be unsigned number");
+            }
+            if (!j.at("reserved1").is_array() || j.at("reserved1").size() != 2)
+            {
+                throw librealsense::invalid_value_exception("Invalid environment format: reserved1 must be an array of size=2");
+            }
+            for (size_t i = 0; i < 2; ++i)
+            {
+                if (!j.at("reserved1")[i].is_number_unsigned())
+                {
+                    throw librealsense::invalid_value_exception("Invalid environment type: all elements in reserved1 array must be unsigned integers");
+                }
             }
             if (!j.at("angular_velocity").is_number_float())
             {
@@ -423,6 +492,18 @@ namespace librealsense
                     throw librealsense::invalid_value_exception("Invalid environment type: all elements in crypto_signature array must be unsigned integers");
                 }
             }
+            if (!j.at("reserved2").is_array() || j.at("reserved2").size() != 3)
+            {
+                throw librealsense::invalid_value_exception("Invalid environment format: reserved2 must be an array of size=3");
+            }
+            for (size_t i = 0; i < 3; ++i)
+            {
+                if (!j.at("reserved2")[i].is_number_unsigned())
+                {
+                    throw librealsense::invalid_value_exception("Invalid environment type: all elements in reserved2 array must be unsigned integers");
+                }
+            }
+
         }
 
         float m_safety_trigger_duration; // duration in seconds to keep safety signal high after safety MCU is back to normal
@@ -461,6 +542,12 @@ namespace librealsense
             m_platform_config = platform_config(j.at("platform_config"));
             m_safety_zones = safety_zones(j.at("safety_zones"));
             m_masking_zones = masking_zones(j.at("masking_zones"));
+
+            for (size_t i = 0; i < m_reserved.size(); ++i)
+            {
+                m_reserved[i] = j.at("reserved")[i].get<uint8_t>();
+            }
+
             m_environment = safety_environment(j.at("environment"));
         }
 
@@ -471,6 +558,7 @@ namespace librealsense
             safety_preset_json["platform_config"] = m_platform_config.to_json();
             safety_preset_json["safety_zones"] = m_safety_zones.to_json();
             safety_preset_json["masking_zones"] = m_masking_zones.to_json();
+            safety_preset_json["reserved"] = m_reserved;
             safety_preset_json["environment"] = m_environment.to_json();
 
             return j;
@@ -479,11 +567,11 @@ namespace librealsense
     private:
         void validate_json(const json &j) const
         {
-            if (!j.is_object() || j.size() != 4)
+            if (!j.is_object() || j.size() != 5)
             {
                 throw librealsense::invalid_value_exception(
                     "Invalid safety_preset format: safety_preset must include 'platform_config', "
-                    "'safety_zones', 'masking_zones', and 'environment'");
+                    "'safety_zones', 'masking_zones', 'reserved', and 'environment'");
             }
             if (!j.at("platform_config").is_object())
             {
@@ -496,6 +584,17 @@ namespace librealsense
             if (!j.at("masking_zones").is_object())
             {
                 throw librealsense::invalid_value_exception("Invalid masking_zones format");
+            }
+            if (!j.at("reserved").is_array() || j.at("reserved").size() != 16)
+            {
+                throw librealsense::invalid_value_exception("Invalid reserved format: reserved must be an array of size=16");
+            }
+            for (size_t i = 0; i < 16; ++i)
+            {
+                if (!j.at("reserved")[i].is_number_unsigned())
+                {
+                    throw librealsense::invalid_value_exception("Invalid reserved type: all elements in reserved array must be unsigned integers");
+                }
             }
             if (!j.at("environment").is_object())
             {

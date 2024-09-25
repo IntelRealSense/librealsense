@@ -44,7 +44,8 @@ valid_sp_json_str = """
                 ],
                 "translation": [0.0, 0.0, 0.27]
             },
-            "robot_height": 1.0
+            "robot_height": 1.0,
+            "reserved": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         },
         "safety_zones": 
         {
@@ -57,7 +58,8 @@ valid_sp_json_str = """
                     "p2": {"x": 0.8, "y": -0.1},
                     "p3": {"x": 0.5, "y": -0.1}
                 },
-                "safety_trigger_confidence": 3
+                "safety_trigger_confidence": 3,
+                "reserved": [0, 0, 0, 0, 0, 0, 0]
             },
             "warning_zone":
             {
@@ -68,7 +70,8 @@ valid_sp_json_str = """
                     "p2": {"x": 1.2, "y": -0.1},
                     "p3": {"x": 0.8, "y": -0.1}
                 },
-                "safety_trigger_confidence": 3
+                "safety_trigger_confidence": 3,
+                "reserved": [0, 0, 0, 0, 0, 0, 0]
             }
         },
         "masking_zones": 
@@ -170,22 +173,24 @@ valid_sp_json_str = """
                 }
             }
         },
-
+        "reserved": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         "environment": 
         {
-            "safety_trigger_duration" : 1.0,
-            "zero_safety_monitoring" : 0,
-            "hara_history_continuation" : 0,
-            "angular_velocity" : 0.0,
-            "payload_weight" : 0.0,
-            "surface_inclination" : 15.0,
-            "surface_height" : 0.05,
-            "diagnostic_zone_fill_rate_threshold" : 255,
-            "floor_fill_threshold" : 255,
-            "depth_fill_threshold" : 255,
-            "diagnostic_zone_height_median_threshold" : 255,
-            "vision_hara_persistency" : 1,
-            "crypto_signature" : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            "safety_trigger_duration": 1.0,
+            "zero_safety_monitoring": 0,
+            "hara_history_continuation": 0,
+            "reserved1": [0, 0],
+            "angular_velocity": 0.0,
+            "payload_weight": 0.0,
+            "surface_inclination": 15.0,
+            "surface_height": 0.05,
+            "diagnostic_zone_fill_rate_threshold": 255,
+            "floor_fill_threshold": 255,
+            "depth_fill_threshold": 255,
+            "diagnostic_zone_height_median_threshold": 255,
+            "vision_hara_persistency": 1,
+            "crypto_signature": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "reserved2": [0, 0, 0]
         }
     }
 }
