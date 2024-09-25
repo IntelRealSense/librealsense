@@ -832,6 +832,7 @@ PYBIND11_MODULE(NAME, m) {
     video_encoding.attr( "yuyv" ) = dds_video_encoding( "yuv422_yuy2" );
     video_encoding.attr( "uyvy" ) = dds_video_encoding( "uyvy" );
     video_encoding.attr( "rgb" ) = dds_video_encoding( "rgb8" );
+    video_encoding.attr( "y12i" ) = dds_video_encoding( "Y12I" );
 
     using realdds::dds_stream_profile;
     py::class_< dds_stream_profile, std::shared_ptr< dds_stream_profile > > stream_profile_base( m, "stream_profile" );
