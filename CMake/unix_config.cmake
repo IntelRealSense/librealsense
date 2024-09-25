@@ -70,10 +70,16 @@ macro(os_set_flags)
 	
     # see https://readthedocs.intel.com/SecureCodingStandards/2023.Q2.0/compiler/c-cpp/ for more details
 
+    if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|armv7l") # Jetson system, some flags are not recognized
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fstack-protector")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fstack-protector")
+    else()
+        #‘-mfunction-return’ and ‘-fcf-protection’ are not compatible, so specifing -fcf-protection=none
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
+    endif()
+    set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -pie")
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security -fPIC -fPIE -pie -D_FORTIFY_SOURCE=2 -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
-    #‘-mfunction-return’ and ‘-fcf-protection’ are not compatible, so specifing -fcf-protection=none
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat -Wformat-security -fPIC -fPIE -pie -D_FORTIFY_SOURCE=2 -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         message(STATUS "Configuring for Debug build")

@@ -7,6 +7,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
+string(REPLACE "-fPIC" "-fPIE" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # examples are exeutables so we want position indepandent exeutables and not libraries
+
 set( DEPENDENCIES ${LRS_TARGET} )
 if(BUILD_GRAPHICAL_EXAMPLES)
     include(${CMAKE_SOURCE_DIR}/CMake/opengl_config.cmake)
@@ -40,3 +42,5 @@ add_subdirectory(record-playback)
 add_subdirectory(motion)
 add_subdirectory(gl)
 add_subdirectory(hdr)
+
+string(REPLACE "-fPIE" "-fPIC" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
