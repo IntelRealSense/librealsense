@@ -73,14 +73,14 @@ macro(os_set_flags)
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security -fPIC -fPIE -pie -D_FORTIFY_SOURCE=2 -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
     #‘-mfunction-return’ and ‘-fcf-protection’ are not compatible, so specifing -fcf-protection=none
-    set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Werror=format-security -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat -Wformat-security -fPIC -fPIE -pie -D_FORTIFY_SOURCE=2 -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         message(STATUS "Configuring for Debug build")
     else() # Release, RelWithDebInfo, or multi configuration generator is being used (aka not specifing build type, or building with VS)
         message(STATUS "Configuring for Release build")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Werror=format-security -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
-        set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Werror=format-security -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Werror=format-security -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
     endif()
 
     #################
