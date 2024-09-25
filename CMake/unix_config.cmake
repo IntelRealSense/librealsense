@@ -47,6 +47,44 @@ macro(os_set_flags)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
     endif()
     
+    ###############
+    # According to SDLE we need to add the following flags for additional security:
+    # Debug & Release:
+    # -Wformat: Checks for format string vulnerabilities.
+    # -Wformat-security: Ensures format strings are not vulnerable to attacks.
+    # -fPIC: Generates position-independent code (PIC) suitable for shared libraries.
+    # -fPIE: Generates position-independent executable (PIE) code.
+    # -pie: Links the output as a position-independent executable.
+    # -D_FORTIFY_SOURCE=2: Adds extra checks for buffer overflows.
+    # -mfunction-return=thunk: Mitigates return-oriented programming (ROP) attacks. (Added flag -fcf-protection=none to allow it)
+    # -mindirect-branch=thunk: Mitigates indirect branch attacks.
+    # -mindirect-branch-register: Uses registers for indirect branches to mitigate attacks.
+    # -fstack-protector: Adds stack protection to detect buffer overflows.
+
+    # Release only
+    # -Werror: Treats all warnings as errors.
+    # -Werror=format-security: Treats format security warnings as errors.
+    # -z noexecstack: Marks the stack as non-executable to prevent certain types of attacks.
+    # -Wl,-z,relro,-z,now: Enables read-only relocations and immediate binding for security.
+    # -fstack-protector-strong: Provides stronger stack protection than -fstack-protector.
+	
+    # see https://readthedocs.intel.com/SecureCodingStandards/2023.Q2.0/compiler/c-cpp/ for more details
+
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security -fPIC -fPIE -pie -D_FORTIFY_SOURCE=2 -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
+    #‘-mfunction-return’ and ‘-fcf-protection’ are not compatible, so specifing -fcf-protection=none
+    set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Werror=format-security -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
+
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message(STATUS "Configuring for Debug build")
+    else() # Release, RelWithDebInfo, or multi configuration generator is being used (aka not specifing build type, or building with VS)
+        message(STATUS "Configuring for Release build")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Werror=format-security -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
+        set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Werror=format-security -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
+    endif()
+
+    #################
+	
     if(APPLE)
         set(FORCE_RSUSB_BACKEND ON)
     endif()

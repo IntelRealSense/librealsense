@@ -53,6 +53,9 @@ macro(os_set_flags)
         # /sdl: Enables additional security checks.
         # /NXCOMPAT: Enables Data Execution Prevention (DEP) to prevent code execution in data areas.	
 		
+        # see https://readthedocs.intel.com/SecureCodingStandards/2023.Q2.0/compiler/c-cpp/ for more details
+
+		
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy /DYNAMICBASE /GS") 
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy /DYNAMICBASE /GS")
 		
