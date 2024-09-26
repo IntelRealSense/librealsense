@@ -8,143 +8,158 @@ import time
 
 import pyrealsense2 as rs
 from rspy import test, log, devices
-import random
 from rspy import tests_wrapper as tw
+import json
 
-def generate_valid_table():
-    cfg = rs.safety_interface_config()
-    cfg.power = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.p24vdc)
-    cfg.ossd1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd1_b)
-    cfg.ossd1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd1_a)
-    cfg.gpio_0 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select5_a)
-    cfg.gpio_1 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select5_b)
-    cfg.gpio_2 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select6_a)
-    cfg.gpio_3 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select6_b)
-    cfg.preset3_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_a)
-    cfg.preset3_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_b)
-    cfg.preset4_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_a)
-    cfg.preset1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_b)
-    cfg.preset1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_a)
-    cfg.preset2_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_b)
-    cfg.gpio_4 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.error)
-    cfg.preset2_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_a)
-    cfg.preset4_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_b)
-    cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
-    cfg.gpio_stabilization_interval = 150 # [ms] - SMCU only accept 150 for now
+valid_sic_table_as_json_str = """
+{
+    "safety_interface_config":
+    {
+        "m12_safety_pins_configuration":
+        {
+            "power":
+            {
+                "direction": "In",
+                "functionality": "p24VDC"
+            },
+            "ossd1_b":
+            {
+                "direction": "Out",
+                "functionality": "pOSSD1_B"
+            },
+            "ossd1_a":
+            {
+                "direction": "Out",
+                "functionality": "pOSSD1_A"
+            },
+            "preset3_a":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect3_A"
+            },
+            "preset3_b":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect3_B"
+            },
+            "preset4_a":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect4_A"
+            },
+            "preset1_b":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect1_B"
+            },
+            "preset1_a":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect1_A"
+            },
+            "gpio_0":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect5_A"
+            },
+            "gpio_1":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect5_B"
+            },
+            "gpio_3":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect6_B"
+            },
+            "gpio_2":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect6_A"
+            },
+            "preset2_b":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect2_B"
+            },
+            "gpio_4":
+            {
+                "direction": "Out",
+                "functionality": "pDeviceReady"
+            },
+            "preset2_a":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect2_A"
+            },
+            "preset4_b":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect4_B"
+            },
+            "ground":
+            {
+                "direction": "In",
+                "functionality": "pGND"
+            }
+        },
+        "gpio_stabilization_interval" : 150,
+        "camera_position":
+        {
+            "rotation":
+            [
+                [ 0.0,  0.0,  1.0],
+                [-1.0,  0.0,  0.0],
+                [ 0.0, -1.0,  0.0]
+            ],
+            "translation": [0.0, 0.0, 0.27]
+        },
+        "occupancy_grid_params":
+        {
+            "grid_cell_seed" : 20,
+            "close_range_quorum" : 12 ,
+            "mid_range_quorum" : 6,
+            "long_range_quorum" : 4
+        },
+        "smcu_arbitration_params":
+        {
+            "l_0_total_threshold": 100,
+            "l_0_sustained_rate_threshold": 20,
+            "l_1_total_threshold": 100,
+            "l_1_sustained_rate_threshold": 20,
+            "l_2_total_threshold": 10,
+            "hkr_stl_timeout": 15,
+            "mcu_stl_timeout": 10,
+            "sustained_aicv_frame_drops": 95,
+            "ossd_self_test_pulse_width": 23
+        },
+        "crypto_signature": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    }
+}
+"""
 
-    # Convert from RS camera cordination system to Robot cordination system
-    # We use hard coded valid values as HKR compare and expect a match between safety interface extrinsic with the current safety preset extrinsic
-    # rotation matrix 
-    
-    rx = rs.float3(0.0, 0.0, 1.0)
-    ry = rs.float3(-1.0, 0.0, 0.0)
-    rz = rs.float3(0.0, -1.0, 0.0)
-    rotation = rs.float3x3(rx, ry, rz)
-    
-    # translation vector [m] 
-    translation = rs.float3(0.0, 0.0, 0.27)
-
-    
-    cfg.camera_position = rs.extrinsics_table(rotation, translation)
-
-    cfg.occupancy_grid_params.grid_cell_seed = random.randint(10,200) # mm
-    cfg.occupancy_grid_params.close_range_quorum = random.randint(0, 255)
-    cfg.occupancy_grid_params.mid_range_quorum = random.randint(0, 255)
-    cfg.occupancy_grid_params.long_range_quorum = random.randint(0, 255)
-    cfg.smcu_arbitration_params.l_0_total_threshold = 100
-    cfg.smcu_arbitration_params.l_0_sustained_rate_threshold = 20
-    cfg.smcu_arbitration_params.l_1_total_threshold = 100
-    cfg.smcu_arbitration_params.l_1_sustained_rate_threshold = 20
-    cfg.smcu_arbitration_params.l_2_total_threshold = 10
-    cfg.smcu_arbitration_params.hkr_stl_timeout = 40
-    cfg.smcu_arbitration_params.mcu_stl_timeout = 40
-    cfg.smcu_arbitration_params.sustained_aicv_frame_drops = 50
-    cfg.smcu_arbitration_params.ossd_self_test_pulse_width = 23 # default value provided by SMCU team
-    cfg.crypto_signature = [0] * 32
-    cfg.reserved = [0] * 17
-    return cfg
- 
-
-def change_config(cfg):
-    
-    # we query and replace GPIO 2-3 to make sure we have a different table then the one we got.
-    if cfg.gpio_2.functionality == rs.safety_pin_functionality.preset_select6_a:
-      cfg.gpio_2 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd2_a)
-    else:
-      cfg.gpio_2 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select6_a)
-    
-    if cfg.gpio_3.functionality == rs.safety_pin_functionality.preset_select6_b:
-      cfg.gpio_3 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd2_b)
-    else:
-      cfg.gpio_3 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select6_b)
-
-    return cfg
-
-def generate_bad_config():
-    cfg = generate_valid_table()
-    cfg.ossd1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.p24vdc) # intentional error
-    cfg.ossd1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.p24vdc) # intentional error
-    return cfg
-
-def print_config(config):
-    log.d("config.power: " + repr(config.power.direction) + ", " + repr(config.power.functionality))
-    log.d("config.ossd1_b: " + repr(config.ossd1_b.direction) + ", " + repr(config.ossd1_b.functionality))
-    log.d("config.ossd1_a: " + repr(config.ossd1_a.direction) + ", " + repr(config.ossd1_a.functionality))
-    log.d("config.preset3_a: " + repr(config.preset3_a.direction) + ", " + repr(config.preset3_a.functionality))
-    log.d("config.preset3_b: " + repr(config.preset3_b.direction) + ", " + repr(config.preset3_b.functionality))
-    log.d("config.preset4_a: " + repr(config.preset4_a.direction) + ", " + repr(config.preset4_a.functionality))
-    log.d("config.preset1_b: " + repr(config.preset1_b.direction) + ", " + repr(config.preset1_b.functionality))
-    log.d("config.preset1_a: " + repr(config.preset1_a.direction) + ", " + repr(config.preset1_a.functionality))
-    log.d("config.gpio_0: " + repr(config.gpio_0.direction) + ", " + repr(config.gpio_0.functionality))
-    log.d("config.gpio_1: " + repr(config.gpio_1.direction) + ", " + repr(config.gpio_1.functionality))
-    log.d("config.gpio_3: " + repr(config.gpio_3.direction) + ", " + repr(config.gpio_3.functionality))
-    log.d("config.gpio_2: " + repr(config.gpio_2.direction) + ", " + repr(config.gpio_2.functionality))
-    log.d("config.preset2_b: " + repr(config.preset2_b.direction) + ", " + repr(config.preset2_b.functionality))
-    log.d("config.gpio_4: " + repr(config.gpio_4.direction) + ", " + repr(config.gpio_4.functionality))
-    log.d("config.preset2_a: " + repr(config.preset2_a.direction) + ", " + repr(config.preset2_a.functionality))
-    log.d("config.preset4_b: " + repr(config.preset4_b.direction) + ", " + repr(config.preset4_b.functionality))
-    log.d("config.ground: " + repr(config.ground.direction) + ", " + repr(config.ground.functionality))
-    log.d("config.gpio_stabilization_interval: " + repr(config.gpio_stabilization_interval))
-
-def check_pin_equal(first_pin, second_pin):
-    test.check_equal(first_pin.direction, second_pin.direction)
-    test.check_equal(first_pin.functionality, second_pin.functionality)
-def check_configurations_equal(first_config, second_config) :
-    check_pin_equal(first_config.power, second_config.power)
-    check_pin_equal(first_config.ossd1_b, second_config.ossd1_b)
-    check_pin_equal(first_config.ossd1_a, second_config.ossd1_a)
-    check_pin_equal(first_config.preset3_a, second_config.preset3_a)
-    check_pin_equal(first_config.preset3_b, second_config.preset3_b)
-    check_pin_equal(first_config.preset4_a, second_config.preset4_a)
-    check_pin_equal(first_config.preset1_b, second_config.preset1_b)
-    check_pin_equal(first_config.preset1_a, second_config.preset1_a)
-    check_pin_equal(first_config.gpio_0, second_config.gpio_0)
-    check_pin_equal(first_config.gpio_1, second_config.gpio_1)
-    check_pin_equal(first_config.gpio_3, second_config.gpio_3)
-    check_pin_equal(first_config.gpio_2, second_config.gpio_2)
-    check_pin_equal(first_config.preset2_b, second_config.preset2_b)
-    check_pin_equal(first_config.gpio_4, second_config.gpio_4)
-    check_pin_equal(first_config.preset2_a, second_config.preset2_a)
-    check_pin_equal(first_config.preset4_b, second_config.preset4_b)
-    check_pin_equal(first_config.ground, second_config.ground)
-    test.check_equal(first_config.gpio_stabilization_interval, second_config.gpio_stabilization_interval)
+def change_config(sic_table_as_json_str):
+  sic_as_json_object = json.loads(sic_table_as_json_str)
+  sic_as_json_object["safety_interface_config"]["smcu_arbitration_params"]["l_0_total_threshold"] = 90
+  sic_as_json_object["safety_interface_config"]["occupancy_grid_params"]["mid_range_quorum"] = 7
+  return json.dumps(sic_as_json_object)
 
 #############################################################################################
 # Tests
 #############################################################################################
 
-dev, _ = test.find_first_device_or_exit()
+dev,_ = test.find_first_device_or_exit()
 safety_sensor = dev.first_safety_sensor()
 tw.start_wrapper(dev)
 #############################################################################################
 test.start("Valid get/set scenario")
 
-valid_table = generate_valid_table()
-safety_sensor.set_safety_interface_config(valid_table)
+safety_sensor.set_safety_interface_config(valid_sic_table_as_json_str)
    
 # We read the table from the device, modify it and write it back
 # This way we are sure that the write process worked ()   
-config_we_write = change_config(valid_table)
+config_we_write = change_config(valid_sic_table_as_json_str)
+
 # write changed config to the device
 safety_sensor.set_safety_interface_config(config_we_write)
 
@@ -154,12 +169,15 @@ config_we_read = safety_sensor.get_safety_interface_config()
 
 # Add debugging info
 log.d("config we write:")
-print_config(config_we_write)
+json_we_write = json.loads(config_we_write)
+print(json_we_write)
+
 log.d("config we read:")
-print_config(config_we_read)
+json_we_read = json.loads(config_we_read)
+print(json_we_read)
 
 # checking the requested config has been written to the device
-check_configurations_equal(config_we_write, config_we_read)
+test.check_equal_jsons(json_we_write, json_we_read)
 test.finish()
 
 #############################################################################################
@@ -183,12 +201,14 @@ config_after_reboot = safety_sensor.get_safety_interface_config(rs.calib_locatio
 
 # Add debugging info
 log.d("config we write:")
-print_config(config_we_write)
+print(json_we_write)
+
 log.d("config after reboot:")
-print_config(config_after_reboot)
+json_we_read_after_reboot = json.loads(config_we_read)
+print(json_we_read_after_reboot)
 
 # checking our last write stay the same after reboot
-check_configurations_equal(config_we_write, config_after_reboot)
+test.check_equal_jsons(json_we_write, json_we_read_after_reboot)
 
 test.finish()
 
@@ -201,23 +221,11 @@ config_from_ram = safety_sensor.get_safety_interface_config()
 config_from_flash = safety_sensor.get_safety_interface_config(rs.calib_location.flash)
 
 # checking config is the same in flash and in ram
-check_configurations_equal(config_from_ram, config_from_flash)
+test.check_equal_jsons(json.loads(config_from_ram), json.loads(config_from_flash))
 
 test.finish()
 
 #############################################################################################
-# TODO: commented out till HKR team fix reading safety config table after an attemp to write a bad one on RAM
-# test.start("Setting bad config - checking error is received, and that config_1 is returned after get action")
-#
-# # setting bad config
-# test.check_throws(lambda: safety_sensor.set_safety_interface_config(generate_bad_config()), RuntimeError)
-#
-# # getting active config
-# current_config = safety_sensor.get_safety_interface_config()
-#
-# # checking active config is the default one
-# check_configurations_equal(generate_valid_table(), current_config)
-# test.finish()
-#############################################################################################
+
 tw.stop_wrapper(dev)
 test.print_results_and_exit()

@@ -85,7 +85,8 @@ safety_sensor.set_application_config(app_config_json_str)
 log.d("app config successfully uploaded")
 # checking the app config table now in device is equal to the one uploaded
 curr_config_table = safety_sensor.get_application_config()
-test.check_equal(json.loads(curr_config_table), json.loads(app_config_json_str))
+test.check_equal_jsons(json.loads(curr_config_table), json.loads(app_config_json_str))
+
 test.finish()
 
 #############################################################################################
@@ -94,7 +95,7 @@ safety_sensor.set_application_config(original_app_config_as_json_str)
 log.d("app config successfully uploaded")
 # checking the app config table now in device is equal to the one uploaded
 curr_config_table = safety_sensor.get_application_config()
-test.check_equal(json.loads(curr_config_table), json.loads(original_app_config_as_json_str))
+test.check_equal_jsons(json.loads(curr_config_table), json.loads(original_app_config_as_json_str))
 test.finish()
 
 #############################################################################################

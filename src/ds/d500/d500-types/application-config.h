@@ -36,7 +36,7 @@ namespace librealsense
      *             The metric shall be tracked in S.MCU to establish whether the SM failed to provide an update in a predefined manner
      *
      *         TC Consecutives failures threshold (uint8_t)
-     *             Range [1…255], Default = 3
+     *             Range [1-255], Default = 3
      *             Value 255 shall be used as infinite number (never fail)
      * 
      *         Reserved    64    uint8_t[64]    zero-ed
@@ -79,12 +79,12 @@ namespace librealsense
         uint8_t m_tc_consecutives_failures_threshold;
         uint8_t m_reserved[63] = {0};
 
-        bool validate_json(const json &j) const
+        void validate_json(const json &j) const
         {
-            return validate_json_field<uint8_t>(j, "immediate_mode_safety_features_selection") &&
-                   validate_json_field<uint8_t>(j, "temporal_safety_features_selection") &&
-                   validate_json_field<std::vector<uint8_t>>(j, "mechanisms_thresholds", 16) &&
-                   validate_json_field<std::vector<uint8_t>>(j, "mechanisms_sampling_interval", 8) &&
+            validate_json_field<uint8_t>(j, "immediate_mode_safety_features_selection");
+                   validate_json_field<uint8_t>(j, "temporal_safety_features_selection") ;
+                   validate_json_field<std::vector<uint8_t>>(j, "mechanisms_thresholds", 16) ;
+                   validate_json_field<std::vector<uint8_t>>(j, "mechanisms_sampling_interval", 8) ;
                    validate_json_field<uint8_t>(j, "tc_consecutives_failures_threshold");
         }
     };
@@ -172,16 +172,16 @@ namespace librealsense
         int8_t m_reserved3[4] = {0};
         int8_t m_imu[4];
 
-        bool validate_json(const json &j) const
+        void validate_json(const json &j) const
         {
-            return validate_json_field<std::vector<int8_t>>(j, "ir_right", 4) &&
-                   validate_json_field<std::vector<int8_t>>(j, "ir_left", 4) &&
-                   validate_json_field<std::vector<int8_t>>(j, "apm_left", 4) &&
-                   validate_json_field<std::vector<int8_t>>(j, "apm_right", 4) &&
-                   validate_json_field<std::vector<int8_t>>(j, "hkr_core", 4) &&
-                   validate_json_field<std::vector<int8_t>>(j, "smcu_right", 4) &&
-                   validate_json_field<std::vector<int8_t>>(j, "sht4x", 4) &&
-                   validate_json_field<std::vector<int8_t>>(j, "imu", 4);
+            validate_json_field<std::vector<int8_t>>(j, "ir_right", 4) ;
+            validate_json_field<std::vector<int8_t>>(j, "ir_left", 4) ;
+            validate_json_field<std::vector<int8_t>>(j, "apm_left", 4) ;
+            validate_json_field<std::vector<int8_t>>(j, "apm_right", 4) ;
+            validate_json_field<std::vector<int8_t>>(j, "hkr_core", 4) ;
+            validate_json_field<std::vector<int8_t>>(j, "smcu_right", 4) ;
+            validate_json_field<std::vector<int8_t>>(j, "sht4x", 4);
+            validate_json_field<std::vector<int8_t>>(j, "imu", 4);
         }
     };
 
@@ -248,16 +248,16 @@ namespace librealsense
         uint8_t m_vdd5vo_l;
         uint8_t m_vdd0v8_ddr;
 
-        bool validate_json(const json &j) const
+        void validate_json(const json &j) const
         {
-            return validate_json_field<uint8_t>(j, "vdd3v3") &&
-                   validate_json_field<uint8_t>(j, "vdd1v8") &&
-                   validate_json_field<uint8_t>(j, "vdd1v2") &&
-                   validate_json_field<uint8_t>(j, "vdd1v1") &&
-                   validate_json_field<uint8_t>(j, "vdd0v8") &&
-                   validate_json_field<uint8_t>(j, "vdd0v6") &&
-                   validate_json_field<uint8_t>(j, "vdd5vo_u") &&
-                   validate_json_field<uint8_t>(j, "vdd5vo_l") &&
+             validate_json_field<uint8_t>(j, "vdd3v3") ;
+                   validate_json_field<uint8_t>(j, "vdd1v8") ;
+                   validate_json_field<uint8_t>(j, "vdd1v2") ;
+                   validate_json_field<uint8_t>(j, "vdd1v1") ;
+                   validate_json_field<uint8_t>(j, "vdd0v8") ;
+                   validate_json_field<uint8_t>(j, "vdd0v6") ;
+                   validate_json_field<uint8_t>(j, "vdd5vo_u") ;
+                   validate_json_field<uint8_t>(j, "vdd5vo_l") ;
                    validate_json_field<uint8_t>(j, "vdd0v8_ddr");
         }
     };
@@ -318,11 +318,11 @@ namespace librealsense
         uint8_t m_hkr_simulated_lock_state;
         uint8_t m_sc;
 
-        bool validate_json(const json &j) const
+        void validate_json(const json &j) const
         {
-            return validate_json_field<uint8_t>(j, "hkr") &&
-                   validate_json_field<uint8_t>(j, "smcu") &&
-                   validate_json_field<uint8_t>(j, "hkr_simulated_lock_state") &&
+            validate_json_field<uint8_t>(j, "hkr") ;
+                   validate_json_field<uint8_t>(j, "smcu") ;
+                   validate_json_field<uint8_t>(j, "hkr_simulated_lock_state") ;
                    validate_json_field<uint8_t>(j, "sc");
         }
     };
@@ -474,18 +474,18 @@ namespace librealsense
         uint8_t m_reserved3[265] = {0};
         uint8_t m_digital_signature[32];
 
-        bool validate_json(const json &j) const
+        void validate_json(const json &j) const
         {
-            return validate_json_field<uint64_t>(j, "dev_rules_selection") &&
-                   validate_json_field<uint8_t>(j, "depth_pipe_safety_checks_override") &&
-                   validate_json_field<uint8_t>(j, "triggered_calib_safety_checks_override") &&
-                   validate_json_field<uint8_t>(j, "smcu_bypass_directly_to_maintenance_mode") &&
-                   validate_json_field<uint8_t>(j, "smcu_skip_spi_error") &&
-                   validate_json_field<uint8_t>(j, "sht4x_humidity_threshold") &&
-                   validate_json_field<uint8_t>(j, "depth_pipeline_config") &&
-                   validate_json_field<uint8_t>(j, "depth_roi") &&
-                   validate_json_field<uint8_t>(j, "ir_for_sip") &&
-                   validate_json_field<uint16_t>(j, "peripherals_sensors_disable_mask") &&
+             validate_json_field<uint64_t>(j, "dev_rules_selection") ;
+                   validate_json_field<uint8_t>(j, "depth_pipe_safety_checks_override") ;
+                   validate_json_field<uint8_t>(j, "triggered_calib_safety_checks_override") ;
+                   validate_json_field<uint8_t>(j, "smcu_bypass_directly_to_maintenance_mode") ;
+                   validate_json_field<uint8_t>(j, "smcu_skip_spi_error") ;
+                   validate_json_field<uint8_t>(j, "sht4x_humidity_threshold") ;
+                   validate_json_field<uint8_t>(j, "depth_pipeline_config") ;
+                   validate_json_field<uint8_t>(j, "depth_roi") ;
+                   validate_json_field<uint8_t>(j, "ir_for_sip") ;
+                   validate_json_field<uint16_t>(j, "peripherals_sensors_disable_mask") ;
                    validate_json_field<std::vector<uint8_t>>(j, "digital_signature", 32);
         }
     };

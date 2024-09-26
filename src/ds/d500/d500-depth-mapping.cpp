@@ -6,7 +6,7 @@
 #include "d500-safety.h"
 #include "d500-info.h"
 #include "d500-md.h"
-
+#include "d500-types/safety-interface-config.h"
 
 #include <vector>
 #include <map>
@@ -95,9 +95,10 @@ namespace librealsense
 
     void d500_depth_mapping::register_extrinsics()
     {
+        using rsutils::json;
         // extrinsics to depth lazy, becasue safety sensor's api is used and it may be constructed later
         // than the depth mapping device (though it may not be the case in the device contructor's order, in ds500-factory)
-        _depth_to_depth_mapping_extrinsics = std::make_shared< rsutils::lazy< rs2_extrinsics > >( [this]()
+        _depth_to_depth_mapping_extrinsics = std::make_shared< rsutils::lazy< rs2_extrinsics > > ( [this]()
             {
                 // getting access to safety sensor api
                 auto safety_device = dynamic_cast<d500_safety*>(this);
@@ -107,25 +108,25 @@ namespace librealsense
                 
                 // Pull extrinsic from safety interface config, according to HKR 0.9 QS
                 rs2_extrinsics res;
-                rs2_safety_interface_config sic;
+                json sic_json;
                 try 
                 {
-                    sic = safety_sensor.get_safety_interface_config();
+                    sic_json = json::parse(safety_sensor.get_safety_interface_config());
                 }
                 catch (...)
                 {
                     throw std::runtime_error("Could not read safety interface config");
                 }
-                auto extrinsics_from_preset = sic.camera_position;
-                auto rot = extrinsics_from_preset.rotation;
+                camera_position extrinsics_from_preset(sic_json["safety_interface_config"]["camera_position"]);
+                auto rot = extrinsics_from_preset.get_rotation();
+                auto trans = extrinsics_from_preset.get_translation();
 
                 // converting row-major matrix to column-major
-                float rotation_matrix[9] = { rot.x.x, rot.y.x, rot.z.x,
-                                             rot.x.y, rot.y.y, rot.z.y,
-                                             rot.x.z, rot.y.z, rot.z.z };
-
+                float rotation_matrix[9] = { rot[0][0], rot[1][0], rot[2][0],
+                                             rot[0][1], rot[1][1], rot[2][1],
+                                             rot[0][2], rot[1][2], rot[2][2] };
                 std::memcpy(res.rotation, &rotation_matrix, sizeof rotation_matrix);
-                std::memcpy(res.translation, &extrinsics_from_preset.translation, sizeof extrinsics_from_preset.translation);
+                std::memcpy(res.translation, trans.data(), trans.size() * sizeof(float));
                 return res;
             });
 

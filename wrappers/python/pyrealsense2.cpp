@@ -16,7 +16,6 @@ PYBIND11_MODULE(NAME, m) {
     m.attr("__full_version__") = RS2_API_FULL_VERSION_STR;
 
     init_c_files(m);
-    init_safety(m);
     init_types(m);
     init_frame(m);
     init_options(m);

@@ -203,7 +203,6 @@ public:
 
 // Partial module definition functions
 void init_c_files(py::module& m);
-void init_safety(py::module &m);
 void init_types(py::module &m);
 void init_frame(py::module &m);
 void init_options(py::module &m);

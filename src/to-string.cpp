@@ -313,56 +313,6 @@ const char* get_string(rs2_calib_location calib_location)
 #undef CASE
 }
 
-const char* get_string(rs2_safety_pin_direction direction)
-{
-#define CASE( X ) STRCASE( SAFETY_PIN_DIRECTION, X )
-    switch (direction)
-    {
-        CASE(INPUT)
-        CASE(OUTPUT)
-    default:
-        assert(!is_valid(direction));
-        return UNKNOWN_VALUE;
-    }
-#undef CASE
-}
-
-const char* get_string(rs2_safety_pin_functionality functionality)
-{
-#define CASE( X ) STRCASE( SAFETY_PIN_FUNCTIONALITY, X )
-    switch (functionality)
-    {
-        CASE(GND)
-        CASE(P24VDC)
-        CASE(OSSD1_A)
-        CASE(OSSD1_B)
-        CASE(OSSD2_A)
-        CASE(OSSD2_B)
-        CASE(OSSD2_A_FEEDBACK)
-        CASE(OSSD2_B_FEEDBACK)
-        CASE(PRESET_SELECT1_A)
-        CASE(PRESET_SELECT1_B)
-        CASE(PRESET_SELECT2_A)
-        CASE(PRESET_SELECT2_B)
-        CASE(PRESET_SELECT3_A)
-        CASE(PRESET_SELECT3_B)
-        CASE(PRESET_SELECT4_A)
-        CASE(PRESET_SELECT4_B)
-        CASE(PRESET_SELECT5_A)
-        CASE(PRESET_SELECT5_B)
-        CASE(PRESET_SELECT6_A)
-        CASE(PRESET_SELECT6_B)
-        CASE(DEVICE_READY)
-        CASE(ERROR)
-        CASE(RESET)
-        CASE(RESTART_INTERLOCK)
-    default:
-        assert(!is_valid(functionality));
-        return UNKNOWN_VALUE;
-    }
-#undef CASE
-}
-
 const char * get_string( rs2_gyro_sensitivity value )
 {
 #define CASE( X ) STRCASE( GYRO_SENSITIVITY, X )
@@ -1030,7 +980,5 @@ const char * rs2_safety_mode_to_string( rs2_safety_mode mode ) { return libreals
 const char * rs2_d500_intercam_sync_mode_to_string( rs2_d500_intercam_sync_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_point_cloud_label_to_string(rs2_point_cloud_label label) { return librealsense::get_string(label); }
 const char * rs2_calib_location_to_string(rs2_calib_location calib_location) { return librealsense::get_string(calib_location); }
-const char * rs2_safety_pin_direction_to_string(rs2_safety_pin_direction direction) { return librealsense::get_string(direction); }
-const char * rs2_safety_pin_functionality_to_string(rs2_safety_pin_functionality functionality) { return librealsense::get_string(functionality); }
 
 const char * rs2_gyro_sensitivity_to_string( rs2_gyro_sensitivity mode ){return librealsense::get_string( mode );}

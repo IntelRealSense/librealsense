@@ -13,7 +13,7 @@ namespace rsutils
     namespace json_validator
     {
         template <typename ExpectedType>
-        bool validate_json_field(const json &j, const std::string &field_name, size_t size = 0)
+        void validate_json_field(const json &j, const std::string &field_name, size_t size = 0)
         {
             if (!j.contains(field_name))
             {
@@ -120,8 +120,6 @@ namespace rsutils
                 oss << "Unsupported type for field '" << field_name << "'";
                 throw std::runtime_error(oss.str());
             }
-
-            return true;
         }
     }
 }

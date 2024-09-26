@@ -2,6 +2,8 @@
 // Copyright(c) 2022-2024 Intel Corporation. All Rights Reserved.
 
 #include "d500-safety.h"
+#include "d500-types/safety-preset.h"
+#include "d500-types/safety-interface-config.h"
 #include "d500-types/application-config.h"
 
 #include <vector>
@@ -415,233 +417,68 @@ namespace librealsense
         return rs2_intrinsics();
     }
 
-    void d500_safety_sensor::set_safety_preset(int index, const rs2_safety_preset& sp) const
+    std::string d500_safety_sensor::get_safety_preset(int index) const
     {
-        //calculate CRC
-        auto computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&sp), sizeof(rs2_safety_preset));
-
-        // prepare vector of data to be sent (header + sp)
-        rs2_safety_preset_with_header data;
-        uint16_t version = ((uint16_t)0x03 << 8) | 0x01;  // major=0x03, minor=0x01 --> ver = major.minor
-        data.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_preset_id), 
-            sizeof(rs2_safety_preset), computed_crc32 };
-        data.safety_preset = sp;
-        auto data_as_ptr = reinterpret_cast<const uint8_t*>(&data);
-
-        // prepare command
-        command cmd(ds::SAFETY_PRESET_WRITE);
-        cmd.param1 = index;
-        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(data));
-        cmd.require_response = true;
-
-        // send command 
-        _owner->_hw_monitor->send(cmd);
-    }
-
-    rs2_safety_preset d500_safety_sensor::get_safety_preset(int index) const
-    {
-        rs2_safety_preset_with_header* result;
+        safety_preset_with_header* result;
 
         // prepare command
         command cmd(ds::SAFETY_PRESET_READ);
         cmd.require_response = true;
         cmd.param1 = index;
 
-        // send command to device and get response (safety_preset entry + header)
+        // send command to device and get response (safety_preset entry + safety_preset_header)
         std::vector< uint8_t > response = _owner->_hw_monitor->send(cmd);
-        if (response.size() < sizeof(rs2_safety_preset_with_header))
+        if (response.size() < sizeof(safety_preset_with_header))
         {
             throw io_exception(rsutils::string::from() << "Safety preset read at index=" << index << " failed");
         }
 
-        // cast response to safety_preset_with_header struct
-        result = reinterpret_cast<rs2_safety_preset_with_header*>(response.data());
-
         // check CRC before returning result       
-        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(rs2_safety_preset_header), sizeof(rs2_safety_preset));
-        if (computed_crc32 != result->header.crc32)
+        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(safety_preset_header),
+            sizeof(safety_preset));
+        result = reinterpret_cast<safety_preset_with_header*>(response.data());
+        if (computed_crc32 != result->get_table_header().get_crc32())
         {
-            throw invalid_value_exception(rsutils::string::from() << "invalid CRC value for index=" << index);
+            throw invalid_value_exception(rsutils::string::from() << "Safety preset invalid CRC value");
         }
 
-        return result->safety_preset;
+        rsutils::json j = result->get_safety_preset().to_json();
+        return j.dump();
     }
 
-    std::string d500_safety_sensor::safety_preset_to_json_string(rs2_safety_preset const& sp) const
+    void d500_safety_sensor::set_safety_preset(int index, const std::string& sp_json_str) const
     {
-        rsutils::json json_data;
+        rsutils::json json_data = rsutils::json::parse(sp_json_str);
+        safety_preset sp(json_data["safety_preset"]);
 
-        auto& rotation = json_data["safety_preset"]["platform_config"]["transformation_link"]["rotation"];
-        rotation[0][0] = sp.platform_config.transformation_link.rotation.x.x;
-        rotation[0][1] = sp.platform_config.transformation_link.rotation.x.y;
-        rotation[0][2] = sp.platform_config.transformation_link.rotation.x.z;
-        rotation[1][0] = sp.platform_config.transformation_link.rotation.y.x;
-        rotation[1][1] = sp.platform_config.transformation_link.rotation.y.y;
-        rotation[1][2] = sp.platform_config.transformation_link.rotation.y.z;
-        rotation[2][0] = sp.platform_config.transformation_link.rotation.z.x;
-        rotation[2][1] = sp.platform_config.transformation_link.rotation.z.y;
-        rotation[2][2] = sp.platform_config.transformation_link.rotation.z.z;
+        //calculate CRC
+        auto computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&sp), sizeof(safety_preset));
 
-        auto& translation = json_data["safety_preset"]["platform_config"]["transformation_link"]["translation"];
-        translation[0] = sp.platform_config.transformation_link.translation.x;
-        translation[1] = sp.platform_config.transformation_link.translation.y;
-        translation[2] = sp.platform_config.transformation_link.translation.z;
-
-        json_data["safety_preset"]["platform_config"]["robot_height"] = sp.platform_config.robot_height;
-
-        auto& safety_zones = json_data["safety_preset"]["safety_zones"];
-        for (int safety_zone_index = 0; safety_zone_index < 2; safety_zone_index++)
-        {
-            std::string zone_type = (safety_zone_index == 0) ? "danger_zone" : "warning_zone";
-            for (int zone_polygon_index = 0; zone_polygon_index < 4; zone_polygon_index++)
-            {
-                std::string p = "p" + std::to_string(zone_polygon_index);
-                safety_zones[zone_type]["zone_polygon"][p]["x"] = sp.safety_zones[safety_zone_index].zone_polygon[zone_polygon_index].x;
-                safety_zones[zone_type]["zone_polygon"][p]["y"] = sp.safety_zones[safety_zone_index].zone_polygon[zone_polygon_index].y;
-            }
-            safety_zones[zone_type]["safety_trigger_confidence"] = sp.safety_zones[safety_zone_index].safety_trigger_confidence;
-        }
-
-        auto& masking_zones = json_data["safety_preset"]["masking_zones"];
-        for (int masking_zone_index = 0; masking_zone_index < 8; masking_zone_index++)
-        {
-            std::string masking_zone_index_str = std::to_string(masking_zone_index);
-            for (int region_of_interests_index = 0; region_of_interests_index < 4; region_of_interests_index++)
-            {
-                std::string p = "p" + std::to_string(region_of_interests_index);
-                masking_zones[masking_zone_index_str]["region_of_interests"][p]["i"] = sp.masking_zones[masking_zone_index].region_of_interests[region_of_interests_index].i;
-                masking_zones[masking_zone_index_str]["region_of_interests"][p]["j"] = sp.masking_zones[masking_zone_index].region_of_interests[region_of_interests_index].j;
-            }
-            masking_zones[masking_zone_index_str]["attributes"] = sp.masking_zones[masking_zone_index].attributes;
-            masking_zones[masking_zone_index_str]["minimal_range"] = sp.masking_zones[masking_zone_index].minimal_range;
-        }
-
-        auto& environment = json_data["safety_preset"]["environment"];
-        environment["safety_trigger_duration"] = sp.environment.safety_trigger_duration;
-        environment["zero_safety_monitoring"] = sp.environment.zero_safety_monitoring;
-        environment["hara_history_continuation"] = sp.environment.hara_history_continuation;
-        environment["angular_velocity"] = sp.environment.angular_velocity;
-        environment["payload_weight"] = sp.environment.payload_weight;
-        environment["surface_inclination"] = sp.environment.surface_inclination;
-        environment["surface_height"] = sp.environment.surface_height;
-        environment["diagnostic_zone_fill_rate_threshold"] = sp.environment.diagnostic_zone_fill_rate_threshold;
-        environment["floor_fill_threshold"] = sp.environment.floor_fill_threshold;
-        environment["depth_fill_threshold"] = sp.environment.depth_fill_threshold;
-        environment["diagnostic_zone_height_median_threshold"] = sp.environment.diagnostic_zone_height_median_threshold;
-        environment["vision_hara_persistency"] = sp.environment.vision_hara_persistency;
-        
-        size_t number_of_elements = sizeof(sp.environment.crypto_signature) / sizeof(sp.environment.crypto_signature[0]);
-        std::vector<uint8_t> crypto_signature_byte_array(number_of_elements);
-        memcpy(crypto_signature_byte_array.data(), sp.environment.crypto_signature, sizeof(sp.environment.crypto_signature));
-        environment["crypto_signature"] = crypto_signature_byte_array;
-
-        return json_data.dump();
-    }
-
-
-    rs2_safety_preset d500_safety_sensor::json_string_to_safety_preset(const std::string& json_str) const
-    {
-        rsutils::json json_data = rsutils::json::parse(json_str);
-        rs2_safety_preset sp;
-
-        auto& rotation = json_data["safety_preset"]["platform_config"]["transformation_link"]["rotation"];
-        sp.platform_config.transformation_link.rotation.x.x = rotation[0][0];
-        sp.platform_config.transformation_link.rotation.x.y = rotation[0][1];
-        sp.platform_config.transformation_link.rotation.x.z = rotation[0][2];
-        sp.platform_config.transformation_link.rotation.y.x = rotation[1][0];
-        sp.platform_config.transformation_link.rotation.y.y = rotation[1][1];
-        sp.platform_config.transformation_link.rotation.y.z = rotation[1][2];
-        sp.platform_config.transformation_link.rotation.z.x = rotation[2][0];
-        sp.platform_config.transformation_link.rotation.z.y = rotation[2][1];
-        sp.platform_config.transformation_link.rotation.z.z = rotation[2][2];
-
-        auto& translation = json_data["safety_preset"]["platform_config"]["transformation_link"]["translation"];
-        sp.platform_config.transformation_link.translation.x = translation[0];
-        sp.platform_config.transformation_link.translation.y = translation[1];
-        sp.platform_config.transformation_link.translation.z = translation[2];
-
-        sp.platform_config.robot_height = json_data["safety_preset"]["platform_config"]["robot_height"];
-
-        auto& safety_zones = json_data["safety_preset"]["safety_zones"];
-        for (int safety_zone_index = 0; safety_zone_index < 2; safety_zone_index++)
-        {
-            std::string zone_type = (safety_zone_index == 0) ? "danger_zone" : "warning_zone";
-            for (int zone_polygon_index = 0; zone_polygon_index < 4; zone_polygon_index++)
-            {
-                std::string p = "p" + std::to_string(zone_polygon_index);
-                sp.safety_zones[safety_zone_index].zone_polygon[zone_polygon_index].x = safety_zones[zone_type]["zone_polygon"][p]["x"];
-                sp.safety_zones[safety_zone_index].zone_polygon[zone_polygon_index].y = safety_zones[zone_type]["zone_polygon"][p]["y"];
-            }
-            sp.safety_zones[safety_zone_index].safety_trigger_confidence = safety_zones[zone_type]["safety_trigger_confidence"];
-        }
-
-        auto& masking_zones = json_data["safety_preset"]["masking_zones"];
-        for (int masking_zone_index = 0; masking_zone_index < 8; masking_zone_index++)
-        {
-            std::string masking_zone_index_str = std::to_string(masking_zone_index);
-            for (int region_of_interests_index = 0; region_of_interests_index < 4; region_of_interests_index++)
-            {
-                std::string p = "p" + std::to_string(region_of_interests_index);
-                sp.masking_zones[masking_zone_index].region_of_interests[region_of_interests_index].i = masking_zones[masking_zone_index_str]["region_of_interests"][p]["i"];
-                sp.masking_zones[masking_zone_index].region_of_interests[region_of_interests_index].j = masking_zones[masking_zone_index_str]["region_of_interests"][p]["j"];
-            }
-            sp.masking_zones[masking_zone_index].attributes = masking_zones[masking_zone_index_str]["attributes"];
-            sp.masking_zones[masking_zone_index].minimal_range = masking_zones[masking_zone_index_str]["minimal_range"];
-        }
-
-        auto& environment = json_data["safety_preset"]["environment"];
-        sp.environment.safety_trigger_duration = environment["safety_trigger_duration"];
-        sp.environment.zero_safety_monitoring = environment["zero_safety_monitoring"];
-        sp.environment.hara_history_continuation = environment["hara_history_continuation"];
-        sp.environment.angular_velocity = environment["angular_velocity"];
-        sp.environment.payload_weight = environment["payload_weight"];
-        sp.environment.surface_inclination = environment["surface_inclination"];
-        sp.environment.surface_height = environment["surface_height"];
-        sp.environment.diagnostic_zone_fill_rate_threshold = environment["diagnostic_zone_fill_rate_threshold"];
-        sp.environment.floor_fill_threshold = environment["floor_fill_threshold"];
-        sp.environment.depth_fill_threshold = environment["depth_fill_threshold"];
-        sp.environment.diagnostic_zone_height_median_threshold = environment["diagnostic_zone_height_median_threshold"];
-        sp.environment.vision_hara_persistency = environment["vision_hara_persistency"];
-
-        std::vector<uint8_t> crypto_signature_vector = environment["crypto_signature"].get<std::vector<uint8_t>>();
-        std::memcpy(sp.environment.crypto_signature, crypto_signature_vector.data(), crypto_signature_vector.size() * sizeof(uint8_t));
-
-        return sp;
-    }
-
-    void d500_safety_sensor::set_safety_interface_config(const rs2_safety_interface_config& sic) const
-    {
-        // calculate CRC
-        uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&sic), sizeof(rs2_safety_interface_config));
-
-        // prepare vector of data to be sent (header + sic)
-        rs2_safety_interface_config_with_header sic_with_header;
+        // prepare vector of data to be sent (header + sp)
         uint16_t version = ((uint16_t)0x03 << 8) | 0x01;  // major=0x03, minor=0x01 --> ver = major.minor
         uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
-        sic_with_header.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_interface_cfg_id),
-            sizeof(rs2_safety_interface_config), calib_version, computed_crc32 };
-        sic_with_header.payload = sic;
-        auto data_as_ptr = reinterpret_cast<const uint8_t*>(&sic_with_header);
+        safety_preset_header header(version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_preset_id), sizeof(safety_preset), computed_crc32);
+        safety_preset_with_header sp_with_header(header, sp);
+        auto data_as_ptr = reinterpret_cast<const uint8_t*>(&sp_with_header);
 
         // prepare command
-        command cmd(ds::SET_HKR_CONFIG_TABLE,
-            static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
-            static_cast<int>(ds::d500_calibration_table_id::safety_interface_cfg_id),
-            static_cast<int>(ds::d500_calib_type::d500_calib_gold));
-        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(rs2_safety_interface_config_with_header));
+        command cmd(ds::SAFETY_PRESET_WRITE);
+        cmd.param1 = index;
+        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(safety_preset_with_header));
         cmd.require_response = true;
 
         // send command 
         _owner->_hw_monitor->send(cmd);
     }
 
-    rs2_safety_interface_config d500_safety_sensor::get_safety_interface_config(rs2_calib_location loc) const
+    std::string d500_safety_sensor::get_safety_interface_config(rs2_calib_location loc) const
     {
         if (loc != RS2_CALIB_LOCATION_FLASH && loc != RS2_CALIB_LOCATION_RAM)
             throw io_exception(rsutils::string::from() << "Safety Interface Config can be read only from Flash or RAM");
         ds::d500_calib_location d500_loc = (loc == RS2_CALIB_LOCATION_RAM) ? ds::d500_calib_location::d500_calib_ram_memory :
             ds::d500_calib_location::d500_calib_flash_memory;
-        rs2_safety_interface_config_with_header* result;
+
+        safety_interface_config_with_header* result;
 
         // prepare command
         command cmd(ds::GET_HKR_CONFIG_TABLE,
@@ -652,197 +489,48 @@ namespace librealsense
 
         // send command to device and get response (safety_interface_config entry + header)
         std::vector< uint8_t > response = _owner->_hw_monitor->send(cmd);
-        if (response.size() < sizeof(rs2_safety_interface_config_with_header))
+        if (response.size() < sizeof(safety_interface_config_with_header))
         {
             throw io_exception(rsutils::string::from() << "Safety Interface Config failed");
         }
+
         // check CRC before returning result       
-        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(rs2_safety_interface_config_header),
-            sizeof(rs2_safety_interface_config));
-        result = reinterpret_cast<rs2_safety_interface_config_with_header*>(response.data());
-        if (computed_crc32 != result->header.crc32)
+        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(table_header), sizeof(safety_interface_config));
+        result = reinterpret_cast<safety_interface_config_with_header*>(response.data());
+        if (computed_crc32 != result->get_table_header().get_crc32())
         {
             throw invalid_value_exception(rsutils::string::from() << "Safety Interface Config invalid CRC value");
         }
         
-        return result->payload;
+        rsutils::json j = result->get_safety_interface_config().to_json();
+        return j.dump();
     }
 
-    std::string d500_safety_sensor::safety_interface_config_to_json_string(const rs2_safety_interface_config& sic) const
+    void d500_safety_sensor::set_safety_interface_config(const std::string& sic_json_str) const
     {
-        rsutils::json json_data;
+        rsutils::json json_data = rsutils::json::parse(sic_json_str);
+        safety_interface_config sic(json_data["safety_interface_config"]);
 
-        auto& pins = json_data["safety_interface_config"]["m12_safety_pins_configuration"];
-        pins["power"]["direction"] = sic.power.direction;
-        pins["power"]["functionality"] = sic.power.functionality;
-        pins["ossd1_b"]["direction"] = sic.ossd1_b.direction;
-        pins["ossd1_b"]["functionality"] = sic.ossd1_b.functionality;
-        pins["ossd1_a"]["direction"] = sic.ossd1_a.direction;
-        pins["ossd1_a"]["functionality"] = sic.ossd1_a.functionality;
-        pins["preset3_a"]["direction"] = sic.preset3_a.direction;
-        pins["preset3_a"]["functionality"] = sic.preset3_a.functionality;
-        pins["preset3_b"]["direction"] = sic.preset3_b.direction;
-        pins["preset3_b"]["functionality"] = sic.preset3_b.functionality;
-        pins["preset4_a"]["direction"] = sic.preset4_a.direction;
-        pins["preset4_a"]["functionality"] = sic.preset4_a.functionality;
-        pins["preset1_b"]["direction"] = sic.preset1_b.direction;
-        pins["preset1_b"]["functionality"] = sic.preset1_b.functionality;
-        pins["preset1_a"]["direction"] = sic.preset1_a.direction;
-        pins["preset1_a"]["functionality"] = sic.preset1_a.functionality;
-        pins["gpio_0"]["direction"] = sic.gpio_0.direction;
-        pins["gpio_0"]["functionality"] = sic.gpio_0.functionality;
-        pins["gpio_1"]["direction"] = sic.gpio_1.direction;
-        pins["gpio_1"]["functionality"] = sic.gpio_1.functionality;
-        pins["gpio_3"]["direction"] = sic.gpio_3.direction;
-        pins["gpio_3"]["functionality"] = sic.gpio_3.functionality;
-        pins["gpio_2"]["direction"] = sic.gpio_2.direction;
-        pins["gpio_2"]["functionality"] = sic.gpio_2.functionality;
-        pins["preset2_b"]["direction"] = sic.preset2_b.direction;
-        pins["preset2_b"]["functionality"] = sic.preset2_b.functionality;
-        pins["gpio_4"]["direction"] = sic.gpio_4.direction;
-        pins["gpio_4"]["functionality"] = sic.gpio_4.functionality;
-        pins["preset2_a"]["direction"] = sic.preset2_a.direction;
-        pins["preset2_a"]["functionality"] = sic.preset2_a.functionality;
-        pins["preset4_b"]["direction"] = sic.preset4_b.direction;
-        pins["preset4_b"]["functionality"] = sic.preset4_b.functionality;
-        pins["ground"]["direction"] = sic.ground.direction;
-        pins["ground"]["functionality"] = sic.ground.functionality;
+        // calculate CRC
+        uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&sic), sizeof(safety_interface_config));
 
-        json_data["safety_interface_config"]["gpio_stabilization_interval"] = sic.gpio_stabilization_interval;
+        // prepare vector of data to be sent (header + safety_interface_config)
+        uint16_t version = ((uint16_t)0x03 << 8) | 0x01;  // major=0x03, minor=0x01 --> ver = major.minor
+        uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
+        table_header header(version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_interface_cfg_id), sizeof(safety_interface_config), calib_version, computed_crc32);
+        safety_interface_config_with_header sic_with_header(header, sic);
+        auto data_as_ptr = reinterpret_cast<const uint8_t*>(&sic_with_header);
 
-        auto& rotation = json_data["safety_interface_config"]["camera_position"]["rotation"];
-        rotation[0][0] = sic.camera_position.rotation.x.x;
-        rotation[0][1] = sic.camera_position.rotation.x.y;
-        rotation[0][2] = sic.camera_position.rotation.x.z;
-        rotation[1][0] = sic.camera_position.rotation.y.x;
-        rotation[1][1] = sic.camera_position.rotation.y.y;
-        rotation[1][2] = sic.camera_position.rotation.y.z;
-        rotation[2][0] = sic.camera_position.rotation.z.x;
-        rotation[2][1] = sic.camera_position.rotation.z.y;
-        rotation[2][2] = sic.camera_position.rotation.z.z;
+        // prepare command
+        command cmd(ds::SET_HKR_CONFIG_TABLE,
+            static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
+            static_cast<int>(ds::d500_calibration_table_id::safety_interface_cfg_id),
+            static_cast<int>(ds::d500_calib_type::d500_calib_gold));
+        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(safety_interface_config_with_header));
+        cmd.require_response = true;
 
-        auto& translation = json_data["safety_interface_config"]["camera_position"]["translation"];
-        translation[0] = sic.camera_position.translation.x;
-        translation[1] = sic.camera_position.translation.y;
-        translation[2] = sic.camera_position.translation.z;
-
-        auto& occupancy_grid_params = json_data["safety_interface_config"]["occupancy_grid_params"];
-        occupancy_grid_params["grid_cell_seed"] = sic.occupancy_grid_params.grid_cell_seed;
-        occupancy_grid_params["close_range_quorum"] = sic.occupancy_grid_params.close_range_quorum;
-        occupancy_grid_params["mid_range_quorum"] = sic.occupancy_grid_params.mid_range_quorum;
-        occupancy_grid_params["long_range_quorum"] = sic.occupancy_grid_params.long_range_quorum;
-
-        auto& smcu_arbitration_params = json_data["safety_interface_config"]["smcu_arbitration_params"];
-        smcu_arbitration_params["l_0_total_threshold"] = sic.smcu_arbitration_params.l_0_total_threshold;
-        smcu_arbitration_params["l_0_sustained_rate_threshold"] = sic.smcu_arbitration_params.l_0_sustained_rate_threshold;
-        smcu_arbitration_params["l_1_total_threshold"] = sic.smcu_arbitration_params.l_1_total_threshold;
-        smcu_arbitration_params["l_1_sustained_rate_threshold"] = sic.smcu_arbitration_params.l_1_sustained_rate_threshold;
-        smcu_arbitration_params["l_2_total_threshold"] = sic.smcu_arbitration_params.l_2_total_threshold;
-        smcu_arbitration_params["hkr_stl_timeout"] = sic.smcu_arbitration_params.hkr_stl_timeout;
-        smcu_arbitration_params["mcu_stl_timeout"] = sic.smcu_arbitration_params.mcu_stl_timeout;
-        smcu_arbitration_params["sustained_aicv_frame_drops"] = sic.smcu_arbitration_params.sustained_aicv_frame_drops;
-        smcu_arbitration_params["ossd_self_test_pulse_width"] = sic.smcu_arbitration_params.ossd_self_test_pulse_width;
-       
-        // fill crypto signature array
-        size_t number_of_elements = sizeof(sic.crypto_signature) / sizeof(sic.crypto_signature[0]);
-        std::vector<uint8_t> crypto_signature_byte_array(number_of_elements);
-        memcpy(crypto_signature_byte_array.data(), sic.crypto_signature, sizeof(sic.crypto_signature));
-        json_data["safety_interface_config"]["crypto_signature"] = crypto_signature_byte_array;
-
-        // fill reserved array (needed for CRC32 check)
-        number_of_elements = sizeof(sic.reserved) / sizeof(sic.reserved[0]);
-        std::vector<uint8_t> reserved_array(number_of_elements);
-        memcpy(reserved_array.data(), sic.reserved, sizeof(sic.reserved));
-        json_data["safety_interface_config"]["reserved"] = reserved_array;
-
-        return json_data.dump();
-    }
-
-    rs2_safety_interface_config d500_safety_sensor::json_string_to_safety_interface_config(const std::string& json_str) const
-    {
-        rsutils::json json_data = rsutils::json::parse(json_str);
-        rs2_safety_interface_config sic;
-
-        auto& pins = json_data["safety_interface_config"]["m12_safety_pins_configuration"];
-        sic.power.direction = pins["power"]["direction"];
-        sic.power.functionality = pins["power"]["functionality"];
-        sic.ossd1_b.direction = pins["ossd1_b"]["direction"];
-        sic.ossd1_b.functionality = pins["ossd1_b"]["functionality"];
-        sic.ossd1_a.direction = pins["ossd1_a"]["direction"];
-        sic.ossd1_a.functionality = pins["ossd1_a"]["functionality"];
-        sic.preset3_a.direction = pins["preset3_a"]["direction"];
-        sic.preset3_a.functionality = pins["preset3_a"]["functionality"];
-        sic.preset3_b.direction = pins["preset3_b"]["direction"];
-        sic.preset3_b.functionality = pins["preset3_b"]["functionality"];
-        sic.preset4_a.direction = pins["preset4_a"]["direction"];
-        sic.preset4_a.functionality = pins["preset4_a"]["functionality"];
-        sic.preset1_b.direction = pins["preset1_b"]["direction"];
-        sic.preset1_b.functionality = pins["preset1_b"]["functionality"];
-        sic.preset1_a.direction = pins["preset1_a"]["direction"];
-        sic.preset1_a.functionality = pins["preset1_a"]["functionality"];
-        sic.gpio_0.direction = pins["gpio_0"]["direction"];
-        sic.gpio_0.functionality = pins["gpio_0"]["functionality"];
-        sic.gpio_1.direction = pins["gpio_1"]["direction"];
-        sic.gpio_1.functionality = pins["gpio_1"]["functionality"];
-        sic.gpio_3.direction = pins["gpio_3"]["direction"];
-        sic.gpio_3.functionality = pins["gpio_3"]["functionality"];
-        sic.gpio_2.direction = pins["gpio_2"]["direction"];
-        sic.gpio_2.functionality = pins["gpio_2"]["functionality"];
-        sic.preset2_b.direction = pins["preset2_b"]["direction"];
-        sic.preset2_b.functionality = pins["preset2_b"]["functionality"];
-        sic.gpio_4.direction = pins["gpio_4"]["direction"];
-        sic.gpio_4.functionality = pins["gpio_4"]["functionality"];
-        sic.preset2_a.direction = pins["preset2_a"]["direction"];
-        sic.preset2_a.functionality = pins["preset2_a"]["functionality"];
-        sic.preset4_b.direction = pins["preset4_b"]["direction"];
-        sic.preset4_b.functionality = pins["preset4_b"]["functionality"];
-        sic.ground.direction = pins["ground"]["direction"];
-        sic.ground.functionality = pins["ground"]["functionality"];
-
-        sic.gpio_stabilization_interval = json_data["safety_interface_config"]["gpio_stabilization_interval"];
-
-        auto& rotation = json_data["safety_interface_config"]["camera_position"]["rotation"];
-        sic.camera_position.rotation.x.x = rotation[0][0];
-        sic.camera_position.rotation.x.y = rotation[0][1];
-        sic.camera_position.rotation.x.z = rotation[0][2];
-        sic.camera_position.rotation.y.x = rotation[1][0];
-        sic.camera_position.rotation.y.y = rotation[1][1];
-        sic.camera_position.rotation.y.z = rotation[1][2];
-        sic.camera_position.rotation.z.x = rotation[2][0];
-        sic.camera_position.rotation.z.y = rotation[2][1];
-        sic.camera_position.rotation.z.z = rotation[2][2];
-
-        auto& translation = json_data["safety_interface_config"]["camera_position"]["translation"];
-        sic.camera_position.translation.x = translation[0];
-        sic.camera_position.translation.y = translation[1];
-        sic.camera_position.translation.z = translation[2];
-
-        auto& occupancy_grid_params = json_data["safety_interface_config"]["occupancy_grid_params"];
-        sic.occupancy_grid_params.grid_cell_seed = occupancy_grid_params["grid_cell_seed"];
-        sic.occupancy_grid_params.close_range_quorum = occupancy_grid_params["close_range_quorum"];
-        sic.occupancy_grid_params.mid_range_quorum = occupancy_grid_params["mid_range_quorum"];
-        sic.occupancy_grid_params.long_range_quorum = occupancy_grid_params["long_range_quorum"];
-
-        auto& smcu_arbitration_params = json_data["safety_interface_config"]["smcu_arbitration_params"];
-        sic.smcu_arbitration_params.l_0_total_threshold =smcu_arbitration_params["l_0_total_threshold"];
-        sic.smcu_arbitration_params.l_0_sustained_rate_threshold = smcu_arbitration_params["l_0_sustained_rate_threshold"];
-        sic.smcu_arbitration_params.l_1_total_threshold = smcu_arbitration_params["l_1_total_threshold"];
-        sic.smcu_arbitration_params.l_1_sustained_rate_threshold = smcu_arbitration_params["l_1_sustained_rate_threshold"];
-        sic.smcu_arbitration_params.l_2_total_threshold = smcu_arbitration_params["l_2_total_threshold"];
-        sic.smcu_arbitration_params.hkr_stl_timeout = smcu_arbitration_params["hkr_stl_timeout"];
-        sic.smcu_arbitration_params.mcu_stl_timeout = smcu_arbitration_params["mcu_stl_timeout"];
-        sic.smcu_arbitration_params.sustained_aicv_frame_drops = smcu_arbitration_params["sustained_aicv_frame_drops"];
-        sic.smcu_arbitration_params.ossd_self_test_pulse_width = smcu_arbitration_params["ossd_self_test_pulse_width"];
-
-        // fill crypto signature array
-        std::vector<uint8_t> crypto_signature_vector = json_data["safety_interface_config"]["crypto_signature"].get<std::vector<uint8_t>>();
-        std::memcpy(sic.crypto_signature, crypto_signature_vector.data(), crypto_signature_vector.size() * sizeof(uint8_t));
-
-        // fill reserved signature array (needed for CRC32 check)
-        std::vector<uint8_t> reserved_vector = json_data["safety_interface_config"]["reserved"].get<std::vector<uint8_t>>();
-        std::memcpy(sic.reserved, reserved_vector.data(), reserved_vector.size() * sizeof(uint8_t));
-
-        return sic;
+        // send command 
+        _owner->_hw_monitor->send(cmd);
     }
 
     std::string d500_safety_sensor::get_application_config() const
@@ -864,8 +552,7 @@ namespace librealsense
         }
 
         // check CRC before returning result
-        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(table_header),
-            sizeof(application_config));
+        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(table_header), sizeof(application_config));
         result = reinterpret_cast<application_config_with_header*>(response.data());
         if (computed_crc32 != result->get_table_header().get_crc32())
         {
@@ -887,8 +574,7 @@ namespace librealsense
         // prepare vector of data to be sent (header + application_config)
         uint16_t version = ((uint16_t)0x01 << 8) | 0x00;  // major=0x01, minor=0x00 --> ver = major.minor
         uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
-        table_header header(version, static_cast<uint16_t>(ds::d500_calibration_table_id::app_config_table_id), sizeof(application_config),
-            calib_version, computed_crc32);
+        table_header header(version, static_cast<uint16_t>(ds::d500_calibration_table_id::app_config_table_id), sizeof(application_config), calib_version, computed_crc32);
         application_config_with_header app_config_with_header(header, app_config);
         auto data_as_ptr = reinterpret_cast<const uint8_t*>(&app_config_with_header);
 
