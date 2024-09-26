@@ -83,6 +83,8 @@ global_target_config()
 
 include(CMake/install_config.cmake)
 
+string(REPLACE "${ADDITIONAL_COMPILER_FLAGS}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+string(REPLACE "${ADDITIONAL_COMPILER_FLAGS}" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 add_subdirectory(wrappers)
 if ( ( BUILD_EXAMPLES OR BUILD_PC_STITCHING ) AND BUILD_GLSL_EXTENSIONS )
     find_package(glfw3 3.3 QUIET)
@@ -93,6 +95,8 @@ if ( ( BUILD_EXAMPLES OR BUILD_PC_STITCHING ) AND BUILD_GLSL_EXTENSIONS )
     endif()
     add_subdirectory(src/gl)
 endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
 
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
