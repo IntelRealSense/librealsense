@@ -71,12 +71,10 @@ macro(os_set_flags)
     # see https://readthedocs.intel.com/SecureCodingStandards/2023.Q2.0/compiler/c-cpp/ for more details
 
     if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|armv7l") # Jetson system, some flags are not recognized
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fstack-protector")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fstack-protector")
+        set(ADDITIONAL_COMPILER_FLAGS "-Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fstack-protector")
     else()
         #‘-mfunction-return’ and ‘-fcf-protection’ are not compatible, so specifing -fcf-protection=none
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
+        set(ADDITIONAL_COMPILER_FLAGS "-Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
     endif()
     set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -pie")
 
@@ -85,9 +83,11 @@ macro(os_set_flags)
         message(STATUS "Configuring for Debug build")
     else() # Release, RelWithDebInfo, or multi configuration generator is being used (aka not specifing build type, or building with VS)
         message(STATUS "Configuring for Release build")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
+        set(ADDITIONAL_COMPILER_FLAGS "${ADDITIONAL_COMPILER_FLAGS} -Werror -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
     endif()
+	
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
 
     #################
 	

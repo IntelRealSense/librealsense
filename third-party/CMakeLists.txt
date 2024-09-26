@@ -1,5 +1,8 @@
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _rel_path ${CMAKE_CURRENT_LIST_DIR})
 
+string(REPLACE "${ADDITIONAL_COMPILER_FLAGS}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+string(REPLACE "${ADDITIONAL_COMPILER_FLAGS}" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+
 include(CMake/external_json.cmake)
 
 add_subdirectory( "${CMAKE_CURRENT_LIST_DIR}/rsutils" )
@@ -18,3 +21,5 @@ if( BUILD_WITH_DDS )
     add_subdirectory( "${CMAKE_CURRENT_LIST_DIR}/realdds" )
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")

@@ -1,7 +1,7 @@
 if(CHECK_FOR_UPDATES)
 
-    set(FLAGS_ORIGIN "${CMAKE_C_FLAGS}")
-    string(REPLACE "-Werror" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}") # -Werror causes libcurl build to fail
+    string(REPLACE "${ADDITIONAL_COMPILER_FLAGS}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REPLACE "${ADDITIONAL_COMPILER_FLAGS}" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
     include(ExternalProject)
     message(STATUS "Building libcurl enabled")
@@ -64,5 +64,6 @@ if(CHECK_FOR_UPDATES)
         endif()
     endif()
 
-    set(CMAKE_C_FLAGS "${FLAGS_ORIGIN}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
 endif() #CHECK_FOR_UPDATES

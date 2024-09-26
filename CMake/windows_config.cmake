@@ -55,19 +55,18 @@ macro(os_set_flags)
 		
         # see https://readthedocs.intel.com/SecureCodingStandards/2023.Q2.0/compiler/c-cpp/ for more details
 
-		
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy /DYNAMICBASE /GS /wd4101") 
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy /DYNAMICBASE /GS /wd4101")
+        set(ADDITIONAL_COMPILER_FLAGS "/Gy /DYNAMICBASE /GS /wd4101")
 		
         if(CMAKE_BUILD_TYPE STREQUAL "Debug")
             message(STATUS "Configuring for Debug build")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
         else() # Release, RelWithDebInfo, or multi configuration generator is being used (aka not specifing build type, or building with VS)
             message(STATUS "Configuring for Release build")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX /sdl") 
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX /sdl")
+            set(ADDITIONAL_COMPILER_FLAGS "${ADDITIONAL_COMPILER_FLAGS} /WX /sdl") 
             set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} /INCREMENTAL:NO /LTCG /NXCOMPAT") # ignoring '/INCREMENTAL' due to '/LTCG' specification
         endif()
+		
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
 		
         #################
         
