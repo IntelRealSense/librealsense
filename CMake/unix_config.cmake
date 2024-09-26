@@ -85,8 +85,8 @@ macro(os_set_flags)
         message(STATUS "Configuring for Debug build")
     else() # Release, RelWithDebInfo, or multi configuration generator is being used (aka not specifing build type, or building with VS)
         message(STATUS "Configuring for Release build")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Werror=format-security -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Werror=format-security -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
     endif()
 
     #################

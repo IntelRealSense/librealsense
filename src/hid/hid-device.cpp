@@ -334,7 +334,7 @@ namespace librealsense
             //we want to change the sensitivity values only in gyro, for FW version >= 5.16
             if( featureReport.reportId == REPORT_ID_GYROMETER_3D
                 && _realsense_hid_report_actual_size == sizeof( REALSENSE_HID_REPORT ) )
-                featureReport.sensitivity = sensitivity;
+                featureReport.sensitivity = (unsigned short)sensitivity;
 
 
             res = dev->control_transfer(USB_REQUEST_CODE_SET,

@@ -56,8 +56,8 @@ macro(os_set_flags)
         # see https://readthedocs.intel.com/SecureCodingStandards/2023.Q2.0/compiler/c-cpp/ for more details
 
 		
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy /DYNAMICBASE /GS") 
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy /DYNAMICBASE /GS")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy /DYNAMICBASE /GS /wd4101") 
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy /DYNAMICBASE /GS /wd4101")
 		
         if(CMAKE_BUILD_TYPE STREQUAL "Debug")
             message(STATUS "Configuring for Debug build")

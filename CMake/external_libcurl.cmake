@@ -1,4 +1,8 @@
 if(CHECK_FOR_UPDATES)
+
+    set(FLAGS_ORIGIN "${CMAKE_C_FLAGS}")
+    string(REPLACE "-Werror" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}") # -Werror causes libcurl build to fail
+
     include(ExternalProject)
     message(STATUS "Building libcurl enabled")
     
@@ -60,4 +64,5 @@ if(CHECK_FOR_UPDATES)
         endif()
     endif()
 
+    set(CMAKE_C_FLAGS "${FLAGS_ORIGIN}")
 endif() #CHECK_FOR_UPDATES
