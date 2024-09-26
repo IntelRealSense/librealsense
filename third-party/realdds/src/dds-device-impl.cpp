@@ -590,7 +590,7 @@ void dds_device::impl::on_device_header( json const & j, dds_sample const & samp
         {
             std::string const & from_name = ex[0].string_ref();
             std::string const & to_name = ex[1].string_ref();
-            LOG_DEBUG( "[" << debug_name() << "]     ... got extrinsics from " << from_name << " to " << to_name );
+            //LOG_DEBUG( "[" << debug_name() << "]     ... got extrinsics from " << from_name << " to " << to_name );
             extrinsics extr = extrinsics::from_json( ex[2] );
             _extrinsics_map[std::make_pair( from_name, to_name )] = std::make_shared< extrinsics >( extr );
         }
@@ -700,7 +700,7 @@ void dds_device::impl::on_stream_options( json const & j, dds_sample const & sam
         dds_options options;
         for( auto & option_j : options_j )
         {
-            LOG_DEBUG( "[" << debug_name() << "]     ... " << option_j );
+            //LOG_DEBUG( "[" << debug_name() << "]     ... " << option_j );
             auto option = dds_option::from_json( option_j );
             options.push_back( option );
         }

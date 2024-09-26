@@ -149,7 +149,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     , auto_calibrated_proxy()
     , _dds_dev( dev )
 {
-    LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
+    //LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
     register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name() );
     register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev->device_info().topic_root() );
     register_info( RS2_CAMERA_INFO_PRODUCT_ID, "DDS" );
@@ -236,8 +236,8 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             sensor_info.proxy->add_dds_stream( sidx, stream );
             _stream_name_to_owning_sensor[stream->name()] = sensor_info.proxy;
             type_and_index_to_dds_stream_sidx.insert( { type_and_index, sidx }  );
-            LOG_DEBUG( sidx.to_string() << " " << get_string( sensor_info.type ) << " '" << stream->sensor_name()
-                                        << "' : '" << stream->name() << "' " << get_string( stream_type ) );
+            //LOG_DEBUG( sidx.to_string() << " " << get_string( sensor_info.type ) << " '" << stream->sensor_name()
+            //                            << "' : '" << stream->name() << "' " << get_string( stream_type ) );
 
             software_sensor & sensor = get_software_sensor( sensor_info.sensor_index );
             auto video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( stream );
@@ -281,7 +281,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
 
     for( auto & sensor_info : sensor_name_to_info )
     {
-        LOG_DEBUG( sensor_info.first );
+        //LOG_DEBUG( sensor_info.first );
 
         // Set profile's ID based on the dds_stream's ID (index already set). Connect the profile to the extrinsics graph.
         for( auto & profile : sensor_info.second.proxy->get_stream_profiles() )
@@ -348,7 +348,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
                     auto const dds_extr = _dds_dev->get_extrinsics( from_stream.first, to_stream.first );
                     if( ! dds_extr )
                     {
-                        LOG_DEBUG( "missing extrinsics from " << from_stream.first << " to " << to_stream.first );
+                        //LOG_DEBUG( "missing extrinsics from " << from_stream.first << " to " << to_stream.first );
                         continue;
                     }
                     rs2_extrinsics extr = to_rs2_extrinsics( dds_extr );

@@ -116,7 +116,7 @@ namespace librealsense {
         {
             for( auto & dev_info : factory->query_devices( requested_mask ) )
             {
-                LOG_INFO( "... " << dev_info->get_address() );
+                LOG_DEBUG( "... " << dev_info->get_address() );
                 list.push_back( dev_info );
             }
         }
@@ -124,12 +124,12 @@ namespace librealsense {
         {
             if( auto dev_info = item.second.lock() )
             {
-                LOG_INFO( "... " << dev_info->get_address() );
+                LOG_DEBUG( "... " << dev_info->get_address() );
                 list.push_back( dev_info );
             }
         }
-        LOG_INFO( "Found " << list.size() << " RealSense devices (0x" << std::hex << requested_mask << " requested & 0x"
-                           << get_device_mask() << " from device-mask in settings)" << std::dec );
+        LOG_DEBUG( "Found " << list.size() << " RealSense devices (0x" << std::hex << requested_mask
+                            << " requested & 0x" << get_device_mask() << " from device-mask in settings)" << std::dec );
         return list;
     }
 

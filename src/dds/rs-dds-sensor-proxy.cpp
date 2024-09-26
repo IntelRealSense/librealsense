@@ -609,7 +609,7 @@ void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option
     if( get_option_handler( option_id ) )
         throw std::runtime_error( "option '" + option->get_name() + "' already exists in sensor" );
 
-    LOG_DEBUG( "... option -> " << option->get_name() );
+    //LOG_DEBUG( "... option -> " << option->get_name() );
     auto opt = std::make_shared< rs_dds_option >(
         option,
         [=]( json value )
