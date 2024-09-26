@@ -3366,6 +3366,7 @@ namespace rs2
                         std::shared_ptr< process_notification_model > n;
                         if( is_d555 )
                         {
+                            // D555 OHM is same as D455, using D400 calibration algorithms.
                             manager = std::make_shared< on_chip_calib_manager >( viewer, sub, *this, dev );
                             n = std::make_shared< autocalib_notification_model >( "", manager, false );
                         }

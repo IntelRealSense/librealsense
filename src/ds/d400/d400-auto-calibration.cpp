@@ -47,13 +47,6 @@ namespace librealsense
         uint16_t tableSize;  // 512 bytes
     };
 
-    struct DscResultBuffer
-    {
-        uint16_t paramSize;
-        uint16_t status;
-        float healthCheck;
-        uint16_t tableSize;
-    };
 #pragma pack(pop)
 
     enum class host_assistance_type
