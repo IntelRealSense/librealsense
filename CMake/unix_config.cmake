@@ -70,7 +70,7 @@ macro(os_set_flags)
 	
     # see https://readthedocs.intel.com/SecureCodingStandards/2023.Q2.0/compiler/c-cpp/ for more details
 
-    if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|armv7l" OR  # Some flags are not recognized or Jetson systems or on GCC version < 9
+    if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|armv7l" OR APPLE OR  # Some flags are not recognized or some systems / gcc versions
        (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0")) # 
         set(ADDITIONAL_COMPILER_FLAGS "-Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fstack-protector")
     else()
