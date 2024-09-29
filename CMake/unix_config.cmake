@@ -72,13 +72,17 @@ macro(os_set_flags)
 
     if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|armv7l" OR APPLE OR  # Some flags are not recognized or some systems / gcc versions
        (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0")) # 
-        set(ADDITIONAL_COMPILER_FLAGS "-Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fstack-protector")
+        set(ADDITIONAL_COMPILER_FLAGS "-Wformat -Wformat-security -fPIC -fstack-protector")
     else()
         #‘-mfunction-return’ and ‘-fcf-protection’ are not compatible, so specifing -fcf-protection=none
-        set(ADDITIONAL_COMPILER_FLAGS "-Wformat -Wformat-security -fPIC -D_FORTIFY_SOURCE=2 -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
+        set(ADDITIONAL_COMPILER_FLAGS "-Wformat -Wformat-security -fPIC -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
     endif()
     set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -pie")
 
+    string(FIND "${CMAKE_CXX_FLAGS}" "-D_FORTIFY_SOURCE" _index)
+    if (${_index} EQUAL -1) # Define D_FORTIFY_SOURCE is undefined
+        set(ADDITIONAL_COMPILER_FLAGS "${ADDITIONAL_COMPILER_FLAGS} -D_FORTIFY_SOURCE=2")
+    endif()
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         message(STATUS "Configuring for Debug build")
