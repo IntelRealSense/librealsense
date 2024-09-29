@@ -85,7 +85,7 @@ namespace rs2
             RS2_CALIB_STATE_ABORT_CALLED
         };
 
-        d500_autocalib_notification_model(std::string name, std::shared_ptr<d500_on_chip_calib_manager> manager, bool expaned);
+        d500_autocalib_notification_model(std::string name, std::shared_ptr<process_manager> manager, bool expaned);
 
         d500_on_chip_calib_manager& get_manager() { return *std::dynamic_pointer_cast<d500_on_chip_calib_manager>(update_manager); }
         void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
