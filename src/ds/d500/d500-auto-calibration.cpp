@@ -650,29 +650,30 @@ namespace librealsense
 
     std::shared_ptr< option > d500_auto_calibrated::change_preset()
     {
-        preset old_preset_values{};
-        rs2_rs400_visual_preset old_preset = { RS2_RS400_VISUAL_PRESET_DEFAULT };
-
         if( ! _depth_sensor )
-            throw not_implemented_exception( " Depth sensor must be supplied to d500_auto_calibrated" );
+            throw not_implemented_exception( "Depth sensor must be supplied to d500_auto_calibrated" );
 
         if( _depth_sensor->supports_option( RS2_OPTION_VISUAL_PRESET ) )
         {
             auto & opt = _depth_sensor->get_option( RS2_OPTION_VISUAL_PRESET );
-            old_preset = static_cast< rs2_rs400_visual_preset >( opt.query() );
-            //if( old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM )
-            //    old_preset_values = advanced_mode->get_all();
-            opt.set( RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY );
-
-            std::shared_ptr< option > recover_option( &opt, [old_preset, old_preset_values]( option * opt )
+            auto old_preset = opt.get_value();
+            switch( opt.get_value_type() )
             {
-                if( old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM )
-                {
-                    opt->set( RS2_RS400_VISUAL_PRESET_CUSTOM );
-                    //adv->set_all( old_preset_values );
-                }
-                else
-                    opt->set( static_cast< float >( old_preset ) );
+                case RS2_OPTION_TYPE_FLOAT: // USB visual preset type is float
+                    if( old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM )
+                        throw not_implemented_exception( "Calibration with custom visual preset is not supported" );
+                    opt.set_value( RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY );
+                    break;
+                case RS2_OPTION_TYPE_STRING:  // DDS visual preset type is a string
+                    opt.set_value( std::string( "High Accuracy") );
+                    break;
+                default:
+                    throw invalid_value_exception( "Unsupported option type" );
+            }
+
+            std::shared_ptr< option > recover_option( &opt, [old_preset]( option * opt )
+            {
+                opt->set_value( old_preset );
             });
 
             return recover_option;
