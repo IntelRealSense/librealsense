@@ -67,10 +67,6 @@ function(get_fastdds)
     message(CHECK_PASS "Done")
 endfunction()
 
-string(REPLACE "${ADDITIONAL_COMPILER_FLAGS}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-string(REPLACE "${ADDITIONAL_COMPILER_FLAGS}" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 # Trigger the FastDDS build
 get_fastdds()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")

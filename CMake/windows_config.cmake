@@ -68,6 +68,10 @@ macro(os_set_flags)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
 		
+		
+        set_directory_properties(PROPERTIES DIRECTORY third-party/ COMPILE_OPTIONS "/W0")
+        set_source_files_properties(third-party/*.* PROPERTIES COMPILE_OPTIONS "/W0")
+		
         #################
         
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /wd4819")
