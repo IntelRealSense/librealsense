@@ -78,6 +78,8 @@ macro(os_set_flags)
         set(ADDITIONAL_COMPILER_FLAGS "-Wformat -Wformat-security -fPIC -fcf-protection=none -mfunction-return=thunk -mindirect-branch=thunk -mindirect-branch-register -fstack-protector")
     endif()
     set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -pie")
+	
+	set(ADDITIONAL_COMPILER_FLAGS "${ADDITIONAL_COMPILER_FLAGS} -Wno-error=stringop-overflow")
 
     string(FIND "${CMAKE_CXX_FLAGS}" "-D_FORTIFY_SOURCE" _index)
     if (${_index} EQUAL -1) # Define D_FORTIFY_SOURCE is undefined
