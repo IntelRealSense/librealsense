@@ -525,7 +525,7 @@ try
                     }
                 }
 
-                 update( new_fw_update_device, fw_image );
+                update( new_fw_update_device, fw_image );
 
                 done = true;
                 break;
@@ -546,6 +546,7 @@ try
 
     std::cout << std::endl << "Waiting for device to reconnect..." << std::endl;
     std::unique_lock<std::mutex> lk(mutex);
+    new_device = rs2::device();  // otherwise the wait will exit right away
     cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return !done || new_device; });
 
     if (done)
