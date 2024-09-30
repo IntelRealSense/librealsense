@@ -41,6 +41,4 @@ function(get_foonathan_memory)
 
 endfunction()
 
-
 get_foonathan_memory()
-

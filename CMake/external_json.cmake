@@ -48,4 +48,3 @@ endfunction()
 
 # Trigger the build
 get_nlohmann_json()
-
