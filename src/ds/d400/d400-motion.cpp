@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2016-24 Intel Corporation. All Rights Reserved.
 
 #include "d400-motion.h"
 
@@ -19,18 +19,21 @@
 #include "stream.h"
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
-#include <src/fourcc.h>
 #include <src/metadata-parser.h>
 #include <src/hid-sensor.h>
-using namespace librealsense;
+
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
+
+
 namespace librealsense
 {
     // D457 development
-    const std::map<uint32_t, rs2_format> motion_fourcc_to_rs2_format = {
-        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_MOTION_XYZ32F},
+    const std::map<fourcc::value_type, rs2_format> motion_fourcc_to_rs2_format = {
+        {fourcc('G','R','E','Y'), RS2_FORMAT_MOTION_XYZ32F},
     };
-    const std::map<uint32_t, rs2_stream> motion_fourcc_to_rs2_stream = {
-        {rs_fourcc('G','R','E','Y'), RS2_STREAM_ACCEL},
+    const std::map<fourcc::value_type, rs2_stream> motion_fourcc_to_rs2_stream = {
+        {fourcc('G','R','E','Y'), RS2_STREAM_ACCEL},
     };
 
     rs2_motion_device_intrinsic d400_motion_base::get_motion_intrinsics(rs2_stream stream) const
