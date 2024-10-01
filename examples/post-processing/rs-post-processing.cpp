@@ -11,6 +11,9 @@
 
 #include <imgui.h>
 #include "imgui_impl_glfw.h"
+#include <imgui_impl_opengl3.h>
+#include <realsense_imgui.h>
+
 
 /**
 Helper class for controlling the filter's GUI element
@@ -52,7 +55,11 @@ int main(int argc, char * argv[]) try
 {
     // Create a simple OpenGL window for rendering:
     window app(1280, 720, "RealSense Post Processing Example");
-    ImGui_ImplGlfw_Init(app, false);
+    // Setup Dear ImGui context
+    ImGui::CreateContext();
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(app, true);
+    ImGui_ImplOpenGL3_Init();
 
     // Construct objects to manage view state
     glfw_state original_view_orientation{};
@@ -219,7 +226,10 @@ int main(int argc, char * argv[]) try
     // (Not the safest way to join a thread, please wrap your threads in some RAII manner)
     stopped = true;
     processing_thread.join();
-
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
@@ -255,7 +265,9 @@ void render_ui(float w, float h, std::vector<filter_options>& filters)
         | ImGuiWindowFlags_NoResize
         | ImGuiWindowFlags_NoMove;
 
-    ImGui_ImplGlfw_NewFrame(1);
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
     ImGui::SetNextWindowSize({ w, h });
     ImGui::Begin("app", nullptr, flags);
 
@@ -293,6 +305,7 @@ void render_ui(float w, float h, std::vector<filter_options>& filters)
 
     ImGui::End();
     ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 bool filter_slider_ui::render(const float3& location, bool enabled)

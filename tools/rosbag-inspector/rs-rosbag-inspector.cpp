@@ -25,6 +25,7 @@
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
+#include "imgui_impl_opengl3.h"
 #include <imgui_internal.h>
 #ifdef _MSC_VER
 #ifndef NOMINMAX
@@ -59,6 +60,7 @@ public:
         if (!_first_frame)
         {
             ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
             glfwSwapBuffers(_window);
         }
         bool res = !glfwWindowShouldClose(_window);
@@ -67,7 +69,9 @@ public:
         glfwGetWindowSize(_window, &_w, &_h);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        ImGui_ImplGlfw_NewFrame(1);
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
         _first_frame = false;
         return res;
     }
@@ -96,7 +100,9 @@ private:
             f->AddFiles(std::vector<std::string>(paths, paths + count));
         });
 
-        ImGui_ImplGlfw_Init(_window, true);
+        ImGui::CreateContext();
+        ImGui_ImplGlfw_InitForOpenGL(_window, true);
+        ImGui_ImplOpenGL3_Init();
 
         glfwSetScrollCallback(_window, [](GLFWwindow * w, double xoffset, double yoffset)
         {
@@ -414,7 +420,7 @@ int main(int argc, const char** argv) try
         int flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings;
 
         static bool open = true;
-        ImGui::SetNextWindowSize({ float(window.width()), float(window.height()) }, flags | ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowSize({ float(window.width()), float(window.height()) }, ImGuiCond_FirstUseEver);
         if (ImGui::Begin("Rosbag Inspector", nullptr, flags | ImGuiWindowFlags_MenuBar))
         {
             draw_menu_bar();
@@ -432,8 +438,10 @@ int main(int argc, const char** argv) try
         ImGui::PopStyleColor(10);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     glfwTerminate();
     return 0;
 }

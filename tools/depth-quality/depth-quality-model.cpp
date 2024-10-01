@@ -477,7 +477,7 @@ namespace rs2
             // Creating window menus
             // *********************
             ImGui::Begin("Control Panel", nullptr, viewer_ui_traits::imgui_flags | ImGuiWindowFlags_AlwaysVerticalScrollbar);
-            ImGui::SetContentRegionWidth(_viewer_model.panel_width - 26);
+            ImGui::SetNextWindowSize({ _viewer_model.panel_width - 26,_viewer_model.panel_y });
 
             if (_device_model.get())
             {
@@ -512,7 +512,7 @@ namespace rs2
                 {
                     update_configuration();
                 }
-                ImGui::SetContentRegionWidth(windows_width);
+                ImGui::SetNextWindowSize(ImVec2(windows_width, ImGui::GetContentRegionMax().y));
                 auto pos = ImGui::GetCursorScreenPos();
 
                 for (auto&& lambda : draw_later)
