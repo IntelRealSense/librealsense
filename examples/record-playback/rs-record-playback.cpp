@@ -7,6 +7,9 @@
 
 #include <imgui.h>
 #include "imgui_impl_glfw.h"
+#include "imgui_impl_glfw.h"
+#include <imgui_impl_opengl3.h>
+#include<realsense_imgui.h>
 
 // Includes for time display
 #include <sstream>
@@ -23,7 +26,11 @@ int main(int argc, char * argv[]) try
 {
     // Create a simple OpenGL window for rendering:
     window app(1280, 720, "RealSense Record and Playback Example");
-    ImGui_ImplGlfw_Init(app, false);
+    // Setup Dear ImGui context
+    ImGui::CreateContext();
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(app, true);
+    ImGui_ImplOpenGL3_Init();
 
     // Create booleans to control GUI (recorded - allow play button, recording - show 'recording to file' text)
     bool recorded = false;
@@ -61,7 +68,9 @@ int main(int argc, char * argv[]) try
             | ImGuiWindowFlags_NoResize
             | ImGuiWindowFlags_NoMove;
 
-        ImGui_ImplGlfw_NewFrame(1);
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
         ImGui::SetNextWindowSize({ app.width(), app.height() });
         ImGui::Begin("app", nullptr, flags);
 
@@ -192,10 +201,15 @@ int main(int argc, char * argv[]) try
 
         ImGui::End();
         ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // Render depth frames from the default configuration, the recorder or the playback
         depth_image.render(depth, { app.width() * 0.25f, app.height() * 0.25f, app.width() * 0.5f, app.height() * 0.75f  });
     }
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)

@@ -4,8 +4,9 @@
 #include <librealsense2/rs.hpp>
 #include "example-imgui.hpp"
 #include <librealsense2-gl/rs_processing_gl.hpp> // Include GPU-Processing API
-#include <common/cli.h>
-
+#include "imgui_impl_glfw.h"
+#include <imgui_impl_opengl3.h>
+#include<realsense_imgui.h>
 
 /*
  This example introduces the concept of spatial stream alignment.
@@ -50,7 +51,11 @@ int main(int argc, char * argv[]) try
 
     // Create and initialize GUI related objects
     window app(1280, 720, "RealSense Align Example"); // Simple window handling
-    ImGui_ImplGlfw_Init(app, false);      // ImGui library intializition
+    // Setup Dear ImGui context
+    ImGui::CreateContext();
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(app, true);
+    ImGui_ImplOpenGL3_Init();
 
     // Once we have a window, initialize GL module
     // Pass our window to enable sharing of textures between processed frames and the window
@@ -124,11 +129,17 @@ int main(int argc, char * argv[]) try
         glDisable(GL_BLEND);
 
         // Render the UI:
-        ImGui_ImplGlfw_NewFrame(1);
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
         render_slider({ 15.f, app.height() - 60, app.width() - 30, app.height() }, &alpha, &dir);
         ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
-
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
