@@ -3,41 +3,56 @@ cmake_minimum_required(VERSION 3.8)
 
 project(usb)
 
-  set(LIBUSB_C
-  libusb/core.c
-  libusb/descriptor.c
-  libusb/hotplug.c
-  libusb/io.c
-  libusb/strerror.c
-  libusb/sync.c
+set (POSIX_PLATFORM_SRC
+libusb/os/events_posix.c
+libusb/os/threads_posix.c
+)
+
+set (WINDOWS_PLATFORM_SRC
+libusb/os/events_windows.c
+libusb/os/threads_windows.c
+)
+
+if(UNIX)
+  message(STATUS "LibUSB - POSIX system detected.")
+  set(PLATFORM_SRC "${POSIX_PLATFORM_SRC}")
+else()
+  message(STATUS "LibUSB - Non-POSIX system detected.")
+  set(PLATFORM_SRC "${WINDOWS_PLATFORM_SRC}")
+endif()
+
+set(LIBUSB_C
+libusb/core.c
+libusb/descriptor.c
+libusb/hotplug.c
+libusb/io.c
+libusb/strerror.c
+libusb/sync.c
+)
+
+LIST(APPEND LIBUSB_C 
+  ${PLATFORM_SRC}
   )
 
 if(WIN32)
   LIST(APPEND LIBUSB_C
-  libusb/os/threads_windows.c
-  libusb/os/poll_windows.c
-  libusb/os/windows_winusb.c
-  libusb/os/windows_nt_common.c
+  libusb/os/windows_common.c
   libusb/os/windows_usbdk.c
+  libusb/os/windows_winusb.c
   )
 elseif (APPLE)
   LIST(APPEND LIBUSB_C
-  libusb/os/poll_posix.c
-  libusb/os/threads_posix.c
   libusb/os/darwin_usb.c
+  
   )
 elseif(ANDROID)
   LIST(APPEND LIBUSB_C
   libusb/os/linux_usbfs.c
-  libusb/os/poll_posix.c
-  libusb/os/threads_posix.c
   libusb/os/linux_netlink.c
   )
 else()
   LIST(APPEND LIBUSB_C
   libusb/os/linux_usbfs.c
-  libusb/os/poll_posix.c
-  libusb/os/threads_posix.c
   libusb/os/linux_udev.c
   )
 endif()
