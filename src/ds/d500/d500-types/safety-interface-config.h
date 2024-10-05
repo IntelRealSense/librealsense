@@ -357,7 +357,7 @@ namespace librealsense
             validate_json(j);
             m_l_0_total_threshold = j.at("l_0_total_threshold").get<uint16_t>();
             m_l_0_sustained_rate_threshold = j.at("l_0_sustained_rate_threshold").get<uint8_t>();
-            m_l_1_total_threshold = j.at("l_1_total_threshold").get<uint8_t>();
+            m_l_1_total_threshold = j.at("l_1_total_threshold").get<uint16_t>();
             m_l_1_sustained_rate_threshold = j.at("l_1_sustained_rate_threshold").get<uint8_t>();
             m_l_2_total_threshold = j.at("l_2_total_threshold").get<uint8_t>();
             m_hkr_stl_timeout = j.at("hkr_stl_timeout").get<uint8_t>();
