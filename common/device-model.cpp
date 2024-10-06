@@ -2419,7 +2419,7 @@ namespace rs2
                 {
                     bool stop_recording = false;
 
-                    ImGui::SetCursorPos({ windows_width - 42, pos.y + 3 });
+                    ImGui::SetCursorPos({ windows_width - 60, pos.y });
                     ImGui_ScopePushFont(window.get_font());
 
                     ImGui_ScopePushStyleColor(ImGuiCol_Button, sensor_bg);
@@ -2427,12 +2427,12 @@ namespace rs2
                     ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
 
                     int font_size = window.get_font_size();
-                    ImVec2 button_size = { font_size * 1.9f, font_size * 1.9f };
+                    ImVec2 button_size = { font_size * 3.0f, font_size * 1.0f };
                     
                     if (!sub->streaming)
                     {
                         std::string label = rsutils::string::from()
-                                         << "  " << textual_icons::toggle_off << "\noff   ##" << id << ","
+                                         <<textual_icons::toggle_off<<"   off "<< id << ", "
                                          << sub->s->get_info( RS2_CAMERA_INFO_NAME );
 
                         ImGui_ScopePushStyleColor(ImGuiCol_Text, redish);
@@ -2514,7 +2514,7 @@ namespace rs2
                     else
                     {
                         std::string label = rsutils::string::from()
-                                         << "  " << textual_icons::toggle_on << "\n    on##" << id << ","
+                                         << textual_icons::toggle_on << "   on  " << id << ","
                                          << sub->s->get_info( RS2_CAMERA_INFO_NAME );
                         ImGui_ScopePushStyleColor(ImGuiCol_Text, light_blue);
                         ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
