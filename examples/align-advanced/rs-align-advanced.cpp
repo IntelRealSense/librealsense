@@ -172,7 +172,7 @@ void render_slider(rect location, float& clipping_dist)
 
     //Render the vertical slider
     ImGui::Begin("slider", nullptr, flags);
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.2f, 0.3f, 0.7f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, { 0.2f / 255, 0.3f / 255, 0.7f / 255 ,1});
     ImGui::PushStyleColor(ImGuiCol_SliderGrab, { 215.f / 255, 215.0f / 255, 215.0f / 255,1 });
     ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, { 215.f / 255, 215.0f / 255, 215.0f / 255,1 });
     auto slider_size = ImVec2(slider_window_width / 2, location.h - (pixels_to_buttom_of_stream_text * 2) - 20);

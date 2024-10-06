@@ -220,7 +220,7 @@ namespace rs2
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-        io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+        io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;   // added in order to prevents cursor chang when interacting with other element (when nedded remove the flag accordingly)
 
         if (_win)
         {
@@ -632,15 +632,13 @@ namespace rs2
         }
 
         // reset graphic pipe
-        begin_frame();
-        
+        begin_frame();        
         if (_link_hovered)
             glfwSetCursor(_win, _hand_cursor);
         else if (_cross_hovered)
             glfwSetCursor(_win, _cross_cursor);
         else
             glfwSetCursor(_win, nullptr);
-         
         _cross_hovered = false;
         _link_hovered = false;
         _hovers_any_input_window = false;
