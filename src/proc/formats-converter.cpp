@@ -6,6 +6,7 @@
 #include <src/composite-frame.h>
 #include <src/core/frame-callback.h>
 
+#include <rsutils/string/from.h>
 #include <ostream>
 
 namespace librealsense
@@ -73,15 +74,18 @@ std::ostream & operator<<( std::ostream & os, const std::shared_ptr< stream_prof
 {
     if( profile )
     {
-        os << "(" << rs2_stream_to_string( profile->get_stream_type() ) << ")";
-        os << " " << rs2_format_to_string( profile->get_format() );
-        os << " " << profile->get_stream_index();
+        os << rs2_stream_to_string( profile->get_stream_type() );
+        if( auto stream_index = profile->get_stream_index() )
+            os << " " << stream_index;
         if( auto vsp = As< video_stream_profile, stream_profile_interface >( profile ) )
         {
             os << " " << vsp->get_width();
             os << "x" << vsp->get_height();
         }
-        os << " @ " << profile->get_framerate();
+        os << " " << rs2_format_to_string( profile->get_format() );
+        os << " @ " << profile->get_framerate() << " Hz";
+        if( auto bsp = std::dynamic_pointer_cast< backend_stream_profile >( profile ) )
+            bsp->to_stream( os );
     }
 
     return os;
@@ -222,6 +226,7 @@ bool formats_converter::is_profile_in_list( const std::shared_ptr< stream_profil
 // Not passing const & because we modify from_profiles, would otherwise need to create a copy
 void formats_converter::prepare_to_convert( stream_profiles from_profiles )
 {
+    LOG_DEBUG( "Requested: " << from_profiles );
     clear_active_cache();
 
     // Add missing data to target profiles (was not available during get_all_possible_target_profiles)
@@ -264,9 +269,21 @@ void formats_converter::prepare_to_convert( stream_profiles from_profiles )
             }
         }
         const stream_profiles & print_current_resolved_reqs = { current_resolved_reqs.begin(), current_resolved_reqs.end() };
-        LOG_INFO( "Request: " << from_profiles_of_best_match << "\nResolved to: " << print_current_resolved_reqs );
+        LOG_DEBUG( "Resolved to: " << print_current_resolved_reqs );
     }
 }
+
+
+stream_profiles const & formats_converter::get_source_profiles_from_target(
+    std::shared_ptr< stream_profile_interface > const & target_profile ) const
+{
+    auto it = _target_profiles_to_raw_profiles.find( to_profile( target_profile.get() ) );
+    if( it == _target_profiles_to_raw_profiles.end() )
+        throw invalid_value_exception( rsutils::string::from()
+                                       << "target profile [" << target_profile << "] not found" );
+    return it->second;
+}
+
 
 void formats_converter::update_target_profiles_data( const stream_profiles & from_profiles )
 {
