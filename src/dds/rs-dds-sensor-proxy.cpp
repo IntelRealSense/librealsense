@@ -21,6 +21,7 @@
 #include <src/core/roi.h>
 #include <src/core/time-service.h>
 #include <src/stream.h>
+#include <src/context.h>
 
 #include <src/proc/color-formats-converter.h>
 
@@ -250,9 +251,8 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
     {
         auto & sp = source_profiles[i];
         sid_index sidx( sp->get_unique_id(), sp->get_stream_index() );
-        if( Is< video_stream_profile >( sp ) )
+        if( auto const vsp = As< video_stream_profile >( sp ) )
         {
-            const auto && vsp = As< video_stream_profile >( source_profiles[i] );
             auto video_profile = find_profile(
                 sidx,
                 realdds::dds_video_stream_profile( sp->get_framerate(),

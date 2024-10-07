@@ -4,6 +4,7 @@
 #include "hid-sensor.h"
 #include "device.h"
 #include "stream.h"
+#include "image.h"
 #include "global_timestamp_reader.h"
 #include "metadata.h"
 #include "platform/stream-profile-impl.h"
