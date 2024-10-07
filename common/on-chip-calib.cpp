@@ -3130,7 +3130,7 @@ namespace rs2
         }
     }
 
-    autocalib_notification_model::autocalib_notification_model(std::string name, std::shared_ptr<on_chip_calib_manager> manager, bool exp)
+    autocalib_notification_model::autocalib_notification_model(std::string name, std::shared_ptr<process_manager> manager, bool exp)
         : process_notification_model(manager)
     {
         enable_expand = false;

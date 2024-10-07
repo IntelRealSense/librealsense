@@ -119,7 +119,7 @@ namespace rs2
     }
 
     d500_autocalib_notification_model::d500_autocalib_notification_model(std::string name, 
-        std::shared_ptr<d500_on_chip_calib_manager> manager, bool exp)
+        std::shared_ptr<process_manager> manager, bool exp)
         : process_notification_model(manager)
     {
         enable_expand = false;
