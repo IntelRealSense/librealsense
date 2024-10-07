@@ -100,10 +100,10 @@ std::vector<uint8_t> read_firmware_data(bool is_set, const std::string& file_pat
 }
 
 
-void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image)
-{  
+void update( rs2::update_device fwu_dev, std::vector< uint8_t > const & fw_image )
+{
     std::cout << std::endl << "Firmware update started. Please don't disconnect device!"<< std::endl << std::endl;
-    
+
     if (ISATTY(FILENO(stdout)))
     {
         fwu_dev.update(fw_image, [&](const float progress)
@@ -525,6 +525,7 @@ try
                     }
                 }
 
+                new_device = rs2::device();  // otherwise the wait will exit right away
                 update( new_fw_update_device, fw_image );
 
                 done = true;
@@ -546,7 +547,6 @@ try
 
     std::cout << std::endl << "Waiting for device to reconnect..." << std::endl;
     std::unique_lock<std::mutex> lk(mutex);
-    new_device = rs2::device();  // otherwise the wait will exit right away
     cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return !done || new_device; });
 
     if (done)
