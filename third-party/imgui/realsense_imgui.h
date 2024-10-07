@@ -36,9 +36,6 @@ namespace ImGui
     //IMGUI_API bool          VSliderFloatadd(const char* label, const ImVec2& size, float* v, float v_min, float v_max, const char* display_format, float power, bool render_bg);
     IMGUI_API bool          SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_min, float v_max, float power, int decimal_precision, ImGuiSliderFlags flags, bool render_bg);
     IMGUI_API float         RoundScalar(float value, int decimal_precision);
-    IMGUI_API bool          Combo(const char* label, int* current_item, const char** items, int items_count, int height_in_items = -1, bool show_arrow_down = true);
-    IMGUI_API bool          Combo(const char* label, int* current_item, const char* items_separated_by_zeros, int height_in_items = -1, bool show_arrow_down = true);      // separate items with \0, end item-list with \0\0
-    IMGUI_API bool          Combo(const char* label, int* current_item, bool (*items_getter)(void* data, int idx, const char** out_text), void* data, int items_count, int height_in_items = -1, bool show_arrow_down = true);
 }
 #define CONCAT_(x,y) x##y
 #define CONCAT(x,y) CONCAT_(x,y)

@@ -9,7 +9,7 @@
 
 #include <librealsense2/rs.hpp>
 
-#include "realsense_imgui.h""
+#include <realsense_imgui.h>
 #include "model-views.h"
 #include "subdevice-model.h"
 #include "stream-model.h"

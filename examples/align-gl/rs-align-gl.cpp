@@ -4,6 +4,7 @@
 #include <librealsense2/rs.hpp>
 #include "example-imgui.hpp"
 #include <librealsense2-gl/rs_processing_gl.hpp> // Include GPU-Processing API
+#include <common/cli.h>
 #include "imgui_impl_glfw.h"
 #include <imgui_impl_opengl3.h>
 #include<realsense_imgui.h>
