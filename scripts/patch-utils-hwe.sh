@@ -234,16 +234,19 @@ function try_module_insert {
 	# backup the existing module (if available) for recovery
 	if [ -f ${tgt_ko}.zst ];
 	then
-		sudo cp ${tgt_ko}.zst ${tgt_ko}.zst.bckup
+		sudo mv ${tgt_ko}.zst ${tgt_ko}.zst.bckup
 	elif [ -f ${tgt_ko} ];
 	then
-		sudo cp ${tgt_ko} ${tgt_ko}.bckup
+		sudo mv ${tgt_ko} ${tgt_ko}.bckup
 	else
 		backup_available=0
 	fi
 
 	# copy the patched module to target location
 	sudo cp ${src_ko} ${tgt_ko}
+
+	# Run 'depmod' command, so that, it will update the 'modinfo' if incase filename or other details got changed.
+	sudo depmod
 
 	# try to load the new module
 	modprobe_failed=0
@@ -259,9 +262,9 @@ function try_module_insert {
 		then
 			if [ -f ${tgt_ko}.zst.bckup ];
 			then
-				sudo cp ${tgt_ko}.zst.bckup ${tgt_ko}.zst
+				sudo mv ${tgt_ko}.zst.bckup ${tgt_ko}.zst
 			else
-				sudo cp ${tgt_ko}.bckup ${tgt_ko}
+				sudo mv ${tgt_ko}.bckup ${tgt_ko}
 			fi
 			sudo modprobe ${module_name}
 			printf "\e[34mThe original \e[33m %s \e[34m module was reloaded\n\e[0m" ${module_name}
