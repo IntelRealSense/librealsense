@@ -157,9 +157,15 @@ rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & c
                 std::vector< std::shared_ptr< device_info > > infos_removed;
                 auto dev_info = std::make_shared< dds_device_info >( ctx, dev );
                 if( added )
+                {
                     infos_added.push_back( dev_info );
+                    LOG_INFO( "Device connected: " << dev_info->get_address() );
+                }
                 else
+                {
                     infos_removed.push_back( dev_info );
+                    LOG_INFO( "Device disconnected: " << dev_info->get_address() );
+                }
                 cb( infos_removed, infos_added );
             } );
     }

@@ -1,10 +1,11 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 from argparse import ArgumentParser
 args = ArgumentParser()
 args.add_argument( '--debug', action='store_true', help='enable debug mode' )
 args.add_argument( '--quiet', action='store_true', help='No output; just the minimum FPS as a number' )
+args.add_argument( '--debug-frames', action='store_true', help='Output frame signatures as we get them' )
 args.add_argument( '--device', metavar='<path>', required=True, help='the topic root for the device' )
 def time_arg(x):
     t = int(x)
@@ -23,14 +24,15 @@ args.add_argument( '--depth', action='store_true', help='stream Depth' )
 args.add_argument( '--color', action='store_true', help='stream Color' )
 args.add_argument( '--ir1', action='store_true', help='stream IR1' )
 args.add_argument( '--ir2', action='store_true', help='stream IR2' )
-args.add_argument( '--fps', metavar='5,15,30,60,90', type=int, default=30, help='Frames per second' )
+args.add_argument( '--fps', metavar='5,15,30,60,90', type=int, default=0, help='Frames per second' )
+args.add_argument( '--encoding', metavar='<format>', default='', help='profile encoding (z16/y8/y16/yuyv/etc.); otherwise looked up per stream' )
 def res_arg(x):
     import re
     m = re.fullmatch( r'(\d+)x(\d+)', x )
     if not m:
         raise ValueError( f'--res should be WIDTHxHEIGHT' )
     return [int(m.group(1)), int(m.group(2))]
-args.add_argument( '--res', metavar='WxH', type=res_arg, default=[1280,720], help='Resolution as WIDTHxHEIGHT' )
+args.add_argument( '--res', metavar='WxH', type=res_arg, default=[0,0], help='Resolution as WIDTHxHEIGHT' )
 args = args.parse_args()
 
 
@@ -90,7 +92,8 @@ for s in streams:
     n_stream_frames[s] = 0
 capturing = True
 def on_image( stream, image, sample ):
-    #d( f'----> {image}')
+    if args.debug_frames:
+        print( f'    {image}')
     global n_stream_frames, capturing
     if capturing:
         n_stream_frames[stream.name()] += 1
@@ -98,19 +101,40 @@ def on_image( stream, image, sample ):
 fps = args.fps
 width = args.res[0]
 height = args.res[1]
-type_format = { 'depth': str(dds.video_encoding.z16), 'color': str(dds.video_encoding.yuyv), 'ir': str(dds.video_encoding.y8) }
+encoding = args.encoding and vars( dds.video_encoding )[args.encoding] or None
+type_format = { 'depth': dds.video_encoding.z16, 'color': dds.video_encoding.yuyv, 'ir': dds.video_encoding.y8 }
+
+
+def find_profile( stream, w, h, encoding, fps ):
+    for p in stream.profiles():
+        #print( f'    \'{p.format()}\' {p.width()}x{p.height()} @ {p.frequency()} FPS', end='' )
+        if fps and p.frequency() != fps:
+            #print( '  x frequency')
+            continue
+        if w and p.width() != w:
+            #print( '  x width')
+            continue
+        if h and p.height() != h:
+            #print( '  x height')
+            continue
+        if encoding and p.format() != encoding:
+            #print( '  x encoding')
+            continue
+        #print()
+        return p
+    print( 'Available profiles:')
+    for p in stream.profiles():
+        print( f'    \'{p.format()}\' {p.width()}x{p.height()} @ {p.frequency()} FPS' )
+    raise RuntimeError( f"'{stream.name()}' profile [{encoding or 'ANY'} {w or 'ANY'}x{h or 'ANY'} @ {fps or 'ANY'} FPS] not found" )
 
 i( device.n_streams(), 'streams available' )
 stream_profiles = {}
 for stream in device.streams():
-    #profiles = stream.profiles()
     if stream.name() not in streams:
         continue
-
-    #stream.default_profile().to_string()[1:-1]
-    profile = [fps,type_format[stream.type_string()],width,height]
-    i( f'   {stream.sensor_name()} / {stream.name()} {profile}' )
-    stream_profiles[stream.name()] = profile
+    profile = find_profile( stream, width, height, encoding or type_format[stream.type_string()], fps )
+    i( f'   {stream.sensor_name()} / {stream.name()} {profile.details_to_string()}' )
+    stream_profiles[stream.name()] = profile.to_json()
 
 device.send_control( { 'id': 'open-streams',
                        'stream-profiles': stream_profiles }, True )
@@ -125,14 +149,14 @@ for stream in device.streams():
     stream.start_streaming()
 
 # Wait until we have at least one frame from each
-tries = 5
+tries = 50
 while tries > 0:
     for n in n_stream_frames.values():
         if n <= 0:
             break
     else:
         break
-    time.sleep( 1 )
+    time.sleep( .1 )
     tries -= 1
 else:
     raise RuntimeError( f'timed out waiting for all frames to arrive {n_stream_frames}' )
