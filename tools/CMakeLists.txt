@@ -7,7 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
-string(REPLACE "-fPIC" "-fPIE" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # tools are exeutables so we want position indepandent exeutables and not libraries
+string(REPLACE "-fPIC" "-fPIE" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # tools are executables so we want position indepandent executables and not libraries
 
 list( APPEND DEPENDENCIES ${LRS_TARGET} tclap )
 

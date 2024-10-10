@@ -41,7 +41,7 @@ macro(os_set_flags)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
 
         ###############
-        # According to SDLE we need to add the following flags for additional security:
+        # Due to security reasons we need to add the following flags for additional security:
         # Debug & Release:
         # /Gy: Enables function-level linking to reduce executable size.
         # /DYNAMICBASE: Enables Address Space Layout Randomization (ASLR) to improve security.
@@ -49,27 +49,29 @@ macro(os_set_flags)
 
         # Release only:
         # /WX: Treats all warnings as errors.
-        # /LTCG (/GL): Enables Link Time Code Generation to improve performance.
         # /sdl: Enables additional security checks.
+        
+        # Release only linker flags:
+        # /LTCG (/GL): Enables Link Time Code Generation to improve performance.
         # /NXCOMPAT: Enables Data Execution Prevention (DEP) to prevent code execution in data areas.	
 		
         # see https://readthedocs.intel.com/SecureCodingStandards/2023.Q2.0/compiler/c-cpp/ for more details
 
-        set(ADDITIONAL_COMPILER_FLAGS "/Gy /DYNAMICBASE /GS /wd4101")
+        set(SECURITY_COMPILER_FLAGS "/Gy /DYNAMICBASE /GS /wd4101")
 		
         if(CMAKE_BUILD_TYPE STREQUAL "Debug")
             message(STATUS "Configuring for Debug build")
         else() # Release, RelWithDebInfo, or multi configuration generator is being used (aka not specifing build type, or building with VS)
             message(STATUS "Configuring for Release build")
-            set(ADDITIONAL_COMPILER_FLAGS "${ADDITIONAL_COMPILER_FLAGS} /WX /sdl") 
-            set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} /INCREMENTAL:NO /LTCG /NXCOMPAT") # ignoring '/INCREMENTAL' due to '/LTCG' specification
+            set(SECURITY_COMPILER_FLAGS "${SECURITY_COMPILER_FLAGS} /WX /sdl") 
         endif()
 		
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ADDITIONAL_COMPILER_FLAGS}")
-		
-        set_directory_properties(PROPERTIES DIRECTORY third-party/ COMPILE_OPTIONS "/W0")
-        set_source_files_properties(third-party/*.* PROPERTIES COMPILE_OPTIONS "/W0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SECURITY_COMPILER_FLAGS}")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SECURITY_COMPILER_FLAGS}")
+        
+        if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+            set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} /INCREMENTAL:NO /LTCG /NXCOMPAT") # ignoring '/INCREMENTAL' due to '/LTCG' specification
+        endif()
 		
         #################
         

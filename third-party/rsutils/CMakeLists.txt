@@ -3,6 +3,7 @@
 cmake_minimum_required(VERSION 3.8.0)  # source_group(TREE)
 project( rsutils )
 
+set_directory_properties(PROPERTIES COMPILE_FLAGS "") # unignore warnings on rsutils - remove flag applied at third-party folder
 add_library( ${PROJECT_NAME} STATIC "" )
 # We cannot directly interface with nlohmann_json (doesn't work on bionic)
 #target_link_libraries( ${PROJECT_NAME} PUBLIC nlohmann_json )
