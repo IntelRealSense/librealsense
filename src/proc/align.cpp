@@ -16,6 +16,7 @@
 #elif defined(__SSSE3__)
 #include "proc/sse/sse-align.h"
 #endif
+#include "proc/neon/neon-align.h"
 
 namespace librealsense
 {
@@ -27,6 +28,8 @@ namespace librealsense
             return std::make_shared<librealsense::align_cuda>(align_to);
         #elif defined(__SSSE3__)
             return std::make_shared<librealsense::align_sse>(align_to);
+        #elif defined(__ARM_NEON) && ! defined(ANDROID)
+            return std::make_shared<librealsense::align_neon>(align_to);
         #else
             return std::make_shared<librealsense::align>(align_to);
         #endif
