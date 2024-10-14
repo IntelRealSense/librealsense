@@ -1,9 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019-24 Intel Corporation. All Rights Reserved.
 
 #include "y8i-to-y8y8.h"
 
-#include "stream.h"
+#include <src/stream.h>
+#include <src/image.h>
 
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"

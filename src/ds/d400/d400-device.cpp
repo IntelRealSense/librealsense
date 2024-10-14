@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2016-24 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/h/rs_internal.h>
 #include <src/device.h>
@@ -19,7 +19,6 @@
 #include "d400-color.h"
 #include "d400-nonmonochrome.h"
 #include <src/platform/platform-utils.h>
-#include <src/fourcc.h>
 
 #include <src/ds/features/amplitude-factor-feature.h>
 #include <src/ds/features/emitter-frequency-feature.h>
@@ -37,6 +36,9 @@
 #include <common/fw/firmware-version.h>
 #include <src/fw-update/fw-update-unsigned.h>
 
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
+
 #include <rsutils/string/hexdump.h>
 #include <regex>
 #include <iterator>
@@ -52,36 +54,36 @@ constexpr bool hw_mon_over_xu = false;
 
 namespace librealsense
 {
-    std::map<uint32_t, rs2_format> d400_depth_fourcc_to_rs2_format = {
-        {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
-        {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
-        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
-        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_Y8},
-        {rs_fourcc('Y','8','I',' '), RS2_FORMAT_Y8I},
-        {rs_fourcc('W','1','0',' '), RS2_FORMAT_W10},
-        {rs_fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
-        {rs_fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
-        {rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
-        {rs_fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
-        {rs_fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
-        {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
-        {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
+    std::map<fourcc::value_type, rs2_format> d400_depth_fourcc_to_rs2_format = {
+        {fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
+        {fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
+        {fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
+        {fourcc('G','R','E','Y'), RS2_FORMAT_Y8},
+        {fourcc('Y','8','I',' '), RS2_FORMAT_Y8I},
+        {fourcc('W','1','0',' '), RS2_FORMAT_W10},
+        {fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
+        {fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
+        {fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
+        {fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
+        {fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
+        {fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
+        {fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
 
     };
-    std::map<uint32_t, rs2_stream> d400_depth_fourcc_to_rs2_stream = {
-        {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
-        {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
-        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
-        {rs_fourcc('G','R','E','Y'), RS2_STREAM_INFRARED},
-        {rs_fourcc('Y','8','I',' '), RS2_STREAM_INFRARED},
-        {rs_fourcc('W','1','0',' '), RS2_STREAM_INFRARED},
-        {rs_fourcc('Y','1','6',' '), RS2_STREAM_INFRARED},
-        {rs_fourcc('Y','1','2','I'), RS2_STREAM_INFRARED},
-        {rs_fourcc('R','G','B','2'), RS2_STREAM_INFRARED},
-        {rs_fourcc('Z','1','6',' '), RS2_STREAM_DEPTH},
-        {rs_fourcc('Z','1','6','H'), RS2_STREAM_DEPTH},
-        {rs_fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
-        {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR}
+    std::map<fourcc::value_type, rs2_stream> d400_depth_fourcc_to_rs2_stream = {
+        {fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
+        {fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
+        {fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
+        {fourcc('G','R','E','Y'), RS2_STREAM_INFRARED},
+        {fourcc('Y','8','I',' '), RS2_STREAM_INFRARED},
+        {fourcc('W','1','0',' '), RS2_STREAM_INFRARED},
+        {fourcc('Y','1','6',' '), RS2_STREAM_INFRARED},
+        {fourcc('Y','1','2','I'), RS2_STREAM_INFRARED},
+        {fourcc('R','G','B','2'), RS2_STREAM_INFRARED},
+        {fourcc('Z','1','6',' '), RS2_STREAM_DEPTH},
+        {fourcc('Z','1','6','H'), RS2_STREAM_DEPTH},
+        {fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
+        {fourcc('M','J','P','G'), RS2_STREAM_COLOR}
     };
 
     std::vector<uint8_t> d400_device::send_receive_raw_data(const std::vector<uint8_t>& input)
