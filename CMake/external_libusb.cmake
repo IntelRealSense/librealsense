@@ -15,6 +15,7 @@ ExternalProject_Add(
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             -DANDROID_ABI=${ANDROID_ABI}
             -DANDROID_STL=${ANDROID_STL}
+            -DBUILD_SHARED_LIBS=OFF
             -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/libusb_install
             -DLIBUSB_INSTALL_TARGETS=ON
             --no-warn-unused-cli
