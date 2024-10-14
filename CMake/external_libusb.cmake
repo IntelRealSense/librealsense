@@ -3,14 +3,10 @@ include(ExternalProject)
 ExternalProject_Add(
     libusb
 
-    # Work-around for libusb master broken on Nov 26' 2020 with introduction of v1.0.24
-    # the issue has been reported in https://github.com/libusb/libusb/issues/812
-    GIT_REPOSITORY "https://github.com/ev-mp/libusb.git"
-    GIT_TAG "2a7372db54094a406a755f0b8548b614ba8c78ec" # "v1.0.22" + Mac get_device_list hang fix
+    GIT_REPOSITORY "https://github.com/libusb/libusb-cmake.git"
+    GIT_TAG "v1.0.27-1" # "v1.0.27-1" 
 
-    UPDATE_COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_CURRENT_SOURCE_DIR}/third-party/libusb/CMakeLists.txt
-            ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/CMakeLists.txt
+    UPDATE_COMMAND ""
     PATCH_COMMAND ""
 
     SOURCE_DIR "third-party/libusb/"
