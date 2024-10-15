@@ -49,7 +49,8 @@ bool is_gui_aligned(GLFWwindow *win)
 
         glfwSwapBuffers(win);
 
-        ImGui_ImplGlfw_NewFrame(1.f);
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 
         SetFocus(hwn);
 

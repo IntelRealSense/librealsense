@@ -5,6 +5,9 @@
 #include "example-imgui.hpp"    // Include short list of convenience functions for rendering
 #include <iostream>
 
+#include "imgui_impl_glfw.h"
+#include <imgui_impl_opengl3.h>
+#include<realsense_imgui.h>
 
 // HDR Example demonstrates how to use the HDR feature - only for D400 product line devices
 int main() try
@@ -103,8 +106,11 @@ int main() try
     // init view window
     window app(width, height, title.c_str(), tiles_in_row, tiles_in_col);
 
-    // init ImGui with app (window object)
-    ImGui_ImplGlfw_Init(app, false);
+    // Setup Dear ImGui context
+    ImGui::CreateContext();
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(app, true);
+    ImGui_ImplOpenGL3_Init();
 
     // init hdr_widgets object
     // hdr_widgets holds the sliders, the text boxes and the frames_map
@@ -112,6 +118,7 @@ int main() try
 
     while (app) // application is still alive
     {
+
         data = pipe.wait_for_frames();    // Wait for next set of frames from the camera
 
         auto frame = data.get_depth_frame();
@@ -143,15 +150,21 @@ int main() try
 
         //update frames in frames map in hdr_widgets
         hdr_widgets.update_frames_map(infrared_frame, depth_frame, hdr_frame, hdr_seq_id, hdr_seq_size);
-
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
         //render hdr widgets sliders and text boxes
         hdr_widgets.render_widgets();
 
         //the show method, when applied on frame map, break it to frames and upload each frame into its specific tile
         app.show(hdr_widgets.get_frames_map());
-
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
-
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error& e)
