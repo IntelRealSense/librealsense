@@ -148,7 +148,7 @@ void hid_sensor::close()
         std::lock_guard< std::mutex > lock( _configure_lock );
         _configured_profiles.clear();
         _is_configured_stream.clear();
-        _is_configured_stream.resize( RS2_STREAM_COUNT );
+        _is_configured_stream.assign(RS2_STREAM_COUNT, false);
     }
     _is_opened = false;
     if( Is< librealsense::global_time_interface >( _owner ) )
