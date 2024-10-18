@@ -56,6 +56,14 @@ namespace librealsense
         }
     };
 
+    // Provide a way for the API to denote something as output, so it's not shown on error
+    // Output arguments are always pointers
+    struct output_arg
+    {
+        void const * pointer;
+        output_arg( void const * pv ) : pointer( pv ) {}
+    };
+
     // Next we define type trait for testing if *t for some T* is streamable
     template<typename T>
     class is_streamable
@@ -101,6 +109,16 @@ namespace librealsense
         arg_streamer<T, is_streamable<T>::value> s;
         s.stream_arg(out, last, true);
     }
+    inline void stream_args( std::ostream & out, const char * names, const output_arg & last )
+    {
+        while( *names++ != '(' );        // skip "output_arg("
+        while( *names == ' ' ) ++names;  // skip "(" and any spaces
+        while( *names != ')' && *names != ' ' ) out << *names++;
+        out << ":";
+        if( ! last.pointer )
+            out << "nullptr";
+        out << "(out)";
+    }
     template<class T, class... U> void stream_args(std::ostream & out, const char * names, const T & first, const U &... rest)
     {
         while (*names && *names != ',') out << *names++;
@@ -108,6 +126,12 @@ namespace librealsense
         s.stream_arg(out, first, false);
         while (*names && (*names == ',' || isspace(*names))) ++names;
         stream_args(out, names, rest...);
+    }
+    template<class... U> void stream_args( std::ostream & out, const char * names, const output_arg & first, const U &... rest )
+    {
+        stream_args( out, names, first );
+        out << ", ";
+        stream_args( out, names, rest... );
     }
 
 
@@ -403,6 +427,18 @@ return __p.invoke(func);\
 
 #define BEGIN_API_CALL try
 #define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs2_error* e; librealsense::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); return R; }
+// If you want to avoid any errors being reported because an exception an expected API behavior:
+#define EXPECTED_EXCEPTION( E, R, ... )                                                                                \
+    catch( E const & e )                                                                                               \
+    {                                                                                                                  \
+        if( error )                                                                                                    \
+        {                                                                                                              \
+            std::ostringstream ss;                                                                                     \
+            librealsense::stream_args( ss, #__VA_ARGS__, __VA_ARGS__ );                                                \
+            *error = new rs2_error{ e.what(), __FUNCTION__, ss.str(), RS2_EXCEPTION_TYPE_COUNT };                      \
+        }                                                                                                              \
+        return R;                                                                                                      \
+    }
 #define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); librealsense::translate_exception(__FUNCTION__, ss.str(), error); return R; }
 #define NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(R) catch(...) { librealsense::translate_exception(__FUNCTION__, "", error); return R; }
 #define NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID() catch(...) { librealsense::translate_exception(__FUNCTION__, "", error); }

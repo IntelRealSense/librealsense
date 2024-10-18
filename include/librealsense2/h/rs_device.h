@@ -598,6 +598,22 @@ float rs2_calculate_target_z_cpp(rs2_device* device, rs2_frame_queue* queue1, rs
 float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
     float target_width, float target_height, rs2_update_progress_callback_ptr progress_callback, void* client_data, rs2_error** error);
 
+/**
+* rs2_get_calibration_config
+* \param[in]  device        Device
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                   JSON string representing the calibration config as rs2_raw_data_buffer
+*/
+const rs2_raw_data_buffer* rs2_get_calibration_config(rs2_device* device, rs2_error** error);
+
+/**
+* rs2_set_calibration_config
+* \param[in]  sensor                           Safety sensor
+* \param[in]  calibration_config_json_str      Calibration config as JSON string
+* \param[out] error                            If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_calibration_config(rs2_device* device, const char* calibration_config_json_str,  rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

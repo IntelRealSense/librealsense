@@ -34,7 +34,7 @@ std::string dds_device_info::get_address() const
 void dds_device_info::to_stream( std::ostream & os ) const
 {
     os << "DDS device (" << _dev->participant()->print( _dev->guid() ) << " on domain "
-       << _dev->participant()->get()->get_domain_id() << "):" << _dev->device_info().to_json().dump( 4 );
+       << _dev->participant()->get()->get_domain_id() << "):" << std::setw( 4 ) << _dev->device_info().to_json();
 }
 
 

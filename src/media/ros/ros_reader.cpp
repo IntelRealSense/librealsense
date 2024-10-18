@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019-24 Intel Corporation. All Rights Reserved.
 
 #include "ros_reader.h"
 #include "ds/ds-device-common.h"
@@ -10,6 +10,7 @@
 #include <src/core/motion-frame.h>
 #include <src/core/video-frame.h>
 #include <src/color-sensor.h>
+#include <src/context.h>
 
 #include <rsutils/string/from.h>
 #include <cstring>
@@ -391,10 +392,7 @@ namespace librealsense
                 }
                 auto size_of_enum = sizeof(rs2_frame_metadata_value);
                 auto size_of_data = sizeof(rs2_metadata_type);
-                if (total_md_size + size_of_enum + size_of_data > 255)
-                {
-                    continue; //stop adding metadata to frame
-                }
+               
                 memcpy(additional_data.metadata_blob.data() + total_md_size, &type, size_of_enum);
                 total_md_size += static_cast<uint32_t>(size_of_enum);
                 memcpy(additional_data.metadata_blob.data() + total_md_size, &md, size_of_data);

@@ -21,84 +21,112 @@ void output_model::thread_loop()
 {
     while (!to_stop)
     {
-        std::vector<rs2::device> dev_copy;
+        if( enable_firmware_logs )
         {
-            std::lock_guard<std::mutex> lock(devices_mutex);
-            dev_copy = devices;
-        }
-        if (enable_firmware_logs)
-            for (auto&& dev : dev_copy)
+            // User activated FW logs. Parse XML file and start collecting logs.
+            std::vector<rs2::device> dev_copy;
             {
-                try
+                std::lock_guard<std::mutex> lock(devices_mutex);
+                dev_copy = devices;
+            }
+            std::vector< std::pair< rs2::firmware_logger, bool > > loggers; // Logger and is initialized successfully (can parse logs)
+            for( auto & dev : dev_copy )
+            {
+                if( auto logger = dev.as< rs2::firmware_logger >() )
                 {
-                    if (auto fwlogger = dev.as<rs2::firmware_logger>())
+                    bool can_parse = false;
+                    std::string hwlogger_xml = config_file::instance().get( configurations::viewer::hwlogger_xml );
+                    std::ifstream f( hwlogger_xml.c_str() );
+                    if( f.good() )
                     {
-                        bool has_parser = false;
-                        std::string hwlogger_xml = config_file::instance().get(configurations::viewer::hwlogger_xml);
-                        std::ifstream f(hwlogger_xml.c_str());
-                        if (f.good())
+                        try
                         {
-                            try
-                            {
-                                std::string str((std::istreambuf_iterator<char>(f)),
-                                    std::istreambuf_iterator<char>());
-                                fwlogger.init_parser(str);
-                                has_parser = true;
-                            }
-                            catch (const std::exception& ex)
-                            {
-                                add_log( RS2_LOG_SEVERITY_WARN,
-                                         __FILE__,
-                                         __LINE__,
-                                         rsutils::string::from()
-                                             << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what()
-                                             << "\nEither configure valid XML or remove it" );
-                            }
+                            std::string str( ( std::istreambuf_iterator< char >( f ) ),
+                                             std::istreambuf_iterator< char >() );
+                            can_parse = logger.init_parser( str );
                         }
+                        catch( const std::exception & ex )
+                        {
+                            add_log( RS2_LOG_SEVERITY_WARN,
+                                     __FILE__,
+                                     __LINE__,
+                                     rsutils::string::from()
+                                         << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what()
+                                         << "\nEither configure valid XML or remove it" );
+                            continue;  // Don't try to get log entries for this device
+                        }
+                    }
 
+                    logger.start_collecting();
+                    loggers.push_back( { logger, can_parse } );
+                }
+            }
+
+            while( enable_firmware_logs )
+            {
+                for( auto & it : loggers )
+                {
+                    auto & fwlogger = it.first;
+                    bool can_parse = it.second;
+                    try
+                    {
                         auto message = fwlogger.create_message();
-                        while (fwlogger.get_firmware_log(message))
+                        while( fwlogger.get_firmware_log( message ) )
                         {
                             auto parsed = fwlogger.create_parsed_message();
                             auto parsed_ok = false;
 
-                            if (has_parser)
+                            if( can_parse )
                             {
-                                if (fwlogger.parse_log(message, parsed))
+                                if( fwlogger.parse_log( message, parsed ) )
                                 {
                                     parsed_ok = true;
+
+                                    std::string module_print = "[" + parsed.module_name() + "]";
+                                    if( module_print == "[Unknown]" )
+                                        module_print.clear();  // Some devices don't support FW log modules
 
                                     add_log( message.get_severity(),
                                              parsed.file_name(),
                                              parsed.line(),
-                                             rsutils::string::from()
-                                                 << "FW-LOG [" << parsed.thread_name() << "] " << parsed.message() );
+                                             rsutils::string::from() << "FW-LOG [" << parsed.thread_name() << "]"
+                                                                     << module_print << parsed.message() );
                                 }
                             }
 
-                            if (!parsed_ok)
+                            if( ! parsed_ok )
                             {
                                 std::stringstream ss;
-                                for (auto& elem : message.data())
-                                    ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
-                                add_log(message.get_severity(), __FILE__, 0, ss.str());
+                                for( auto & elem : message.data() )
+                                    ss << std::setfill( '0' ) << std::setw( 2 ) << std::hex
+                                       << static_cast< int >( elem ) << " ";
+                                add_log( message.get_severity(), __FILE__, 0, ss.str() );
                             }
-                            if (!enable_firmware_logs && fwlogger.get_number_of_fw_logs() == 0)
+
+                            if( !enable_firmware_logs && fwlogger.get_number_of_fw_logs() == 0 )
                                 break;
                         }
                     }
+                    catch( const std::exception & ex )
+                    {
+                        add_log( RS2_LOG_SEVERITY_WARN,
+                                 __FILE__,
+                                 __LINE__,
+                                 rsutils::string::from() << "Failed to fetch firmware logs: " << ex.what() );
+                    }
                 }
-                catch(const std::exception& ex)
-                {
-                    add_log( RS2_LOG_SEVERITY_WARN,
-                             __FILE__,
-                             __LINE__,
-                             rsutils::string::from() << "Failed to fetch firmware logs: " << ex.what() );
-                }
+                                    
+                // FW define the logs polling intervals to be no less than 100msec to cope with limited resources.
+                // At the same time 100 msec should guarantee no log drops
+                std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
             }
-        // FW define the logs polling intervals to be no less than 100msec to cope with limited resources.
-        // At the same time 100 msec should guarantee no log drops
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            // User dectivated FW logs. Stop collecting logs.
+            for( auto & fwlogger : loggers )
+                fwlogger.first.stop_collecting();
+        }
+
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
 }
 
@@ -228,6 +256,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             config_file::instance().set(configurations::viewer::output_open, false);
             default_log_h = 36;
             search_open = false;
+            set_number_open = false;
         }
         if (ImGui::IsItemHovered())
         {
@@ -267,7 +296,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     }
     ImGui::SameLine();
 
-    if (!is_output_open || search_open)
+    if( ! is_output_open || search_open || set_number_open )
     {
         ImGui::PushStyleColor(ImGuiCol_Text, header_color);
     }
@@ -280,12 +309,25 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     {
         focus_search = true;
         search_open = true;
+        set_number_open = false;  // Only one text box can be open at a time
         open(win);
     }
     if (ImGui::IsItemHovered())
     {
         win.link_hovered();
         ImGui::SetTooltip("%s", "Search through logs");
+    }
+    ImGui::SameLine();
+
+    if( ImGui::Button( u8"\u0023", ImVec2( 28, 28 ) ) )
+    {
+        search_open = false; // Only one text box can be open at a time
+        set_number_open = true;
+        open( win );
+    }
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::SetTooltip( "%s", "Set maximum number of log entries kept" );
     }
     ImGui::PopStyleColor(1);
     ImGui::SameLine();
@@ -302,8 +344,6 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     auto size = ImGui::CalcTextSize(ss.str().c_str());
 
     char buff[1024];
-    memcpy(buff, search_line.c_str(), search_line.size());
-    buff[search_line.size()] = 0;
 
     auto actual_search_width = w - size.x - 100 - curr_x;
     if (focus_search) search_width = (int)(actual_search_width);
@@ -316,16 +356,38 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     //     search_open = true;
     // }
 
-    if (search_open)
+    if( search_open || set_number_open )
     {
         ImGui::PushFont(win.get_monofont());
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4);
         ImGui::PushItemWidth(static_cast<float>(search_width));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
+
+        if( search_open )
+        {
+            memcpy( buff, search_line.c_str(), search_line.size() );
+            buff[search_line.size()] = 0;
+        }
+        else if( set_number_open )
+        {
+            std::string tmp = std::to_string( max_notifications_kept );
+            memcpy( buff, tmp.c_str(), tmp.size() );
+            buff[tmp.size()] = 0;
+        }
+
         if (ImGui::InputText("##SearchInLogs",buff, 1023))
         {
-            search_line = buff;
-            config_file::instance().set(configurations::viewer::search_term, search_line);
+            if( search_open )
+            {
+                search_line = buff;
+                config_file::instance().set(configurations::viewer::search_term, search_line);
+            }
+            else if( set_number_open )
+            {
+                int tmp = std::atoi( buff );
+                if( tmp > 0 )
+                    max_notifications_kept = tmp;
+            }
         }
         if (focus_search) ImGui::SetKeyboardFocusHere();
         ImGui::PopItemWidth();
@@ -786,7 +848,7 @@ void output_model::foreach_log(std::function<void(log_entry& line)> action)
     }
 
     // Limit the notification window
-    while (notification_logs.size() > 1000)
+    while( notification_logs.size() > max_notifications_kept )
     {
         auto&& le = notification_logs.front();
         if (le.severity >= RS2_LOG_SEVERITY_ERROR) number_of_errors--;

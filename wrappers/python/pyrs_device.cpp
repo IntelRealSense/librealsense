@@ -190,7 +190,9 @@ void init_device(py::module &m) {
             "queue1"_a, "queue2"_a, "queue3"_a, "target_width_mm"_a, "target_height_mm"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
         .def("get_calibration_table", &rs2::auto_calibrated_device::get_calibration_table, "Read current calibration table from flash.")
         .def("set_calibration_table", &rs2::auto_calibrated_device::set_calibration_table, "Set current table to dynamic area.")
-        .def("reset_to_factory_calibration", &rs2::auto_calibrated_device::reset_to_factory_calibration, "Reset device to factory calibration.");
+        .def("reset_to_factory_calibration", &rs2::auto_calibrated_device::reset_to_factory_calibration, "Reset device to factory calibration.")
+        .def("get_calibration_config", &rs2::auto_calibrated_device::get_calibration_config, "Get Calibration Config Table", py::call_guard<py::gil_scoped_release>())
+        .def("set_calibration_config", &rs2::auto_calibrated_device::set_calibration_config, "Set Calibration Config Table", "calibration_config_json_str"_a, py::call_guard<py::gil_scoped_release>());
 
     py::class_<rs2::device_calibration, rs2::device> device_calibration( m, "device_calibration" );
     device_calibration.def( py::init<rs2::device>(), "device"_a )

@@ -21,10 +21,30 @@
 namespace librealsense {
 
 
+// Device profiles undergo format conversion before becoming available to the user. This is typically done within each
+// sensor's init_stream_profiles(), but the behavior can be overriden by the user through the device JSON settings (see
+// device ctor) to enable querying the device's raw or basic formats only.
+// 
+// Note that streaming may be available only with full (the default) profiles. The others are for inspection only, and
+// can directly be queried in rs-enumerate-devices.
+// 
+// Note also that default profiles (those returned by get_profiles_tags()) must take the conversion method into account
+// or profiles may not get tagged correctly in non-full modes.
+//
 enum class format_conversion
 {
+    // Report raw profiles as provided by the camera, without any manipulation whatsoever by librealsense.
     raw,
+
+    // Take the raw profiles, perform the librealsense mappings, but then remove any "unwanted" mappings:
+    //      - any conversion between formats is thrown away (e.g., YUYV->RGB8)
+    //      - colored infrared is removed
+    //      - interleaved (Y12I, Y8I) are kept (so become Y16 and Y8, respectively)
+    // See formats_converter::drop_non_basic_formats()
     basic,
+
+    // The default conversion mode: all the librealsense mappings are intact; the user will see profiles including
+    // format conversions (e.g., YUYV->RGB8), etc.
     full
 };
 
@@ -86,6 +106,7 @@ private:
     std::shared_ptr< std::atomic< bool > > _is_alive;
     rsutils::subscription _device_change_subscription;
     rsutils::lazy< std::vector< tagged_profile > > _profiles_tags;
+    rsutils::lazy< format_conversion > _format_conversion;
 };
 
 

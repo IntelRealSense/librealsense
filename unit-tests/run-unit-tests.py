@@ -52,6 +52,8 @@ def usage():
     print( '        --hub-reset          If a hub is available, reset the hub itself' )
     print( '        --rslog              Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
     print( '        --skip-disconnected  Skip live test if required device is disconnected (only applies w/o a hub)' )
+    print( '        --test-dir <>        Path to test dir; default: librealsense/unit-tests' )
+    print( '                             ex: --test-dir $HOME/my_ws/my_tests; logs are stored in the same dir' )
     print( 'Examples:' )
     print( 'Running: python run-unit-tests.py -s' )
     print( '    Runs all tests, but direct their output to the console rather than log files' )
@@ -78,7 +80,7 @@ try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
                                           'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset', 'hub-reset',
-                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device='] )
+                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device=', 'test-dir='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -98,6 +100,8 @@ skip_disconnected = False
 rslog = False
 only_live = False
 only_not_live = False
+test_dir = current_dir
+test_dir_log =  False
 for opt, arg in opts:
     if opt in ('-h', '--help'):
         usage()
@@ -150,6 +154,11 @@ for opt, arg in opts:
             log.e( "--live and --not-live are mutually exclusive" )
             usage()
         only_not_live = True
+    elif opt == '--test-dir':
+        test_dir = os.path.abspath(arg)
+        libci.unit_tests_dir = test_dir
+        log.i(f'Tests dir changed from default to: {test_dir}')
+        test_dir_log = True
 
 def find_build_dir( dir ):
     """
@@ -230,9 +239,13 @@ if not exe_dir and build_dir:
 
 if not to_stdout:
     # If no test executables were found, put the logs directly in the build directory
-    logdir = os.path.join( exe_dir or build_dir or os.path.join( repo.root, 'build' ), 'unit-tests' )
+    if not test_dir_log:
+        logdir = os.path.join( exe_dir or build_dir or os.path.join( repo.root, 'build' ), 'unit-tests' )
+    else:
+        logdir = os.path.join( test_dir, 'logs' )
     os.makedirs( logdir, exist_ok=True )
     libci.logdir = logdir
+        
 n_tests = 0
 
 # Figure out which sys.path we want the tests to see, assuming we have Python tests
@@ -261,7 +274,7 @@ def configuration_str( configuration, repetition=0, retry=0, sns=None, prefix=''
     elif sns is not None:
         s += '[' + serial_numbers_to_string( sns ) + ']'
     if repetition:
-        s += '[' + str(repetition+1) + ']'
+        s += f'[rep {repetition+1}]'
     if retry:
         s += f'[retry {retry}]'
     if s:
@@ -316,7 +329,7 @@ def check_log_for_fails( path_to_log, testname, configuration=None, repetition=1
 
 
 def get_tests():
-    global regex, build_dir, exe_dir, pyrs, current_dir, linux, context, list_only
+    global regex, build_dir, exe_dir, pyrs, test_dir, linux, context, list_only
     if regex:
         pattern = re.compile( regex )
     # In Linux, the build targets are located elsewhere than on Windows
@@ -350,7 +363,7 @@ def get_tests():
     elif list_only:
         # We want to list all tests, even if they weren't built.
         # So we look for the source files instead of using the manifest
-        for cpp_test in file.find( current_dir, '(^|/)test-.*\.cpp' ):
+        for cpp_test in file.find( test_dir, '(^|/)test-.*\.cpp' ):
             testparent = os.path.dirname( cpp_test )  # "log/internal" <-  "log/internal/test-all.py"
             if testparent:
                 testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( cpp_test )[
@@ -365,7 +378,7 @@ def get_tests():
 
     # Python unit-test scripts are in the same directory as us... we want to consider running them
     # (we may not if they're live and we have no pyrealsense2.pyd):
-    for py_test in file.find( current_dir, '(^|/)test-.*\.py' ):
+    for py_test in file.find( test_dir, '(^|/)test-.*\.py' ):
         testparent = os.path.dirname( py_test )  # "log/internal" <-  "log/internal/test-all.py"
         if testparent:
             testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( py_test )[5:-3]  # remove .py
@@ -437,14 +450,23 @@ def test_wrapper_( test, configuration=None, repetition=1, retry=0, sns=None ):
     return False
 
 
-def test_wrapper( test, configuration=None, repetition=1, sns=None ):
+def test_wrapper( test, configuration=None, repetition=1, serial_numbers=None ):
     global n_tests
     n_tests += 1
     for retry in range( test.config.retries + 1 ):
-        if test_wrapper_( test, configuration, repetition, retry, sns ):
+        if retry:
+            if log.is_debug_on():
+                log.debug_unindent()  # just to make it stand out a little more
+                log.d( f'  Failed; retry #{retry}' )
+                log.debug_indent()
+            if no_reset or not serial_numbers:
+                time.sleep(1)  # small pause between tries
+            else:
+                devices.enable_only( serial_numbers, recycle=True )
+        if test_wrapper_( test, configuration, repetition, retry, serial_numbers ):
             return True
         log._n_errors -= 1
-        time.sleep( 1 )  # small pause between tries
+
     log._n_errors += 1
     return False
 
@@ -577,7 +599,7 @@ try:
                     except RuntimeError as e:
                         log.w( log.red + test.name + log.reset + ': ' + str( e ) )
                     else:
-                        test_ok = test_wrapper( test, configuration, repetition, sns=serial_numbers ) and test_ok
+                        test_ok = test_wrapper( test, configuration, repetition, serial_numbers ) and test_ok
                     finally:
                         log.debug_unindent()
             if not test_ok:

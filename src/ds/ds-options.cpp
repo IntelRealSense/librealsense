@@ -690,7 +690,22 @@ namespace librealsense
     void hdr_conditional_option::set(float value)
     {
         if (_hdr_cfg->is_config_in_process())
-            _hdr_option->set(value);
+        {
+            if( _hdr_cfg->is_enabled() )
+            {
+                // Changing exposure while HDR is enabled was requested by customers.It is currently disabled by D400
+                // FW, so we workaround it by disabling HDR,changing exposure and enabling again.Disabling/Enabling
+                // resets the sequence index so we need to keep and restore it.
+                auto _current_hdr_sequence_index = _hdr_cfg->get( RS2_OPTION_SEQUENCE_ID );
+                _hdr_cfg->set( RS2_OPTION_HDR_ENABLED, 0, { 0, 1, 1, 0 } );
+                _hdr_cfg->set( RS2_OPTION_SEQUENCE_ID, _current_hdr_sequence_index, { 0, 2, 1, 0 } );
+                _hdr_option->set( value );
+                _hdr_cfg->set( RS2_OPTION_HDR_ENABLED, 1, { 0, 1, 1, 0 } );
+                _hdr_cfg->set( RS2_OPTION_SEQUENCE_ID, _current_hdr_sequence_index, { 0, 2, 1, 0 } );
+            }
+            else
+                _hdr_option->set( value );
+        }    
         else
         {
             if (_hdr_cfg->is_enabled())
@@ -733,4 +748,49 @@ namespace librealsense
         else
             return _uvc_option->is_enabled();
     }
-}
+
+    thermal_compensation::thermal_compensation( std::shared_ptr< ds_thermal_monitor > monitor,
+                                                std::shared_ptr< option > toggle )
+        : _thermal_monitor( monitor )
+        , _thermal_toggle( toggle )
+    {
+    }
+
+    float thermal_compensation::query(void) const
+    {
+        auto val = _thermal_toggle->query();
+        return val;
+    }
+
+    void thermal_compensation::set(float value)
+    {
+        if (value < 0)
+            throw invalid_value_exception("Invalid input for thermal compensation toggle: " + std::to_string(value));
+
+        _thermal_toggle->set(value);
+        _recording_function(*this);
+    }
+
+    const char* thermal_compensation::get_description() const
+    {
+        return "Toggle thermal compensation adjustments mechanism";
+    }
+
+    const char* thermal_compensation::get_value_description(float value) const
+    {
+        if (value == 0)
+        {
+            return "Disabled";
+        }
+        else
+        {
+            return "Enabled";
+        }
+    }
+
+    //Work-around the control latency
+    void thermal_compensation::create_snapshot(std::shared_ptr<option>& snapshot) const
+    {
+        snapshot = std::make_shared<const_value_option>(get_description(), 0.f);
+    }
+} // namespace librealsense

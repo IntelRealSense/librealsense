@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
@@ -11,8 +11,7 @@
 #include "lrs-device-watcher.h"
 #include "lrs-device-controller.h"
 
-#include <tclap/CmdLine.h>
-#include <tclap/ValueArg.h>
+#include <common/cli.h>
 
 #include <rsutils/os/executable-name.h>
 #include <rsutils/os/special-folder.h>
@@ -25,8 +24,8 @@
 #include <map>
 #include <set>
 
-using namespace TCLAP;
 using namespace realdds;
+using rsutils::json;
 
 
 std::string get_topic_root( std::string const & name, std::string const & serial_number )
@@ -52,7 +51,7 @@ std::string get_topic_root( std::string const & name, std::string const & serial
 
 topics::device_info rs2_device_to_info( rs2::device const & dev )
 {
-    rsutils::json j;
+    json j;
 
     // Name is mandatory
     std::string const name = dev.get_info( RS2_CAMERA_INFO_NAME );
@@ -86,7 +85,7 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
 }
 
 
-static rsutils::json load_settings( rsutils::json const & local_settings )
+static json load_settings( json const & local_settings )
 {
     // Load the realsense configuration file settings
     std::string const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
@@ -112,41 +111,29 @@ static rsutils::json load_settings( rsutils::json const & local_settings )
 int main( int argc, char * argv[] )
 try
 {
-    dds_domain_id domain = -1;  // from settings; default to 0
-    CmdLine cmd( "librealsense rs-dds-adapter tool, use CTRL + C to stop..", ' ' );
-    ValueArg< dds_domain_id > domain_arg( "d",
-                                          "domain",
-                                          "Select domain ID to publish on",
-                                          false,
-                                          0,
-                                          "0-232" );
-    SwitchArg debug_arg( "", "debug", "Enable debug logging", false );
-
-    cmd.add( domain_arg );
-    cmd.add( debug_arg );
-    cmd.parse( argc, argv );
+    using cli = rs2::cli_no_dds;  // no --eth, --no-eth, --eth-only, --domain-id
+    cli::value< dds_domain_id > domain_arg( "domain-id", "0-232", 0, "Select domain ID to publish on" );
+    cli cmd( "librealsense rs-dds-adapter tool: use USB devices as network devices" );
+    auto settings = cmd  // in order we want listed:
+        .arg( domain_arg )
+        .process( argc, argv );
 
     // Configure the same logger as librealsense
-    rsutils::configure_elpp_logger( debug_arg.isSet() );
+    rsutils::configure_elpp_logger( cmd.debug_arg.isSet() );
     // Intercept DDS messages and redirect them to our own logging mechanism
     eprosima::fastdds::dds::Log::ClearConsumers();
     eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
 
-    if( debug_arg.isSet() )
-    {
-        rs2::log_to_console( RS2_LOG_SEVERITY_DEBUG );
+    if( cmd.debug_arg.isSet() )
         eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Info );
-    }
     else
-    {
-        rs2::log_to_console( RS2_LOG_SEVERITY_ERROR );
         eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
-    }
 
+    dds_domain_id domain = -1;  // from settings; default to 0
     if( domain_arg.isSet() )
     {
         domain = domain_arg.getValue();
-        if( domain > 232 )
+        if( domain < 0 || domain > 232 )
         {
             std::cerr << "Invalid domain value, enter a value in the range [0, 232]" << std::endl;
             return EXIT_FAILURE;
@@ -174,11 +161,9 @@ try
     std::cout << "Start listening to RS devices.." << std::endl;
 
     // Create a RealSense context
-    rsutils::json j = {
-        { "dds",               false   }, // Don't discover DDS devices from the network, we want local devices only 
-        { "format-conversion", "basic" }  // Don't convert raw sensor formats (except interleaved) will be done by receiver
-    };
-    rs2::context ctx( j.dump() );
+    settings["dds"] = false;                  // We want non-DDS (local) devices only
+    settings["format-conversion"] = "basic";  // Conversion of raw sensor formats will be done by the receiver
+    rs2::context ctx( settings.dump() );
 
     // Run the LRS device watcher
     tools::lrs_device_watcher dev_watcher( ctx );

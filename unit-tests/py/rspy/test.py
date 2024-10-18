@@ -139,7 +139,7 @@ def find_first_device_or_exit():
     dev = c.devices[0]
     log.d( 'found', dev )
     log.d( 'in', rs )
-    return dev
+    return dev, c
 
 
 def find_devices_by_product_line_or_exit( product_line ):
@@ -199,6 +199,7 @@ def check_passed():
     :return: always False (so you can 'return check_failed()'
     """
     _count_check()
+    print_info( error = False )
     reset_info()
     return True
 
@@ -498,13 +499,13 @@ def reset_info(persistent = False):
         test_info = new_info
 
 
-def print_info():
+def print_info( error = True ):
     global test_info
     if not test_info: # No information is stored
         return
-    #log.out("Printing information")
+    logger = error and log.out or log.d
     for name, information in test_info.items():
-        log.out( f"        {name} : {information.value}" )
+        logger( f"        {name} : {information.value}" )
     reset_info()
 
 
@@ -560,7 +561,6 @@ def finish( on_fail=LOG ):
     else:
         log.i("Test passed")
     test_in_progress = None
-
 
 def print_separator():
     """
@@ -710,6 +710,7 @@ class remote:
         self._status = None     # last return-code
         self._on_finish = None  # callback
         self._exception = None
+        self._stdout = None
 
     def __enter__( self ):
         """
@@ -780,7 +781,10 @@ class remote:
                     missing_ready = None
                     if not line:
                         continue
-                print( nested_prefix + line, end='', flush=True )
+                if self._stdout is not None and not line.startswith( '-D-' ):
+                    self._stdout.append( line[:-1] )
+                else:
+                    print( nested_prefix + line, end='', flush=True )
             else:
                 if x > 0 and line[:x] == '___ready\n'[:x]:
                     missing_ready = '___ready\n'[x:]
@@ -853,6 +857,31 @@ class remote:
         self._process.stdin.flush()
         if timeout:
             self.wait_until_ready( timeout=timeout, on_fail=on_fail )
+
+
+    def capture_stdout( self ):
+        """
+        Start collecting stdout from the remote, if not already collecting it.
+        Stdout collected will not be printed to our stdout, and will instead be returned in get_stdout()
+        as a list of lines. Debug lines (-D-...) are filtered out.
+        """
+        if self._stdout is None:
+            self._stdout = []
+
+
+    def get_stdout( self, flush=True, stop=True, timeout=5 ):
+        """
+        Returns the stdout collected since capture_stdout(), as a list of lines.
+        :param stop: if True, will stop collecting stdout
+        :param flush: remote output may have not made it to us yet; if True, wait until we've seen everything
+        """
+        if flush:
+            # Run empty command and wait until ready; will throw
+            self.run( '', timeout=timeout )
+        stdout = self._stdout
+        if stop:
+            self._stdout = None
+        return stdout
 
 
     def wait( self, timeout=10 ):

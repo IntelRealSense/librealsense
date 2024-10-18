@@ -89,7 +89,7 @@ namespace librealsense
             FEF = 0x0c,     // Erase flash full <Parameter1 Name="0xACE">
             FSRU = 0x0d,     // Flash status register unlock
             FPLOCK = 0x0e,     // Permanent lock on lower Quarter region of the flash
-            GLD = 0x0f,     // FW logs
+            GLD = 0x0f,     // Legacy get FW logs command
             GVD = 0x10,     // camera details
             GETINTCAL = 0x15,     // Read calibration table
             SETINTCAL = 0x16,     // Set Internal sub calibration table
@@ -123,6 +123,7 @@ namespace librealsense
             RECPARAMSGET = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
             LASERONCONST = 0x7F,     // Enable Laser On constantly (GS SKU Only)
             AUTO_CALIB = 0x80,      // auto calibration commands
+            HKR_THERMAL_COMPENSATION = 0x84, // Control HKR thermal compensation
             GETAELIMITS = 0x89,   //Auto Exp/Gain Limit command FW version >= 5.13.0.200
             SETAELIMITS = 0x8A,   //Auto Exp/Gain Limit command FW version >= 5.13.0.200
 
@@ -131,7 +132,10 @@ namespace librealsense
             APM_STROBE_GET = 0x99,        // Query if Laser on constantly or pulse
             SET_HKR_CONFIG_TABLE = 0xA6, // HKR Set Internal sub calibration table
             GET_HKR_CONFIG_TABLE = 0xA7, // HKR Get Internal sub calibration table
-            CALIBRESTOREEPROM = 0xA8 // HKR Store EEPROM Calibration
+            CALIBRESTOREEPROM = 0xA8, // HKR Store EEPROM Calibration
+            GET_FW_LOGS = 0xB4, // Get FW logs extended format
+            SET_CALIB_MODE = 0xB8,      // Set Calibration Mode
+            GET_CALIB_STATUS = 0xB9      // Get Calibration Status
         };
 
 #define TOSTRING(arg) #arg
@@ -163,6 +167,7 @@ namespace librealsense
                 ENUM2STR(SETSUBPRESET);
                 ENUM2STR(GETSUBPRESET);
                 ENUM2STR(GETSUBPRESETID);
+                ENUM2STR(GET_FW_LOGS);
             default:
               return ( rsutils::string::from() << "Unrecognized FW command " << state );
             }
@@ -263,8 +268,11 @@ namespace librealsense
             uint32_t                table_size;     // full size including: TOC header + TOC + actual tables
             uint32_t                param;          // This field content is defined ny table type
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
+
+            std::string to_string() const;
         };
 
+        // Note ds_rect_resolutions is used in struct d400_coefficients_table. Update with caution.
         enum ds_rect_resolutions : unsigned short
         {
             res_1920_1080,
@@ -311,6 +319,16 @@ namespace librealsense
                                                << "Calibration data invalid, buffer too small : expected "
                                                << sizeof( table_header ) << " , actual: " << raw_data.size() );
             }
+
+            // Make sure the table size does not exceed the actual data we have!
+            if( header->table_size + sizeof( table_header ) > raw_data.size() )
+            {
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Calibration table size does not fit inside reply: expected "
+                                               << ( raw_data.size() - sizeof( table_header ) ) << " but got "
+                                               << header->table_size );
+            }
+
             // verify the parsed table
             if (table->header.crc32 != rsutils::number::calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {
@@ -554,7 +572,6 @@ namespace librealsense
             { res_1280_720,{ 1280, 720 } },
             { res_1280_800,{ 1280, 800 } },
             { res_1920_1080,{ 1920, 1080 } },
-            //Resolutions for DS5U
             { res_576_576,{ 576, 576 } },
             { res_720_720,{ 720, 720 } },
             { res_1152_1152,{ 1152, 1152 } },

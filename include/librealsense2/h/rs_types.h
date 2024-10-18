@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 /** \brief Category of the librealsense notification. */
 typedef enum rs2_notification_category{
     RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT,               /**< Frames didn't arrived within 5 seconds */
@@ -277,6 +279,7 @@ const char* rs2_get_failed_function            (const rs2_error* error);
 const char* rs2_get_failed_args                (const rs2_error* error);
 const char* rs2_get_error_message              (const rs2_error* error);
 void        rs2_free_error                     (rs2_error* error);
+
 
 #ifdef __cplusplus
 }

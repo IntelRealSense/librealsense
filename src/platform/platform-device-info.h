@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-2024 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
@@ -39,6 +39,8 @@ public:
             return _group.uvc_devices.front().device_path;
         if( ! _group.usb_devices.empty() )
             return _group.usb_devices.front().id;
+        if( ! _group.mipi_devices.empty() )
+            return _group.mipi_devices.front().id;
         throw std::runtime_error( "non-standard platform-device-info" );
     }
 

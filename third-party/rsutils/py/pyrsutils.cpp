@@ -44,6 +44,18 @@ PYBIND11_MODULE(NAME, m) {
         { return rsutils::string::shorten_json_string( j.dump(), max_length ).to_string(); },
         py::arg( "json" ),
         py::arg( "max-length" ) = 96 );
+    m.def(
+        "json_dump",  // pretty print, using our own output
+        []( rsutils::json const & j, size_t indent )
+        {
+            std::ostringstream os;
+            if( indent )
+                os << std::setw( indent );
+            os << j;
+            return os.str();
+        },
+        py::arg( "json" ),
+        py::arg( "indent" ) = 4 );
     m.def( "executable_path", &rsutils::os::executable_path );
     m.def( "executable_name", &rsutils::os::executable_name, py::arg( "with_extension" ) = false );
 

@@ -1,5 +1,4 @@
-#  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.8)
 
 project(RealsensePythonWrappers)
 
@@ -169,6 +168,15 @@ install(TARGETS pybackend2 pyrealsense2
 )
 
 target_include_directories(pybackend2 PRIVATE ../../src)
+
+else() # not BUILD_LEGACY_PYBACKEND
+
+install(TARGETS pyrealsense2
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}
+    ARCHIVE DESTINATION ${PYTHON_INSTALL_DIR}
+)
+
 endif()  # BUILD_LEGACY_PYBACKEND
 
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/pyrealsense2ConfigVersion.cmake"
@@ -191,6 +199,10 @@ install(FILES "${CMAKE_BINARY_DIR}/wrappers/python/pyrealsense2Config.cmake"
 
 install(FILES "${CMAKE_BINARY_DIR}/wrappers/python/pyrealsense2ConfigVersion.cmake"
     DESTINATION ${CMAKECONFIG_PY_INSTALL_DIR}
+)
+
+install(FILES pyrealsense2/__init__.py
+    DESTINATION ${PYTHON_INSTALL_DIR}
 )
 
 target_include_directories(pyrealsense2 PRIVATE ../../src)

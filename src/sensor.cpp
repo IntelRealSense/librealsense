@@ -1,11 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-24 Intel Corporation. All Rights Reserved.
 
 #include "uvc-sensor.h"
 
 #include "source.h"
 #include "device.h"
 #include "stream.h"
+#include "context.h"
+#include "image.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
 #include "global_timestamp_reader.h"
@@ -73,7 +75,8 @@ void log_callback_end( uint32_t fps,
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
 
-        register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<librealsense::md_time_of_arrival_parser>());
+        register_metadata( RS2_FRAME_METADATA_TIME_OF_ARRIVAL,
+                           make_additional_data_parser_unless( &frame_additional_data::system_time, rs2_time_t( 0 ) ) );
 
         register_info(RS2_CAMERA_INFO_NAME, name);
     }
@@ -361,7 +364,7 @@ void log_callback_end( uint32_t fps,
     {
         auto it = _camera_info.find(info);
         if (it == _camera_info.end())
-            throw invalid_value_exception("Selected camera info is not supported for this camera!");
+            throw invalid_value_exception("Selected camera info: " + std::string(rs2_camera_info_to_string(info)) + ", is not supported for this camera!");
 
         return it->second;
     }

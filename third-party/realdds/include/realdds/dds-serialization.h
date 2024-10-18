@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <fastdds/dds/core/policy/QosPolicies.hpp>
@@ -15,14 +15,26 @@ std::ostream & operator<<( std::ostream &, ReliabilityQosPolicyKind );
 std::ostream & operator<<( std::ostream &, ReliabilityQosPolicy const & );
 std::ostream & operator<<( std::ostream &, DurabilityQosPolicyKind );
 std::ostream & operator<<( std::ostream &, DurabilityQosPolicy const & );
+std::ostream & operator<<( std::ostream &, HistoryQosPolicyKind );
 std::ostream & operator<<( std::ostream &, HistoryQosPolicy const & );
 std::ostream & operator<<( std::ostream &, LivelinessQosPolicyKind );
 std::ostream & operator<<( std::ostream &, LivelinessQosPolicy const & );
 std::ostream & operator<<( std::ostream &, DataSharingQosPolicy const & );
 std::ostream & operator<<( std::ostream &, RTPSEndpointQos const & );
+std::ostream & operator<<( std::ostream &, PublishModeQosPolicy const & );
+std::ostream & operator<<( std::ostream &, ParticipantResourceLimitsQos const & );
 
 class DomainParticipantQos;
+std::ostream & operator<<( std::ostream &, DomainParticipantQos const & );
+
+class DataWriterQos;
+std::ostream & operator<<( std::ostream &, DataWriterQos const & );
+
 }  // namespace dds
+namespace rtps {
+std::ostream & operator<<( std::ostream &, TransportDescriptorInterface const & );
+std::ostream & operator<<( std::ostream &, FlowControllerDescriptor const & );
+}
 }  // namespace fastdds
 }  // namespace eprosima
 
@@ -37,6 +49,8 @@ void from_json( rsutils::json const &, Duration_t & );
 namespace rtps {
 std::ostream & operator<<( std::ostream &, class WriterProxyData const & );
 std::ostream & operator<<( std::ostream &, class ReaderProxyData const & );
+std::ostream & operator<<( std::ostream &, BuiltinAttributes const & );
+std::ostream & operator<<( std::ostream &, RemoteLocatorsAllocationAttributes const & );
 }  // namespace rtps
 
 }  // namespace fastrtps
@@ -44,6 +58,9 @@ std::ostream & operator<<( std::ostream &, class ReaderProxyData const & );
 
 
 namespace realdds {
+
+
+class dds_participant;
 
 
 eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability_kind_from_string( std::string const & );
@@ -101,6 +118,7 @@ void override_liveliness_qos_from_json( eprosima::fastdds::dds::LivelinessQosPol
 //
 void override_data_sharing_qos_from_json( eprosima::fastdds::dds::DataSharingQosPolicy & qos, rsutils::json const & );
 
+
 // Override QoS endpoint from a JSON source.
 // The JSON is an object:
 //      {
@@ -108,6 +126,25 @@ void override_data_sharing_qos_from_json( eprosima::fastdds::dds::DataSharingQos
 //      }
 //
 void override_endpoint_qos_from_json( eprosima::fastdds::dds::RTPSEndpointQos & qos, rsutils::json const & );
+
+
+// Override QoS publish- from a JSON source.
+// The JSON is an object:
+//      {
+//          "flow-control": "name"
+//      }
+//
+void override_publish_mode_qos_from_json( eprosima::fastdds::dds::PublishModeQosPolicy & qos, rsutils::json const &, dds_participant const & );
+
+
+// Override FlowController settings from a JSON source.
+// The JSON is an object:
+//      {
+//          "max-bytes-per-period": 16384,
+//          "period-ms": 250
+//      }
+//
+void override_flow_controller_from_json( eprosima::fastdds::rtps::FlowControllerDescriptor &, rsutils::json const & );
 
 
 // Override participant QoS from a JSON source.

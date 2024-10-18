@@ -43,7 +43,13 @@ namespace rs2
         bool is_stream_alive();
         void show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer);
         void show_stream_header(ImFont* font, const rect& stream_rect, viewer_model& viewer);
-        void show_stream_imu(ImFont* font, const rect& stream_rect, const rs2_vector& axis, const mouse_info& mouse);
+        float show_stream_imu( ImFont * font,
+                               const rect & stream_rect,
+                               const rs2_vector & axis,
+                               const mouse_info & mouse,
+                               char const * units,
+                               char const * title = nullptr,
+                               float y_offset = 0.f );
         void show_stream_pose(ImFont* font, const rect& stream_rect, const rs2_pose& pose_data,
             rs2_stream stream_type, bool fullScreen, float y_offset, viewer_model& viewer);
 

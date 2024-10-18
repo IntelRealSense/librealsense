@@ -59,11 +59,14 @@ namespace librealsense {
 
     void context::create_factories( std::shared_ptr< context > const & sptr )
     {
-        _factories.push_back( std::make_shared< backend_device_factory >(
-            sptr,
-            [this]( std::vector< std::shared_ptr< device_info > > const & removed,
-                    std::vector< std::shared_ptr< device_info > > const & added )
-            { invoke_devices_changed_callbacks( removed, added ); } ) );
+        if( 0 == ( get_device_mask() & RS2_PRODUCT_LINE_SW_ONLY ) )
+        {
+            _factories.push_back( std::make_shared< backend_device_factory >(
+                sptr,
+                [this]( std::vector< std::shared_ptr< device_info > > const & removed,
+                        std::vector< std::shared_ptr< device_info > > const & added )
+                { invoke_devices_changed_callbacks( removed, added ); } ) );
+        }
 
 #ifdef BUILD_WITH_DDS
         _factories.push_back( std::make_shared< rsdds_device_factory >(
@@ -113,7 +116,7 @@ namespace librealsense {
         {
             for( auto & dev_info : factory->query_devices( requested_mask ) )
             {
-                LOG_INFO( "... " << dev_info->get_address() );
+                LOG_DEBUG( "... " << dev_info->get_address() );
                 list.push_back( dev_info );
             }
         }
@@ -121,12 +124,12 @@ namespace librealsense {
         {
             if( auto dev_info = item.second.lock() )
             {
-                LOG_INFO( "... " << dev_info->get_address() );
+                LOG_DEBUG( "... " << dev_info->get_address() );
                 list.push_back( dev_info );
             }
         }
-        LOG_INFO( "Found " << list.size() << " RealSense devices (0x" << std::hex << requested_mask << " requested & 0x"
-                           << get_device_mask() << " from device-mask in settings)" << std::dec );
+        LOG_DEBUG( "Found " << list.size() << " RealSense devices (0x" << std::hex << requested_mask
+                            << " requested & 0x" << get_device_mask() << " from device-mask in settings)" << std::dec );
         return list;
     }
 

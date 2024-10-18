@@ -17,7 +17,7 @@ import platform
 
 
 # Set maximum delay for first frame according to product line
-dev = test.find_first_device_or_exit()
+dev, ctx = test.find_first_device_or_exit()
 
 # The device starts at D0 (Operational) state, allow time for it to get into idle state
 time.sleep( 3 )
@@ -31,7 +31,7 @@ else:
 
 
 def time_to_first_frame(config):
-    pipe = rs.pipeline()
+    pipe = rs.pipeline(ctx)
     start_call_stopwatch = Stopwatch()
     pipe.start(config)
     pipe.wait_for_frames()
@@ -51,13 +51,15 @@ test.finish()
 
 
 ################################################################################################
-test.start("Testing pipeline first color frame delay on " + product_line + " device - " + platform.system() + " OS")
-color_cfg = rs.config()
-color_cfg.enable_stream(rs.stream.color, rs.format.rgb8, 30)
-frame_delay = time_to_first_frame(color_cfg)
-print("Delay from pipeline.start() until first color frame is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(frame_delay, max_delay_for_color_frame))
-test.check(frame_delay < max_delay_for_color_frame)
-test.finish()
+product_name = dev.get_info(rs.camera_info.name)
+if 'D421' not in product_name and 'D405' not in product_name: # Cameras with no color sensor
+    test.start("Testing pipeline first color frame delay on " + product_line + " device - " + platform.system() + " OS")
+    color_cfg = rs.config()
+    color_cfg.enable_stream(rs.stream.color, rs.format.rgb8, 30)
+    frame_delay = time_to_first_frame(color_cfg)
+    print("Delay from pipeline.start() until first color frame is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(frame_delay, max_delay_for_color_frame))
+    test.check(frame_delay < max_delay_for_color_frame)
+    test.finish()
 
 
 ################################################################################################

@@ -14,33 +14,34 @@ namespace librealsense
 
     namespace ds
     {
-        const uint16_t D555E_PID = 0x0B56;
-        const uint16_t D555E_RECOVERY_PID = 0x0ADE;
+        const uint16_t D555_PID = 0x0B56;
+        const uint16_t D555_RECOVERY_PID = 0x0ADE;
 
-        namespace xu_id
-        {
-        }
+        // DS500 depth XU identifiers
+        const uint8_t DS5_HKR_PVT_TEMPERATURE = 0x15;
+        const uint8_t DS5_HKR_PROJECTOR_TEMPERATURE = 0x16;
+        const uint8_t DS5_HKR_OHM_TEMPERATURE = 0x17;
 
         // d500 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {
-            D555E_PID
+            D555_PID
         };
 
         static const std::set<std::uint16_t> d500_multi_sensors_pid = {
-            D555E_PID
+            D555_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_sensors_pid = {
-            D555E_PID
+            D555_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_bmi_085_pid = {
-            D555E_PID
+            D555_PID
         };
 
         static const std::map< std::uint16_t, std::string > rs500_sku_names = {
-            { ds::D555E_PID,          "Intel RealSense D555e" },
-            { ds::D555E_RECOVERY_PID, "Intel RealSense D555e Recovery" }
+            { ds::D555_PID,          "Intel RealSense D555" },
+            { ds::D555_RECOVERY_PID, "Intel RealSense D555 Recovery" }
         };
 
         bool d500_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
@@ -81,6 +82,8 @@ namespace librealsense
             rgb_calibration_id = 0xb9,
             rgb_lut_id = 0xba,
             imu_calibration_id = 0xbb,
+            stream_pipe_config_id = 0xbe,
+            calib_cfg_id = 0xc0dd,
             max_id = -1
         };
 
@@ -94,6 +97,8 @@ namespace librealsense
             uint32_t     y_shift_in;
             uint32_t     x_scale_in;
             uint32_t     y_scale_in;
+
+            std::string to_string() const;
         };
 
         // Calibration implemented according to version 3.1
@@ -105,19 +110,31 @@ namespace librealsense
             float       ppy;            /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
             float       fx;             /**< Focal length of the image plane, as a multiple of pixel width */
             float       fy;             /**< Focal length of the image plane, as a multiple of pixel height */
+
+            std::string to_string() const;
+        };
+
+        // These are the possible values for the calibration table 'distortion_model' field
+        enum class d500_calibration_distortion
+        {
+            none = 0,
+            brown = 1,
+            brown_and_fisheye = 2
         };
 
         struct single_sensor_coef_table
         {
             mini_intrinsics           base_instrinsics;
             uint32_t                  distortion_non_parametric;
-            rs2_distortion            distortion_model;          /**< Distortion model of the image */
-            float                     distortion_coeffs[13];     /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
+            d500_calibration_distortion distortion_model;
+            float distortion_coeffs[13];  // [k1,k2,p1,p2,k3] for Brown, followed by [k1,k2,k3,k4] with fisheye
             uint8_t                   reserved[4];
             float                     radial_distortion_lut_range_degs;
             float                     radial_distortion_lut_focal_length;
             d500_undist_configuration undist_config;
             float3x3                  rotation_matrix;
+
+            std::string to_string() const;
         };
 
         struct d500_coefficients_table
@@ -127,11 +144,13 @@ namespace librealsense
             single_sensor_coef_table  right_coefficients_table;
             float                     baseline;                   //  the baseline between the cameras in mm units
             uint8_t                   translation_dir;
-            uint8_t                   realignement_essential;     // 1/0 - indicates whether the vertical alignement
-                                                                  // is required to avoiid overflow in the REC buffer
+            uint8_t                   realignment_essential;     // 1/0 - indicates whether the vertical alignment
+                                                                  // is required to avoid overflow in the REC buffer
             int16_t                   vertical_shift;             // in pixels
             mini_intrinsics           rectified_intrinsics;
             uint8_t                   reserved[148];
+
+            std::string to_string() const;
         };
 
         struct d500_rgb_calibration_table
@@ -150,7 +169,14 @@ namespace librealsense
         rs2_intrinsics get_d500_color_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_d500_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
-
+        struct d500_stream_pipe_config_table
+        {
+            table_header    header;
+            uint8_t         is_depth_symmetrization_enabled;
+            uint8_t         is_color_symmetrization_enabled;
+            uint8_t         is_depth_vertical_alignment_enabled;
+            uint8_t         reserved[237];
+        };
 
         enum class d500_calib_location
         {

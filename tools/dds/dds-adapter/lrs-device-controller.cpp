@@ -17,13 +17,13 @@
 #include <realdds/dds-topic-reader-thread.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-guid.h>
-
-#include <fastdds/dds/subscriber/SampleInfo.hpp>
+#include <realdds/dds-sample.h>
 
 #include <rsutils/number/crc32.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
 #include <rsutils/string/hexarray.h>
+#include <rsutils/string/hexdump.h>
 #include <rsutils/time/timer.h>
 #include <rsutils/string/from.h>
 
@@ -53,18 +53,40 @@ using tools::lrs_device_controller;
     break
 
 
+realdds::distortion_model to_realdds( rs2_distortion model )
+{
+    switch( model )
+    {
+    case RS2_DISTORTION_BROWN_CONRADY: return realdds::distortion_model::brown;
+    case RS2_DISTORTION_NONE: return realdds::distortion_model::none;
+    case RS2_DISTORTION_INVERSE_BROWN_CONRADY: return realdds::distortion_model::inverse_brown;
+    case RS2_DISTORTION_MODIFIED_BROWN_CONRADY: return realdds::distortion_model::modified_brown;
+
+    default:
+        throw std::runtime_error( "unexpected rs2 distortion model: " + std::string( rs2_distortion_to_string( model ) ) );
+    }
+}
+
 realdds::video_intrinsics to_realdds( const rs2_intrinsics & intr )
 {
     realdds::video_intrinsics ret;
 
     ret.width = intr.width;
     ret.height = intr.height;
-    ret.principal_point_x = intr.ppx;
-    ret.principal_point_y = intr.ppy;
-    ret.focal_lenght_x = intr.fx;
-    ret.focal_lenght_y = intr.fy;
-    ret.distortion_model = intr.model;
-    memcpy( ret.distortion_coeffs.data(), intr.coeffs, sizeof( ret.distortion_coeffs ) );
+    ret.principal_point.x = intr.ppx;
+    ret.principal_point.y = intr.ppy;
+    ret.focal_length.x = intr.fx;
+    ret.focal_length.y = intr.fy;
+    ret.distortion.model = realdds::distortion_model::none;
+    for( auto coeff : intr.coeffs )
+    {
+        if( coeff != 0.f )
+        {
+            ret.distortion.model = to_realdds( intr.model );
+            memcpy( ret.distortion.coeffs.data(), intr.coeffs, sizeof( ret.distortion.coeffs ) );
+            break;
+        }
+    }
 
     return ret;
 }
@@ -123,6 +145,53 @@ static std::string stream_name_from_rs2( rs2::sensor const & sensor )
     if( it == sensor_stream_name.end() )
         return {};
     return it->second;
+}
+
+
+std::vector< char const * > get_option_enum_values( rs2::sensor const & sensor,
+                                                    rs2_option const opt,
+                                                    rs2::option_range const & range,
+                                                    float const current_value,
+                                                    size_t * p_current_index,
+                                                    size_t * p_default_index )
+{
+    // Same logic as in Viewer's option-model...
+    if( range.step < 0.9f )
+        return {};
+
+    size_t current_index = 0, default_index = 0;
+    std::vector< const char * > labels;
+    for( auto i = range.min; i <= range.max; i += range.step )
+    {
+        auto label = sensor.get_option_value_description( opt, i );
+        if( ! label )
+            return {};  // Missing value - not an enum
+
+        if( std::fabs( i - current_value ) < 0.001f )
+            current_index = labels.size();
+        if( std::fabs( i - range.def ) < 0.001f )
+            default_index = labels.size();
+
+        labels.push_back( label );
+    }
+    if( p_current_index )
+        *p_current_index = current_index;
+    if( p_default_index )
+        *p_default_index = default_index;
+    return labels;
+}
+
+
+static json json_from_roi( rs2::region_of_interest const & roi )
+{
+    return realdds::dds_rect_option::type{ roi.min_x, roi.min_y, roi.max_x, roi.max_y }.to_json();
+}
+
+
+static rs2::region_of_interest roi_from_json( json const & j )
+{
+    auto roi = realdds::dds_rect_option::type::from_json( j );
+    return { roi.x1, roi.y1, roi.x2, roi.y2 };
 }
 
 
@@ -273,20 +342,35 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                         json j = json::array();
                         json props = json::array();
                         j += option_name;
-                        json option_value;  // null - no value
+                        // Even read-only options have ranges in librealsense
+                        auto const range = sensor.get_option_range( option_id );
                         try
                         {
-                            option_value = sensor.get_option( option_id );
+                            // For now, assume (legacy) librealsense options are all floats
+                            float option_value = sensor.get_option( option_id );  // may throw
+                            size_t current_index, default_index;
+                            auto const values = get_option_enum_values( sensor, option_id, range, option_value, &current_index, &default_index );
+                            if( ! values.empty() )
+                            {
+                                // Translate to enum
+                                j += values[current_index];
+                                j += values;
+                                j += values[default_index];
+                            }
+                            else
+                            {
+                                j += option_value;
+                                j += range.min;
+                                j += range.max;
+                                j += range.step;
+                                j += range.def;
+                            }
                         }
                         catch( ... )
                         {
                             // Some options can be queried only if certain conditions exist skip them for now
                             props += "optional";
-                        }
-                        j += option_value;
-                        {
-                            // Even read-only options have ranges in librealsense
-                            auto const range = sensor.get_option_range( option_id );
+                            j += rsutils::null_json;
                             j += range.min;
                             j += range.max;
                             j += range.step;
@@ -306,6 +390,29 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                         LOG_ERROR( "Cannot query details of option " << option_id );
                         // Some options can be queried only if certain conditions exist skip them for now
                     }
+                }
+
+                if( auto roi_sensor = rs2::roi_sensor( sensor ) )
+                {
+                    // AE ROI is exposed as an interface in the librealsense API and through a "Region of Interest"
+                    // rectangle option in DDS
+                    json j = json::array();
+                    j += rs2_option_to_string( RS2_OPTION_REGION_OF_INTEREST );
+                    json option_value;  // null - no value
+                    try
+                    {
+                        option_value = json_from_roi( roi_sensor.get_region_of_interest() );
+                    }
+                    catch( ... )
+                    {
+                        // May be available only during streaming
+                    }
+                    j += option_value;
+                    j += nullptr;                                 // No default value
+                    j += "Region of Interest for Auto Exposure";  // Description
+                    j += json::array( { "optional" } );           // Properties
+                    auto dds_opt = realdds::dds_option::from_json( j );
+                    stream_options.push_back( dds_opt );
                 }
 
                 auto recommended_filters = sensor.get_recommended_filters();
@@ -626,12 +733,12 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             ( static_cast< long double >( f.get_timestamp() ) / 1e3 );
 
                         realdds::topics::image_msg image;
+                        image.set_height( video->get_image_header().width );
+                        image.set_width( video->get_image_header().width );
+                        image.set_timestamp( timestamp );
                         auto data = static_cast< const uint8_t * >( f.get_data() );
-                        image.raw_data.assign( data, data + f.get_data_size() );
-                        image.height = video->get_image_header().height;
-                        image.width = video->get_image_header().width;
-                        image.timestamp = timestamp;
-                        video->publish_image( std::move( image ) );
+                        image.raw().data().assign( data, data + f.get_data_size() );
+                        video->publish_image( image );
 
                         publish_frame_metadata( f, timestamp );
                     } );
@@ -695,7 +802,10 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             switch( changed_option->type )
                             {
                             case RS2_OPTION_TYPE_FLOAT:
-                                value = changed_option->as_float;
+                                if( auto e = std::dynamic_pointer_cast< realdds::dds_enum_option >( dds_option ) )
+                                    value = e->get_choices().at( int( changed_option->as_float ) );
+                                else
+                                    value = changed_option->as_float;
                                 break;
                             case RS2_OPTION_TYPE_STRING:
                                 value = changed_option->as_string;
@@ -726,7 +836,29 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             { realdds::topics::notification::key::id, realdds::topics::reply::query_options::id },
                             { realdds::topics::reply::query_options::key::option_values, std::move( option_values ) },
                         } );
-                        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] options changed: " << j.dump( 4 ) );
+                        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] options changed: " << std::setw( 4 ) << j );
+                        _dds_device_server->publish_notification( std::move( j ) );
+                    }
+                }
+            } );
+    }
+
+    if( auto ccd = _rs_dev.as< rs2::calibration_change_device >() )
+    {
+        ccd.register_calibration_change_callback(
+            [this]( rs2_calibration_status status )
+            {
+                if( status == RS2_CALIBRATION_SUCCESSFUL )
+                {
+                    json j = json::object( {
+                        { realdds::topics::notification::key::id,
+                          realdds::topics::notification::calibration_changed::id },
+                    } );
+                    bool have_changes = update_stream_trinsics( &j );
+                    if( have_changes )
+                    {
+                        LOG_INFO( "Calibration changes detected" );
+                        LOG_DEBUG( std::setw( 4 ) << j );
                         _dds_device_server->publish_notification( std::move( j ) );
                     }
                 }
@@ -862,7 +994,7 @@ lrs_device_controller::get_rs2_profiles( realdds::dds_stream_profiles const & dd
 }
 
 
-void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_option > & option, float new_value )
+void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_option > & option, json const & new_value )
 {
     auto stream = option->stream();
     if( ! stream )
@@ -873,7 +1005,48 @@ void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_opti
         throw std::runtime_error( "no stream '" + stream->name() + "' in device" );
     auto server = it->second;
     auto & sensor = _rs_sensors[server->sensor_name()];
-    sensor.set_option( option_name_to_id( option->get_name() ), new_value );
+    if( auto roi_option = std::dynamic_pointer_cast< realdds::dds_rect_option >( option ) )
+    {
+        // ROI has its own API in librealsense
+        if( auto roi_sensor = rs2::roi_sensor( sensor ) )
+            roi_sensor.set_region_of_interest( roi_from_json( roi_option->get_value() ) );
+        else
+            throw std::runtime_error( "rect option in sensor that has no ROI" );
+    }
+    else
+    {
+        // The librealsense API uses floats, so we need to convert from non-floats
+        float float_value;
+        switch( new_value.type() )
+        {
+        case json::value_t::number_float:
+        case json::value_t::number_integer:
+        case json::value_t::number_unsigned:
+            float_value = new_value;
+            break;
+        
+        case json::value_t::boolean:
+            float_value = new_value.get< bool >();
+            break;
+
+        case json::value_t::string:
+            // Only way is for this to be an enum...
+            if( auto e = std::dynamic_pointer_cast< realdds::dds_enum_option >( option ) )
+            {
+                auto const & choices = e->get_choices();
+                auto it = std::find( choices.begin(), choices.end(), new_value.string_ref() );
+                if( it == choices.end() )
+                    throw std::runtime_error( rsutils::string::from() << "not a valid enum value: " << new_value );
+                float_value = float( it - choices.begin() );
+                break;
+            }
+            // fall thru
+        default:
+            throw std::runtime_error( rsutils::string::from() << "unsupported value: " << new_value );
+        }
+
+        sensor.set_option( option_name_to_id( option->get_name() ), float_value );
+    }
 }
 
 
@@ -890,6 +1063,13 @@ json lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_op
     auto & sensor = _rs_sensors[server->sensor_name()];
     try
     {
+        if( auto roi_option = std::dynamic_pointer_cast< realdds::dds_rect_option >( option ) )
+        {
+            if( auto roi_sensor = rs2::roi_sensor( sensor ) )
+                return json_from_roi( roi_sensor.get_region_of_interest() );
+            else
+                throw std::runtime_error( "rect option in sensor that has no ROI" );
+        }
         return sensor.get_option( option_name_to_id( option->get_name() ) );
     }
     catch( rs2::invalid_value_error const & )
@@ -1047,15 +1227,30 @@ struct lrs_device_controller::dfu_support
     std::string uid;
     std::weak_ptr< dds_device_server > server;
     std::weak_ptr< lrs_device_controller > controller;
-    std::shared_ptr< realdds::dds_topic_reader > reader;
+    std::shared_ptr< realdds::dds_topic_reader_thread > reader;
     std::shared_ptr< realdds::topics::blob_msg > image;
     realdds::dds_guid_prefix initiator;
+    size_t image_size;
+    uint32_t image_crc;
 
     std::string debug_name() const
     {
         if( auto dev = server.lock() )
             return rsutils::string::from() << "[" << dev->debug_name() << "] ";
         return {};
+    }
+
+    // reset to a non-DFU state
+    void reset( char const * error = nullptr )
+    {
+        if( reader )
+            reader->stop();
+        if( auto c = controller.lock() )
+        {
+            if( error )
+                LOG_ERROR( debug_name() << "DFU " << error );
+            c->_dfu.reset();  // no longer in DFU state
+        }
     }
 };
 
@@ -1081,6 +1276,8 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
     _dfu->initiator
         = realdds::guid_from_string( reply[realdds::topics::reply::key::sample][0].string_ref() ).guidPrefix;
     _dfu->uid = _rs_dev.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+    control.at( realdds::topics::control::dfu_start::key::size ).get_to( _dfu->image_size );  // throws
+    control.at( realdds::topics::control::dfu_start::key::crc ).get_to( _dfu->image_crc );  // throws
 
     // Open a DFU topic and wait for the image on another thread
     auto topic = topics::blob_msg::create_topic( _dds_device_server->participant(),
@@ -1091,7 +1288,7 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
         [weak_dfu = std::weak_ptr< dfu_support >( _dfu )]
         {
             topics::blob_msg blob;
-            eprosima::fastdds::dds::SampleInfo sample;
+            realdds::dds_sample sample;
             while( auto dfu = weak_dfu.lock() )
             {
                 if( ! topics::blob_msg::take_next( *dfu->reader, &blob, &sample ) )
@@ -1111,19 +1308,29 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
                 }
                 else
                 {
-                    size_t const n_bytes = blob.data().size();
-                    auto const crc = rsutils::number::calc_crc32( blob.data().data(), blob.data().size() );
-                    LOG_INFO( dfu->debug_name() << "DFU image received, " << n_bytes << " bytes, crc " << crc );
+                    LOG_INFO( dfu->debug_name() << "DFU image received" );
 
                     // Build a reply
                     rsutils::json j = rsutils::json::object( {
                         { realdds::topics::notification::key::id, realdds::topics::notification::dfu_ready::id },
-                        { "size", n_bytes },
-                        { "crc", crc } } );
+                    } );
 
                     try
                     {
                         // Check the image
+                        size_t const n_bytes = blob.data().size();
+                        if( n_bytes != dfu->image_size )
+                            throw std::runtime_error( rsutils::string::from()
+                                                      << "image size (" << n_bytes << ") does not match expected ("
+                                                      << dfu->image_size << ")" );
+
+                        auto const crc = rsutils::number::calc_crc32( blob.data().data(), blob.data().size() );
+                        if( crc != dfu->image_crc )
+                            throw std::runtime_error( rsutils::string::from()
+                                                      << "image CRC (" << rsutils::string::hexdump( crc )
+                                                      << ") does not match expected ("
+                                                      << rsutils::string::hexdump( dfu->image_crc ) << ")" );
+
                         rs2_error * e = nullptr;
                         bool is_compatible = rs2_check_firmware_compatibility( dfu->rsdev.get().get(),
                                                                                blob.data().data(),
@@ -1139,11 +1346,10 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
                     }
                     catch( std::exception const & e )
                     {
-                        j[realdds::topics::reply::key::status] = "check-fw-compat";
+                        j[realdds::topics::reply::key::status] = "error";
                         j[realdds::topics::reply::key::explanation] = e.what();
                         LOG_ERROR( dfu->debug_name() << "DFU image check failed: " << e.what() << "; exiting DFU state" );
-                        if( auto controller = dfu->controller.lock() )
-                            controller->_dfu.reset();  // no longer in DFU state
+                        dfu->reset();
                     }
 
                     if( auto server = dfu->server.lock() )
@@ -1165,11 +1371,7 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
             {
                 if( ! dfu->image )
                 {
-                    if( auto controller = dfu->controller.lock() )
-                    {
-                        LOG_ERROR( dfu->debug_name() << "DFU timed out waiting for image; resetting" );
-                        controller->_dfu.reset();  // no longer in DFU state
-                    }
+                    dfu->reset( "timed out waiting for image; resetting" );
                     if( auto server = dfu->server.lock() )
                     {
                         rsutils::json j = rsutils::json::object(
@@ -1189,11 +1391,7 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
             std::this_thread::sleep_for( std::chrono::seconds( 10 ) );
             if( auto dfu = weak_dfu.lock() )
             {
-                if( auto controller = dfu->controller.lock() )
-                {
-                    LOG_ERROR( dfu->debug_name() << "DFU timed out waiting for apply; resetting" );
-                    controller->_dfu.reset();  // no longer in DFU state
-                }
+                dfu->reset( "timed out waiting for apply; resetting" );
                 if( auto server = dfu->server.lock() )
                 {
                     rsutils::json j = rsutils::json::object(
@@ -1352,12 +1550,133 @@ bool lrs_device_controller::on_dfu_apply( rsutils::json const & control, rsutils
             }
 
             // Whether successful or not, we're done with the DFU
-            if( auto controller = dfu->controller.lock() )
-                controller->_dfu.reset();
+            dfu->reset();
         } )
         .detach();
 
     return true;  // handled
+}
+
+
+bool lrs_device_controller::update_stream_trinsics( json * p_changes )
+{
+    // Returns true if any changes are detected
+    // If p_changes is not null, it should point to a json object which will be populated with stream-name:changes
+    // mappings.
+    if( p_changes && ! p_changes->is_object() )
+        throw std::runtime_error( "expecting a json object" );
+
+    bool have_changes = false;
+    std::map< std::string, std::set< realdds::video_intrinsics > > stream_name_to_video_intrinsics;
+
+    // Iterate over all profiles of all sensors and build appropriate dds_stream_servers
+    for( auto & name_sensor : _rs_sensors )
+    {
+        std::string const & sensor_name = name_sensor.first;
+        auto const & sensor = name_sensor.second;
+
+        auto const stream_profiles = sensor.get_stream_profiles();
+        std::for_each( stream_profiles.begin(),
+                       stream_profiles.end(),
+                       [&]( const rs2::stream_profile & sp )
+                       {
+                           std::string const stream_name = stream_name_from_rs2( sp );
+                           auto server_it = _stream_name_to_server.find( stream_name );
+                           if( server_it == _stream_name_to_server.end() )
+                           {
+                               LOG_DEBUG( "could not find server '" << stream_name << "'" );
+                               return;
+                           }
+                           auto const & server = server_it->second;
+
+                           // Create appropriate realdds::profile for each sensor profile and map to a stream
+                           if( auto const vsp = rs2::video_stream_profile( sp ) )
+                           {
+                               try
+                               {
+                                   auto intr = to_realdds( vsp.get_intrinsics() );
+                                   stream_name_to_video_intrinsics[stream_name].insert( intr );
+                               }
+                               catch( ... )
+                               {
+                               }  // Some profiles don't have intrinsics
+                           }
+                           else if( auto const msp = rs2::motion_stream_profile( sp ) )
+                           {
+                               auto motion_server = std::dynamic_pointer_cast< dds_motion_stream_server >( server );
+                               auto const intr = to_realdds( msp.get_motion_intrinsics() );
+                               if( RS2_STREAM_ACCEL == msp.stream_type() )
+                               {
+                                   if( motion_server->get_accel_intrinsics() != intr )
+                                   {
+                                       have_changes = true;
+                                       if( p_changes )
+                                       {
+                                           ( *p_changes )
+                                               [stream_name]
+                                               [realdds::topics::notification::calibration_changed::key::intrinsics]
+                                               [realdds::topics::notification::stream_options::intrinsics::key::accel]
+                                               = intr.to_json();
+                                       }
+                                       motion_server->set_accel_intrinsics( intr );
+                                   }
+                               }
+                               else if( motion_server->get_gyro_intrinsics() != intr )
+                               {
+                                   have_changes = true;
+                                   if( p_changes )
+                                   {
+                                       ( *p_changes )
+                                           [stream_name]
+                                           [realdds::topics::notification::calibration_changed::key::intrinsics]
+                                           [realdds::topics::notification::stream_options::intrinsics::key::gyro]
+                                           = intr.to_json();
+                                   }
+                                   motion_server->set_gyro_intrinsics( intr );
+                               }
+                           }
+                       } );
+    }
+
+    for( auto & name_intr : stream_name_to_video_intrinsics )
+    {
+        auto const & stream_name = name_intr.first;
+        auto const & server = _stream_name_to_server[stream_name];
+        if( auto video_server = std::dynamic_pointer_cast< dds_video_stream_server >( server ) )
+        {
+            auto & intr = name_intr.second;
+            if( video_server->get_intrinsics() != intr )
+            {
+                if( intr.size() != video_server->get_intrinsics().size() )
+                {
+                    LOG_ERROR( "unexpected change in number of intrinsics for '" << stream_name << "'" );
+                    continue;
+                }
+                have_changes = true;
+                if( p_changes )
+                {
+                    auto & j_intrinsics
+                        = ( *p_changes )[stream_name]
+                                        [realdds::topics::notification::calibration_changed::key::intrinsics];
+                    if( 1 == intr.size() )
+                    {
+                        // Use an object with a single intrinsic
+                        j_intrinsics = intr.begin()->to_json();
+                    }
+                    else
+                    {
+                        // Multiple intrinsics are available
+                        j_intrinsics = json::array();
+                        for( auto const & i : intr )
+                            j_intrinsics.push_back( i.to_json() );
+                    }
+                }
+                video_server->set_intrinsics( std::move( name_intr.second ) );
+            }
+        }
+    }
+
+    return have_changes;
 }
 
 

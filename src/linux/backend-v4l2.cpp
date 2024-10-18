@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-2024 Intel Corporation. All Rights Reserved.
 
 #include "backend-v4l2.h"
 #include <src/platform/command-transfer.h>
@@ -578,7 +578,7 @@ namespace librealsense
             }
         }
 
-        bool get_devname_from_video_path(const std::string& video_path, std::string& dev_name)
+        bool v4l_uvc_device::get_devname_from_video_path(const std::string& video_path, std::string& devname)
         {
             std::ifstream uevent_file(video_path + "/uevent");
             if (!uevent_file)
@@ -586,54 +586,16 @@ namespace librealsense
                 LOG_ERROR("Cannot access " + video_path + "/uevent");
                 return false;
             }
-
-            std::string uevent_line, major_string, minor_string;
-            while (std::getline(uevent_file, uevent_line) && (major_string.empty() || minor_string.empty()))
+            std::string uevent_line;
+            while (std::getline(uevent_file, uevent_line) && (devname.empty()))
             {
-                if (uevent_line.find("MAJOR=") != std::string::npos)
+                if (uevent_line.find("DEVNAME=") != std::string::npos)
                 {
-                    major_string = uevent_line.substr(uevent_line.find_last_of('=') + 1);
-                }
-                else if (uevent_line.find("MINOR=") != std::string::npos)
-                {
-                    minor_string = uevent_line.substr(uevent_line.find_last_of('=') + 1);
+                    devname = "/dev/" + uevent_line.substr(uevent_line.find_last_of('=') + 1);
                 }
             }
             uevent_file.close();
-
-            if (major_string.empty() || minor_string.empty())
-            {
-                LOG_ERROR("No Major or Minor number found for " + video_path);
-                return false;
-            }
-
-            DIR * dir = opendir("/dev");
-            if (!dir)
-            {
-                LOG_ERROR("Cannot access /dev");
-                return false;
-            }
-            while (dirent * entry = readdir(dir))
-            {
-                std::string name = entry->d_name;
-                std::string path = "/dev/" + name;
-
-                struct stat st = {};
-                if (stat(path.c_str(), &st) < 0)
-                {
-                    continue;
-                }
-
-                if (std::stoi(major_string) == major(st.st_rdev) && std::stoi(minor_string) == minor(st.st_rdev))
-                {
-                    dev_name = path;
-                    closedir(dir);
-                    return true;
-                }
-            }
-            closedir(dir);
-
-            return false;
+            return true;
         }
 
         std::vector<std::string> v4l_uvc_device::get_video_paths()
@@ -694,6 +656,56 @@ namespace librealsense
                 return left_id < right_id;
             });
             return video_paths;
+        }
+
+        std::vector<std::string> v4l_uvc_device::get_mipi_dfu_paths()
+        {
+            std::vector<std::string> dfu_paths;
+            static const std::regex dfu_dev_pattern("./d4xx-dfu.");
+            // Enumerate all d4xx dfu devices present on the system
+            DIR * dir = opendir("/sys/class/d4xx-class");
+            if(!dir)
+            {
+                LOG_INFO("Cannot access /sys/class/d4xx-class");
+                return dfu_paths;
+            }
+            while (dirent * entry = readdir(dir))
+            {
+                std::string name = entry->d_name;
+                if(name == "." || name == "..") continue;
+                std::string path = "/sys/class/d4xx-class/" + name;
+                std::string real_path{};
+                char buff[PATH_MAX] = {0};
+                if (realpath(path.c_str(), buff) != nullptr)
+                {
+                    real_path = std::string(buff);
+                    if (real_path.find("virtual") == std::string::npos)
+                        continue;
+                    if (!std::regex_search(real_path, dfu_dev_pattern))
+                    {
+                        continue;
+                    }
+                    std::string devname;
+                    if (get_devname_from_video_path(real_path, devname))
+                    {
+                        if (devname.empty())
+                        {
+                            LOG_ERROR("No DEVNAME found for " + real_path);
+                            continue;
+                        }
+                        if ( std::find(dfu_paths.begin(), dfu_paths.end(), devname) == dfu_paths.end() )
+                        {
+                            dfu_paths.push_back(devname);
+                        }
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+            }
+            closedir(dir);
+            return dfu_paths;
         }
 
         bool v4l_uvc_device::is_usb_path_valid(const std::string& usb_video_path, const std::string& dev_name,
@@ -887,7 +899,8 @@ namespace librealsense
             // Note - jetson can use only bus_info, as card is different for each sensor and metadata node.
             info.unique_id = bus_info + "-" + std::to_string(cam_id); // use bus_info as per camera unique id for mipi
             // Get DFU node for MIPI camera
-            std::array<std::string, 2> dfu_device_paths = {"/dev/d4xx-dfu504", "/dev/d4xx-dfu-30-0010"};
+            std::vector<std::string> dfu_device_paths = get_mipi_dfu_paths();
+
             for (const auto& dfu_device_path: dfu_device_paths) {
                 int vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
                 if (vfd >= 0) {
@@ -909,11 +922,64 @@ namespace librealsense
             return std::regex_search(video_path, uvc_pattern);
         }
 
+        void v4l_mipi_device::foreach_mipi_device(
+                std::function<void(const mipi_device_info&,
+                                   const std::string&)> action)
+        {
+            typedef std::pair<mipi_device_info,std::string> node_info;
+            std::vector<node_info> mipi_devices;
+
+            std::vector<std::string> mipi_dfu_paths = get_mipi_dfu_paths();
+            for(auto it = mipi_dfu_paths.begin(); mipi_dfu_paths.size() && it != mipi_dfu_paths.end(); ++it)
+            {
+                auto mipi_dfu_path = "/dev/" + *it;
+                std::string dfu_ver;
+                for (int retry = 10; retry; retry--) {
+                    std::ifstream fw_path_in_device(mipi_dfu_path);
+                    std::getline(fw_path_in_device, dfu_ver);
+                    if (dfu_ver.size()) {
+                        fw_path_in_device.close();
+                        break;
+                    }
+                    fw_path_in_device.close();
+                }
+                // look for "recovery" string, if no - skip.
+                if (dfu_ver.find("recovery") == std::string::npos)
+                    continue;
+                mipi_device_info info{};
+                info.pid = 0xbbcd;
+                info.vid = 0x8086;
+                info.id = *it;
+                info.device_path = mipi_dfu_path;
+                info.unique_id = *it;
+                info.dfu_device_path = mipi_dfu_path;
+                // The expected string is  "DFU info:  recovery:  209443110028"
+                std::string delimiter = ":";
+                dfu_ver.erase(0, dfu_ver.find(delimiter) + delimiter.length());
+                dfu_ver.erase(0, dfu_ver.find(delimiter) + delimiter.length());
+                // Trim leading whitespace
+                dfu_ver.erase(0, dfu_ver.find_first_not_of(' '));
+                info.serial_number = dfu_ver;
+                mipi_devices.emplace_back(info, *it);
+            }
+            try
+            {
+                // Dispatch registration for enumerated MIPI Recovery devices
+                for (auto&& dev : mipi_devices)
+                    action(dev.first, dev.second);
+            }
+            catch(const std::exception & e)
+            {
+                LOG_ERROR("Registration of MIPI recovery device failed: " << e.what());
+            }
+        }
+
         void v4l_uvc_device::foreach_uvc_device(
                 std::function<void(const uvc_device_info&,
                                    const std::string&)> action)
         {
             std::vector<std::string> video_paths = get_video_paths();
+            std::vector<std::string> mipi_dfu_paths = get_mipi_dfu_paths();
             typedef std::pair<uvc_device_info,std::string> node_info;
             std::vector<node_info> uvc_nodes,uvc_devices;
             std::vector<node_info> mipi_rs_enum_nodes;
@@ -1942,9 +2008,9 @@ namespace librealsense
                 return range;
             }
 
-            struct v4l2_queryctrl query = {};
+            struct v4l2_query_ext_ctrl query = {};
             query.id = get_cid(option);
-            if (xioctl(_fd, VIDIOC_QUERYCTRL, &query) < 0)
+            if (xioctl(_fd, VIDIOC_QUERY_EXT_CTRL, &query) < 0)
             {
                 // Some controls (exposure, auto exposure, auto hue) do not seem to work on V4L2
                 // Instead of throwing an error, return an empty range. This will cause this control to be omitted on our UI sample.
@@ -2701,7 +2767,19 @@ namespace librealsense
 
         control_range v4l_mipi_device::get_pu_range(rs2_option option) const
         {
-            return v4l_uvc_device::get_pu_range(option);
+            struct v4l2_query_ext_ctrl query = {};
+            query.id = get_cid(option);
+            if (xioctl(_fd, VIDIOC_QUERY_EXT_CTRL, &query) < 0)
+            {
+                // Some controls (exposure, auto exposure, auto hue) do not seem to work on V4L2
+                // Instead of throwing an error, return an empty range. This will cause this control to be omitted on our UI sample.
+                // TODO: Figure out what can be done about these options and make this work
+                query.minimum = query.maximum = 0;
+            }
+
+            control_range range(query.minimum, query.maximum, query.step, query.default_value);
+
+            return range;
         }
 
         uint32_t v4l_mipi_device::get_cid(rs2_option option) const
@@ -2769,6 +2847,7 @@ namespace librealsense
         std::vector<uvc_device_info> v4l_backend::query_uvc_devices() const
         {
             std::vector<uvc_device_info> uvc_nodes;
+
             v4l_uvc_device::foreach_uvc_device(
             [&uvc_nodes](const uvc_device_info& i, const std::string&)
             {
@@ -2792,6 +2871,18 @@ namespace librealsense
             return device_infos;
         }
 
+        std::vector<mipi_device_info> v4l_backend::query_mipi_devices() const
+        {
+            std::vector<mipi_device_info> mipi_nodes;
+
+            v4l_mipi_device::foreach_mipi_device(
+            [&mipi_nodes](const mipi_device_info& i, const std::string&)
+            {
+                mipi_nodes.push_back(i);
+            });
+
+            return mipi_nodes;
+        }
         std::shared_ptr<hid_device> v4l_backend::create_hid_device(hid_device_info info) const
         {
             return std::make_shared<v4l_hid_device>(info);

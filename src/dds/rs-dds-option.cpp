@@ -2,6 +2,7 @@
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "rs-dds-option.h"
+#include <src/core/enum-helpers.h>
 
 #include <realdds/dds-option.h>
 #include <rsutils/json.h>
@@ -44,6 +45,8 @@ static rs2_option_type rs_type_from_dds_option( std::shared_ptr< realdds::dds_op
         return RS2_OPTION_TYPE_BOOLEAN;
     if( std::dynamic_pointer_cast< realdds::dds_integer_option >( dds_opt ) )
         return RS2_OPTION_TYPE_INTEGER;
+    if( std::dynamic_pointer_cast< realdds::dds_rect_option >( dds_opt ) )
+        return RS2_OPTION_TYPE_RECT;
     throw not_implemented_exception( "unknown DDS option type" );
 }
 
@@ -65,7 +68,68 @@ void rs_dds_option::set( float value )
     if( ! _set_opt_cb )
         throw std::runtime_error( "Set option callback is not set for option " + _dds_opt->get_name() );
 
-    _set_opt_cb( value );
+    // This is the legacy API for setting option values - it accepts a float. It's not always called via the rs2_...
+    // APIs, but can be called from within librealsense, so we have to convert to the proper type:
+    // (usually the range checks are only done at the level of rs2_...)
+
+    auto validate_range = []( float const value, option_range const & range )
+    {
+        if( range.min != range.max && range.step )
+        {
+            if( value < range.min )
+            {
+                throw librealsense::invalid_value_exception(
+                    rsutils::string::from() << "value (" << value << ") less than minimum (" << range.min << ")" );
+            }
+            if( value > range.max )
+            {
+                throw librealsense::invalid_value_exception(
+                    rsutils::string::from() << "value (" << value << ") greater than maximum (" << range.max << ")" );
+            }
+        }
+    };
+
+    json j_value;
+    switch( _rs_type )
+    {
+    case RS2_OPTION_TYPE_FLOAT:
+        validate_range( value, get_range() );
+        j_value = value;
+        break;
+
+    case RS2_OPTION_TYPE_INTEGER:
+        validate_range( value, get_range() );
+        if( (int) value != value )
+            throw invalid_value_exception( rsutils::string::from() << "not an integer: " << value );
+        j_value = int( value );
+        break;
+
+    case RS2_OPTION_TYPE_BOOLEAN:
+        if( value == 0.f )
+            j_value = false;
+        else if( value == 1.f )
+            j_value = true;
+        else
+            throw invalid_value_exception( rsutils::string::from() << "not a boolean: " << value );
+        break;
+
+    case RS2_OPTION_TYPE_STRING:
+        // We can convert "enum" options to a float value
+        if( auto desc = get_value_description( value ) )
+            j_value = desc;
+        else
+            throw not_implemented_exception( "use rs2_set_option_value to set string values" );
+        break;
+
+    default:
+        throw not_implemented_exception( rsutils::string::from()
+                                         << "use rs2_set_option_value to set " << get_string( _rs_type ) << " value" );
+    }
+
+    if( is_read_only() )
+        throw invalid_value_exception( "option is read-only: " + _dds_opt->get_name() );
+
+    _set_opt_cb( j_value );
 }
 
 
@@ -96,6 +160,9 @@ void rs_dds_option::set_value( json value )
 {
     if( ! _set_opt_cb )
         throw std::runtime_error( "Set option callback is not set for option " + _dds_opt->get_name() );
+
+    if( is_read_only() )
+        throw invalid_value_exception( "option is read-only: " + _dds_opt->get_name() );
 
     _set_opt_cb( std::move( value ) );
 }

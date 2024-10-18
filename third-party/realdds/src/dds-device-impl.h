@@ -7,7 +7,6 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-option.h>
 #include <realdds/topics/device-info-msg.h>
-#include <realdds/topics/flexible-msg.h>
 
 #include <fastdds/rtps/common/Guid.h>
 
@@ -26,10 +25,6 @@ namespace realdds {
 class dds_topic_reader;
 class dds_topic_writer;
 class dds_subscriber;
-
-namespace topics {
-class flexible_msg;
-}
 
 
 class dds_device::impl
@@ -73,6 +68,7 @@ public:
 
     impl( std::shared_ptr< dds_participant > const & participant,
           topics::device_info const & info );
+    ~impl();
 
     void reset();
 
@@ -85,7 +81,7 @@ public:
 
     void open( const dds_stream_profiles & profiles );
 
-    void write_control_message( topics::flexible_msg &&, rsutils::json * reply = nullptr );
+    void write_control_message( rsutils::json const &, rsutils::json * reply = nullptr );
 
     void set_option_value( const std::shared_ptr< dds_option > & option, rsutils::json new_value );
     rsutils::json query_option_value( const std::shared_ptr< dds_option > & option );
@@ -113,6 +109,12 @@ public:
     {
         return _on_notification.subscribe( std::move( cb ) );
     }
+    using on_calibration_changed_signal = rsutils::signal< std::shared_ptr< const realdds::dds_stream > const & >;
+    using on_calibration_changed_callback = on_calibration_changed_signal::callback;
+    rsutils::subscription on_calibration_changed( on_calibration_changed_callback && cb )
+    {
+        return _on_calibration_changed.subscribe( std::move( cb ) );
+    }
 
 private:
     void create_notifications_reader();
@@ -120,20 +122,22 @@ private:
     void create_control_writer();
 
     // notification handlers
-    void on_set_option( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_query_options( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_known_notification( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_log( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_device_header( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_device_options( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_stream_header( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_stream_options( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_set_option( rsutils::json const &, dds_sample const & );
+    void on_query_options( rsutils::json const &, dds_sample const & );
+    void on_known_notification( rsutils::json const &, dds_sample const & );
+    void on_log( rsutils::json const &, dds_sample const & );
+    void on_device_header( rsutils::json const &, dds_sample const & );
+    void on_device_options( rsutils::json const &, dds_sample const & );
+    void on_stream_header( rsutils::json const &, dds_sample const & );
+    void on_stream_options( rsutils::json const &, dds_sample const & );
+    void on_calibration_changed( rsutils::json const &, dds_sample const & );
 
-    void on_notification( rsutils::json &&, eprosima::fastdds::dds::SampleInfo const & );
+    void on_notification( rsutils::json &&, dds_sample const & );
 
     on_metadata_available_signal _on_metadata_available;
     on_device_log_signal _on_device_log;
     on_notification_signal _on_notification;
+    on_calibration_changed_signal _on_calibration_changed;
 };
 
 

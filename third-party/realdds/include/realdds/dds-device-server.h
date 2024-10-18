@@ -18,15 +18,6 @@
 #include <functional>
 
 
-namespace eprosima {
-namespace fastdds {
-namespace dds {
-struct SampleInfo;
-}  // namespace dds
-}  // namespace fastdds
-}  // namespace eprosima
-
-
 namespace realdds {
 
 

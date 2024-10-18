@@ -66,7 +66,6 @@ namespace librealsense
 
     void ds_color_common::register_metadata()
     {
-        _color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
         _color_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<ds_md_attribute_actual_fps>());
 
         // attributes of md_capture_timing
@@ -75,8 +74,6 @@ namespace librealsense
             offsetof(md_rgb_normal_mode, intel_capture_timing);
 
         _color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
-        _color_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&platform::uvc_header::timestamp),
-            make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
 
         // attributes of md_rgb_control
         md_prop_offset = metadata_raw_mode_offset +

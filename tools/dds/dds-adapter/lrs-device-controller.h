@@ -32,13 +32,14 @@ public:
     lrs_device_controller( rs2::device dev, std::shared_ptr< realdds::dds_device_server > dds_device_server );
     ~lrs_device_controller();
 
-    void set_option( const std::shared_ptr< realdds::dds_option > & option, float new_value );
+    void set_option( const std::shared_ptr< realdds::dds_option > & option, rsutils::json const & new_value );
     rsutils::json query_option( const std::shared_ptr< realdds::dds_option > & option );
 
     bool is_recovery() const;
 
 private:
     std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams();
+    bool update_stream_trinsics( rsutils::json * p_changes = nullptr );
 
     void publish_frame_metadata( const rs2::frame & f, realdds::dds_time const & );
 

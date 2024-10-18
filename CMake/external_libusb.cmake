@@ -20,6 +20,7 @@ ExternalProject_Add(
             -DANDROID_ABI=${ANDROID_ABI}
             -DANDROID_STL=${ANDROID_STL}
             -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/libusb_install
+            --no-warn-unused-cli
     TEST_COMMAND ""
     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}usb${CMAKE_STATIC_LIBRARY_SUFFIX}
 )

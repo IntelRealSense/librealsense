@@ -6,25 +6,20 @@
 #include "d500-private.h"
 #include "hw_monitor_extended_buffers.h"
 
-#include "algo.h"
-#include "error-handling.h"
 #include "core/debug.h"
-#include "core/advanced_mode.h"
-#include "device.h"
 #include "global_timestamp_reader.h"
 #include "fw-update/fw-update-device-interface.h"
-#include "ds/d400/d400-auto-calibration.h"
-#include "ds/ds-options.h"
 
 #include "ds/ds-device-common.h"
 #include "backend-device.h"
+#include "d500-auto-calibration.h"
 
 #include <rsutils/lazy.h>
 
 
 namespace librealsense
 {
-    class d400_thermal_monitor;
+    class ds_thermal_monitor;
     class ds_devices_common;
     class d500_info;
 
@@ -36,6 +31,7 @@ namespace librealsense
         : public virtual backend_device
         , public debug_interface
         , public global_time_interface
+        , public d500_auto_calibrated
         , public updatable
     {
     public:
@@ -88,9 +84,8 @@ namespace librealsense
         void get_gvd_details(const std::vector<uint8_t>& gvd_buff, ds::d500_gvd_parsed_fields* parsed_fields) const;
 
         bool check_symmetrization_enabled() const;
-        //TODO - add these to device class as pure virtual methods
+
         command get_firmware_logs_command() const;
-        command get_flash_logs_command() const;
 
         void init(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
         void register_features();
@@ -113,7 +108,7 @@ namespace librealsense
         rsutils::lazy< std::vector< uint8_t > > _new_calib_table_raw;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
-        std::shared_ptr<d400_thermal_monitor> _thermal_monitor;
+        std::shared_ptr<ds_thermal_monitor> _thermal_monitor;
         std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _left_right_extrinsics;
         rsutils::lazy< std::vector< uint8_t > > _color_calib_table_raw;
         std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _color_extrinsic;

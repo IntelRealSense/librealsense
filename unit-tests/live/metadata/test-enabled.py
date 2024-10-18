@@ -9,7 +9,7 @@ import pyrealsense2 as rs
 from rspy import test, log
 
 test.start("checking metadata is enabled")
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 test.check( dev.is_metadata_enabled() )
 
 test.finish()

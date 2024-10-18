@@ -1,8 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "dds-defines.h"
+
+#include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 
 #include <rsutils/json.h>
 #include <memory>
@@ -37,6 +39,9 @@ class slice;
 namespace realdds {
 
 
+class dds_network_adapter_watcher;
+
+
 // The starting point for any DDS interaction, a participant has a name and is the focal point for creating, destroying,
 // and managing other DDS objects. It defines the DDS domain (ID) in which every other object lives.
 //
@@ -51,18 +56,44 @@ class dds_participant
     struct listener_impl;
 
     rsutils::json _settings;
+    std::shared_ptr< dds_network_adapter_watcher > _adapter_watcher;
 
 public:
     dds_participant() = default;
     dds_participant( const dds_participant & ) = delete;
     ~dds_participant();
 
+public:
+    // Centralizes our default QoS settings, so that the user can then override before calling init().
+    // Note that init() will try to override further with information from the settings it is passed.
+    //
+    class qos : public eprosima::fastdds::dds::DomainParticipantQos
+    {
+        using super = eprosima::fastdds::dds::DomainParticipantQos;
+
+    public:
+        qos( std::string const & participant_name );
+    };
+
+    // Return the QoS (so user won't have to actually know about the DomainParticipant)
+    eprosima::fastdds::dds::DomainParticipantQos const & get_qos() const;
+
+    // Refresh the QoS, so it will pick up any changes in the system (e.g., if adapters have changed)
+    void refresh_qos();
+
     // Creates the underlying DDS participant and sets the QoS.
     // If callbacks are needed, set them before calling init. Note they may be called before init returns!
     // 
     // The domain ID may be -1: in this case the settings "domain" is queried and a default of 0 is used
     //
-    void init( dds_domain_id, std::string const & participant_name, rsutils::json const & settings );
+    void init( dds_domain_id did, std::string const & participant_name, rsutils::json const & settings )
+    {
+        qos pqos( participant_name );
+        init( did, pqos, settings );
+    }
+    // Same, with custom QoS
+    //
+    void init( dds_domain_id, qos &, rsutils::json const & settings );
 
     bool is_valid() const { return ( nullptr != _participant ); }
     bool operator!() const { return ! is_valid(); }
@@ -93,6 +124,10 @@ public:
     // Returns this participant's name from the QoS
     //
     rsutils::string::slice name() const;
+
+    // Given a flow-controller name, look it up in the participant QoS and return its object
+    //
+    std::shared_ptr< const eprosima::fastdds::rtps::FlowControllerDescriptor > find_flow_controller( char const * name ) const;
 
     // Utility to create a custom GUID, to help
     //

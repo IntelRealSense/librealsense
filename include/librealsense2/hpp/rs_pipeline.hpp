@@ -493,6 +493,18 @@ namespace rs2
         }
 
         /**
+         * Set the device to be used in the pipline.
+         * The function is used to assign the device, useful when the user wish to set controls that cannot be set while streaming. 
+         * \param[in] device  the device to be used in the pipline. 
+         */
+        void set_device( rs2::device* device )
+        { 
+            rs2_error * e = nullptr;
+            rs2_pipeline_set_device( _pipeline.get(), device->get().get(), &e );
+            error::handle( e );
+        }
+
+        /**
         * Wait until a new set of frames becomes available.
         * The frames set includes time-synchronized frames of each enabled stream in the pipeline.
         * In case of different frame rates of the streams, the frames set include a matching frame of the slow stream,

@@ -48,6 +48,13 @@ namespace notification {
             namespace key {
                 std::string const accel( "accel", 5 );
                 std::string const gyro( "gyro", 4 );
+                std::string const width( "width", 5 );
+                std::string const height( "height", 6 );
+                std::string const principal_point( "principal-point", 15 );
+                std::string const focal_length( "focal-length", 12 );
+                std::string const model( "model", 5 );
+                std::string const coefficients( "coefficients", 12 );
+                std::string const force_symmetry( "force-symmetry", 14 );
             }
         }
     }
@@ -73,6 +80,15 @@ namespace notification {
         namespace key {
             std::string const progress( "progress", 8 );
         }
+    }
+    namespace calibration_changed {
+        std::string const id( "calibration-changed", 19 );
+        //namespace key {
+        //    using stream_options::key::intrinsics;
+        //}
+        //namespace intrinsics {
+        //    using namespace stream_options::intrinsics;
+        //}
     }
 }
 
@@ -129,6 +145,10 @@ namespace control {
     }
     namespace dfu_start {
         std::string const id( "dfu-start", 9 );
+        namespace key {
+            std::string const crc( "crc", 3 );
+            std::string const size( "size", 4 );
+        }
     }
     namespace dfu_apply {
         //using notification::dfu_apply::id;
@@ -147,7 +167,7 @@ namespace reply {
         std::string const explanation( "explanation", 11 );
     }
     namespace status {
-        std::string const ok( "ok", 2 );
+        std::string const ok( "OK", 2 );
     }
     namespace set_option {
         //using control::set_option::id;

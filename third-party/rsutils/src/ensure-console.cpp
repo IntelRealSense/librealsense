@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
-#if defined( WIN32 )
+#if defined( _WIN32 )
 #include <iostream>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/os/hresult.h>
@@ -10,7 +10,7 @@
 
 static void reopen_console_streams()
 {
-#if defined( WIN32 )
+#if defined( _WIN32 )
     // Need to re-open the standard streams if we have a console attached
     if( GetStdHandle( STD_OUTPUT_HANDLE ) )
     {
@@ -32,9 +32,19 @@ namespace rsutils {
 namespace os {
 
 
+bool has_console()
+{
+#if defined( _WIN32 )
+    return GetStdHandle( STD_OUTPUT_HANDLE ) != INVALID_HANDLE_VALUE;
+#else
+    return true;
+#endif
+}
+
+
 void ensure_console( bool create_if_none )
 {
-#if defined( WIN32 )
+#if defined( _WIN32 )
     if( AttachConsole( ATTACH_PARENT_PROCESS ) )
     {
         reopen_console_streams();

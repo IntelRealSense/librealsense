@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <src/platform/uvc-option.h>
 #include "ds/ds-private.h"
 #include "core/options-container.h"
 #include "option.h"
@@ -73,5 +74,50 @@ namespace librealsense
         std::shared_ptr<hw_monitor> _hwm;
         temperature_component _component;
         const char* _description;
+    };
+
+    class temperature_xu_option : public uvc_xu_option<int16_t>, 
+        public readonly_option
+    {
+    public:
+
+        explicit temperature_xu_option(const std::weak_ptr< uvc_sensor >& ep,
+            platform::extension_unit xu,
+            uint8_t id,
+            std::string description);
+
+        virtual float query() const override;
+        virtual void set(float value) override;
+        inline bool is_enabled() const override { return true; }
+        virtual void enable_recording(std::function<void(const option&)> record_action) override 
+        { uvc_xu_option<int16_t>::enable_recording(record_action); }
+    };
+
+    class d500_thermal_compensation_option : public bool_option
+    {
+    public:
+
+        d500_thermal_compensation_option( std::shared_ptr< hw_monitor > hwm );
+
+        virtual void set(float value) override;
+
+    private:
+        std::weak_ptr< hw_monitor > _hwm;
+    };
+
+    class power_line_freq_option : public uvc_pu_option
+    {
+    public:
+        explicit power_line_freq_option(const std::weak_ptr< uvc_sensor >& ep, rs2_option id,
+            const std::map< float, std::string >& description_per_value);
+
+        virtual option_range get_range() const override
+        {
+            // this hardcoded max range has been done because 
+            // some d500 devices do not support the "AUTO" value
+            auto range = uvc_pu_option::get_range();
+            range.max = 2.f;
+            return range;
+        }
     };
 }

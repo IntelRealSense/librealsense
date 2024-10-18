@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017-2024 Intel Corporation. All Rights Reserved.
 
 #ifndef LIBREALSENSE_RS2_DEVICE_HPP
 #define LIBREALSENSE_RS2_DEVICE_HPP
@@ -60,6 +60,8 @@ namespace rs2
             {
                 std::string pid = get_info( RS2_CAMERA_INFO_PRODUCT_ID );
                 if( pid == "ABCD" ) // Specific for D457
+                    return "GMSL";
+                if( pid == "BBCD" ) // Specific for D457 Recovery DFU
                     return "GMSL";
                 return pid;  // for DDS devices, this will be "DDS"
             }
@@ -865,6 +867,34 @@ namespace rs2
 
             return result;
         }
+
+        std::string get_calibration_config() const
+        {
+            std::vector<uint8_t> result;
+
+            rs2_error* e = nullptr;
+            auto buffer = rs2_get_calibration_config(_dev.get(), &e);
+
+            std::shared_ptr<const rs2_raw_data_buffer> list(buffer, rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
+
+            result.insert(result.begin(), start, start + size);
+
+            return std::string(result.begin(), result.end());
+        }
+
+        void set_calibration_config(const std::string& calibration_config_json_str) const
+        {
+            rs2_error* e = nullptr;
+            rs2_set_calibration_config(_dev.get(), calibration_config_json_str.c_str(), &e);
+            error::handle(e);
+        }
     };
 
     /*
@@ -978,8 +1008,8 @@ namespace rs2
             rs2_error* e = nullptr;
             auto buffer = rs2_build_debug_protocol_command(_dev.get(), opcode, param1, param2, param3, param4,
                 (void*)data.data(), (uint32_t)data.size(), &e);
-            std::shared_ptr<const rs2_raw_data_buffer> list(buffer, rs2_delete_raw_data);
             error::handle(e);
+            std::shared_ptr< const rs2_raw_data_buffer > list( buffer, rs2_delete_raw_data );
 
             auto size = rs2_get_raw_data_size(list.get(), &e);
             error::handle(e);

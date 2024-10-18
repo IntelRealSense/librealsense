@@ -15,7 +15,7 @@ namespace librealsense
     {
         auto count = width * height;
 #ifdef RS2_USE_CUDA
-        rscuda::split_frame_y16_y16_from_y12i_cuda(dest, count, reinterpret_cast<const y12i_pixel *>(source));
+        rscuda::split_frame_y16_y16_from_y12i_cuda(dest, count, reinterpret_cast<const rscuda::y12i_pixel *>(source));
 #else
         split_frame(dest, count, reinterpret_cast<const y12i_pixel*>(source),
             [](const y12i_pixel & p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data

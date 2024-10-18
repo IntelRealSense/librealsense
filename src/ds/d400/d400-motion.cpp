@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2016-24 Intel Corporation. All Rights Reserved.
 
 #include "d400-motion.h"
 
@@ -19,18 +19,21 @@
 #include "stream.h"
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
-#include <src/fourcc.h>
 #include <src/metadata-parser.h>
 #include <src/hid-sensor.h>
-using namespace librealsense;
+
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
+
+
 namespace librealsense
 {
     // D457 development
-    const std::map<uint32_t, rs2_format> motion_fourcc_to_rs2_format = {
-        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_MOTION_XYZ32F},
+    const std::map<fourcc::value_type, rs2_format> motion_fourcc_to_rs2_format = {
+        {fourcc('G','R','E','Y'), RS2_FORMAT_MOTION_XYZ32F},
     };
-    const std::map<uint32_t, rs2_stream> motion_fourcc_to_rs2_stream = {
-        {rs_fourcc('G','R','E','Y'), RS2_STREAM_ACCEL},
+    const std::map<fourcc::value_type, rs2_stream> motion_fourcc_to_rs2_stream = {
+        {fourcc('G','R','E','Y'), RS2_STREAM_ACCEL},
     };
 
     rs2_motion_device_intrinsic d400_motion_base::get_motion_intrinsics(rs2_stream stream) const
@@ -80,25 +83,23 @@ namespace librealsense
         }
         catch (...) {}
 
-        // For FW >=5.16 the scale factor changed to 0.0001 to support higher resolution (diff between two adjacent samples)
-        double gyro_scale_factor = _fw_version >= firmware_version( 5, 16, 0, 0 ) ? 0.0001 : 0.1 ;
-
+        double gyro_scale_factor = get_gyro_default_scale();
+        bool high_accuracy = is_imu_high_accuracy();
         motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL}, {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             [&, mm_correct_opt, gyro_scale_factor]()
-            { return std::make_shared< motion_to_accel_gyro >( _mm_calib, mm_correct_opt, gyro_scale_factor );
+            { return std::make_shared< motion_to_accel_gyro >( _mm_calib, mm_correct_opt, gyro_scale_factor, high_accuracy );
         });
 
         return motion_ep;
     }
 
 
-    std::shared_ptr<synthetic_sensor> d400_motion::create_hid_device(std::shared_ptr<context> ctx,
-                                                                const std::vector<platform::hid_device_info>& all_hid_infos,
-                                                                const firmware_version& camera_fw_version)
+    std::shared_ptr<synthetic_sensor> d400_motion::create_hid_device( std::shared_ptr<context> ctx,
+                                                                      const std::vector<platform::hid_device_info>& all_hid_infos )
     {
-        return _ds_motion_common->create_hid_device(ctx, all_hid_infos, camera_fw_version, _tf_keeper);
+        return _ds_motion_common->create_hid_device( ctx, all_hid_infos, _tf_keeper );
     }
 
     d400_motion_base::d400_motion_base( std::shared_ptr< const d400_info > const & dev_info )
@@ -125,7 +126,7 @@ namespace librealsense
         initialize_fisheye_sensor( dev_info->get_context(), dev_info->get_group() );
 
         // Try to add HID endpoint
-        auto hid_ep = create_hid_device(dev_info->get_context(), dev_info->get_group().hid_devices, _fw_version);
+        auto hid_ep = create_hid_device( dev_info->get_context(), dev_info->get_group().hid_devices );
         if (hid_ep)
         {
             _motion_module_device_idx = static_cast<uint8_t>(add_sensor(hid_ep));
@@ -134,7 +135,7 @@ namespace librealsense
             hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&hid_header::timestamp));
         }
         //for FW >=5.16 the scale factor changes to 1000.0 since FW sends 32bit
-        if (_fw_version >= firmware_version( 5, 15, 1, 224))
+        if (_fw_version >= firmware_version( 5, 16, 0, 0))
             get_raw_motion_sensor()->set_gyro_scale_factor( 10000.0 );
 
     }
@@ -149,6 +150,19 @@ namespace librealsense
     {
         auto raw_sensor = get_motion_sensor().get_raw_sensor();
         return std::dynamic_pointer_cast< hid_sensor >( raw_sensor );
+    }
+
+    bool d400_motion::is_imu_high_accuracy() const
+    {
+        // D400 FW 5.16 and above use 32 bits in the struct, instead of 16.
+        return _fw_version >= firmware_version( 5, 16, 0, 0 );
+    }
+
+    double d400_motion::get_gyro_default_scale() const
+    {
+        // FW scale in the HID feature report was 10 up to 5.16, changed to 1000 to support gyro sensitivity option.
+        // D400 FW performs conversion from raw to physical, we get [deg/sec] values.
+        return _fw_version >= firmware_version( 5, 16, 0, 0 ) ? 0.0001 : 0.1;
     }
 
     d400_motion_uvc::d400_motion_uvc( std::shared_ptr< const d400_info > const & dev_info )

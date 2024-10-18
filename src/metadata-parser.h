@@ -69,10 +69,12 @@ namespace librealsense
     class md_array_parser : public md_attribute_parser_base
     {
         rs2_frame_metadata_value _key;
+        std::shared_ptr< md_attribute_parser_base > _fallback;
 
     public:
-        md_array_parser( rs2_frame_metadata_value key )
+        md_array_parser( rs2_frame_metadata_value key, std::shared_ptr< md_attribute_parser_base > fallback = {} )
             : _key( key )
+            , _fallback( std::move( fallback ) )
         {
         }
 
@@ -81,7 +83,7 @@ namespace librealsense
             auto pmd = reinterpret_cast< metadata_array_value const * >( frm.additional_data.metadata_blob.data() );
             metadata_array_value const & value = pmd[_key];
             if( ! value.is_valid )
-                return false;
+                return _fallback ? _fallback->find( frm, p_value ) : false;
             if( p_value )
                 *p_value = value.value;
             return true;
@@ -93,86 +95,113 @@ namespace librealsense
      *  e.g change auto_exposure enum to boolean, change units from nano->ms,etc'*/
     typedef std::function<rs2_metadata_type(const rs2_metadata_type& param)> attrib_modifyer;
 
-    class md_time_of_arrival_parser : public md_attribute_parser_base
-    {
-    public:
-        bool find( const frame & frm, rs2_metadata_type * p_value ) const override
-        {
-            if( p_value )
-                *p_value = (rs2_metadata_type)frm.get_frame_system_time();
-            return true;
-        }
-    };
-
     /**\brief The metadata parser class directly access the metadata attribute in the blob received from HW.
     *   Given the metadata-nested construct, and the c++ lack of pointers
     *   to the inner struct, we pre-calculate and store the attribute offset internally
     *   http://stackoverflow.com/questions/1929887/is-pointer-to-inner-struct-member-forbidden
     */
-    template<class S, class Attribute, typename Flag>
-    class md_attribute_parser : public md_attribute_parser_base
+
+    /**\brief always enabled param parser class*/
+    template<class S, class Attribute>
+    class md_always_enabled_param_parser : public md_attribute_parser_base
     {
     public:
-        md_attribute_parser( Attribute S::*attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod )
-            : _md_attribute( attribute_name )
-            , _md_flag( flag )
-            , _offset( offset )
-            , _modifyer( mod )
-        {
-        }
+        md_always_enabled_param_parser(Attribute S::* attribute_name, unsigned long long offset, attrib_modifyer mod)
+            : _md_attribute(attribute_name)
+            , _offset(offset)
+            , _modifyer(mod) {};
 
-        bool find( const frame & frm, rs2_metadata_type * p_value ) const override
+        bool find(const frame& frm, rs2_metadata_type* p_value) const override
         {
-            auto s = reinterpret_cast< const S * >( ( (const uint8_t *)frm.additional_data.metadata_blob.data() )
-                                                    + _offset );
+            auto s = reinterpret_cast<const S*>(((const uint8_t*)frm.additional_data.metadata_blob.data())
+                + _offset);
 
-            if( ! is_attribute_valid( s ) )
+            if (!is_attribute_valid(s))
                 return false;
 
-            if( p_value )
+            if (p_value)
             {
                 auto attrib = static_cast<rs2_metadata_type>((*s).*_md_attribute);
-                if( _modifyer )
-                    attrib = _modifyer( attrib );
+                if (_modifyer)
+                    attrib = _modifyer(attrib);
                 *p_value = attrib;
             }
             return true;
         }
 
     protected:
-        bool is_attribute_valid( const S * s ) const
+        virtual bool is_attribute_valid(const S* s) const
         {
             // verify that the struct is of the correct type
             // Check that the header id and the struct size corresponds.
             // Note that this heurisic is not deterministic and may validate false frames! TODO - requires review
             md_type expected_type = md_type_trait< S >::type;
 
-            if( ( s->header.md_type_id != expected_type ) || ( s->header.md_size < sizeof( *s ) ) )
+            if (s->header.md_type_id != expected_type)
             {
                 std::string type
-                    = ( md_type_desc.count( s->header.md_type_id ) > 0 )
-                        ? md_type_desc.at( s->header.md_type_id )
-                        : ( rsutils::string::from()
-                            << "0x" << std::hex << static_cast< uint32_t >( s->header.md_type_id ) << std::dec );
-                LOG_DEBUG( "Metadata mismatch - actual: " << type << ", expected: 0x" << std::hex
-                                                          << (uint32_t)expected_type << std::dec << " ("
-                                                          << md_type_desc.at( expected_type ) << ")" );
+                    = (md_type_desc.count(s->header.md_type_id) > 0)
+                    ? md_type_desc.at(s->header.md_type_id)
+                    : (rsutils::string::from()
+                        << "0x" << std::hex << static_cast<uint32_t>(s->header.md_type_id) << std::dec);
+                LOG_DEBUG("Metadata type mismatch - actual: " << type << ", expected: 0x" << std::hex
+                    << (uint32_t)expected_type << std::dec << " ("
+                    << md_type_desc.at(expected_type) << ")");
                 return false;
             }
 
+            if (s->header.md_size < sizeof(*s))
+            {
+                LOG_DEBUG("Metadata size mismatch - actual: " << (uint32_t)s->header.md_size << ", expected: " << sizeof(*s) << std::dec << " ("
+                    << md_type_desc.at(expected_type) << ")");
+                return false;
+            }
+            return true;
+        }
+
+    private:
+        md_always_enabled_param_parser() = delete;
+        md_always_enabled_param_parser(const md_always_enabled_param_parser&) = delete;
+
+        Attribute S::*      _md_attribute;  // Pointer to the attribute within uvc header that provides the relevant data
+        unsigned long long  _offset;        // Inner struct offset with regard to the most outer one
+        attrib_modifyer     _modifyer;      // Post-processing on received attribute
+    };
+
+    /**\brief A utility function to create UVC metadata header parser*/
+    template<class S, class Attribute>
+    std::shared_ptr<md_attribute_parser_base> make_always_enabled_param_parser(Attribute S::* attribute, unsigned long long offset, attrib_modifyer mod = nullptr)
+    {
+        std::shared_ptr<md_always_enabled_param_parser<S, Attribute>> parser(new md_always_enabled_param_parser<S, Attribute>(attribute, offset, mod));
+        return parser;
+    }
+
+    template<class S, class Attribute, typename Flag>
+    class md_attribute_parser : public md_always_enabled_param_parser<S, Attribute>
+    {
+    public:
+        md_attribute_parser( Attribute S::*attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod )
+            : md_always_enabled_param_parser<S, Attribute>(attribute_name, offset, mod)
+            , _md_flag( flag )
+        {
+        }
+
+    protected:
+        virtual bool is_attribute_valid( const S * s ) const
+        {
+            if (!md_always_enabled_param_parser<S, Attribute>::is_attribute_valid(s))
+                return false;
+
             // Check if the attribute's flag is set
-            auto attribute_enabled = ( 0 != ( s->flags & static_cast< uint32_t >( _md_flag ) ) );
+            auto attribute_enabled = (0 != (s->flags & static_cast<uint32_t>(_md_flag)));
             return attribute_enabled;
         }
+
+        Flag  _md_flag;       // Bit that indicates whether the particular attribute is active
 
     private:
         md_attribute_parser() = delete;
         md_attribute_parser(const md_attribute_parser&) = delete;
-
-        Attribute S::*      _md_attribute;  // Pointer to the attribute within struct that holds the relevant data
-        Flag                _md_flag;       // Bit that indicates whether the particular attribute is active
-        unsigned long long  _offset;        // Inner struct offset with regard to the most outer one
-        attrib_modifyer     _modifyer;      // Post-processing on received attribute
     };
 
     /**\brief A helper function to create a specialized attribute parser.
@@ -273,7 +302,7 @@ namespace librealsense
     {
     public:
         md_additional_parser(Attribute St::* attribute_name) :
-            _md_attribute(attribute_name) {};
+            _md_attribute(attribute_name) {}
 
         bool find( const frame & frm, rs2_metadata_type * p_value ) const override
         {
@@ -295,6 +324,45 @@ namespace librealsense
     {
         std::shared_ptr<md_additional_parser<St, Attribute>> parser(new md_additional_parser<St, Attribute>(attribute));
         return parser;
+    }
+
+    /**
+     * provide attributes generated and stored internally by the library, unless set to a specific (default?)
+     * value
+     */
+    template< class St, class Attribute >
+    class md_additional_parser_unless : public md_additional_parser< St, Attribute >
+    {
+        using super = md_additional_parser< St, Attribute >;
+
+        Attribute _unless;  // value for which we return "not found"
+
+    public:
+        md_additional_parser_unless( Attribute St::*attribute_name, Attribute unless )
+            : super( attribute_name )
+            , _unless( unless )
+        {
+        }
+
+        bool find( const frame & frm, rs2_metadata_type * p_value ) const override
+        {
+            rs2_metadata_type value;
+            if( ! super::find( frm, &value ) )
+                return false;
+            if( value == _unless )
+                return false;
+            if( p_value )
+                *p_value = value;
+            return true;
+        }
+    };
+
+    /**\brief A utility function to create additional_data parser*/
+    template< class St, class Attribute >
+    std::shared_ptr< md_attribute_parser_base > make_additional_data_parser_unless( Attribute St::*attribute,
+                                                                                    Attribute unless )
+    {
+        return std::make_shared< md_additional_parser_unless< St, Attribute > >( attribute, unless );
     }
 
     /**\brief Optical timestamp for RS4xx devices is calculated internally*/

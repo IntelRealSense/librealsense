@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2016-24 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/h/rs_internal.h>
 #include <src/device.h>
@@ -19,7 +19,6 @@
 #include "d400-color.h"
 #include "d400-nonmonochrome.h"
 #include <src/platform/platform-utils.h>
-#include <src/fourcc.h>
 
 #include <src/ds/features/amplitude-factor-feature.h>
 #include <src/ds/features/emitter-frequency-feature.h>
@@ -33,9 +32,12 @@
 #include <src/proc/color-formats-converter.h>
 
 #include <src/hdr-config.h>
-#include "d400-thermal-monitor.h"
+#include <src/ds/ds-thermal-monitor.h>
 #include <common/fw/firmware-version.h>
 #include <src/fw-update/fw-update-unsigned.h>
+
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
 
 #include <rsutils/string/hexdump.h>
 #include <regex>
@@ -52,36 +54,36 @@ constexpr bool hw_mon_over_xu = false;
 
 namespace librealsense
 {
-    std::map<uint32_t, rs2_format> d400_depth_fourcc_to_rs2_format = {
-        {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
-        {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
-        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
-        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_Y8},
-        {rs_fourcc('Y','8','I',' '), RS2_FORMAT_Y8I},
-        {rs_fourcc('W','1','0',' '), RS2_FORMAT_W10},
-        {rs_fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
-        {rs_fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
-        {rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
-        {rs_fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
-        {rs_fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
-        {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
-        {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
+    std::map<fourcc::value_type, rs2_format> d400_depth_fourcc_to_rs2_format = {
+        {fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
+        {fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
+        {fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
+        {fourcc('G','R','E','Y'), RS2_FORMAT_Y8},
+        {fourcc('Y','8','I',' '), RS2_FORMAT_Y8I},
+        {fourcc('W','1','0',' '), RS2_FORMAT_W10},
+        {fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
+        {fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
+        {fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
+        {fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
+        {fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
+        {fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
+        {fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
 
     };
-    std::map<uint32_t, rs2_stream> d400_depth_fourcc_to_rs2_stream = {
-        {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
-        {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
-        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
-        {rs_fourcc('G','R','E','Y'), RS2_STREAM_INFRARED},
-        {rs_fourcc('Y','8','I',' '), RS2_STREAM_INFRARED},
-        {rs_fourcc('W','1','0',' '), RS2_STREAM_INFRARED},
-        {rs_fourcc('Y','1','6',' '), RS2_STREAM_INFRARED},
-        {rs_fourcc('Y','1','2','I'), RS2_STREAM_INFRARED},
-        {rs_fourcc('R','G','B','2'), RS2_STREAM_INFRARED},
-        {rs_fourcc('Z','1','6',' '), RS2_STREAM_DEPTH},
-        {rs_fourcc('Z','1','6','H'), RS2_STREAM_DEPTH},
-        {rs_fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
-        {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR}
+    std::map<fourcc::value_type, rs2_stream> d400_depth_fourcc_to_rs2_stream = {
+        {fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
+        {fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
+        {fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
+        {fourcc('G','R','E','Y'), RS2_STREAM_INFRARED},
+        {fourcc('Y','8','I',' '), RS2_STREAM_INFRARED},
+        {fourcc('W','1','0',' '), RS2_STREAM_INFRARED},
+        {fourcc('Y','1','6',' '), RS2_STREAM_INFRARED},
+        {fourcc('Y','1','2','I'), RS2_STREAM_INFRARED},
+        {fourcc('R','G','B','2'), RS2_STREAM_INFRARED},
+        {fourcc('Z','1','6',' '), RS2_STREAM_DEPTH},
+        {fourcc('Z','1','6','H'), RS2_STREAM_DEPTH},
+        {fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
+        {fourcc('M','J','P','G'), RS2_STREAM_COLOR}
     };
 
     std::vector<uint8_t> d400_device::send_receive_raw_data(const std::vector<uint8_t>& input)
@@ -219,10 +221,15 @@ namespace librealsense
 
         rs2_intrinsics get_color_intrinsics(const stream_profile& profile) const
         {
-            return get_d400_intrinsic_by_resolution(
-                *_owner->_color_calib_table_raw,
-                ds::d400_calibration_table_id::rgb_calibration_id,
-                profile.width, profile.height);
+            if( _owner->_pid == ds::RS405_PID )
+                return ds::get_d405_color_stream_intrinsic( *_owner->_color_calib_table_raw,
+                                                            profile.width,
+                                                            profile.height );
+
+            return get_d400_intrinsic_by_resolution( *_owner->_color_calib_table_raw,
+                                                     ds::d400_calibration_table_id::rgb_calibration_id,
+                                                     profile.width,
+                                                     profile.height );
         }
 
         /*
@@ -473,7 +480,13 @@ namespace librealsense
         using namespace ds;
 
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
-        for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
+        auto depth_devs_info = filter_by_mi( all_device_infos, 0 );
+
+        if ( depth_devs_info.empty() )
+        {
+            throw backend_exception("cannot access depth sensor", RS2_EXCEPTION_TYPE_BACKEND);
+        }
+        for (auto&& info : depth_devs_info) // Filter just mi=0, DEPTH
             depth_devices.push_back( get_backend()->create_uvc_device( info ) );
 
         std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
@@ -701,7 +714,7 @@ namespace librealsense
 
                 auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);
 
-                _thermal_monitor = std::make_shared<d400_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
+                _thermal_monitor = std::make_shared<ds_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
 
                 depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
                 std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
@@ -1200,6 +1213,13 @@ namespace librealsense
                 return it->second;
         }
         return platform::usb_undefined;
+    }
+
+
+    rs2_format d400_device::get_ir_format() const
+    {
+        auto const format_conversion = get_format_conversion();
+        return ( format_conversion == format_conversion::raw ) ? RS2_FORMAT_Y8I : RS2_FORMAT_Y8;
     }
 
 

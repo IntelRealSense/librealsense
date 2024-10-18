@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include "metadata-parser.h"
 #include "metadata.h"
@@ -10,8 +10,9 @@
 #include "d500-private.h"
 #include "d500-options.h"
 #include "d500-info.h"
-#include "ds/ds-options.h"
-#include "ds/ds-timestamp.h"
+#include <src/ds/ds-options.h>
+#include <src/ds/ds-timestamp.h>
+#include <src/ds/ds-thermal-monitor.h>
 #include <src/depth-sensor.h>
 #include "stream.h"
 #include "environment.h"
@@ -23,13 +24,16 @@
 #include "proc/y8i-to-y8y8.h"
 #include "proc/y16i-to-y10msby10msb.h"
 
-#include <src/fourcc.h>
+#include <rsutils/type/fourcc.h>
+using rs_fourcc = rsutils::type::fourcc;
 
 #include <rsutils/string/hexdump.h>
 #include <rsutils/version.h>
 
 #include <vector>
 #include <string>
+
+#include <src/ds/d500/d500-debug-protocol-calibration-engine.h>
 
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
@@ -152,11 +156,17 @@ namespace librealsense
                 set_frame_metadata_modifier([&](frame_additional_data& data) {data.depth_units = _depth_units.load(); });
 
                 synthetic_sensor::open(requests);
-                }); //group_multiple_fw_calls
+
+                if( _owner && _owner->_thermal_monitor )
+                    _owner->_thermal_monitor->update( true );
+            }); //group_multiple_fw_calls
         }
 
         void close() override
         {
+            if( _owner && _owner->_thermal_monitor )
+                _owner->_thermal_monitor->update( false );
+
             synthetic_sensor::close();
         }
 
@@ -332,7 +342,14 @@ namespace librealsense
         using namespace ds;
 
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
-        for( auto & info : filter_by_mi( all_device_infos, 0 ) )  // Filter just mi=0, DEPTH
+        auto depth_devs_info = filter_by_mi( all_device_infos, 0 );
+
+        if ( depth_devs_info.empty() )
+        {
+            throw backend_exception("cannot access depth sensor", RS2_EXCEPTION_TYPE_BACKEND);
+        }
+
+        for( auto & info : depth_devs_info )  // Filter just mi=0, DEPTH
             depth_devices.push_back( get_backend()->create_uvc_device( info ) );
 
         std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
@@ -360,6 +377,7 @@ namespace librealsense
 
     d500_device::d500_device( std::shared_ptr< const d500_info > const & dev_info )
         : backend_device(dev_info), global_time_interface(),
+          d500_auto_calibrated(std::make_shared<d500_debug_protocol_calibration_engine>(this), this),
           _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
@@ -427,6 +445,8 @@ namespace librealsense
 
         auto& depth_sensor = get_depth_sensor();
         auto raw_depth_sensor = get_raw_depth_sensor();
+
+        d500_auto_calibrated::set_depth_sensor( &depth_sensor );
 
         using namespace platform;
 
@@ -527,17 +547,20 @@ namespace librealsense
                         rsutils::lazy< float >( [default_depth_units]() { return default_depth_units; } ) ) );
             }
 
-            depth_sensor.register_option(RS2_OPTION_SOC_PVT_TEMPERATURE,
-                std::make_shared<temperature_option>(_hw_monitor,
-                    temperature_option::temperature_component::HKR_PVT, "Temperature reading for SOC PVT"));
+            // defining the temperature options
+            auto pvt_temperature = std::make_shared< temperature_xu_option >(raw_depth_sensor,
+                depth_xu,
+                DS5_HKR_PVT_TEMPERATURE,
+                "PVT Temperature");
 
-            depth_sensor.register_option(RS2_OPTION_OHM_TEMPERATURE,
-                std::make_shared<temperature_option>(_hw_monitor,
-                    temperature_option::temperature_component::LEFT_IR, "Temperature reading for Left Infrared Sensor"));
+            auto ohm_temperature = std::make_shared< temperature_xu_option >(raw_depth_sensor,
+                depth_xu,
+                DS5_HKR_OHM_TEMPERATURE,
+                "OHM Temperature");
 
-            depth_sensor.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                std::make_shared<temperature_option>(_hw_monitor,
-                    temperature_option::temperature_component::LEFT_PROJ, "Temperature reading for Left Projector"));
+            // registering the temperature options
+            depth_sensor.register_option(RS2_OPTION_SOC_PVT_TEMPERATURE, pvt_temperature);
+            depth_sensor.register_option(RS2_OPTION_OHM_TEMPERATURE, ohm_temperature);
 
             auto error_control = std::make_shared< uvc_xu_option< uint8_t > >( raw_depth_sensor,
                                                                                depth_xu,
@@ -552,26 +575,25 @@ namespace librealsense
 
             depth_sensor.register_option( RS2_OPTION_ERROR_POLLING_ENABLED,
                                           std::make_shared< polling_errors_disable >( _polling_error_handler ) );
-
-            // Metadata registration
-            depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
         }); //group_multiple_fw_calls
 
         // attributes of md_capture_timing
         auto md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_depth_mode, depth_y_mode) +
             offsetof(md_depth_y_normal_mode, intel_capture_timing);
-
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&uvc_header::timestamp),
-            make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
-
+        
         // attributes of md_capture_stats
-        md_prop_offset = metadata_raw_mode_offset +
+       auto md_prop_offset_stats = metadata_raw_mode_offset +
             offsetof(md_depth_mode, depth_y_mode) +
             offsetof(md_depth_y_normal_mode, intel_capture_stats);
 
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, 
+            make_rs400_sensor_ts_parser(make_attribute_parser(&md_capture_stats::hw_timestamp, md_capture_stat_attributes::hw_timestamp_attribute, md_prop_offset_stats),
+                make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
+
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_attribute_parser(&md_capture_stats::hw_timestamp, md_capture_stat_attributes::hw_timestamp_attribute, md_prop_offset_stats));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset_stats));
 
         // attributes of md_depth_control
         md_prop_offset = metadata_raw_mode_offset +
@@ -641,7 +663,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, gvd_parsed_fields.optical_module_sn);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, gvd_parsed_fields.fw_version);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
-        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
+        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GET_FW_LOGS)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D500");
@@ -702,20 +724,36 @@ namespace librealsense
 
     command d500_device::get_firmware_logs_command() const
     {
-        return command{ ds::GLD, 0x1f4 };
-    }
-
-    command d500_device::get_flash_logs_command() const
-    {
-        return command{ ds::FRB, 0x17a000, 0x3f8 };
+        return command{ ds::GET_FW_LOGS };
     }
 
     bool d500_device::check_symmetrization_enabled() const
     {
-        command cmd{ ds::MRD, 0x80000004, 0x80000008 };
-        auto res = _hw_monitor->send(cmd);
-        uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
-        return val == 1;
+        // The following try catch block has been added to avoid
+        // device's constructor failure for users working with new librealsense
+        // version and old fw version (which would not have the stream pipe config table)
+        // Only the content of the try statements should be kept, after some time.
+        try
+        {
+            using namespace ds;
+            command cmd(GET_HKR_CONFIG_TABLE,
+                static_cast<int>(d500_calib_location::d500_calib_ram_memory),
+                static_cast<int>(d500_calibration_table_id::stream_pipe_config_id),
+                static_cast<int>(d500_calib_type::d500_calib_dynamic));
+            auto res = _hw_monitor->send(cmd);
+       
+            if (res.size() != sizeof(d500_stream_pipe_config_table))
+                throw invalid_value_exception("Stream Config table has unexpected length");
+            auto stream_pipe_config_table = check_calib<d500_stream_pipe_config_table>(res);
+            return stream_pipe_config_table->is_depth_symmetrization_enabled == 1;
+        }
+        catch (...)
+        {
+            command cmd{ ds::MRD, 0x80000004, 0x80000008 };
+            auto res = _hw_monitor->send(cmd);
+            uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
+            return val == 1;
+        }
     }
     
     void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, ds::d500_gvd_parsed_fields* parsed_fields) const

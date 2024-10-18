@@ -5,6 +5,7 @@
 #include "json_loader.hpp"
 #include "ds/d400/d400-color.h"
 #include "ds/d500/d500-color.h"
+#include "ds/d500/d500-private.h"
 
 #include <src/ds/features/amplitude-factor-feature.h>
 #include <src/ds/features/remove-ir-pattern-feature.h>
@@ -108,6 +109,7 @@ namespace librealsense
             case ds::RS415_PID:
                 default_410(p);
                 break;
+            case ds::RS421_PID:
             case ds::RS430_PID:
             case ds::RS430I_PID:
             case ds::RS435_RGB_PID:
@@ -116,6 +118,7 @@ namespace librealsense
                 break;
             case ds::RS455_PID:
             case ds::RS457_PID:
+            case ds::D555_PID:
                 default_450_mid_low_res(p);
                 switch (res)
                 {

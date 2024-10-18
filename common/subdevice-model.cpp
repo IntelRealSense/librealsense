@@ -103,19 +103,19 @@ namespace rs2
     bool restore_processing_block(const char* name,
         std::shared_ptr<rs2::processing_block> pb, bool enable)
     {
-        for (auto opt : pb->get_supported_options())
+        for( auto opt : pb->get_supported_option_values() )
         {
             std::string key = name;
             key += ".";
-            key += pb->get_option_name(opt);
+            key += pb->get_option_name( opt->id );
             if (config_file::instance().contains(key.c_str()))
             {
                 float val = config_file::instance().get(key.c_str());
                 try
                 {
-                    auto range = pb->get_option_range(opt);
+                    auto range = pb->get_option_range( opt->id );
                     if (val >= range.min && val <= range.max)
-                        pb->set_option(opt, val);
+                        pb->set_option( opt->id, val );
                 }
                 catch (...)
                 {
@@ -1678,7 +1678,7 @@ namespace rs2
                 if (next == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
                 {
                     auto old_ae_enabled = auto_exposure_enabled;
-                    auto_exposure_enabled = opt_md.value->as_float > 0;
+                    auto_exposure_enabled = opt_md.value_as_float() > 0;
 
                     if (!old_ae_enabled && auto_exposure_enabled)
                     {
@@ -1702,11 +1702,11 @@ namespace rs2
 
                 if (next == RS2_OPTION_DEPTH_UNITS)
                 {
-                    opt_md.dev->depth_units = opt_md.value->as_float;
+                    opt_md.dev->depth_units = opt_md.value_as_float();
                 }
 
                 if (next == RS2_OPTION_STEREO_BASELINE)
-                    opt_md.dev->stereo_baseline = opt_md.value->as_float;
+                    opt_md.dev->stereo_baseline = opt_md.value_as_float();
             }
 
             next_option++;
@@ -1745,15 +1745,19 @@ namespace rs2
     {
         bool is_d400 = s->supports(RS2_CAMERA_INFO_PRODUCT_LINE) ?
             std::string(s->get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400" : false;
-
         std::string fw_version = s->supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ?
             s->get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "";
-
         bool supported_fw = s->supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ?
             is_upgradeable("05.11.12.0", fw_version) : false;
+        bool d400_on_chip_calib_supported = s->is<rs2::depth_sensor>() && is_d400 && supported_fw;
 
-        return s->is<rs2::depth_sensor>() && is_d400 && supported_fw;
-        // TODO: Once auto-calib makes it into the API, switch to querying camera info
+        bool is_d500 = s->supports(RS2_CAMERA_INFO_PRODUCT_LINE) ?
+            std::string(s->get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D500" : false;
+        bool is_depth_sensor = s->supports(RS2_CAMERA_INFO_NAME) ?
+            std::string(s->get_info(RS2_CAMERA_INFO_NAME)) == "Stereo Module" : false;
+        bool d500_on_chip_calib_supported = is_depth_sensor && is_d500;
+
+        return d400_on_chip_calib_supported || d500_on_chip_calib_supported;
     }
 
     void subdevice_model::get_depth_ir_mismatch_resolutions_ids(int& depth_res_id, int& ir1_res_id, int& ir2_res_id) const

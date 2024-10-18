@@ -737,6 +737,12 @@ namespace rs2
         _log += line + "\n";
     }
 
+    const std::string process_manager::get_log() const
+    {
+        std::lock_guard< std::mutex > lock( _log_lock );
+        return _log;
+    }
+
     void process_manager::reset()
     {
         _progress = 0;

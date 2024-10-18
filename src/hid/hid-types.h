@@ -8,17 +8,6 @@
 #include <string>
 #include <map>
 
-#define HID_REPORT_TYPE_INPUT       1
-#define HID_REPORT_TYPE_FEATURE     3
-
-#define DEVICE_POWER_D0             2
-#define DEVICE_POWER_D4             6
-
-#define REPORT_ID_ACCELEROMETER_3D  1
-#define REPORT_ID_GYROMETER_3D      2
-#define REPORT_ID_CUSTOM            3
-
-const size_t SIZE_OF_HID_IMU_FRAME = 32;
 
 static std::string gyro = "gyro_3d";
 static std::string accel = "accel_3d";
@@ -28,6 +17,18 @@ namespace librealsense
 {
     namespace platform
     {
+        constexpr int HID_REPORT_TYPE_INPUT = 1;
+        constexpr int HID_REPORT_TYPE_FEATURE = 3;
+        constexpr int DEVICE_POWER_D0 = 2;
+        constexpr int DEVICE_POWER_D4 = 6;
+
+    enum REPORT_ID
+    {
+        REPORT_ID_ACCELEROMETER_3D = 1,
+        REPORT_ID_GYROMETER_3D = 2,
+        REPORT_ID_CUSTOM = 3
+    };
+
     enum USB_REQUEST_CODE {
       USB_REQUEST_CODE_GET = 0xa1,
       USB_REQUEST_CODE_SET = 0x21
@@ -50,16 +51,16 @@ namespace librealsense
       unsigned char power;
       unsigned char minReport;
       unsigned short report;
-      unsigned short unknown;
+      unsigned short sensitivity;
     };
 
     struct REALSENSE_HID_REPORT {
       unsigned char reportId;
       unsigned char unknown;
       unsigned long long timeStamp;
-      short x;
-      short y;
-      short z;
+      int32_t x;
+      int32_t y;
+      int32_t z;
       unsigned int customValue1;
       unsigned int customValue2;
       unsigned short customValue3;
@@ -70,7 +71,6 @@ namespace librealsense
     };
 #pragma pack(pop)
 
-    static_assert(sizeof(REALSENSE_HID_REPORT) == SIZE_OF_HID_IMU_FRAME, "HID IMU Frame struct expected size is 32 bytes");
 
 #pragma pack(push, 1)
     struct FEATURE_REPORT
@@ -81,7 +81,7 @@ namespace librealsense
       unsigned char power;
       unsigned char minReport;
       unsigned short report;
-      unsigned short unknown;
+      unsigned short sensitivity;
     };
 #pragma pack(pop)
     }

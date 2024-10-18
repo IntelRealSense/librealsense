@@ -69,9 +69,10 @@ fi
 #Include usability functions
 source ./scripts/patch-utils-hwe.sh
 LINUX_BRANCH=${LINUX_BRANCH:-$(uname -r)}
+UBUNTU_VERSION=$(uname -v | cut -d '-' -f 1 | cut -d '~' -f 2)
 
 # Get the required tools and headers to build the kernel
-sudo apt-get install linux-headers-generic linux-headers-$LINUX_BRANCH build-essential git bc -y
+sudo apt-get install linux-headers-$LINUX_BRANCH build-essential git bc -y
 #Packages to build the patched modules
 require_package libusb-1.0-0-dev
 require_package libssl-dev
@@ -93,7 +94,8 @@ k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
 [ $k_maj_min -eq 504 ] && [ $k_tick -ge 156 ] && apply_hid_gyro_patch=1 && skip_hid_patch=1
 # For kernel versions 6+ powerline frequency already applied
 [ $k_maj_min -ge 600 ] && skip_plf_patch=1
-[ $k_maj_min -ge 605 ] && skip_md_patch=1
+# do not skip md patch - new d421.
+#[ $k_maj_min -ge 605 ] && skip_md_patch=1
 
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
@@ -136,11 +138,17 @@ if [ $rebuild_ko -eq 0 ];
 then
 	#Search the repository for the tag that matches the mmaj.min.patch-build of Ubuntu kernel
 	kernel_full_num=$(echo $LINUX_BRANCH | cut -d '-' -f 1,2)
-	if [ "${ubuntu_codename}" != "jammy" ];
+	if [[ "${ubuntu_codename}" != "jammy" && "${ubuntu_codename}" != "noble" ]];
 	then
 		kernel_git_tag=$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | tail -n 1 | awk -F/ '{print $NF}')
 	else
-		kernel_git_tag=$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | head -n 1 | awk -F/ '{print $NF}')
+		# Search for the tag name with suitable UBUNTU_VERSION. If not there, pick the one with matching kernel version alone.
+		if [[ -z "$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | grep "${UBUNTU_VERSION}" )" ]];
+		then
+			kernel_git_tag=$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | head -n 1 | awk -F/ '{print $NF}')
+		else
+			kernel_git_tag=$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | grep "${UBUNTU_VERSION}" | head -n 1 | awk -F/ '{print $NF}')
+		fi
 	fi
 	echo -e "\e[32mFetching Ubuntu LTS tag \e[47m${kernel_git_tag}\e[0m \e[32m to the local kernel sources folder\e[0m"
 	git fetch origin tag ${kernel_git_tag} --no-tags --depth 1
@@ -177,6 +185,7 @@ then
 		# Patching kernel for RealSense devices
 		echo -e "\e[32mApplying patches for \e[36m${ubuntu_codename}-${kernel_branch}\e[32m line\e[0m"
 		echo -e "\e[32mApplying realsense-uvc patch\e[0m"
+		patch -p1 < ../scripts/realsense-uvc-driver-version.patch 
 		patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-master.patch
 		if [ ${skip_md_patch} -eq 0 ]; then
 			echo -e "\e[32mApplying realsense-metadata patch\e[0m"
@@ -328,6 +337,7 @@ fi
 # As a precausion start with unloading the core uvcvideo:
 try_unload_module uvcvideo
 try_unload_module videobuf2_v4l2
+[ ${k_maj_min} -ge 608 ] && try_unload_module videobuf2_memops
 [ ${k_maj_min} -ge 500 ] && try_unload_module videobuf2_common
 [ ${k_maj_min} -ge 605 ] && try_unload_module uvc
 try_unload_module videodev

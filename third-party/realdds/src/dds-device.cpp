@@ -203,10 +203,10 @@ json dds_device::query_option_value( const std::shared_ptr< dds_option > & optio
     return _impl->query_option_value( option );
 }
 
-void dds_device::send_control( topics::flexible_msg && msg, json * reply )
+void dds_device::send_control( json const & control, json * reply )
 {
     wait_until_ready( 0 );  // throw if not
-    _impl->write_control_message( std::move( msg ), reply );
+    _impl->write_control_message( control, reply );
 }
 
 bool dds_device::has_extrinsics() const
@@ -244,6 +244,11 @@ rsutils::subscription dds_device::on_notification( on_notification_callback && c
     return _impl->on_notification( std::move( cb ) );
 }
 
+rsutils::subscription dds_device::on_calibration_changed( on_calibration_changed_callback && cb )
+{
+    return _impl->on_calibration_changed( std::move( cb ) );
+}
+
 
 bool dds_device::check_reply( json const & reply, std::string * p_explanation )
 {
@@ -257,16 +262,24 @@ bool dds_device::check_reply( json const & reply, std::string * p_explanation )
         return true;
     else
     {
-        os << "[";
         // An 'id' is mandatory, but if it's a response to a control it's contained there
         auto const control = reply.nested( topics::reply::key::control );
         auto const control_sample = control ? reply.nested( topics::reply::key::sample ) : rsutils::json_ref( rsutils::missing_json );
-        if( auto id = ( control_sample ? control.get_json() : reply ).nested( topics::reply::key::id ) )
+        auto & id = ( control_sample ? control.get_json() : reply )
+                        .nested( topics::reply::key::id, &json::is_string )
+                        .string_ref_or_empty();
+        auto & status = status_j.string_ref();
+        if( ! id.empty() || status != "error" )
         {
-            if( id.is_string() )
-                os << "\"" << id.string_ref() << "\" ";
+            os << "[";
+            if( id.empty() )
+                os << status;
+            else if( status == "error" )
+                os << "\"" << id << "\"";
+            else
+                os << "\"" << id << "\" " << status;
+            os << "]";
         }
-        os << status_j.string_ref() << "]";
         if( auto explanation_j = reply.nested( topics::reply::key::explanation ) )
         {
             os << ' ';
@@ -277,7 +290,10 @@ bool dds_device::check_reply( json const & reply, std::string * p_explanation )
         }
     }
     if( ! p_explanation )
+    {
+        LOG_DEBUG( "error: " << std::setw( 4 ) << reply );
         DDS_THROW( runtime_error, os.str() );
+    }
     *p_explanation = os.str();
     return false;
 }

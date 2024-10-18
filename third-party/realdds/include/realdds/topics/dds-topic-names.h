@@ -66,6 +66,13 @@ namespace notification {
             namespace key {
                 extern std::string const accel;
                 extern std::string const gyro;
+                extern std::string const width;
+                extern std::string const height;
+                extern std::string const principal_point;
+                extern std::string const focal_length;
+                extern std::string const model;
+                extern std::string const coefficients;
+                extern std::string const force_symmetry;
             }
         }
     }
@@ -90,6 +97,15 @@ namespace notification {
         extern std::string const id;
         namespace key {
             extern std::string const progress;
+        }
+    }
+    namespace calibration_changed {
+        extern std::string const id;
+        namespace key {
+            using stream_options::key::intrinsics;
+        }
+        namespace intrinsics {
+            using namespace stream_options::intrinsics;
         }
     }
 }
@@ -146,6 +162,10 @@ namespace control {
     }
     namespace dfu_start {
         extern std::string const id;
+        namespace key {
+            extern std::string const crc;
+            extern std::string const size;
+        }
     }
     namespace dfu_apply {
         using notification::dfu_apply::id;

@@ -215,12 +215,13 @@ std::vector< const char * > option_model::get_combo_labels( int * p_selected ) c
 
         switch( value->type )
         {
-        case RS2_OPTION_TYPE_FLOAT:
-            if( std::fabs( i - value->as_float ) < 0.001f )
-                selected = counter;
-            break;
         case RS2_OPTION_TYPE_STRING:
             if( 0 == strcmp( label, value->as_string ) )
+                selected = counter;
+            break;
+
+        default:
+            if( std::fabs( i - value_as_float() ) < 0.001f )
                 selected = counter;
             break;
         }
@@ -284,6 +285,48 @@ bool option_model::draw_combobox( notifications_model & model,
     return item_clicked;
 }
 
+
+float option_model::value_as_float() const
+{
+    switch( value->type )
+    {
+    case RS2_OPTION_TYPE_FLOAT:
+        return value->as_float;
+        break;
+
+    case RS2_OPTION_TYPE_INTEGER:
+    case RS2_OPTION_TYPE_BOOLEAN:
+        return float( value->as_integer );
+        break;
+    }
+    return 0.f;
+}
+
+
+std::string option_model::value_as_string() const
+{
+    switch( value->type )
+    {
+    case RS2_OPTION_TYPE_FLOAT:
+        if( is_all_integers() )
+            return rsutils::string::from() << (int) value->as_float;
+        else
+            return rsutils::string::from() << value->as_float;
+        break;
+
+    case RS2_OPTION_TYPE_INTEGER:
+    case RS2_OPTION_TYPE_BOOLEAN:
+        return rsutils::string::from() << value->as_integer;
+        break;
+
+    case RS2_OPTION_TYPE_STRING:
+        return value->as_string;
+        break;
+    }
+    return {};
+}
+
+
 bool option_model::draw_slider( notifications_model & model,
                                 std::string & error_message,
                                 const char * description,
@@ -320,10 +363,7 @@ bool option_model::draw_slider( notifications_model & model,
             ImGui::PushStyleColor( ImGuiCol_Button, { 1.f, 1.f, 1.f, 0.f } );
             if( ImGui::Button( edit_id.c_str(), { 20, 20 } ) )
             {
-                if( is_all_integers() )
-                    edit_value = rsutils::string::from() << (int)value->as_float;
-                else
-                    edit_value = rsutils::string::from() << value->as_float;
+                edit_value = value_as_string();
                 edit_mode = true;
             }
             if( ImGui::IsItemHovered() )
@@ -358,18 +398,17 @@ bool option_model::draw_slider( notifications_model & model,
         if( read_only )
         {
             ImVec2 vec{ 0, 20 };
-            std::string text = ( value->as_float == (int)value->as_float ) ? std::to_string( (int)value->as_float )
-                                                                           : std::to_string( value->as_float );
+            std::string text = value_as_string();
             if( range.min != range.max )
             {
-                ImGui::ProgressBar( ( value->as_float / ( range.max - range.min ) ), vec, text.c_str() );
+                ImGui::ProgressBar( ( value_as_float() / ( range.max - range.min ) ), vec, text.c_str() );
             }
             else  // constant value options
             {
                 auto c = ImGui::ColorConvertU32ToFloat4( ImGui::GetColorU32( ImGuiCol_FrameBg ) );
                 ImGui::PushStyleColor( ImGuiCol_FrameBgActive, c );
                 ImGui::PushStyleColor( ImGuiCol_FrameBgHovered, c );
-                float dummy = std::floor( value->as_float );
+                float dummy = std::floor( value_as_float() );
                 if( ImGui::DragFloat( id.c_str(), &dummy, 1, 0, 0, text.c_str() ) )
                 {
                     // Changing the depth units not on advanced mode is not allowed,
@@ -403,7 +442,7 @@ bool option_model::draw_slider( notifications_model & model,
 
             char buff[TEXT_BUFF_SIZE];
             memset( buff, 0, TEXT_BUFF_SIZE );
-            strcpy( buff, buff_str.c_str() );
+            strncpy( buff, buff_str.c_str(), TEXT_BUFF_SIZE - 1 );
 
             if( ImGui::InputText( id.c_str(),
                                   buff,
@@ -414,7 +453,7 @@ bool option_model::draw_slider( notifications_model & model,
                 {
                     buff_str = convert_float_str( std::string( buff ), 0.01f );
                     memset( buff, 0, TEXT_BUFF_SIZE );
-                    strcpy( buff, buff_str.c_str() );
+                    strncpy( buff, buff_str.c_str(), TEXT_BUFF_SIZE - 1 );
                 }
                 float new_value;
                 if( ! rsutils::string::string_to_value< float >( buff, new_value ) )
@@ -438,7 +477,7 @@ bool option_model::draw_slider( notifications_model & model,
                     {
                         if (invalidate_flag)
                             *invalidate_flag = true;
-                        model.add_log(rsutils::string::from() << "Setting " << opt << " to " << value->as_float);
+                        model.add_log( rsutils::string::from() << "Setting " << opt << " to " << value_as_string() );
                     }
                 }
                 edit_mode = false;
@@ -447,20 +486,21 @@ bool option_model::draw_slider( notifications_model & model,
             {
                 buff_str = convert_float_str( buff_str, 0.01f );
                 memset( buff, 0, TEXT_BUFF_SIZE );
-                strcpy( buff, buff_str.c_str() );
+                strncpy( buff, buff_str.c_str(), TEXT_BUFF_SIZE - 1 );
             }
             edit_value = buff;
         }
         else if( is_all_integers() )
         {
             // runs when changing a value with slider and not the textbox
-            auto int_value = static_cast< int >( value->as_float );
+            auto int_value = static_cast< int >( value_as_float() );
 
             if( ImGui::SliderIntWithSteps( id.c_str(),
                                            &int_value,
                                            static_cast< int >( range.min ),
                                            static_cast< int >( range.max ),
-                                           static_cast< int >( range.step ) ) )
+                                           static_cast< int >( range.step ),
+                                           "%.0f" ) )  // integers don't have any precision
             {
                 // TODO: Round to step?
                 slider_clicked = slider_selected( opt,
@@ -478,7 +518,7 @@ bool option_model::draw_slider( notifications_model & model,
         }
         else
         {
-            float tmp_value = value->as_float;
+            float tmp_value = value_as_float();
             float temp_value_displayed = tmp_value;
             float min_range_displayed = range.min;
             float max_range_displayed = range.max;
@@ -554,7 +594,8 @@ bool option_model::draw_checkbox( notifications_model & model,
 {
     bool checkbox_was_clicked = false;
 
-    auto bool_value = value->as_float > 0.0f;
+    bool bool_value = value_as_float() > 0.f;
+
     if( ImGui::Checkbox( label.c_str(), &bool_value ) )
     {
         checkbox_was_clicked = true;

@@ -1,38 +1,41 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include <cstddef>
 #include "metadata.h"
 
-#include "ds/ds-timestamp.h"
+#include <src/ds/ds-timestamp.h>
 #include "proc/color-formats-converter.h"
 #include "d500-options.h"
 #include "d500-color.h"
 #include "d500-info.h"
 #include "backend.h"
 #include "platform/platform-utils.h"
-#include <src/fourcc.h>
 #include <src/metadata-parser.h>
+#include <src/ds/ds-thermal-monitor.h>
 
 #include <src/ds/features/auto-exposure-roi-feature.h>
 
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
+
 namespace librealsense
 {
-    std::map<uint32_t, rs2_format> d500_color_fourcc_to_rs2_format = {
-         {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
-         {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
-         {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
-         {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
-         {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16},
-         {rs_fourcc('M','4','2','0'), RS2_FORMAT_M420}
+    std::map<fourcc::value_type, rs2_format> d500_color_fourcc_to_rs2_format = {
+         {fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
+         {fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
+         {fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
+         {fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
+         {fourcc('B','Y','R','2'), RS2_FORMAT_RAW16},
+         {fourcc('M','4','2','0'), RS2_FORMAT_M420}
     };
-    std::map<uint32_t, rs2_stream> d500_color_fourcc_to_rs2_stream = {
-        {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
-        {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
-        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR},
-        {rs_fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
-        {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR},
-        {rs_fourcc('M','4','2','0'), RS2_STREAM_COLOR}
+    std::map<fourcc::value_type, rs2_stream> d500_color_fourcc_to_rs2_stream = {
+        {fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
+        {fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
+        {fourcc('U','Y','V','Y'), RS2_STREAM_COLOR},
+        {fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
+        {fourcc('M','J','P','G'), RS2_STREAM_COLOR},
+        {fourcc('M','4','2','0'), RS2_STREAM_COLOR}
     };
 
     d500_color::d500_color( std::shared_ptr< const d500_info > const & dev_info, rs2_format native_format )
@@ -61,6 +64,11 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
         std::vector<platform::uvc_device_info> color_devs_info = filter_by_mi(group.uvc_devices, 3);
+
+        if ( color_devs_info.empty() )
+        {
+            throw backend_exception("cannot access color sensor", RS2_EXCEPTION_TYPE_BACKEND);
+        }
 
         std::unique_ptr< frame_timestamp_reader > ds_timestamp_reader_backup( new ds_timestamp_reader() );
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds_timestamp_reader_backup)));
@@ -143,13 +151,8 @@ namespace librealsense
             { 1.f, "50Hz" },
             { 2.f, "60Hz" } };
 
-        if (val_in_range(_pid, { ds::D555E_PID }))
-        {
-            description_per_value.insert(std::make_pair(3.f, "AUTO"));
-        }
-
         color_ep.register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
-            std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
+            std::make_shared<power_line_freq_option>(raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
                 description_per_value));
 
         color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
@@ -157,6 +160,9 @@ namespace librealsense
         _ds_color_common->register_standard_options();
 
         color_ep.register_pu(RS2_OPTION_HUE);
+
+        if( _thermal_monitor )
+            _thermal_monitor->add_observer( [&]( float ) { _color_calib_table_raw.reset(); } );
     }
 
     void d500_color::register_metadata()
@@ -169,6 +175,25 @@ namespace librealsense
 
         color_ep.register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset,
             [](rs2_metadata_type param) { return (param != 1); })); // OFF value via UVC is 1 (ON is 8)
+
+        md_prop_offset = metadata_raw_mode_offset +
+            offsetof(md_rgb_mode, rgb_mode) +
+            offsetof(md_rgb_normal_mode, intel_capture_stats);
+
+        color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_attribute_parser(&md_capture_stats::hw_timestamp, md_capture_stat_attributes::hw_timestamp_attribute, md_prop_offset));
+
+        md_prop_offset = metadata_raw_mode_offset +
+            offsetof(md_rgb_mode, rgb_mode) +
+            offsetof(md_rgb_normal_mode, intel_capture_timing);
+
+        // attributes of md_capture_stats
+        auto md_prop_offset_stats = metadata_raw_mode_offset +
+            offsetof(md_rgb_mode, rgb_mode) +
+            offsetof(md_rgb_normal_mode, intel_capture_stats);
+
+        color_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
+            make_rs400_sensor_ts_parser(make_attribute_parser(&md_capture_stats::hw_timestamp, md_capture_stat_attributes::hw_timestamp_attribute, md_prop_offset_stats),
+                make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
 
         _ds_color_common->register_metadata();
     }

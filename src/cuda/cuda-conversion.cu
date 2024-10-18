@@ -342,7 +342,8 @@ void rscuda::y8_y8_from_y8i_cuda_helper(uint8_t* const dest[], int count, const 
         std::cout << milliseconds << std::endl; */
 }
 
-__global__ void kernel_split_frame_y16_y16_from_y12i_cuda(uint16_t* a, uint16_t* b, int count, const rscuda::y12i_pixel * source)
+template<class SOURCE>
+__global__ void kernel_split_frame_y16_y16_from_y12i_cuda(uint16_t* a, uint16_t* b, int count, const SOURCE * source)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -354,7 +355,8 @@ __global__ void kernel_split_frame_y16_y16_from_y12i_cuda(uint16_t* a, uint16_t*
 }
 
 
-void rscuda::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, const rscuda::y12i_pixel * source)
+template<class SOURCE>
+void rscuda::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, const SOURCE * source)
 {
     /*
         cudaEvent_t start, stop;
@@ -362,18 +364,18 @@ void rscuda::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, 
         cudaEventCreate(&stop);
         cudaEventRecord(start); */
 
-    source = reinterpret_cast<const y12i_pixel*>(source);
+    source = reinterpret_cast<const SOURCE*>(source);
 
     int numBlocks = count / RS2_CUDA_THREADS_PER_BLOCK;
     uint16_t* a = reinterpret_cast<uint16_t*>(dest[0]);
     uint16_t* b = reinterpret_cast<uint16_t*>(dest[1]);
 
-    auto d_src = alloc_dev<rscuda::y12i_pixel>(count);
+    auto d_src = alloc_dev<SOURCE>(count);
     auto d_dst_0 = alloc_dev<uint16_t>(count);
     auto d_dst_1 = alloc_dev<uint16_t>(count);
 
 
-    auto result = cudaMemcpy(d_src.get(), source, count * sizeof(rscuda::y12i_pixel), cudaMemcpyHostToDevice);
+    auto result = cudaMemcpy(d_src.get(), source, count * sizeof(SOURCE), cudaMemcpyHostToDevice);
     assert(result == cudaSuccess);
 
     kernel_split_frame_y16_y16_from_y12i_cuda <<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK>>> (d_dst_0.get(), d_dst_1.get(), count, d_src.get());
@@ -396,6 +398,10 @@ void rscuda::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, 
     */
 }
 
+template void rscuda::y16_y16_from_y12i_10_cuda_helper<rscuda::y12i_pixel>(uint8_t* const dest[], int count, const rscuda::y12i_pixel * source);
+
+
+template void rscuda::y16_y16_from_y12i_10_cuda_helper<rscuda::y12i_pixel_mipi>(uint8_t* const dest[], int count, const rscuda::y12i_pixel_mipi * source);
 
 __global__ void kernel_z16_y8_from_sr300_inzi_cuda(const uint16_t* source, uint8_t* const dest, int count)
 {

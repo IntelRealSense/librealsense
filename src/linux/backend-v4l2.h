@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-2024 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
@@ -318,6 +318,7 @@ namespace librealsense
                                        const std::string&)> action);
 
             static std::vector<std::string> get_video_paths();
+            static std::vector<std::string> get_mipi_dfu_paths();
 
             static bool is_usb_path_valid(const std::string& usb_video_path, const std::string &dev_name,
                                           std::string &busnum, std::string &devnum, std::string &devpath);
@@ -404,6 +405,8 @@ namespace librealsense
             virtual inline std::shared_ptr<buffer> get_video_buffer(__u32 index) const {return _buffers[index];}
             virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return nullptr;}
 
+            static bool get_devname_from_video_path(const std::string& real_path, std::string& devname);
+
             power_state _state = D3;
             std::string _name = "";
             std::string _device_path = "";
@@ -473,6 +476,19 @@ namespace librealsense
         {
         public:
             v4l_mipi_device(const uvc_device_info& info, bool use_memory_map = true);
+            v4l_mipi_device(const mipi_device_info& info, bool use_memory_map = true);
+
+            static void foreach_mipi_device(
+                    std::function<void(const mipi_device_info&,
+                                       const std::string&)> action);
+
+            static std::vector<std::string> get_video_paths();
+
+            static mipi_device_info get_info_from_mipi_device_path(
+                    const std::string& video_path, const std::string& name);
+
+            static void get_mipi_device_info(const std::string& dev_name,
+                                             std::string& bus_info, std::string& card);
 
             virtual ~v4l_mipi_device();
 
@@ -500,6 +516,8 @@ namespace librealsense
 
             std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const override;
             std::vector<hid_device_info> query_hid_devices() const override;
+
+            std::vector<mipi_device_info> query_mipi_devices() const override;
 
             std::shared_ptr<device_watcher> create_device_watcher() const override;
         };

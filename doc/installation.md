@@ -18,8 +18,8 @@ Please ensure to work with the supported Kernel versions listed [here](https://g
 
 ## Prerequisites
 
-**Note:** We are supporting **Ubuntu 18/20/22 LTS** versions. \
-**Note:** The scripts and commands below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. \
+Supported versions are:  **Ubuntu 20/22/24 LTS** versions. 
+> **Note:** The scripts and commands below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. \
 Infrequently, apt-get mirrors or repositories may also cause timeout. For _librealsense_ users behind an enterprise firewall, \
 configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
 
@@ -78,15 +78,16 @@ if not the SDK will use a timer polling approach which is less sensitive for dev
    Notice: You can always remove permissions by running: `./scripts/setup_udev_rules.sh --uninstall`
 
 3. Build and apply patched kernel modules for:
-    * Ubuntu 20/22 (focal/jammy) with LTS kernel 5.13, 5.15, 5.19, 6.2, 6.5 \
+    * Ubuntu 20/22/24 (focal/jammy/noble) with LTS kernel 5.15, 5.19, 6.5 \
       `./scripts/patch-realsense-ubuntu-lts-hwe.sh`
-    * Ubuntu 18/20 with LTS kernel (< 5.13) \
+    * Ubuntu 20 with LTS kernel (< 5.13) \
      `./scripts/patch-realsense-ubuntu-lts.sh`
 
     **Note:** What the *.sh script perform?
     The script above will download, patch and build realsense-affected kernel modules (drivers). \
     Then it will attempt to insert the patched module instead of the active one. If failed
     the original uvc modules will be restored.
+    
 
    >  Check the patched modules installation by examining the generated log as well as inspecting the latest entries in kernel log: \
        `sudo dmesg | tail -n 50` \

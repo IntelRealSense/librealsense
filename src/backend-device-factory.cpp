@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-2024 Intel Corporation. All Rights Reserved.
 
 #include "backend-device-factory.h"
 #include "context.h"
@@ -145,14 +145,14 @@ backend_device_factory::backend_device_factory( std::shared_ptr< context > const
               for( auto & device_removed : subtract_sets( old_list, new_list ) )
               {
                   devices_removed.push_back( device_removed );
-                  LOG_DEBUG( "Device disconnected: " << device_removed->get_address() );
+                  LOG_INFO( "Device disconnected: " << device_removed->get_address() );
               }
 
               std::vector< std::shared_ptr< device_info > > devices_added;
               for( auto & device_added : subtract_sets( new_list, old_list ) )
               {
                   devices_added.push_back( device_added );
-                  LOG_DEBUG( "Device connected: " << device_added->get_address() );
+                  LOG_INFO( "Device connected: " << device_added->get_address() );
               }
 
               if( devices_removed.size() + devices_added.size() )
@@ -181,6 +181,7 @@ std::vector< std::shared_ptr< device_info > > backend_device_factory::query_devi
     auto backend = _device_watcher->get_backend();
     platform::backend_device_group group( backend->query_uvc_devices(),
                                           backend->query_usb_devices(),
+                                          backend->query_mipi_devices(),
                                           backend->query_hid_devices() );
     auto devices = create_devices_from_group( group, requested_mask );
     return { devices.begin(), devices.end() };
@@ -211,6 +212,13 @@ backend_device_factory::create_devices_from_group( platform::backend_device_grou
         {
             auto recovery_devices
                 = fw_update_info::pick_recovery_devices( ctx, devices.usb_devices, mask );
+            std::copy( begin( recovery_devices ), end( recovery_devices ), std::back_inserter( list ) );
+        }
+
+        // Supported mipi recovery devices
+        {
+            auto recovery_devices
+                = fw_update_info::pick_recovery_devices( ctx, devices.mipi_devices, mask );
             std::copy( begin( recovery_devices ), end( recovery_devices ), std::back_inserter( list ) );
         }
 
