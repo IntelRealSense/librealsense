@@ -26,6 +26,10 @@ SET(DELAYED
     realsense2-gl.dll
 )
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(IDN2 REQUIRED IMPORTED_TARGET libidn2)
+
+
 if(BUILD_GRAPHICAL_EXAMPLES)
     set(RS_QUALITY_TOOL_CPP
         ${COMMON_SRC}
@@ -124,6 +128,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ../../src)
+target_link_libraries(${PROJECT_NAME} PkgConfig::IDN2)
 
     install(
         TARGETS
