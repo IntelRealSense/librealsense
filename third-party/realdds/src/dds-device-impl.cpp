@@ -85,7 +85,7 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
     , _subscriber( std::make_shared< dds_subscriber >( participant ) )
     , _device_settings( device_settings( participant ) )
     , _reply_timeout_ms(
-          _device_settings.nested( "control", "reply-timeout-ms" ).default_value< size_t >( 2000 ) )
+          _device_settings.nested( "control", "reply-timeout-ms" ).default_value< size_t >( 2500 ) )
 {
     create_control_writer();
     create_notifications_reader();
@@ -564,6 +564,9 @@ void dds_device::impl::create_control_writer()
     _control_writer = std::make_shared< dds_topic_writer >( topic );
     dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
     wqos.history().depth = 10;  // default is 1
+    // If our reply timeout is less than the heartbeat period, we could lose the control message!
+    // So we set a short heartbeat time at half the reply timeout...
+    wqos.reliable_writer_qos().times.heartbeatPeriod = _reply_timeout_ms / 2000.;
     _control_writer->override_qos_from_json( wqos, _device_settings.nested( "control" ) );
     _control_writer->run( wqos );
 }
