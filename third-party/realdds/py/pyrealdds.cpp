@@ -625,7 +625,7 @@ PYBIND11_MODULE(NAME, m) {
         .def_static( "create_topic", &image_msg::create_topic )
         .def_property(
             "data",
-            []( image_msg const & self ) { return self.raw().data(); },
+            []( image_msg const & self ) { return py::memoryview::from_memory( self.raw().data().data(), self.raw().data().size() ); },
             []( image_msg & self, std::vector< uint8_t > bytes ) { self.raw().data( std::move( bytes ) ); } )
         .def_property( "width", &image_msg::width, &image_msg::set_width )
         .def_property( "height", &image_msg::height, &image_msg::set_height )

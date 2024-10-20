@@ -6,6 +6,7 @@ args = ArgumentParser()
 args.add_argument( '--debug', action='store_true', help='enable debug mode' )
 args.add_argument( '--quiet', action='store_true', help='No output; just the minimum FPS as a number' )
 args.add_argument( '--debug-frames', action='store_true', help='Output frame signatures as we get them' )
+args.add_argument( '--save-frames', action='store_true', help='Save each image data on disk, as <stream-name>_<frame-number>' )
 args.add_argument( '--device', metavar='<path>', required=True, help='the topic root for the device' )
 def time_arg(x):
     t = int(x)
@@ -97,6 +98,10 @@ def on_image( stream, image, sample ):
     global n_stream_frames, capturing
     if capturing:
         n_stream_frames[stream.name()] += 1
+        if args.save_frames:
+            filename = f'{stream.name().lower()}_{image.frame_id or n_stream_frames[stream.name()]}'
+            with open( filename, 'wb' ) as f:
+                f.write( image.data )
 
 fps = args.fps
 width = args.res[0]
