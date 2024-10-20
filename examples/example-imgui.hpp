@@ -50,7 +50,7 @@ public:
         ImGui::Begin(name_id.c_str(), nullptr, _sliders_flags);
         ImGui::Text("%s",_name);
         bool is_changed =
-            ImGui::SliderFloat("", &_value, _min_value, _max_value, "%.3f", 5.0f, false); //5.0f for logarithmic scale 
+            ImGui::SliderFloat("Slider Label", &_value, _min_value, _max_value, "%.3f", ImGuiSliderFlags_Logarithmic); //5.0f for logarithmic scale 
         if (is_changed) {
             _sensor.set_option(RS2_OPTION_SEQUENCE_ID, float(_seq_id));
             _sensor.set_option(_option, _value);
@@ -146,7 +146,7 @@ public:
     void render_widgets() {
 
         //start a new frame of ImGui
-        ImGui_ImplGlfw_NewFrame(1);
+        ImGui_ImplGlfw_NewFrame();
 
         _exposure_slider_seq_2.show();
         _exposure_slider_seq_1.show();
