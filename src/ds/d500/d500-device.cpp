@@ -407,13 +407,13 @@ namespace librealsense
             _hw_monitor = std::make_shared<hw_monitor_extended_buffers>(
                 std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>( *raw_sensor, depth_xu, DS5_HWMONITOR ),
-                    raw_sensor));
+                    raw_sensor), hw_monitor_response);
         }
         else
         {
             _hw_monitor = std::make_shared< hw_monitor_extended_buffers >(
                 std::make_shared< locked_transfer >( get_backend()->create_usb_device( group.usb_devices.front() ),
-                                                     raw_sensor ) );
+                                                     raw_sensor ), hw_monitor_response);
         }
 
         _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor);

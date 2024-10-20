@@ -51,6 +51,8 @@ namespace librealsense
 
         d500_device( std::shared_ptr< const d500_info > const & );
 
+        std::shared_ptr<ds::d500_hwmon_response_handler> hw_monitor_response = std::make_shared<ds::d500_hwmon_response_handler>();
+
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 
         std::vector<uint8_t> build_command(uint32_t opcode,

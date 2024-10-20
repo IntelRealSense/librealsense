@@ -232,18 +232,13 @@ namespace librealsense
             {
                 hwmon_response response;
                 auto res = _hwm.send( cmd, &response );  // avoid the throw
-                switch( response )
+                if (response != _hwm.hwmon_response_handler->hwmon_Success()) // If no subpreset is streaming, the firmware returns "NO_DATA_TO_RETURN" error
                 {
-                case hwmon_response::hwm_NoDataToReturn:
-                    // If no subpreset is streaming, the firmware returns "NO_DATA_TO_RETURN" error
-                    break;
-                default:
                     // If a subpreset is streaming, checking this is the current HDR sub preset
                     if( res.size() )
                         rv = ( is_hdr_id( res[0] ) ) ? 1.0f : 0.f;
                     else
-                        LOG_DEBUG( "hdr_config query: " << hwmon_error_string( cmd, response ) );
-                    break;
+                        LOG_DEBUG( "hdr_config query: " << _hwm.hwmon_error_string( cmd, response ) );
                 }
             }
             catch (...)
