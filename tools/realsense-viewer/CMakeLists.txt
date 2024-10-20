@@ -13,6 +13,9 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(IDN2 REQUIRED IMPORTED_TARGET libidn2)
+
 include_directories(${CMAKE_BINARY_DIR})
 
 using_easyloggingpp( ${PROJECT_NAME} SHARED )
@@ -247,6 +250,7 @@ set_target_properties (${PROJECT_NAME} PROPERTIES
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ../../src)
+target_link_libraries(${PROJECT_NAME} PkgConfig::IDN2)
 
 install(
     TARGETS ${PROJECT_NAME}
