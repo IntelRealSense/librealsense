@@ -21,8 +21,8 @@ namespace librealsense
             extended_send
         };
 
-        explicit hw_monitor_extended_buffers(std::shared_ptr<locked_transfer> locked_transfer)
-            : hw_monitor(locked_transfer)
+        explicit hw_monitor_extended_buffers(std::shared_ptr<locked_transfer> locked_transfer, std::shared_ptr<base_hwmon_response_handler> hwmon_response_handler)
+            : hw_monitor(locked_transfer, hwmon_response_handler)
         {}
 
         virtual std::vector<uint8_t> send(std::vector<uint8_t> const& data) const override;

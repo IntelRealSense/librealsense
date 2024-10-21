@@ -170,7 +170,7 @@ namespace librealsense
 
         // Error/exit conditions
         if (p_response)
-            *p_response = hwm_Success;
+            *p_response = hwmon_response_handler->hwmon_Success();
         if( ! cmd.require_response )
             return {};
 
@@ -212,16 +212,16 @@ namespace librealsense
         return result;
     }
 
-    std::string hwmon_error_string( command const & cmd, hwmon_response e )
+    std::string hw_monitor::hwmon_error_string( command const & cmd, int response_code ) const
     {
-        auto str = hwmon_error2str( e );
+        auto str = hwmon_response_handler->hwmon_error2str(response_code);
         std::ostringstream err;
         err << "hwmon command 0x" << std::hex << unsigned(cmd.cmd) << '(';
         err << ' ' << cmd.param1;
         err << ' ' << cmd.param2;
         err << ' ' << cmd.param3;
         err << ' ' << cmd.param4 << std::dec;
-        err << " ) failed (response " << e << "= " << ( str.empty() ? "unknown" : str ) << ")";
+        err << " ) failed (response " << response_code << "= " << ( str.empty() ? "unknown" : str ) << ")";
         return err.str();
     }
 
