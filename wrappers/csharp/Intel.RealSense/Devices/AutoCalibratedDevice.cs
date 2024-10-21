@@ -11,7 +11,7 @@ namespace Intel.RealSense
         internal AutoCalibratedDevice(IntPtr dev)
             : base(dev)
         { }
-        public static AutoCalibratedDevice FromDevice(Device dev)
+        public static new AutoCalibratedDevice FromDevice(Device dev)
         {
             object error;
             if (NativeMethods.rs2_is_device_extendable_to(dev.Handle, Extension.AutoCalibratedDevice, out error) == 0)
