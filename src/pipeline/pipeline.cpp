@@ -9,6 +9,7 @@
 #include "media/ros/ros_writer.h"
 #include <src/proc/syncer-processing-block.h>
 #include <src/core/frame-callback.h>
+#include <src/dds/rs-dds-device-proxy.h>
 
 #include <rsutils/string/from.h>
 
@@ -127,8 +128,19 @@ namespace librealsense
             }
 
             _dispatcher.start();
-            profile->_multistream.open();
-            profile->_multistream.start(callbacks);
+            if( Is< librealsense::dds_device_proxy >( dev ) )
+            {
+                // For DDS devices open() only sets requested profiles, start() actually starts streaming.
+                // Calling open() then start() sends open-streams control for all sensors before starting to stream,
+                // second open-streams control will resets the first (reverting first requested streams to defaults).
+                // open_and_start() starts streaming from the first sensor before the second open so it does not reset.
+                profile->_multistream.open_and_start( callbacks );
+            }
+            else
+            {
+                profile->_multistream.open();
+                profile->_multistream.start( callbacks );
+            }
             _active_profile = profile;
             _prev_conf = std::make_shared<config>(*conf);
         }
