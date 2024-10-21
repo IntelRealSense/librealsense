@@ -1090,15 +1090,12 @@ namespace librealsense
         // attributes of md_mipi_depth_control structure
         auto md_prop_offset = offsetof(metadata_mipi_depth_raw, depth_mode);
 
+        // optical_timestamp contains value of exposure/2
         depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
-                                       make_attribute_parser(&md_mipi_depth_mode::hw_timestamp,
-                                                             md_mipi_depth_control_attributes::hw_timestamp_attribute,
-                                                             md_prop_offset));
-
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
-                                       make_attribute_parser(&md_mipi_depth_mode::optical_timestamp,
-                                                             md_mipi_depth_control_attributes::optical_timestamp_attribute,
-                                                             md_prop_offset));
+                                       make_rs400_sensor_ts_parser(make_uvc_header_parser(&platform::uvc_header::timestamp),
+                                                                   make_attribute_parser(&md_mipi_depth_mode::optical_timestamp,
+                                                                                         md_mipi_depth_control_attributes::optical_timestamp_attribute,
+                                                                                         md_prop_offset)));
 
         depth_sensor.register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
                                        make_attribute_parser(&md_mipi_depth_mode::exposure_time,
