@@ -265,7 +265,8 @@ bool option_model::draw_combobox( notifications_model & model,
 
     try
     {
-        if( ImGui::Combo( id.c_str(), &selected, labels.data(), static_cast< int >( labels.size() ) ) )
+        ImGui::PushItemWidth(184); // Set the width for the combo box itself
+        if( ImGui::CustomComboBox( id.c_str(), &selected, labels.data(), static_cast< int >( labels.size() ) ) )
         {
             float tmp_value = range.min + range.step * selected;
             model.add_log( rsutils::string::from()
@@ -275,6 +276,7 @@ bool option_model::draw_combobox( notifications_model & model,
                 *invalidate_flag = true;
             item_clicked = true;
         }
+        ImGui::PopItemWidth();
     }
     catch( const error & e )
     {

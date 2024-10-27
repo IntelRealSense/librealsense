@@ -1829,7 +1829,7 @@ namespace rs2
 
                     // Don't draw text in boxes that are too small...
                     auto h = bbox.h;
-                    ImGui::PushStyleColor( ImGuiCol_Text, (ImVec4&)ImColor( 1.f, 1.f, 1.f, a ) );
+                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 1.f, a ) );
                     ImColor bg( dark_sensor_bg.x, dark_sensor_bg.y, dark_sensor_bg.z, dark_sensor_bg.w * a );
 
                     if( fabs(object.mean_depth) > 0.f )

@@ -922,8 +922,11 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
+            ImGui::PushStyleColor(ImGuiCol_Text, white);
             ImGui::SetTooltip("%s", show_device_info ? "Hide Device Details" : "Show Device Details");
             window.link_hovered();
+            ImGui::PopStyleColor(2);
         }
         ImGui::PopStyleColor(2);
     }
@@ -1222,6 +1225,10 @@ namespace rs2
         auto record_button_color = is_recording ? light_blue : light_grey;
         ImGui::PushStyleColor(ImGuiCol_Text, record_button_color);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, record_button_color);
+        bool button_disabled = disable_record_button_logic(is_streaming, is_playback_device);
+        if (button_disabled)
+            ImGui::PushStyleColor(ImGuiCol_Text,ImVec4(0.5f,0.5f,0.5f,1.f));
+
         if (ImGui::ButtonEx(record_button_name.c_str(), device_panel_icons_size, (disable_record_button_logic(is_streaming, is_playback_device)) ? ImGuiItemFlags_Disabled : 0))
         {
             if (is_recording) //is_recording is changed inside stop/start_recording
@@ -1254,12 +1261,17 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
+            ImGui::PushStyleColor(ImGuiCol_Text, white);
             std::string record_button_hover_text = get_record_button_hover_text(is_streaming);
             ImGui::SetTooltip("%s", record_button_hover_text.c_str());
             if (is_streaming) window.link_hovered();
+            ImGui::PopStyleColor(2);
         }
-
-        ImGui::PopStyleColor(2);
+        if(button_disabled)
+            ImGui::PopStyleColor(3);
+        else
+            ImGui::PopStyleColor(2);
         ImGui::SameLine();
         ////////////////////////////////////////
         // Draw Sync icon
@@ -1269,15 +1281,19 @@ namespace rs2
         auto sync_button_color = is_sync_enabled ? light_blue : light_grey;
         ImGui::PushStyleColor(ImGuiCol_Text, sync_button_color);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, sync_button_color);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.f));
         if (ImGui::ButtonEx(sync_button_name.c_str(), device_panel_icons_size, ImGuiItemFlags_Disabled))
         {
             is_sync_enabled = !is_sync_enabled;
         }
+        ImGui::PopStyleColor(3);
         if (ImGui::IsItemHovered())
         {
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
+            ImGui::PushStyleColor(ImGuiCol_Text, white);
             ImGui::SetTooltip("%s", is_sync_enabled ? "Disable streams synchronization" : "Enable streams synchronization");
+            ImGui::PopStyleColor(2);
         }
-        ImGui::PopStyleColor(2);
         ImGui::SameLine();
         ////////////////////////////////////////
         // Draw Info icon
@@ -1296,8 +1312,11 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
+            ImGui::PushStyleColor(ImGuiCol_Text, white);
             ImGui::SetTooltip("%s", "Click for more");
             window.link_hovered();
+            ImGui::PopStyleColor(2);
         }
         ImGui::PopFont();
         ImGui::PushFont(window.get_font());
@@ -1353,10 +1372,13 @@ namespace rs2
                     }
                     if (ImGui::IsItemHovered())
                     {
+                        ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
+                        ImGui::PushStyleColor(ImGuiCol_Text, white);
                         std::string tooltip = rsutils::string::from()
                                            << "Install official signed firmware from file to the device"
                                            << ( is_streaming ? " (Disabled while streaming)" : "" );
                         ImGui::SetTooltip("%s", tooltip.c_str());
+                        ImGui::PopStyleColor(2);
                     }
 
 
@@ -1379,8 +1401,11 @@ namespace rs2
 
                     if (ImGui::IsItemHovered())
                     {
+                        ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
+                        ImGui::PushStyleColor(ImGuiCol_Text, white);
                         std::string tooltip = rsutils::string::from() << "Check for SW / FW updates";
                         ImGui::SetTooltip("%s", tooltip.c_str());
+                        ImGui::PopStyleColor(2);
                     }
                 }
 
@@ -1401,10 +1426,13 @@ namespace rs2
                         }
                         if (ImGui::IsItemHovered())
                         {
+                            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
+                            ImGui::PushStyleColor(ImGuiCol_Text, white);
                             std::string tooltip = rsutils::string::from()
                                                << "Install non official unsigned firmware from file to the device"
                                                << ( is_streaming ? " (Disabled while streaming)" : "" );
                             ImGui::SetTooltip("%s", tooltip.c_str());
+                            ImGui::PopStyleColor(2);
                         }
                     }
                 }
@@ -1438,9 +1466,9 @@ namespace rs2
         //Move to next line, and we want to keep the horizontal alignment
         ImGui::SetCursorPos({ panel_pos.x, ImGui::GetCursorPosY() });
         //Using transparent-non-actionable buttons to have the same locations
-        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4&)ImColor(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4&)ImColor(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4&)ImColor(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
         const ImVec2 device_panel_icons_text_size = { icons_width, 5 };
 
         ImGui::PushStyleColor(ImGuiCol_Text, record_button_color);
@@ -1931,11 +1959,14 @@ namespace rs2
                         ImGui::Text("Preset: ");
                         if (ImGui::IsItemHovered())
                         {
+                            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
+                            ImGui::PushStyleColor(ImGuiCol_Text, white);
                             ImGui::SetTooltip("Select a preset configuration (or use the load button)");
+                            ImGui::PopStyleColor(2);
                         }
 
                         ImGui::SameLine();
-                        ImGui::PushItemWidth(185);
+                        ImGui::PushItemWidth(210);
 
                         ///////////////////////////////////////////
                         //TODO: make this a member function
@@ -1971,7 +2002,7 @@ namespace rs2
 
                         try
                         {
-                            if (ImGui::Combo(opt_model.id.c_str(), &selected, labels.data(),
+                            if (ImGui::CustomComboBox(opt_model.id.c_str(), &selected, labels.data(),
                                 static_cast<int>(labels.size())))
                             {
                                 *opt_model.invalidate_flag = true;
@@ -2091,10 +2122,13 @@ namespace rs2
 
         if (ImGui::IsItemHovered())
         {
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
+            ImGui::PushStyleColor(ImGuiCol_Text, white);
             std::string tooltip = rsutils::string::from()
                                << "Load pre-configured device settings"
                                << ( is_streaming && ! load_json_if_streaming ? " (Disabled while streaming)" : "" );
             ImGui::SetTooltip("%s", tooltip.c_str());
+            ImGui::PopStyleColor(2);
         }
 
         ImGui::SameLine();
@@ -2122,7 +2156,10 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
+            ImGui::PushStyleColor(ImGuiCol_Text, white);
             ImGui::SetTooltip("Save current device settings to file");
+            ImGui::PopStyleColor(2);
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
@@ -2281,8 +2318,11 @@ namespace rs2
 
             if (ImGui::IsItemHovered())
             {
+                ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
                 ImGui::SetTooltip("Remove selected device from current view\n(can be restored by clicking Add Source)");
                 window.link_hovered();
+                ImGui::PopStyleColor(2);
             }
         }
         ImGui::PopStyleColor(4);
@@ -2332,7 +2372,7 @@ namespace rs2
             auto advanced_mode_pos = ImVec2{ pos.x + horizontal_space_before_device_control, pos.y + vertical_space_before_advanced_mode_control };
             ImGui::SetCursorPos(advanced_mode_pos);
             const float advanced_mode_panel_height = draw_preset_panel(panel_width, window, error_message, viewer, update_read_only_options, load_json_if_streaming, json_loading);
-            ImGui::SetCursorPos({ advanced_mode_pos.x, advanced_mode_pos.y + advanced_mode_panel_height });
+            ImGui::SetCursorPos({ advanced_mode_pos.x, advanced_mode_pos.y + advanced_mode_panel_height+10});
         }
 
         ////////////////////////////////////////
@@ -2421,7 +2461,7 @@ namespace rs2
                 {
                     bool stop_recording = false;
 
-                    ImGui::SetCursorPos({ windows_width - 60, pos.y });
+                    ImGui::SetCursorPos({ windows_width - 60, pos.y + 3 });
                     ImGui_ScopePushFont(window.get_font());
 
                     ImGui_ScopePushStyleColor(ImGuiCol_Button, sensor_bg);
@@ -2508,8 +2548,13 @@ namespace rs2
                             }
                             if (ImGui::IsItemHovered())
                             {
+                                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+                                ImGui::SetNextWindowSize(ImVec2(255, 30));
                                 window.link_hovered();
-                                ImGui::SetTooltip("Start streaming data from this sensor");
+                                ImGui::BeginTooltipEx(ImGuiTooltipFlags_None,ImGuiWindowFlags_NoScrollbar);
+                                ImGui::TextUnformatted("Start streaming data from this sensor");
+                                ImGui::EndTooltip();
+                                ImGui::PopStyleVar();
                             }
                         }
                     }
@@ -2543,8 +2588,13 @@ namespace rs2
                         }
                         if (ImGui::IsItemHovered())
                         {
+                            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+                            ImGui::SetNextWindowSize(ImVec2(310, 30));
                             window.link_hovered();
-                            ImGui::SetTooltip("Stop streaming data from selected sub-device");
+                            ImGui::BeginTooltipEx(ImGuiTooltipFlags_None, ImGuiWindowFlags_NoScrollbar);
+                            ImGui::TextUnformatted("Stop streaming data from selected sub-device");
+                            ImGui::EndTooltip();
+                            ImGui::PopStyleVar();
                         }
                     }
 
@@ -2897,7 +2947,7 @@ namespace rs2
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(3);
 
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2);
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10);
         }
 
         for (auto&& sub : subdevices)

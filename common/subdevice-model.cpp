@@ -4,6 +4,7 @@
 #include "post-processing-filters-list.h"
 #include "post-processing-block-model.h"
 #include <imgui_internal.h>
+#include <realsense_imgui.h>
 
 #include "metadata-helper.h"
 #include "subdevice-model.h"
@@ -559,10 +560,10 @@ namespace rs2
             }
             else
             {
-                ImGui::PushItemWidth(-1);
+                ImGui::PushItemWidth(170); // Set the width for the combo box itself
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                 auto tmp_selected_res_id = ui.selected_res_id;
-                if (ImGui::Combo(label.c_str(), &tmp_selected_res_id, res_chars.data(),
+                if (ImGui::CustomComboBox(label.c_str(), &tmp_selected_res_id, res_chars.data(),
                     static_cast<int>(res_chars.size())))
                 {
                     res = true;
@@ -638,9 +639,9 @@ namespace rs2
             }
             else
             {
-                ImGui::PushItemWidth(-1);
+                ImGui::PushItemWidth(170); // Set the width for the combo box itself
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                if (ImGui::Combo(label.c_str(), &ui.selected_shared_fps_id, fps_chars.data(),
+                if (ImGui::CustomComboBox(label.c_str(), &ui.selected_shared_fps_id, fps_chars.data(),
                     static_cast<int>(fps_chars.size())))
                 {
                     res = true;
@@ -717,9 +718,9 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::PushItemWidth(-1);
+                    ImGui::PushItemWidth(170); // Set the width for the combo box itself
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                    ImGui::Combo(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
+                    ImGui::CustomComboBox(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
                         static_cast<int>(formats_chars.size()));
                     ImGui::PopStyleColor();
                     ImGui::PopItemWidth();
@@ -744,9 +745,9 @@ namespace rs2
                     }
                     else
                     {
-                        ImGui::PushItemWidth(-1);
+                        ImGui::PushItemWidth(170); // Set the width for the combo box itself
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                        ImGui::Combo(label.c_str(), &ui.selected_fps_id[f.first], fps_chars.data(),
+                        ImGui::CustomComboBox(label.c_str(), &ui.selected_fps_id[f.first], fps_chars.data(),
                             static_cast<int>(fps_chars.size()));
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
@@ -799,10 +800,10 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::PushItemWidth(-1);
+                    ImGui::PushItemWidth(170); // Set the width for the combo box itself
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                     auto tmp_selected_res_id = ui.selected_res_id_map[stream_type_id];
-                    if (ImGui::Combo(label.c_str(), &tmp_selected_res_id, res_chars.data(),
+                    if (ImGui::CustomComboBox(label.c_str(), &tmp_selected_res_id, res_chars.data(),
                         static_cast<int>(res_chars.size())))
                     {
                         res = true;
@@ -932,9 +933,9 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::PushItemWidth(-1);
+                    ImGui::PushItemWidth(170); // Set the width for the combo box itself
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                    ImGui::Combo(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
+                    ImGui::CustomComboBox(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
                         static_cast<int>(formats_chars.size()));
                     ImGui::PopStyleColor();
                     ImGui::PopItemWidth();
@@ -977,6 +978,7 @@ namespace rs2
     // The function returns true if one of the configuration parameters changed
     bool subdevice_model::draw_stream_selection(std::string& error_message)
     {
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10);
         bool res = false;
 
         std::string label = rsutils::string::from()
