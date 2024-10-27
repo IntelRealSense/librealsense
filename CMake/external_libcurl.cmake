@@ -1,7 +1,7 @@
 if(CHECK_FOR_UPDATES)
 
-    string(REPLACE "${SECURITY_COMPILER_FLAGS}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # remove flags
-    string(REPLACE "${SECURITY_COMPILER_FLAGS}" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+    pop_security_flags() # remove security flags
+    
     include(ExternalProject)
     message(STATUS "Building libcurl enabled")
     
@@ -63,6 +63,5 @@ if(CHECK_FOR_UPDATES)
         endif()
     endif()
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SECURITY_COMPILER_FLAGS}")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SECURITY_COMPILER_FLAGS}")
+    push_security_flags()
 endif() #CHECK_FOR_UPDATES

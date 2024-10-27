@@ -3,8 +3,7 @@ string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _rel_path ${CMAKE_CURRENT_LIST_DIR})
 
 add_subdirectory( "${CMAKE_CURRENT_LIST_DIR}/rsutils" )
 
-string(REPLACE "${SECURITY_COMPILER_FLAGS}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # remove security flags
-string(REPLACE "${SECURITY_COMPILER_FLAGS}" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+pop_security_flags()
 
 include(CMake/external_json.cmake)
 # Add additional include directories to allow file to include rosbag headers
@@ -21,6 +20,5 @@ if( BUILD_WITH_DDS )
     add_subdirectory( "${CMAKE_CURRENT_LIST_DIR}/realdds" )
 endif()
 
-# restore flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SECURITY_COMPILER_FLAGS}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SECURITY_COMPILER_FLAGS}")
+# restore security flags
+push_security_flags()

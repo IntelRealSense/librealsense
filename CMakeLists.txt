@@ -29,6 +29,9 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
 
+# include security flags helper functions
+include(CMake/security_flags_helper_functions.cmake)
+
 # include librealsense general configuration
 include(CMake/global_config.cmake)
 
@@ -61,8 +64,7 @@ target_link_libraries( ${LRS_TARGET} PUBLIC rsutils )
 if(BUILD_WITH_DDS)
     if (CMAKE_SYSTEM MATCHES "Windows" OR CMAKE_SYSTEM MATCHES "Linux")
 
-        string(REPLACE "${SECURITY_COMPILER_FLAGS}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # remove security flags
-        string(REPLACE "${SECURITY_COMPILER_FLAGS}" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+        pop_security_flags()
         
         message(STATUS "Building with FastDDS")
         include(CMake/external_foonathan_memory.cmake)
@@ -70,8 +72,7 @@ if(BUILD_WITH_DDS)
 
         target_link_libraries( ${LRS_TARGET} PRIVATE realdds )
         
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SECURITY_COMPILER_FLAGS}")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SECURITY_COMPILER_FLAGS}")
+        push_security_flags()
 
     else()
         MESSAGE(STATUS "Turning off `BUILD_WITH_DDS` as it's only supported on Windows & Linux and not on ${CMAKE_SYSTEM}")

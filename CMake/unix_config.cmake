@@ -84,8 +84,7 @@ macro(os_set_flags)
             set(SECURITY_COMPILER_FLAGS "${SECURITY_COMPILER_FLAGS} -Werror -z noexecstack -Wl,-z,relro,-z,now -fstack-protector-strong")
         endif()
         
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SECURITY_COMPILER_FLAGS}")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SECURITY_COMPILER_FLAGS}")
+        push_security_flags()
         
         set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -pie")
 

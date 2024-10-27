@@ -60,11 +60,6 @@ function(get_fastdds)
 
     add_library(dds INTERFACE)
     target_link_libraries( dds INTERFACE fastcdr fastrtps )
-    if (MSVC)
-        target_compile_options( dds INTERFACE "/W0" )
-    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options( dds INTERFACE "-w" )
-    endif()
 
     add_definitions(-DBUILD_WITH_DDS)
 

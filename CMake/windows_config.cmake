@@ -66,8 +66,7 @@ macro(os_set_flags)
             set(SECURITY_COMPILER_FLAGS "${SECURITY_COMPILER_FLAGS} /WX /sdl") 
         endif()
 		
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SECURITY_COMPILER_FLAGS}")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SECURITY_COMPILER_FLAGS}")
+        push_security_flags()
         
         if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
             set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} /INCREMENTAL:NO /LTCG /NXCOMPAT") # ignoring '/INCREMENTAL' due to '/LTCG' specification
