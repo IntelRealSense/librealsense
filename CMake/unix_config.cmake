@@ -48,7 +48,7 @@ macro(os_set_flags)
     endif()
     
     
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND ENABLE_SECURITY_FLAGS)
         # Due to security reasons  we need to add the following flags for additional security:
         # Debug & Release:
         # -Wformat: Checks for format string vulnerabilities.
