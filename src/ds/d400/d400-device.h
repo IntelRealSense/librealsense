@@ -94,7 +94,6 @@ namespace librealsense
         friend class d400_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
-        std::shared_ptr<ds::d400_hwmon_response_handler> hw_monitor_response = std::make_shared<ds::d400_hwmon_response_handler>();
         firmware_version            _fw_version;
         firmware_version            _recommended_fw_version;
         ds::ds_caps               _device_capabilities;

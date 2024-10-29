@@ -517,8 +517,8 @@ namespace librealsense
             return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave";
     }
 
-    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, bool is_fw_version_using_id, int no_data_to_return_opcode)
-        : _hwm(hwm), _is_fw_version_using_id(is_fw_version_using_id), no_data_to_return_opcode(no_data_to_return_opcode)
+    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, bool is_fw_version_using_id, hwmon_response_type no_data_to_return_opcode)
+        : _hwm(hwm), _is_fw_version_using_id(is_fw_version_using_id), _no_data_to_return_opcode(no_data_to_return_opcode)
     {
         _range = [this]()
         {
@@ -552,9 +552,9 @@ namespace librealsense
             command cmd(ds::GETSUBPRESETID);
             try
             {
-                hwmon_response response;
+                hwmon_response_type response;
                 auto res = _hwm.send( cmd, &response );  // avoid the throw
-                if (response != no_data_to_return_opcode) // If no subpreset is streaming, the firmware returns "NO_DATA_TO_RETURN" error
+                if (response != _no_data_to_return_opcode) // If no subpreset is streaming, the firmware returns "NO_DATA_TO_RETURN" error
                 {
                     // if a subpreset is streaming, checking this is the alternating emitter sub preset
                     if( res.size() )

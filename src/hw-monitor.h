@@ -119,11 +119,11 @@ namespace librealsense
         }
     };
 
-    typedef int32_t hwmon_response;
-    class base_hwmon_response_handler { // base class for different product number to implement responses
+    typedef int32_t hwmon_response_type;
+    class hwmon_response_interface { // base class for different product lines to implement responses
     public:
-        inline virtual std::string hwmon_error2str(int e) const = 0;
-        virtual hwmon_response hwmon_Success() const = 0;
+        virtual std::string hwmon_error2str(int e) const = 0;
+        virtual hwmon_response_type success_value() const = 0;
     };
 
     class hw_monitor
@@ -150,8 +150,8 @@ namespace librealsense
         static const size_t size_of_command_without_data = 24U;
 
     public:
-        explicit hw_monitor(std::shared_ptr<locked_transfer> locked_transfer, std::shared_ptr<base_hwmon_response_handler> hwmon_response_handler)
-            : _locked_transfer(std::move(locked_transfer)), hwmon_response_handler(hwmon_response_handler)
+        explicit hw_monitor(std::shared_ptr<locked_transfer> locked_transfer, std::shared_ptr<hwmon_response_interface> hwmon_response)
+            : _locked_transfer(std::move(locked_transfer)), _hwmon_response(hwmon_response)
         {}
 
         static void fill_usb_buffer( int opCodeNumber,
@@ -167,7 +167,7 @@ namespace librealsense
         static command build_command_from_data(const std::vector<uint8_t> data);
 
         virtual std::vector<uint8_t> send( std::vector<uint8_t> const & data ) const;
-        virtual std::vector<uint8_t> send( command const & cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
+        virtual std::vector<uint8_t> send( command const & cmd, hwmon_response_type * = nullptr, bool locked_transfer = false ) const;
         static std::vector<uint8_t> build_command(uint32_t opcode,
             uint32_t param1 = 0,
             uint32_t param2 = 0,
@@ -232,8 +232,8 @@ namespace librealsense
             return rv;
         }
 
-        std::shared_ptr<base_hwmon_response_handler> hwmon_response_handler;
+        std::shared_ptr<hwmon_response_interface> _hwmon_response;
 
-        std::string hwmon_error_string(command const&, int e) const;
+        std::string hwmon_error_string(command const&, hwmon_response_type e) const;
     };
 }

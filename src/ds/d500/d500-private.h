@@ -454,106 +454,106 @@ namespace librealsense
             { EHU_IDX_DSP_UP_CHECKSUM_ERR, "DSP UP CHECKSUM ERROR" },
         };
 
-        class d500_hwmon_response_handler : public base_hwmon_response_handler
+        class d500_hwmon_response : public hwmon_response_interface
         {
         public:
-            enum d500_hwmon_response_names : int32_t
+            enum opcodes : hwmon_response_type
             {
-                hwm_Success                           =  0,
-                hwm_InvalidCommand                    = -1,
-                hwm_InvalidParam                      = -2,
-                hwm_HWNotReady                        = -3,  // (different from #21)
-                hwm_UnauthorizedUserAction            = -4,
-                hwm_IntegrityError                    = -5,
-                hwm_CRC_Error                         = -6,
-                hwm_GPIOPinNumberInvalid              = -7,
-                hwm_GPIOPinDirectionInvalid           = -8,
-                hwm_IllegalAddress                    = -9,
-                hwm_IllegalSize                       = -10,
-                hwm_ParamsTableNotValid               = -11,
-                hwm_ParamsTableIdNotValid             = -12,
-                hwm_ParamsTableWrongExistingSize      = -13,
-                hwm_SpiReadFailed                     = -14,
-                hwm_SpiWriteFailed                    = -15,
-                hwm_TableIsEmpty                      = -16,
-                hwm_ValueOutOfRange                   = -17,
-                hwm_Operation_Timeout                 = -18,
-                hwm_CommandNotSupported               = -19, // (inappropriate FW/SKU)
-                hwm_IncompleteData                    = -20,
-                hwm_SWNotReady                        = -21, // (mind the difference from #3)
-                hwm_Reserved_22                       = -22,
-                hwm_Reserved_23                       = -23,
-                hwm_Reserved_24                       = -24,
-                hwm_Reserved_25                       = -25,
-                hwm_Reserved_26                       = -26,
-                hwm_Reserved_27                       = -27,
-                hwm_Reserved_28                       = -28,
-                hwm_Reserved_29                       = -29,
-                hwm_Reserved_30                       = -30,
-                hwm_Reserved_31                       = -31,
-                hwm_Reserved_32                       = -32,
-                hwm_Reserved_33                       = -33,
-                hwm_Reserved_34                       = -34,
-                hwm_Reserved_35                       = -35,
-                hwm_Reserved_36                       = -36,
-                hwm_Reserved_37                       = -37,
-                hwm_Reserved_38                       = -38,
-                hwm_Reserved_39                       = -39,
-                hwm_LastError                         = hwm_Reserved_39 - 1, // if more error codes are added, this value should be updated
+               SUCCESS                            =  0,
+               INVALID_COMMAND                    = -1,
+               INVALID_PARAM                      = -2,
+               HW_NOT_READY                       = -3,  // (different from #21)
+               UNAUTHORIZED_USER_ACTION           = -4,
+               INTEGRITY_ERROR                    = -5,
+               CRC_ERROR                          = -6,
+               GPIO_PIN_NUMBER_INVALID            = -7,
+               GPIO_PIN_DIRECTION_INVALID         = -8,
+               ILLEGAL_ADDRESS                    = -9,
+               ILLEGAL_SIZE                       = -10,
+               PARAMS_TABLE_NOT_VALID             = -11,
+               PARAMS_TABLE_ID_NOT_VALID          = -12,
+               PARAMS_TABLE_WRONG_EXISTING_SIZE   = -13,
+               SPI_READ_FAILED                    = -14,
+               SPI_WRITE_FAILED                   = -15,
+               TABLE_IS_EMPTY                     = -16,
+               VALUE_OUT_OF_RANGE                 = -17,
+               OPERATION_TIMEOUT                  = -18,
+               COMMAND_NOT_SUPPORTED              = -19, // (inappropriate FW/SKU)
+               INCOMPLETE_DATA                    = -20,
+               SW_NOT_READY                       = -21, // (mind the difference from #3)
+               RESERVED_22                        = -22,
+               RESERVED_23                        = -23,
+               RESERVED_24                        = -24,
+               RESERVED_25                        = -25,
+               RESERVED_26                        = -26,
+               RESERVED_27                        = -27,
+               RESERVED_28                        = -28,
+               RESERVED_29                        = -29,
+               RESERVED_30                        = -30,
+               RESERVED_31                        = -31,
+               RESERVED_32                        = -32,
+               RESERVED_33                        = -33,
+               RESERVED_34                        = -34,
+               RESERVED_35                        = -35,
+               RESERVED_36                        = -36,
+               RESERVED_37                        = -37,
+               RESERVED_38                        = -38,
+               RESERVED_39                        = -39,
+               LAST_ERROR                         = RESERVED_39 - 1, // if more error codes are added, this value should be updated
             };
 
             // Elaborate HW Monitor response
-            const std::map< hwmon_response, std::string> hwmon_response_report = {
-                { d500_hwmon_response_names::hwm_Success,                      "Success" },
-                { d500_hwmon_response_names::hwm_InvalidCommand,               "Invalid Command" },
-                { d500_hwmon_response_names::hwm_InvalidParam,                 "Invalid Param" },
-                { d500_hwmon_response_names::hwm_HWNotReady,                   "HW Not Ready" },
-                { d500_hwmon_response_names::hwm_UnauthorizedUserAction,       "Unauthorized User Action" },
-                { d500_hwmon_response_names::hwm_IntegrityError,               "Integrity Error" },
-                { d500_hwmon_response_names::hwm_CRC_Error,                    "CRC Error" },
-                { d500_hwmon_response_names::hwm_GPIOPinNumberInvalid,         "GPIO Pin Number Invalid" },
-                { d500_hwmon_response_names::hwm_GPIOPinDirectionInvalid,      "GPIO Pin Direction Invalid" },
-                { d500_hwmon_response_names::hwm_IllegalAddress,               "Illegal Address" },
-                { d500_hwmon_response_names::hwm_IllegalSize,                  "Illegal Size" },
-                { d500_hwmon_response_names::hwm_ParamsTableNotValid,          "Params Table Not Valid" },
-                { d500_hwmon_response_names::hwm_ParamsTableIdNotValid,        "Params Table Id Not Valid" },
-                { d500_hwmon_response_names::hwm_ParamsTableWrongExistingSize, "Params Table Wrong Existing Size" },
-                { d500_hwmon_response_names::hwm_SpiReadFailed,                "Spi Read Failed" },
-                { d500_hwmon_response_names::hwm_SpiWriteFailed,               "Spi Write Failed" },
-                { d500_hwmon_response_names::hwm_TableIsEmpty,                 "Table Is Empty" },
-                { d500_hwmon_response_names::hwm_ValueOutOfRange,              "Value Out Of Range" },
-                { d500_hwmon_response_names::hwm_Operation_Timeout,            "Operation Timeout" },
-                { d500_hwmon_response_names::hwm_CommandNotSupported,          "Command Not Supported" },
-                { d500_hwmon_response_names::hwm_IncompleteData,               "Incomplete Data" },
-                { d500_hwmon_response_names::hwm_SWNotReady,                   "SW Not Ready" },
-                { d500_hwmon_response_names::hwm_Reserved_22,                  "Reserved 22" },
-                { d500_hwmon_response_names::hwm_Reserved_23,                  "Reserved 23" },
-                { d500_hwmon_response_names::hwm_Reserved_24,                  "Reserved 24" },
-                { d500_hwmon_response_names::hwm_Reserved_25,                  "Reserved 25" },
-                { d500_hwmon_response_names::hwm_Reserved_26,                  "Reserved 26" },
-                { d500_hwmon_response_names::hwm_Reserved_27,                  "Reserved 27" },
-                { d500_hwmon_response_names::hwm_Reserved_28,                  "Reserved 28" },
-                { d500_hwmon_response_names::hwm_Reserved_29,                  "Reserved 29" },
-                { d500_hwmon_response_names::hwm_Reserved_30,                  "Reserved 30" },
-                { d500_hwmon_response_names::hwm_Reserved_31,                  "Reserved 31" },
-                { d500_hwmon_response_names::hwm_Reserved_32,                  "Reserved 32" },
-                { d500_hwmon_response_names::hwm_Reserved_33,                  "Reserved 33" },
-                { d500_hwmon_response_names::hwm_Reserved_34,                  "Reserved 34" },
-                { d500_hwmon_response_names::hwm_Reserved_35,                  "Reserved 35" },
-                { d500_hwmon_response_names::hwm_Reserved_36,                  "Reserved 36" },
-                { d500_hwmon_response_names::hwm_Reserved_37,                  "Reserved 37" },
-                { d500_hwmon_response_names::hwm_Reserved_38,                  "Reserved 38" },
-                { d500_hwmon_response_names::hwm_Reserved_39,                  "Reserved 39" },
-                { d500_hwmon_response_names::hwm_LastError,                    "Last Error"}
+            const std::map<hwmon_response_type, std::string> hwmon_response_report = {
+               { SUCCESS,                          "Success" },
+               { INVALID_COMMAND,                  "Invalid Command" },
+               { INVALID_PARAM,                    "Invalid Param" },
+               { HW_NOT_READY,                     "HW Not Ready" },
+               { UNAUTHORIZED_USER_ACTION,         "Unauthorized User Action" },
+               { INTEGRITY_ERROR,                  "Integrity Error" },
+               { CRC_ERROR,                        "CRC Error" },
+               { GPIO_PIN_NUMBER_INVALID,          "GPIO Pin Number Invalid" },
+               { GPIO_PIN_DIRECTION_INVALID,       "GPIO Pin Direction Invalid" },
+               { ILLEGAL_ADDRESS,                  "Illegal Address" },
+               { ILLEGAL_SIZE,                     "Illegal Size" },
+               { PARAMS_TABLE_NOT_VALID,           "Params Table Not Valid" },
+               { PARAMS_TABLE_ID_NOT_VALID,        "Params Table Id Not Valid" },
+               { PARAMS_TABLE_WRONG_EXISTING_SIZE, "Params Table Wrong Existing Size" },
+               { SPI_READ_FAILED,                  "Spi Read Failed" },
+               { SPI_WRITE_FAILED,                 "Spi Write Failed" },
+               { TABLE_IS_EMPTY,                   "Table Is Empty" },
+               { VALUE_OUT_OF_RANGE,               "Value Out Of Range" },
+               { OPERATION_TIMEOUT,                "Operation Timeout" },
+               { COMMAND_NOT_SUPPORTED,            "Command Not Supported" },
+               { INCOMPLETE_DATA,                  "Incomplete Data" },
+               { SW_NOT_READY,                     "SW Not Ready" },
+               { RESERVED_22,                      "Reserved 22" },
+               { RESERVED_23,                      "Reserved 23" },
+               { RESERVED_24,                      "Reserved 24" },
+               { RESERVED_25,                      "Reserved 25" },
+               { RESERVED_26,                      "Reserved 26" },
+               { RESERVED_27,                      "Reserved 27" },
+               { RESERVED_28,                      "Reserved 28" },
+               { RESERVED_29,                      "Reserved 29" },
+               { RESERVED_30,                      "Reserved 30" },
+               { RESERVED_31,                      "Reserved 31" },
+               { RESERVED_32,                      "Reserved 32" },
+               { RESERVED_33,                      "Reserved 33" },
+               { RESERVED_34,                      "Reserved 34" },
+               { RESERVED_35,                      "Reserved 35" },
+               { RESERVED_36,                      "Reserved 36" },
+               { RESERVED_37,                      "Reserved 37" },
+               { RESERVED_38,                      "Reserved 38" },
+               { RESERVED_39,                      "Reserved 39" },
+               { LAST_ERROR,                       "Last Error" }
             };
 
-            inline virtual std::string hwmon_error2str(hwmon_response opcode) const override {
+            virtual std::string hwmon_error2str(hwmon_response_type opcode) const override {
                 if (hwmon_response_report.find(opcode) != hwmon_response_report.end())
                     return hwmon_response_report.at(opcode);
                 return {};
             }
 
-            virtual hwmon_response hwmon_Success() const override { return d500_hwmon_response_names::hwm_Success; };
+            virtual hwmon_response_type success_value() const override { return SUCCESS; };
         };
 
     } // namespace ds
