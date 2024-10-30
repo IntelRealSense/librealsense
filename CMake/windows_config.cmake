@@ -40,6 +40,7 @@ macro(os_set_flags)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
 
+        set(SECURITY_COMPILER_FLAGS "")
         if (ENABLE_SECURITY_FLAGS)
             # Due to security reasons we need to add the following flags for additional security:
             # Debug & Release:

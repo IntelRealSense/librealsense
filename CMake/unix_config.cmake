@@ -47,7 +47,7 @@ macro(os_set_flags)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
     endif()
     
-    
+    set(SECURITY_COMPILER_FLAGS "")
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND ENABLE_SECURITY_FLAGS)
         # Due to security reasons  we need to add the following flags for additional security:
         # Debug & Release:
