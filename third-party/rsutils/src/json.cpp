@@ -411,7 +411,7 @@ public:
             {
                 dump( *i, pretty_print_width, ensure_ascii, indent_step, new_indent );
                 _o.put( ',' );
-                if( need_to_indent || pretty_print_width && _line_width > pretty_print_width )
+                if( need_to_indent || (pretty_print_width && _line_width > pretty_print_width ))
                 {
                     newline();
                     _o.write( _indent_string.c_str(), new_indent );
@@ -1100,7 +1100,7 @@ private:
             }
         };
 
-        JSON_ASSERT(byte < utf8d.size());
+        JSON_ASSERT(static_cast<size_t>(byte) < utf8d.size());
         const std::uint8_t type = utf8d[byte];
 
         codep = (state != UTF8_ACCEPT)
