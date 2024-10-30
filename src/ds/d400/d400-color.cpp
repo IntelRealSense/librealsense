@@ -319,7 +319,8 @@ namespace librealsense
         color_ep.register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE,
                                        make_attribute_parser(&md_mipi_rgb_mode::auto_exposure_mode,
                                                              md_mipi_rgb_control_attributes::auto_exposure_mode_attribute,
-                                                             md_prop_offset));
+                                                             md_prop_offset,
+                                                             [](rs2_metadata_type param) { return (param != 1); })); // OFF value via UVC is 1 (ON is 8)
         color_ep.register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL,
                                        make_attribute_parser(&md_mipi_rgb_mode::gain,
                                                              md_mipi_rgb_control_attributes::gain_attribute,
