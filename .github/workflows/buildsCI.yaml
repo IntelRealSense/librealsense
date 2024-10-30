@@ -216,7 +216,7 @@ jobs:
         python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "dds windows" ${{env.WIN_BUILD_DIR}}/Release
 
 #--------------------------------------------------------------------------------
-  Win_SH_Py_DDS_CI_SEC:  # Windows, Shared, Python, Tools, DDS, libCI without executables, additional security checks
+  Win_SH_Py_DDS_SEC:  # Windows, Shared, Python, Tools, DDS, additional security checks
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
@@ -256,13 +256,6 @@ jobs:
       run: |
         cd ${{env.WIN_BUILD_DIR}}
         cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -m
-
-    - name: LibCI
-      # Note: we specifically disable BUILD_UNIT_TESTS so the executable C++ unit-tests won't run
-      # This is to save time as DDS already lengthens the build...
-      shell: bash
-      run: |
-        python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "dds windows" ${{env.WIN_BUILD_DIR}}/Release
 
 
   #--------------------------------------------------------------------------------
@@ -444,7 +437,7 @@ jobs:
   
 
   #--------------------------------------------------------------------------------
-  U20_ST_Py_DDS_RSUSB_CI_SEC:  # Ubuntu 2020, Static, Python, DDS, RSUSB, LibCI without executables, additional security checks
+  U20_ST_Py_DDS_RSUSB_SEC:  # Ubuntu 2020, Static, Python, DDS, RSUSB, additional security checks
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
@@ -490,13 +483,6 @@ jobs:
         cmake ../../.github/workflows/rs-all-client -DBUILD_WITH_DDS=ON -DFORCE_RSUSB_BACKEND=ON
         cmake --build . -- -j4
         ./rs-all-client
-
-    - name: LibCI
-      # Note: we specifically disable BUILD_UNIT_TESTS so the executable C++ unit-tests won't run
-      # This is to save time as DDS already lengthens the build...
-      shell: bash
-      run: |
-        python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "dds linux" --tag dds
   
 
   #--------------------------------------------------------------------------------
