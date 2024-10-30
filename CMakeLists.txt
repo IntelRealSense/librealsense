@@ -63,16 +63,12 @@ target_link_libraries( ${LRS_TARGET} PUBLIC rsutils )
 
 if(BUILD_WITH_DDS)
     if (CMAKE_SYSTEM MATCHES "Windows" OR CMAKE_SYSTEM MATCHES "Linux")
-
-        pop_security_flags()
         
         message(STATUS "Building with FastDDS")
         include(CMake/external_foonathan_memory.cmake)
         include(CMake/external_fastdds.cmake)
 
         target_link_libraries( ${LRS_TARGET} PRIVATE realdds )
-        
-        push_security_flags()
 
     else()
         MESSAGE(STATUS "Turning off `BUILD_WITH_DDS` as it's only supported on Windows & Linux and not on ${CMAKE_SYSTEM}")
