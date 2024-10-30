@@ -2767,6 +2767,15 @@ namespace librealsense
 
         control_range v4l_mipi_device::get_pu_range(rs2_option option) const
         {
+            // Auto controls range is trimed to {0,1} range
+            if(option >= RS2_OPTION_ENABLE_AUTO_EXPOSURE && option <= RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
+            {
+                static const int32_t min = 0, max = 1, step = 1, def = 1;
+                control_range range(min, max, step, def);
+
+                return range;
+            }
+
             struct v4l2_query_ext_ctrl query = {};
             query.id = get_cid(option);
             if (xioctl(_fd, VIDIOC_QUERY_EXT_CTRL, &query) < 0)
