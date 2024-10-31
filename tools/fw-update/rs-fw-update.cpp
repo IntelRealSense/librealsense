@@ -100,15 +100,16 @@ std::vector<uint8_t> read_firmware_data(bool is_set, const std::string& file_pat
 }
 
 
-void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image)
-{  
+void update( rs2::update_device fwu_dev, std::vector< uint8_t > const & fw_image )
+{
     std::cout << std::endl << "Firmware update started. Please don't disconnect device!"<< std::endl << std::endl;
-    
+
     if (ISATTY(FILENO(stdout)))
     {
         fwu_dev.update(fw_image, [&](const float progress)
             {
                 printf("\rFirmware update progress: %d[%%]", (int)(progress * 100));
+                std::cout.flush();
             });
     }
     else
@@ -425,6 +426,7 @@ try
             {
                 flash = d.as< rs2::updatable >().create_flash_backup( [&]( const float progress ) {
                     printf( "\rFlash backup progress: %d[%%]", (int)( progress * 100 ) );
+                    std::cout.flush();
                     } );
             }
             else
@@ -488,6 +490,7 @@ try
                     d.as<rs2::updatable>().update_unsigned( fw_image, [&]( const float progress )
                         {
                             printf( "\rFirmware update progress: %d[%%]", (int)( progress * 100 ) );
+                            std::cout.flush();
                         } );
                 }
                 else
@@ -525,7 +528,8 @@ try
                     }
                 }
 
-                 update( new_fw_update_device, fw_image );
+                new_device = rs2::device();  // otherwise the wait will exit right away
+                update( new_fw_update_device, fw_image );
 
                 done = true;
                 break;

@@ -76,14 +76,13 @@ int8_t d500_debug_protocol_calibration_engine::get_triggered_calibration_progres
 std::vector<uint8_t> d500_debug_protocol_calibration_engine::get_calibration_table(std::vector<uint8_t>& current_calibration) const
 {
     // Getting depth calibration table. RGB table is currently not supported by auto_calibrated_interface API
-    std::vector< uint8_t > res;
 
     // prepare command
     using namespace ds;
     auto cmd = _dev->build_command(ds::GET_HKR_CONFIG_TABLE,
-        static_cast<int>(d500_calib_location::d500_calib_flash_memory),
-        static_cast<int>(d500_calibration_table_id::depth_calibration_id),
-        static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
+                                   static_cast<int>(d500_calib_location::d500_calib_flash_memory),
+                                   static_cast<int>(d500_calibration_table_id::depth_calibration_id),
+                                   static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
 
     // sending command
     auto calib = _dev->send_receive_raw_data(cmd);
@@ -95,32 +94,25 @@ std::vector<uint8_t> d500_debug_protocol_calibration_engine::get_calibration_tab
     calib.erase(calib.begin(), calib.begin() + 4);
 
     auto header = (ds::table_header*)(calib.data());
-
     if (calib.size() < sizeof(ds::table_header) + header->table_size)
         throw std::runtime_error("GET_HKR_CONFIG_TABLE response is smaller then expected table size!");
 
-    // Backwards compatibility dictates that we will return the table without the header, but we need the header
-    // details like versions to later set back the table. Save it at the start of _curr_calibration.
-    current_calibration.assign(calib.begin(), calib.begin() + sizeof(ds::table_header));
-
-    res.assign(calib.begin() + sizeof(ds::table_header), calib.end());
-
-    return res;
+    return calib;
 }
 
 void d500_debug_protocol_calibration_engine::write_calibration(std::vector<uint8_t>& current_calibration) const
 {
     auto table_header = reinterpret_cast<ds::table_header*>(current_calibration.data());
     table_header->crc32 = rsutils::number::calc_crc32(current_calibration.data() + sizeof(ds::table_header),
-        current_calibration.size() - sizeof(ds::table_header));
+                                                      current_calibration.size() - sizeof(ds::table_header));
 
     // prepare command
     using namespace ds;
     auto cmd = _dev->build_command(ds::SET_HKR_CONFIG_TABLE,
-        static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
-        static_cast<int>(table_header->table_type),
-        static_cast<int>(ds::d500_calib_type::d500_calib_dynamic), 0,
-        current_calibration.data(), current_calibration.size());
+                                   static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
+                                   static_cast<int>(table_header->table_type),
+                                   static_cast<int>(ds::d500_calib_type::d500_calib_dynamic), 0,
+                                   current_calibration.data(), current_calibration.size());
 
     // sending command
     _dev->send_receive_raw_data(cmd);

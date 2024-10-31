@@ -143,7 +143,7 @@ namespace librealsense
     }
 
     std::vector< uint8_t >
-    hw_monitor::send( command const & cmd, hwmon_response * p_response, bool locked_transfer ) const
+    hw_monitor::send( command const & cmd, hwmon_response_type * p_response, bool locked_transfer ) const
     {
         uint32_t const opCodeXmit = cmd.cmd;
 
@@ -170,7 +170,7 @@ namespace librealsense
 
         // Error/exit conditions
         if (p_response)
-            *p_response = hwm_Success;
+            *p_response = _hwmon_response->success_value();
         if( ! cmd.require_response )
             return {};
 
@@ -179,7 +179,7 @@ namespace librealsense
             details.receivedOpcode[1], details.receivedOpcode[0]);
         if (opCodeAsUint32 != opCodeXmit)
         {
-            auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
+            auto err_type = static_cast<hwmon_response_type>(opCodeAsUint32);
             //LOG_DEBUG(err);  // too intrusive; may be an expected error
             if( p_response )
             {
@@ -212,16 +212,16 @@ namespace librealsense
         return result;
     }
 
-    std::string hwmon_error_string( command const & cmd, hwmon_response e )
+    std::string hw_monitor::hwmon_error_string( command const & cmd, hwmon_response_type response_code ) const
     {
-        auto str = hwmon_error2str( e );
+        auto str = _hwmon_response->hwmon_error2str(response_code);
         std::ostringstream err;
         err << "hwmon command 0x" << std::hex << unsigned(cmd.cmd) << '(';
         err << ' ' << cmd.param1;
         err << ' ' << cmd.param2;
         err << ' ' << cmd.param3;
         err << ' ' << cmd.param4 << std::dec;
-        err << " ) failed (response " << e << "= " << ( str.empty() ? "unknown" : str ) << ")";
+        err << " ) failed (response " << response_code << "= " << ( str.empty() ? "unknown" : str ) << ")";
         return err.str();
     }
 

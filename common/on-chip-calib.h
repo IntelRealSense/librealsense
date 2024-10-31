@@ -199,7 +199,7 @@ namespace rs2
             RS2_CALIB_STATE_FL_PLUS_INPUT,        // Collect input parameters for focal length plus calib
         };
 
-        autocalib_notification_model(std::string name, std::shared_ptr<on_chip_calib_manager> manager, bool expaned);
+        autocalib_notification_model(std::string name, std::shared_ptr<process_manager> manager, bool expaned);
 
         on_chip_calib_manager& get_manager() { return *std::dynamic_pointer_cast<on_chip_calib_manager>(update_manager); }
 

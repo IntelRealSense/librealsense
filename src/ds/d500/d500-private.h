@@ -454,5 +454,107 @@ namespace librealsense
             { EHU_IDX_DSP_UP_CHECKSUM_ERR, "DSP UP CHECKSUM ERROR" },
         };
 
+        class d500_hwmon_response : public hwmon_response_interface
+        {
+        public:
+            enum opcodes : hwmon_response_type
+            {
+               SUCCESS                            =  0,
+               INVALID_COMMAND                    = -1,
+               INVALID_PARAM                      = -2,
+               HW_NOT_READY                       = -3,  // (different from #21)
+               UNAUTHORIZED_USER_ACTION           = -4,
+               INTEGRITY_ERROR                    = -5,
+               CRC_ERROR                          = -6,
+               GPIO_PIN_NUMBER_INVALID            = -7,
+               GPIO_PIN_DIRECTION_INVALID         = -8,
+               ILLEGAL_ADDRESS                    = -9,
+               ILLEGAL_SIZE                       = -10,
+               PARAMS_TABLE_NOT_VALID             = -11,
+               PARAMS_TABLE_ID_NOT_VALID          = -12,
+               PARAMS_TABLE_WRONG_EXISTING_SIZE   = -13,
+               SPI_READ_FAILED                    = -14,
+               SPI_WRITE_FAILED                   = -15,
+               TABLE_IS_EMPTY                     = -16,
+               VALUE_OUT_OF_RANGE                 = -17,
+               OPERATION_TIMEOUT                  = -18,
+               COMMAND_NOT_SUPPORTED              = -19, // (inappropriate FW/SKU)
+               INCOMPLETE_DATA                    = -20,
+               SW_NOT_READY                       = -21, // (mind the difference from #3)
+               RESERVED_22                        = -22,
+               RESERVED_23                        = -23,
+               RESERVED_24                        = -24,
+               RESERVED_25                        = -25,
+               RESERVED_26                        = -26,
+               RESERVED_27                        = -27,
+               RESERVED_28                        = -28,
+               RESERVED_29                        = -29,
+               RESERVED_30                        = -30,
+               RESERVED_31                        = -31,
+               RESERVED_32                        = -32,
+               RESERVED_33                        = -33,
+               RESERVED_34                        = -34,
+               RESERVED_35                        = -35,
+               RESERVED_36                        = -36,
+               RESERVED_37                        = -37,
+               RESERVED_38                        = -38,
+               RESERVED_39                        = -39,
+               LAST_ERROR                         = RESERVED_39 - 1, // if more error codes are added, this value should be updated
+            };
+
+            // Elaborate HW Monitor response
+            const std::map<hwmon_response_type, std::string> hwmon_response_report = {
+               { SUCCESS,                          "Success" },
+               { INVALID_COMMAND,                  "Invalid Command" },
+               { INVALID_PARAM,                    "Invalid Param" },
+               { HW_NOT_READY,                     "HW Not Ready" },
+               { UNAUTHORIZED_USER_ACTION,         "Unauthorized User Action" },
+               { INTEGRITY_ERROR,                  "Integrity Error" },
+               { CRC_ERROR,                        "CRC Error" },
+               { GPIO_PIN_NUMBER_INVALID,          "GPIO Pin Number Invalid" },
+               { GPIO_PIN_DIRECTION_INVALID,       "GPIO Pin Direction Invalid" },
+               { ILLEGAL_ADDRESS,                  "Illegal Address" },
+               { ILLEGAL_SIZE,                     "Illegal Size" },
+               { PARAMS_TABLE_NOT_VALID,           "Params Table Not Valid" },
+               { PARAMS_TABLE_ID_NOT_VALID,        "Params Table Id Not Valid" },
+               { PARAMS_TABLE_WRONG_EXISTING_SIZE, "Params Table Wrong Existing Size" },
+               { SPI_READ_FAILED,                  "Spi Read Failed" },
+               { SPI_WRITE_FAILED,                 "Spi Write Failed" },
+               { TABLE_IS_EMPTY,                   "Table Is Empty" },
+               { VALUE_OUT_OF_RANGE,               "Value Out Of Range" },
+               { OPERATION_TIMEOUT,                "Operation Timeout" },
+               { COMMAND_NOT_SUPPORTED,            "Command Not Supported" },
+               { INCOMPLETE_DATA,                  "Incomplete Data" },
+               { SW_NOT_READY,                     "SW Not Ready" },
+               { RESERVED_22,                      "Reserved 22" },
+               { RESERVED_23,                      "Reserved 23" },
+               { RESERVED_24,                      "Reserved 24" },
+               { RESERVED_25,                      "Reserved 25" },
+               { RESERVED_26,                      "Reserved 26" },
+               { RESERVED_27,                      "Reserved 27" },
+               { RESERVED_28,                      "Reserved 28" },
+               { RESERVED_29,                      "Reserved 29" },
+               { RESERVED_30,                      "Reserved 30" },
+               { RESERVED_31,                      "Reserved 31" },
+               { RESERVED_32,                      "Reserved 32" },
+               { RESERVED_33,                      "Reserved 33" },
+               { RESERVED_34,                      "Reserved 34" },
+               { RESERVED_35,                      "Reserved 35" },
+               { RESERVED_36,                      "Reserved 36" },
+               { RESERVED_37,                      "Reserved 37" },
+               { RESERVED_38,                      "Reserved 38" },
+               { RESERVED_39,                      "Reserved 39" },
+               { LAST_ERROR,                       "Last Error" }
+            };
+
+            virtual std::string hwmon_error2str(hwmon_response_type opcode) const override {
+                if (hwmon_response_report.find(opcode) != hwmon_response_report.end())
+                    return hwmon_response_report.at(opcode);
+                return {};
+            }
+
+            virtual hwmon_response_type success_value() const override { return SUCCESS; };
+        };
+
     } // namespace ds
 } // namespace librealsense

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #include "platform-camera.h"
 #include "ds/ds-timestamp.h"
@@ -8,23 +8,25 @@
 #include "proc/color-formats-converter.h"
 #include "backend.h"
 #include "platform/platform-utils.h"
-#include <src/fourcc.h>
 #include <src/metadata-parser.h>
+
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
 
 
 namespace librealsense {
 namespace {
 
 
-const std::map< uint32_t, rs2_format > platform_color_fourcc_to_rs2_format = {
-    { rs_fourcc( 'Y', 'U', 'Y', '2' ), RS2_FORMAT_YUYV },
-    { rs_fourcc( 'Y', 'U', 'Y', 'V' ), RS2_FORMAT_YUYV },
-    { rs_fourcc( 'M', 'J', 'P', 'G' ), RS2_FORMAT_MJPEG },
+const std::map< fourcc::value_type, rs2_format > platform_color_fourcc_to_rs2_format = {
+    { fourcc( 'Y', 'U', 'Y', '2' ), RS2_FORMAT_YUYV },
+    { fourcc( 'Y', 'U', 'Y', 'V' ), RS2_FORMAT_YUYV },
+    { fourcc( 'M', 'J', 'P', 'G' ), RS2_FORMAT_MJPEG },
 };
-const std::map< uint32_t, rs2_stream > platform_color_fourcc_to_rs2_stream = {
-    { rs_fourcc( 'Y', 'U', 'Y', '2' ), RS2_STREAM_COLOR },
-    { rs_fourcc( 'Y', 'U', 'Y', 'V' ), RS2_STREAM_COLOR },
-    { rs_fourcc( 'M', 'J', 'P', 'G' ), RS2_STREAM_COLOR },
+const std::map< fourcc::value_type, rs2_stream > platform_color_fourcc_to_rs2_stream = {
+    { fourcc( 'Y', 'U', 'Y', '2' ), RS2_STREAM_COLOR },
+    { fourcc( 'Y', 'U', 'Y', 'V' ), RS2_STREAM_COLOR },
+    { fourcc( 'M', 'J', 'P', 'G' ), RS2_STREAM_COLOR },
 };
 
 

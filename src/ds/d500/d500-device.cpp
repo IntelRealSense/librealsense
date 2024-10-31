@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include "metadata-parser.h"
 #include "metadata.h"
@@ -24,7 +24,8 @@
 #include "proc/y8i-to-y8y8.h"
 #include "proc/y16i-to-y10msby10msb.h"
 
-#include <src/fourcc.h>
+#include <rsutils/type/fourcc.h>
+using rs_fourcc = rsutils::type::fourcc;
 
 #include <rsutils/string/hexdump.h>
 #include <rsutils/version.h>
@@ -341,7 +342,14 @@ namespace librealsense
         using namespace ds;
 
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
-        for( auto & info : filter_by_mi( all_device_infos, 0 ) )  // Filter just mi=0, DEPTH
+        auto depth_devs_info = filter_by_mi( all_device_infos, 0 );
+
+        if ( depth_devs_info.empty() )
+        {
+            throw backend_exception("cannot access depth sensor", RS2_EXCEPTION_TYPE_BACKEND);
+        }
+
+        for( auto & info : depth_devs_info )  // Filter just mi=0, DEPTH
             depth_devices.push_back( get_backend()->create_uvc_device( info ) );
 
         std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
@@ -369,7 +377,7 @@ namespace librealsense
 
     d500_device::d500_device( std::shared_ptr< const d500_info > const & dev_info )
         : backend_device(dev_info), global_time_interface(),
-          d500_auto_calibrated(std::make_shared<d500_debug_protocol_calibration_engine>(this)),
+          d500_auto_calibrated(std::make_shared<d500_debug_protocol_calibration_engine>(this), this),
           _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
@@ -399,13 +407,13 @@ namespace librealsense
             _hw_monitor = std::make_shared<hw_monitor_extended_buffers>(
                 std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>( *raw_sensor, depth_xu, DS5_HWMONITOR ),
-                    raw_sensor));
+                    raw_sensor), std::make_shared<ds::d500_hwmon_response>());
         }
         else
         {
             _hw_monitor = std::make_shared< hw_monitor_extended_buffers >(
                 std::make_shared< locked_transfer >( get_backend()->create_usb_device( group.usb_devices.front() ),
-                                                     raw_sensor ) );
+                                                     raw_sensor ), std::make_shared<ds::d500_hwmon_response>());
         }
 
         _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor);
@@ -437,6 +445,8 @@ namespace librealsense
 
         auto& depth_sensor = get_depth_sensor();
         auto raw_depth_sensor = get_raw_depth_sensor();
+
+        d500_auto_calibrated::set_depth_sensor( &depth_sensor );
 
         using namespace platform;
 
