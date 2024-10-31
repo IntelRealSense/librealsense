@@ -3,4 +3,6 @@
 target_sources(${LRS_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/image-neon.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/neon-pointcloud.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/neon-align.cpp"
 )

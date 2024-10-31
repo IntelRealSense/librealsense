@@ -149,7 +149,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     , auto_calibrated_proxy()
     , _dds_dev( dev )
 {
-    LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
+    //LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
     register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name() );
     register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev->device_info().topic_root() );
     register_info( RS2_CAMERA_INFO_PRODUCT_ID, "DDS" );
@@ -176,6 +176,12 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
         std::shared_ptr< dds_sensor_proxy > proxy;
         int sensor_index = 0;
         rs2_stream type = RS2_STREAM_ANY;
+        // dds_streams bear stream type and index information, we add it to a dds_sensor_proxy mapped by a newly generated
+        // unique ID. After the sensor initialization we get all the "final" profiles from formats-converter with type and
+        // index but without IDs. We need to find the dds_stream that each profile was created from so we create a map from
+        // type and index to dds_stream ID and index, because the dds_sensor_proxy holds a map from sidx to dds_stream. We
+        // need both the ID from that map key and the stream itself (for intrinsics information)
+        std::map< sid_index, sid_index > type_and_index_to_dds_stream_sidx;
     };
     std::map< std::string, sensor_info > sensor_name_to_info;
 
@@ -185,7 +191,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
         {
             auto & sensor = sensor_name_to_info[stream->sensor_name()];
             if( stream->type_string() == "depth"
-                || stream->type_string() == "infrared" )
+                || stream->type_string() == "ir" )
             {
                 // If there's depth or infrared, it is a depth sensor regardless of what else is in there
                 // E.g., the D405 has a color stream in the depth sensor
@@ -208,13 +214,6 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             }
         } );  // End foreach_stream lambda
 
-    // dds_streams bear stream type and index information, we add it to a dds_sensor_proxy mapped by a newly generated
-    // unique ID. After the sensor initialization we get all the "final" profiles from formats-converter with type and
-    // index but without IDs. We need to find the dds_stream that each profile was created from so we create a map from
-    // type and index to dds_stream ID and index, because the dds_sensor_proxy holds a map from sidx to dds_stream. We
-    // need both the ID from that map key and the stream itself (for intrinsics information)
-    std::map< sid_index, sid_index > type_and_index_to_dds_stream_sidx;
-
     _dds_dev->foreach_stream(
         [&]( std::shared_ptr< realdds::dds_stream > const & stream )
         {
@@ -235,9 +234,14 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
                 = std::make_shared< librealsense::stream >( stream_type, sidx.index );
             sensor_info.proxy->add_dds_stream( sidx, stream );
             _stream_name_to_owning_sensor[stream->name()] = sensor_info.proxy;
-            type_and_index_to_dds_stream_sidx.insert( { type_and_index, sidx }  );
-            LOG_DEBUG( sidx.to_string() << " " << get_string( sensor_info.type ) << " '" << stream->sensor_name()
-                                        << "' : '" << stream->name() << "' " << get_string( stream_type ) );
+            if( ! sensor_info.type_and_index_to_dds_stream_sidx.insert( { type_and_index, sidx } ).second )
+                LOG_ERROR( "Failed to insert '" << stream->sensor_name() << "' " << type_and_index.to_string() << " "
+                                                << get_string( sensor_info.type ) << " -> " << get_string( stream_type )
+                                                << " " << sidx.to_string() << " '" << stream->name() << "' mapping" );
+            //else
+            //    LOG_DEBUG( "'" << stream->sensor_name() << "' " << type_and_index.to_string() << " "
+            //                   << get_string( sensor_info.type ) << " -> " << get_string( stream_type ) << " "
+            //                   << sidx.to_string() << " '" << stream->name() << "'" );
 
             software_sensor & sensor = get_software_sensor( sensor_info.sensor_index );
             auto video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( stream );
@@ -279,36 +283,35 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             }
         } );  // End foreach_stream lambda
 
-    for( auto & sensor_info : sensor_name_to_info )
+    for( auto & name_info : sensor_name_to_info )
     {
-        LOG_DEBUG( sensor_info.first );
+        auto & sensor_name = name_info.first;
+        auto & sensor_info = name_info.second;
+        auto & sensor_proxy = sensor_info.proxy;
+        //LOG_DEBUG( sensor_info.first );
 
         // Set profile's ID based on the dds_stream's ID (index already set). Connect the profile to the extrinsics graph.
-        for( auto & profile : sensor_info.second.proxy->get_stream_profiles() )
+        // The get_stream_profiles() call will initialize the profiles (calling dds_sensor_proxy::init_stream_profiles())
+        for( auto & profile : sensor_proxy->get_stream_profiles() )
         {
-            //if( auto p = std::dynamic_pointer_cast< librealsense::video_stream_profile_interface >( profile ) )
-            //{
-            //    LOG_DEBUG( "    " << get_string( p->get_stream_type() ) << ' ' << p->get_stream_index() << ' '
-            //                      << get_string( p->get_format() ) << ' ' << p->get_width() << 'x' << p->get_height()
-            //                      << " @ " << p->get_framerate() );
-            //}
-            //else if( auto p = std::dynamic_pointer_cast<librealsense::motion_stream_profile_interface>( profile ) )
-            //{
-            //    LOG_DEBUG( "    " << get_string( p->get_stream_type() ) << ' ' << p->get_stream_index() << ' '
-            //                      << get_string( p->get_format() ) << " @ " << p->get_framerate() );
-            //}
-            sid_index type_and_index( profile->get_stream_type(), profile->get_stream_index() );
-            
-            auto & streams = sensor_info.second.proxy->streams();
-            
-            sid_index sidx = type_and_index_to_dds_stream_sidx.at( type_and_index );
+            auto & source_profiles = sensor_proxy->_formats_converter.get_source_profiles_from_target( profile );
+            if( source_profiles.size() != 1 )
+                LOG_ERROR( "More than one source profile available for [" << profile << "]: " << source_profiles );
+            auto source_profile = source_profiles[0];
+
+            sid_index type_and_index( source_profile->get_stream_type(), source_profile->get_stream_index() );
+            sid_index sidx = sensor_info.type_and_index_to_dds_stream_sidx.at( type_and_index );
+
+            auto & streams = sensor_proxy->streams();
             auto stream_iter = streams.find( sidx );
             if( stream_iter == streams.end() )
             {
-                LOG_DEBUG( "        no dds stream" );
+                LOG_ERROR( "No dds stream " << sidx.to_string() << " found for '" << sensor_name << "' " << profile
+                                            << " -> " << source_profile << " " << type_and_index.to_string() );
                 continue;
             }
 
+            //LOG_DEBUG( "    " << profile << " -> " << source_profile << " " << type_and_index.to_string() );
             profile->set_unique_id( sidx.sid );  // Was lost on clone
 
             // NOTE: the 'initialization_done' call above creates target profiles from the raw profiles we supplied it.
@@ -348,7 +351,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
                     auto const dds_extr = _dds_dev->get_extrinsics( from_stream.first, to_stream.first );
                     if( ! dds_extr )
                     {
-                        LOG_DEBUG( "missing extrinsics from " << from_stream.first << " to " << to_stream.first );
+                        //LOG_DEBUG( "missing extrinsics from " << from_stream.first << " to " << to_stream.first );
                         continue;
                     }
                     rs2_extrinsics extr = to_rs2_extrinsics( dds_extr );
@@ -390,11 +393,19 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     }
     set_matcher_type( matcher );
 
-    if (supports_info(RS2_CAMERA_INFO_PRODUCT_LINE) && 
-        !strcmp(get_info(RS2_CAMERA_INFO_PRODUCT_LINE).c_str(), "D500"))
-        set_auto_calibration_capability(std::make_shared<d500_auto_calibrated>(
-            std::make_shared<d500_debug_protocol_calibration_engine>(this)));
-            
+    if( supports_info( RS2_CAMERA_INFO_PRODUCT_LINE )
+        && ! strcmp( get_info( RS2_CAMERA_INFO_PRODUCT_LINE ).c_str(), "D500" ) )
+    {
+        // Find depth sensor to pass into d500_auto_calibrated object
+        sensor_base * depth_sensor = nullptr;
+        for( auto & sensor : sensor_name_to_info )
+            if( sensor.second.type == RS2_STREAM_DEPTH )
+                depth_sensor = sensor.second.proxy.get();
+
+        set_auto_calibration_capability( std::make_shared< d500_auto_calibrated >(
+            std::make_shared< d500_debug_protocol_calibration_engine >( this ), this, depth_sensor ) );
+    }
+
     _calibration_changed_subscription = _dds_dev->on_calibration_changed(
         [this]( std::shared_ptr< const realdds::dds_stream > const & stream )
         {

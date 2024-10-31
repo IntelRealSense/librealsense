@@ -27,7 +27,7 @@ jobs:
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
 
     - name: Enable Long Paths
       shell: powershell
@@ -69,7 +69,7 @@ jobs:
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
 
     - name: Enable Long Paths
       shell: powershell
@@ -111,8 +111,8 @@ jobs:
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
+    - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 #v5
       with:
        python-version: '3.8.1'
 
@@ -171,8 +171,8 @@ jobs:
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
+    - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 #v5
       with:
        python-version: '3.8.1'
 
@@ -215,6 +215,48 @@ jobs:
       run: |
         python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "dds windows" ${{env.WIN_BUILD_DIR}}/Release
 
+#--------------------------------------------------------------------------------
+  Win_SH_Py_DDS_SEC:  # Windows, Shared, Python, Tools, DDS, additional security checks
+    runs-on: windows-2019
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+       python-version: '3.8.1'
+
+    - name: Enable Long Paths
+      shell: powershell
+      run: |
+       New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+        
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        cd ..   
+
+    - name: PreBuild
+      shell: bash
+      run: |
+       mkdir ${{env.WIN_BUILD_DIR}} 
+       python3 -m pip install numpy
+
+    - name: Configure CMake
+      shell: bash
+      run: |        
+        LRS_SRC_DIR=$(pwd)   
+        cd ${{env.WIN_BUILD_DIR}}
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DENABLE_SECURITY_FLAGS=true
+
+    - name: Build
+      # Build your program with the given configuration
+      shell: bash
+      run: |
+        cd ${{env.WIN_BUILD_DIR}}
+        cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -m
+
 
   #--------------------------------------------------------------------------------
   Win_SH_Py_RSUSB_Csharp:  # Windows, Shared, Python, RSUSB backend, C# bindings
@@ -222,8 +264,8 @@ jobs:
     timeout-minutes: 60
       
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
+    - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 #v5
       with:
        python-version: '3.8.1'
 
@@ -273,7 +315,7 @@ jobs:
     name: ${{ matrix.name }}_ST_Py_EX_CfU 
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
     
     - name: Prebuild
       shell: bash
@@ -300,7 +342,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
 
     - name: Prebuild
       shell: bash
@@ -343,7 +385,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
 
     - name: Prebuild
       shell: bash
@@ -395,6 +437,55 @@ jobs:
   
 
   #--------------------------------------------------------------------------------
+  U20_ST_Py_DDS_RSUSB_SEC:  # Ubuntu 2020, Static, Python, DDS, RSUSB, additional security checks
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Prebuild
+      shell: bash
+      run: |
+        sudo apt-get update;
+        sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+        sudo apt-get install -qq libusb-1.0-0-dev;
+        sudo apt-get install -qq libgtk-3-dev;
+        sudo apt-get install libglfw3-dev libglfw3;
+        # We force compiling with GCC 7 because the default installed GCC 9 compiled with LTO and gives an internal compiler error
+        sudo apt-get install gcc-7 g++-7;
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7;
+        python3 -m pip install numpy
+
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        ./pr_check.sh
+        cd ..
+        mkdir build
+
+    - name: Build
+      # Note: we force RSUSB because, on Linux, the context creation will fail on GHA:
+      #     (backend-v4l2.cpp:555) Cannot access /sys/class/video4linux)
+      # And, well, we don't need any specific platform for DDS!
+      shell: bash
+      run: |
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3) -DFORCE_RSUSB_BACKEND=true -DENABLE_SECURITY_FLAGS=true
+        cmake --build . -- -j4
+
+    - name: Client for realsense2-all
+      shell: bash
+      run: |
+        mkdir build/rs-all-client
+        cd build/rs-all-client
+        cmake ../../.github/workflows/rs-all-client -DBUILD_WITH_DDS=ON -DFORCE_RSUSB_BACKEND=ON
+        cmake --build . -- -j4
+        ./rs-all-client
+  
+
+  #--------------------------------------------------------------------------------
   U22_U24_SH_Py_DDS_CI:  # Ubuntu, Shared, Python, DDS, LibCI without executables
     runs-on: ${{ matrix.os }}
     strategy:
@@ -408,7 +499,7 @@ jobs:
     name: ${{ matrix.name }}_SH_Py_DDS_CI
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
           
     - name: Prebuild
       shell: bash
@@ -449,7 +540,7 @@ jobs:
     timeout-minutes: 60
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
 
     - name: Check_API
       shell: bash
@@ -483,7 +574,7 @@ jobs:
     runs-on: ubuntu-20.04   
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
 
     - name: Check_API
       shell: bash

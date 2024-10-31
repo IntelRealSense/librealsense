@@ -145,14 +145,14 @@ backend_device_factory::backend_device_factory( std::shared_ptr< context > const
               for( auto & device_removed : subtract_sets( old_list, new_list ) )
               {
                   devices_removed.push_back( device_removed );
-                  LOG_DEBUG( "Device disconnected: " << device_removed->get_address() );
+                  LOG_INFO( "Device disconnected: " << device_removed->get_address() );
               }
 
               std::vector< std::shared_ptr< device_info > > devices_added;
               for( auto & device_added : subtract_sets( new_list, old_list ) )
               {
                   devices_added.push_back( device_added );
-                  LOG_DEBUG( "Device connected: " << device_added->get_address() );
+                  LOG_INFO( "Device connected: " << device_added->get_address() );
               }
 
               if( devices_removed.size() + devices_added.size() )

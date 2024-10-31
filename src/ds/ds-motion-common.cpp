@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include "ds-motion-common.h"
 
@@ -22,22 +22,23 @@
 #include "ds-options.h"
 #include "ds-private.h"
 #include <src/stream.h>
-#include <src/fourcc.h>
 #include <src/metadata-parser.h>
 
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
 #include <cstddef>
 
 namespace librealsense
 {
     using namespace ds;
 
-    const std::map<uint32_t, rs2_format> fisheye_fourcc_to_rs2_format = {
-        {rs_fourcc('R','A','W','8'), RS2_FORMAT_RAW8},
-        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_RAW8},
+    const std::map<fourcc::value_type, rs2_format> fisheye_fourcc_to_rs2_format = {
+        {fourcc('R','A','W','8'), RS2_FORMAT_RAW8},
+        {fourcc('G','R','E','Y'), RS2_FORMAT_RAW8},
     };
-    const std::map<uint32_t, rs2_stream> fisheye_fourcc_to_rs2_stream = {
-        {rs_fourcc('R','A','W','8'), RS2_STREAM_FISHEYE},
-        {rs_fourcc('G','R','E','Y'), RS2_STREAM_FISHEYE},
+    const std::map<fourcc::value_type, rs2_stream> fisheye_fourcc_to_rs2_stream = {
+        {fourcc('R','A','W','8'), RS2_STREAM_FISHEYE},
+        {fourcc('G','R','E','Y'), RS2_STREAM_FISHEYE},
     };
 
     void fisheye_auto_exposure_roi_method::set(const region_of_interest& roi)

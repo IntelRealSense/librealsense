@@ -47,4 +47,5 @@ endif()
 option(BUILD_PC_STITCHING "Build pointcloud-stitching example" OFF)
 option(BUILD_WITH_DDS "Access camera devices through DDS topics (requires CMake 3.16.3)" OFF)
 option(BUILD_RS2_ALL "Build realsense2-all static bundle containing all realsense libraries (with BUILD_SHARED_LIBS=OFF)" ON)
+option(ENABLE_SECURITY_FLAGS "Enable additional compiler security flags to enhance the build's security" OFF)
  

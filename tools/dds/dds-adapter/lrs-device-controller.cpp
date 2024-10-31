@@ -733,12 +733,12 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             ( static_cast< long double >( f.get_timestamp() ) / 1e3 );
 
                         realdds::topics::image_msg image;
+                        image.set_height( video->get_image_header().width );
+                        image.set_width( video->get_image_header().width );
+                        image.set_timestamp( timestamp );
                         auto data = static_cast< const uint8_t * >( f.get_data() );
-                        image.raw_data.assign( data, data + f.get_data_size() );
-                        image.height = video->get_image_header().height;
-                        image.width = video->get_image_header().width;
-                        image.timestamp = timestamp;
-                        video->publish_image( std::move( image ) );
+                        image.raw().data().assign( data, data + f.get_data_size() );
+                        video->publish_image( image );
 
                         publish_frame_metadata( f, timestamp );
                     } );

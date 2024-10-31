@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "stream-interface.h"
@@ -9,7 +9,7 @@
 #include <functional>
 #include <memory>
 #include <vector>
-#include <ostream>
+#include <iosfwd>
 
 
 namespace librealsense {
@@ -38,14 +38,8 @@ public:
 using stream_profiles = std::vector< std::shared_ptr< stream_profile_interface > >;
 
 
-inline std::ostream & operator<<( std::ostream & os, const stream_profiles & profiles )
-{
-    for( auto & p : profiles )
-    {
-        os << rs2_format_to_string( p->get_format() ) << " " << rs2_stream_to_string( p->get_stream_type() ) << ", ";
-    }
-    return os;
-}
+std::ostream & operator<<( std::ostream &, const std::shared_ptr< stream_profile_interface > & );
+std::ostream & operator<<( std::ostream &, const stream_profiles & );
 
 
 }  // namespace librealsense

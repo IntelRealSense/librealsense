@@ -197,23 +197,27 @@ void dds_stream_server::close()
     _writer.reset();
 }
 
-void dds_video_stream_server::publish_image( topics::image_msg && image )
+void dds_video_stream_server::publish_image( topics::image_msg & image )
 {
     if( ! is_streaming() )
-        DDS_THROW( runtime_error, "stream '" + name() + "' cannot publish before start_streaming()" );
+        DDS_THROW( runtime_error, "stream '" << name() << "' cannot publish before start_streaming()" );
 
-    if( image.height != _image_header.height )
+    if( ! image.is_valid() )
+        DDS_THROW( runtime_error, "image is invalid" );
+
+    if( ! image.height() )
+        image.set_height( _image_header.height );
+    else if( image.height() != _image_header.height )
         DDS_THROW( runtime_error,
-                   "image height (" + std::to_string( image.height ) + ") does not match stream header ("
-                       + std::to_string( _image_header.height ) + ")" );
-    if( image.width != _image_header.width )
+                   "image height (" << image.height() << ") does not match stream header (" << _image_header.height << ")" );
+    if( ! image.width() )
+        image.set_width( _image_header.width );
+    else if( image.width() != _image_header.width )
         DDS_THROW( runtime_error,
-                   "image width (" + std::to_string( image.width ) + ") does not match stream header ("
-                       + std::to_string( _image_header.width ) + ")" );
+                   "image width (" << image.width() << ") does not match stream header (" << _image_header.width << ")" );
 
     // LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
-    sensor_msgs::msg::Image raw_image;
-    
+
     // "The frame_id in a message specifies the point of reference for data contained in that message."
     // 
     // I.e., the frame_id in a ROS header is the ID of the sensor collecting the data, and only relevant
@@ -223,22 +227,23 @@ void dds_video_stream_server::publish_image( topics::image_msg && image )
     //
     // For us, for now, we specify the name of the sensor and the device that owns it (TODO):
     //
-    raw_image.header().frame_id() = sensor_name();
+    if( image.frame_id().empty() )
+        image.set_frame_id( sensor_name() );
 
-    raw_image.header().stamp().sec() = image.timestamp.seconds;
-    raw_image.header().stamp().nanosec() = image.timestamp.nanosec;
+    if( image.encoding().empty() )
+        image.set_encoding( _image_header.encoding.to_string() );
+    else if( dds_video_encoding( image.encoding() ) != _image_header.encoding )
+        DDS_THROW( runtime_error,
+                   "image encoding (" << image.encoding() << ") does not match stream header ("
+                                      << _image_header.encoding.to_string() << ")" );
 
-    raw_image.encoding() = _image_header.encoding.to_string();
-    raw_image.height() = _image_header.height;
-    raw_image.width() = _image_header.width;
-    raw_image.step() = uint32_t( image.raw_data.size() / _image_header.height );
+    if( ! image.step() )
+        image.set_step( uint32_t( image.raw().data().size() / image.height() ) );
 
-    raw_image.is_bigendian() = false;
+    assert( ! image.is_bigendian() );
 
-    raw_image.data() = std::move( image.raw_data );
-
-    LOG_DEBUG( "publishing '" << name() << "' " << raw_image.encoding() << " frame @ " << time_to_string( image.timestamp ) );
-    DDS_API_CALL( _writer->get()->write( &raw_image ) );
+    LOG_DEBUG( "publishing '" << name() << "' " << image.encoding() << " frame @ " << time_to_string( image.timestamp() ) );
+    DDS_API_CALL( _writer->get()->write( &image.raw() ) );
 }
 
 

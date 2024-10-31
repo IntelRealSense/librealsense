@@ -79,6 +79,7 @@ def new_syncer( on_frame_ready=on_frame_ready, on_metadata_dropped=on_metadata_d
 def new_image_( id, width, height, bpp, timestamp=None ):
     i = dds.message.image()
     i.width = width
+    i.step = width * bpp
     i.height = height
     i.data = bytearray( width * height * bpp )
     i.timestamp = timestamp or time_stamp( id )
