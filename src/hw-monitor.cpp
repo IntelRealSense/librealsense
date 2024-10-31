@@ -233,7 +233,7 @@ namespace librealsense
                               const std::set< int32_t > * retry_error_codes ) const
     {
         command command(gvd_cmd);
-        hwmon_response response = hwmon_response::hwm_Unknown;
+        hwmon_response_type response;
         auto data = send( command, &response );
         // If we get an error code that match to the error code defined as require retry,
         // we will retry the command until it succeed or we reach a timeout
@@ -246,14 +246,14 @@ namespace librealsense
                 LOG_WARNING( "GVD not ready - retrying GET_GVD command" );
                 std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
                 data = send( command, &response );
-                if( response == hwm_Success )
+                if( response == _hwmon_response->success_value() )
                     break;
                 // If we failed after 'RETRIES' retries or it is less `RETRIES` and the error
                 // code is not in the retry list than , raise an exception
                 if( i >= ( RETRIES - 1 ) || retry_error_codes->find( response ) == retry_error_codes->end() )
                     throw io_exception( rsutils::string::from()
                                         << "error in querying GVD, error:"
-                                        << hwmon_error2str( response ) );
+                                        << _hwmon_response->hwmon_error2str( response ) );
                 
             }
         }
