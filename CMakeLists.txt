@@ -29,6 +29,9 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
 
+# include security flags helper functions
+include(CMake/security_flags_helper_functions.cmake)
+
 # include librealsense general configuration
 include(CMake/global_config.cmake)
 
@@ -60,7 +63,7 @@ target_link_libraries( ${LRS_TARGET} PUBLIC rsutils )
 
 if(BUILD_WITH_DDS)
     if (CMAKE_SYSTEM MATCHES "Windows" OR CMAKE_SYSTEM MATCHES "Linux")
-
+        
         message(STATUS "Building with FastDDS")
         include(CMake/external_foonathan_memory.cmake)
         include(CMake/external_fastdds.cmake)

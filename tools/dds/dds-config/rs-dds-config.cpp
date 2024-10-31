@@ -125,7 +125,11 @@ bool find_device( rs2::context const & ctx,
                 continue;
             if( ! devices_looked_at.insert( sn ).second )
                 continue;  // insert failed: device was already looked at
-            LOG_DEBUG( "trying " << possible_device.get_description() );
+            if( possible_device.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
+                LOG_DEBUG( "trying " << possible_device.get_description() << ", FW version "
+                           << possible_device.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
+            else
+                LOG_DEBUG( "trying " << possible_device.get_description() );
             config = get_eth_config( possible_device, golden );
             if( device )
                 throw std::runtime_error( "More than one device is available; please use --serial-number" );
@@ -221,7 +225,11 @@ try
 
         throw std::runtime_error( "No device found supporting Eth" );
     }
-    INFO( "Device: " << device.get_description() );
+    if( device.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
+        INFO( "Device: " << device.get_description() << ", FW version "
+                         << device.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
+    else
+        INFO( "Device: " << device.get_description() );
 
     eth_config requested( current );
     if( golden || factory_reset_arg.isSet() || reset_arg.isSet() )

@@ -41,4 +41,8 @@ function(get_foonathan_memory)
 
 endfunction()
 
+pop_security_flags()
+
 get_foonathan_memory()
+
+push_security_flags()

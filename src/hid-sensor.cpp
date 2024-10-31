@@ -1,24 +1,27 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #include "hid-sensor.h"
 #include "device.h"
 #include "stream.h"
+#include "image.h"
 #include "global_timestamp_reader.h"
 #include "metadata.h"
 #include "platform/stream-profile-impl.h"
-#include "fourcc.h"
 #include <src/metadata-parser.h>
 #include <src/core/time-service.h>
+
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
 
 
 namespace librealsense {
 
 
-static const std::map< rs2_stream, uint32_t > stream_and_fourcc
-    = { { RS2_STREAM_GYRO,  rs_fourcc( 'G', 'Y', 'R', 'O' ) },
-        { RS2_STREAM_ACCEL, rs_fourcc( 'A', 'C', 'C', 'L' ) },
-        { RS2_STREAM_GPIO,  rs_fourcc( 'G', 'P', 'I', 'O' ) } };
+static const std::map< rs2_stream, fourcc::value_type > stream_and_fourcc
+    = { { RS2_STREAM_GYRO,  fourcc( 'G', 'Y', 'R', 'O' ) },
+        { RS2_STREAM_ACCEL, fourcc( 'A', 'C', 'C', 'L' ) },
+        { RS2_STREAM_GPIO,  fourcc( 'G', 'P', 'I', 'O' ) } };
 
 /*For gyro sensitivity - FW gets 0 for 61 millidegree/s/LSB resolution
  0.1 for 30.5 millidegree/s/LSB 
@@ -145,7 +148,7 @@ void hid_sensor::close()
         std::lock_guard< std::mutex > lock( _configure_lock );
         _configured_profiles.clear();
         _is_configured_stream.clear();
-        _is_configured_stream.resize( RS2_STREAM_COUNT );
+        _is_configured_stream.assign(RS2_STREAM_COUNT, false);
     }
     _is_opened = false;
     if( Is< librealsense::global_time_interface >( _owner ) )

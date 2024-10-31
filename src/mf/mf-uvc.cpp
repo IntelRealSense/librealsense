@@ -30,6 +30,8 @@ The library will be compiled without the metadata support!\n")
 #include <src/backend.h>  // monotonic_to_realtime
 
 #include <rsutils/string/from.h>
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
 
 #include "Shlwapi.h"
 #include <Windows.h>
@@ -979,10 +981,13 @@ namespace librealsense
                 throw std::runtime_error("Device must be powered to query supported profiles!");
 
             std::vector<stream_profile> results;
-            foreach_profile([&results](const mf_profile& mfp, CComPtr<IMFMediaType> media_type, bool& quit)
-            {
-                results.push_back(mfp.profile);
-            });
+            foreach_profile(
+                [&results]( const mf_profile & mfp, CComPtr< IMFMediaType > media_type, bool & quit )
+                {
+                    //LOG_DEBUG( mfp.profile.width << 'x' << mfp.profile.height << ' ' << fourcc( mfp.profile.format )
+                    //                             << " @ " << mfp.profile.fps << " Hz" );
+                    results.push_back( mfp.profile );
+                } );
 
             return results;
         }

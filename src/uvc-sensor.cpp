@@ -1,9 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #include "uvc-sensor.h"
 #include "device.h"
 #include "stream.h"
+#include "image.h"
 #include "global_timestamp_reader.h"
 #include "core/video-frame.h"
 #include "core/notification.h"

@@ -20,7 +20,7 @@ Package is available at https://pypi.python.org/pypi/pyrealsense2
 To install the package, run:
 > `pip install pyrealsense2`
 
-Windows users can install the RealSense SDK 2.0 from the release tab to get pre-compiled binaries of the wrapper, for both x86 and x64 architectures. (Python versions 3.8, 3.9, 3.10, 3.11, 3.12 are supported).
+Windows users can install the RealSense SDK 2.0 from the release tab to get pre-compiled binaries of the wrapper, for both x86 and x64 architectures. (Python versions 3.9, 3.10, 3.11, 3.12 are supported).
 
 > **Note:**
 > Python 3.7 distributables can be found for pyrealsense2 versions <= 2.55.1

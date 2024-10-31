@@ -67,7 +67,10 @@ function(get_fastdds)
     message(CHECK_PASS "Done")
 endfunction()
 
+
+pop_security_flags()
+
 # Trigger the FastDDS build
 get_fastdds()
 
-
+push_security_flags()

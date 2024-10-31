@@ -15,6 +15,7 @@
 #include <src/depth-mapping-sensor.h>
 #include <src/points.h>
 #include <src/labeled-points.h>
+#include <src/context.h>
 
 #include <rsutils/string/from.h>
 #include <cstring>

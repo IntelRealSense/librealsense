@@ -92,6 +92,8 @@ void dds_topic_writer::override_qos_from_json( qos & wqos, rsutils::json const &
     // Default values should be set before we're called:
     // All we do here is override those - if specified!
     override_reliability_qos_from_json( wqos.reliability(), qos_settings.nested( "reliability" ) );
+    if( wqos.reliability().kind == eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS )
+        qos_settings.nested( "heartbeat-period" ).get_ex( wqos.reliable_writer_qos().times.heartbeatPeriod );
     override_durability_qos_from_json( wqos.durability(), qos_settings.nested( "durability" ) );
     override_history_qos_from_json( wqos.history(), qos_settings.nested( "history" ) );
     override_liveliness_qos_from_json( wqos.liveliness(), qos_settings.nested( "liveliness" ) );
