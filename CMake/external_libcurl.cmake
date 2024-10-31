@@ -1,4 +1,7 @@
 if(CHECK_FOR_UPDATES)
+
+    pop_security_flags() # remove security flags
+    
     include(ExternalProject)
     message(STATUS "Building libcurl enabled")
     
@@ -60,4 +63,5 @@ if(CHECK_FOR_UPDATES)
         endif()
     endif()
 
+    push_security_flags()
 endif() #CHECK_FOR_UPDATES

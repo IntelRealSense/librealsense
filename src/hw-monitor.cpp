@@ -144,7 +144,7 @@ namespace librealsense
     }
 
     std::vector< uint8_t >
-    hw_monitor::send( command const & cmd, hwmon_response * p_response, bool locked_transfer ) const
+    hw_monitor::send( command const & cmd, hwmon_response_type * p_response, bool locked_transfer ) const
     {
         uint32_t const opCodeXmit = cmd.cmd;
 
@@ -171,7 +171,7 @@ namespace librealsense
 
         // Error/exit conditions
         if (p_response)
-            *p_response = hwm_Success;
+            *p_response = _hwmon_response->success_value();
         if( ! cmd.require_response )
             return {};
 
@@ -180,7 +180,7 @@ namespace librealsense
             details.receivedOpcode[1], details.receivedOpcode[0]);
         if (opCodeAsUint32 != opCodeXmit)
         {
-            auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
+            auto err_type = static_cast<hwmon_response_type>(opCodeAsUint32);
             //LOG_DEBUG(err);  // too intrusive; may be an expected error
             if( p_response )
             {
@@ -213,16 +213,16 @@ namespace librealsense
         return result;
     }
 
-    std::string hwmon_error_string( command const & cmd, hwmon_response e )
+    std::string hw_monitor::hwmon_error_string( command const & cmd, hwmon_response_type response_code ) const
     {
-        auto str = hwmon_error2str( e );
+        auto str = _hwmon_response->hwmon_error2str(response_code);
         std::ostringstream err;
         err << "hwmon command 0x" << std::hex << unsigned(cmd.cmd) << '(';
         err << ' ' << cmd.param1;
         err << ' ' << cmd.param2;
         err << ' ' << cmd.param3;
         err << ' ' << cmd.param4 << std::dec;
-        err << " ) failed (response " << e << "= " << ( str.empty() ? "unknown" : str ) << ")";
+        err << " ) failed (response " << response_code << "= " << ( str.empty() ? "unknown" : str ) << ")";
         return err.str();
     }
 
@@ -233,7 +233,7 @@ namespace librealsense
                               const std::set< int32_t > * retry_error_codes ) const
     {
         command command(gvd_cmd);
-        hwmon_response response = hwmon_response::hwm_Unknown;
+        hwmon_response_type response;
         auto data = send( command, &response );
         // If we get an error code that match to the error code defined as require retry,
         // we will retry the command until it succeed or we reach a timeout
@@ -246,14 +246,14 @@ namespace librealsense
                 LOG_WARNING( "GVD not ready - retrying GET_GVD command" );
                 std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
                 data = send( command, &response );
-                if( response == hwm_Success )
+                if( response == _hwmon_response->success_value() )
                     break;
                 // If we failed after 'RETRIES' retries or it is less `RETRIES` and the error
                 // code is not in the retry list than , raise an exception
                 if( i >= ( RETRIES - 1 ) || retry_error_codes->find( response ) == retry_error_codes->end() )
                     throw io_exception( rsutils::string::from()
                                         << "error in querying GVD, error:"
-                                        << hwmon_error2str( response ) );
+                                        << _hwmon_response->hwmon_error2str( response ) );
                 
             }
         }

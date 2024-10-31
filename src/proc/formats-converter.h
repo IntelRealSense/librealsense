@@ -43,6 +43,8 @@ namespace librealsense
         rs2_frame_callback_sptr get_frames_callback() const { return _converted_frames_callback; }
         void convert_frame( frame_holder & f );
 
+        stream_profiles const & get_source_profiles_from_target( std::shared_ptr< stream_profile_interface > const & target_profile ) const;
+
     protected:
         void clear_active_cache();
         void update_target_profiles_data( const stream_profiles & from_profiles );

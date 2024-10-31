@@ -57,4 +57,5 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 17. [Raspberry Pi Handheld 3D Scanner](https://eleccelerator.com/pi-handheld-3d-scanner/) by [Frank Zhao](https://github.com/frank26080115)
 18. [Erwhi Hedgehog](https://gbr1.github.io/erwhi_hedgehog.html) by [Giovanni Bruno](https://github.com/gbr1) - Open-Source Hardware and Software design featuring Intel RealSense, UP-Squared and Intel Movidius technologies
 19. [Archery Tower Defence Game](https://github.com/saadisaadi1/Handshot-Tower-Defence) by [Saadi Saadi](https://github.com/saadisaadi1) and [Ali Haj](mailto:alihaj00@outlook.com) - This game uses RealSense camera to control in-game movements. The game was developed as a one semester students project for the Technion Institute of Technology
+20. [Real-Time Drowning Detection](https://github.com/talaSaba/intelRealsenseProject) by [Tala Saba](https://github.com/talaSaba) and [Raneen Assy](https://github.com/raneen28) - This project is designed to detect a potential drowning incident in real-time using a Intel RealSense camera. The game was developed as a one semester students project for the Technion Institute of Technology
 

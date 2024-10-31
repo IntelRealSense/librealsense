@@ -18,9 +18,10 @@
 #include "stream.h"
 #include "backend.h"
 #include "platform/platform-utils.h"
-#include <src/fourcc.h>
 #include <src/metadata-parser.h>
 #include <src/core/advanced_mode.h>
+#include <rsutils/type/fourcc.h>
+using rs_fourcc = rsutils::type::fourcc;
 
 namespace librealsense
 {

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include "metadata-parser.h"
 #include "metadata.h"
@@ -24,7 +24,8 @@
 #include "proc/y8i-to-y8y8.h"
 #include "proc/y16i-to-y10msby10msb.h"
 
-#include <src/fourcc.h>
+#include <rsutils/type/fourcc.h>
+using rs_fourcc = rsutils::type::fourcc;
 
 #include <rsutils/string/hexdump.h>
 #include <rsutils/version.h>
@@ -453,13 +454,13 @@ namespace librealsense
             _hw_monitor = std::make_shared<hw_monitor_extended_buffers>(
                 std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>( *raw_sensor, depth_xu, DS5_HWMONITOR ),
-                    raw_sensor));
+                    raw_sensor), std::make_shared<ds::d500_hwmon_response>());
         }
         else
         {
             _hw_monitor = std::make_shared< hw_monitor_extended_buffers >(
                 std::make_shared< locked_transfer >( get_backend()->create_usb_device( group.usb_devices.front() ),
-                                                     raw_sensor ) );
+                                                     raw_sensor ), std::make_shared<ds::d500_hwmon_response>());
         }
 
         _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor);

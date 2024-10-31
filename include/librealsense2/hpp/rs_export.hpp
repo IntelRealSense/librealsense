@@ -81,7 +81,7 @@ namespace rs2
             bool use_normals = get_option(OPTION_PLY_NORMALS) != 0;
             const auto verts = p.get_vertices();
             const auto texcoords = p.get_texture_coordinates();
-            const uint8_t* texture_data;
+            const uint8_t* texture_data = nullptr;
             if (use_texcoords) // texture might be on the gpu, get pointer to data before for-loop to avoid repeated access
                 texture_data = reinterpret_cast<const uint8_t*>(color.get_data());
             std::vector<rs2::vertex> new_verts;

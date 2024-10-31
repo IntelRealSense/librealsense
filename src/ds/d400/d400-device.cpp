@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2016-24 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/h/rs_internal.h>
 #include <src/device.h>
@@ -19,7 +19,6 @@
 #include "d400-color.h"
 #include "d400-nonmonochrome.h"
 #include <src/platform/platform-utils.h>
-#include <src/fourcc.h>
 
 #include <src/ds/features/amplitude-factor-feature.h>
 #include <src/ds/features/emitter-frequency-feature.h>
@@ -37,6 +36,9 @@
 #include <common/fw/firmware-version.h>
 #include <src/fw-update/fw-update-unsigned.h>
 
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
+
 #include <rsutils/string/hexdump.h>
 #include <regex>
 #include <iterator>
@@ -52,36 +54,36 @@ constexpr bool hw_mon_over_xu = false;
 
 namespace librealsense
 {
-    std::map<uint32_t, rs2_format> d400_depth_fourcc_to_rs2_format = {
-        {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
-        {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
-        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
-        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_Y8},
-        {rs_fourcc('Y','8','I',' '), RS2_FORMAT_Y8I},
-        {rs_fourcc('W','1','0',' '), RS2_FORMAT_W10},
-        {rs_fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
-        {rs_fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
-        {rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
-        {rs_fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
-        {rs_fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
-        {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
-        {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
+    std::map<fourcc::value_type, rs2_format> d400_depth_fourcc_to_rs2_format = {
+        {fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
+        {fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
+        {fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
+        {fourcc('G','R','E','Y'), RS2_FORMAT_Y8},
+        {fourcc('Y','8','I',' '), RS2_FORMAT_Y8I},
+        {fourcc('W','1','0',' '), RS2_FORMAT_W10},
+        {fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
+        {fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
+        {fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
+        {fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
+        {fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
+        {fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
+        {fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
 
     };
-    std::map<uint32_t, rs2_stream> d400_depth_fourcc_to_rs2_stream = {
-        {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
-        {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
-        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
-        {rs_fourcc('G','R','E','Y'), RS2_STREAM_INFRARED},
-        {rs_fourcc('Y','8','I',' '), RS2_STREAM_INFRARED},
-        {rs_fourcc('W','1','0',' '), RS2_STREAM_INFRARED},
-        {rs_fourcc('Y','1','6',' '), RS2_STREAM_INFRARED},
-        {rs_fourcc('Y','1','2','I'), RS2_STREAM_INFRARED},
-        {rs_fourcc('R','G','B','2'), RS2_STREAM_INFRARED},
-        {rs_fourcc('Z','1','6',' '), RS2_STREAM_DEPTH},
-        {rs_fourcc('Z','1','6','H'), RS2_STREAM_DEPTH},
-        {rs_fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
-        {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR}
+    std::map<fourcc::value_type, rs2_stream> d400_depth_fourcc_to_rs2_stream = {
+        {fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
+        {fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
+        {fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
+        {fourcc('G','R','E','Y'), RS2_STREAM_INFRARED},
+        {fourcc('Y','8','I',' '), RS2_STREAM_INFRARED},
+        {fourcc('W','1','0',' '), RS2_STREAM_INFRARED},
+        {fourcc('Y','1','6',' '), RS2_STREAM_INFRARED},
+        {fourcc('Y','1','2','I'), RS2_STREAM_INFRARED},
+        {fourcc('R','G','B','2'), RS2_STREAM_INFRARED},
+        {fourcc('Z','1','6',' '), RS2_STREAM_DEPTH},
+        {fourcc('Z','1','6','H'), RS2_STREAM_DEPTH},
+        {fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
+        {fourcc('M','J','P','G'), RS2_STREAM_COLOR}
     };
 
     std::vector<uint8_t> d400_device::send_receive_raw_data(const std::vector<uint8_t>& input)
@@ -315,7 +317,7 @@ namespace librealsense
         void init_hdr_config(const option_range& exposure_range, const option_range& gain_range)
         {
             _hdr_cfg = std::make_shared<hdr_config>(*(_owner->_hw_monitor), get_raw_sensor(),
-                exposure_range, gain_range);
+                exposure_range, gain_range, ds::d400_hwmon_response::opcodes::NO_DATA_TO_RETURN);
         }
 
         std::shared_ptr<hdr_config> get_hdr_config() { return _hdr_cfg; }
@@ -550,7 +552,7 @@ namespace librealsense
             _hw_monitor = std::make_shared<hw_monitor>(
                 std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>( *raw_sensor, depth_xu, DS5_HWMONITOR ),
-                    raw_sensor ) );
+                    raw_sensor ), std::make_shared<ds::d400_hwmon_response>());
         }
         else
         {
@@ -558,7 +560,7 @@ namespace librealsense
                 _hw_monitor = std::make_shared< hw_monitor >(
                     std::make_shared< locked_transfer >(
                         get_backend()->create_usb_device( group.usb_devices.front() ),
-                        raw_sensor ) );
+                        raw_sensor ), std::make_shared<ds::d400_hwmon_response>());
         }
         set_hw_monitor_for_auto_calib(_hw_monitor);
 
@@ -839,7 +841,7 @@ namespace librealsense
             if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
             {
                 bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100"));
-                auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, is_fw_version_using_id);
+                auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, is_fw_version_using_id, ds::d400_hwmon_response::opcodes::NO_DATA_TO_RETURN);
                 auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>( _hw_monitor, ds::LASERONCONST, ds::LASERONCONST );
 
                 if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER))
@@ -1088,15 +1090,24 @@ namespace librealsense
         // attributes of md_mipi_depth_control structure
         auto md_prop_offset = offsetof(metadata_mipi_depth_raw, depth_mode);
 
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
-                                       make_attribute_parser(&md_mipi_depth_mode::hw_timestamp,
-                                                             md_mipi_depth_control_attributes::hw_timestamp_attribute,
-                                                             md_prop_offset));
+        // timestamp metadata field alignment with FW was implemented on FW version 5.17.0.0
+        if ( _fw_version >= firmware_version( "5.17.0.0" ) ) 
+        {
+            // optical_timestamp contains value of exposure/2
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
+                                       make_rs400_sensor_ts_parser(make_uvc_header_parser(&platform::uvc_header::timestamp),
+                                                                   make_attribute_parser(&md_mipi_depth_mode::optical_timestamp,
+                                                                                         md_mipi_depth_control_attributes::optical_timestamp_attribute,
+                                                                                         md_prop_offset)));
 
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
-                                       make_attribute_parser(&md_mipi_depth_mode::optical_timestamp,
-                                                             md_mipi_depth_control_attributes::optical_timestamp_attribute,
-                                                             md_prop_offset));
+        }
+        else  // keep backward compatible with previous behavior
+        {  
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
+                                           make_attribute_parser(&md_mipi_depth_mode::optical_timestamp,
+                                                                 md_mipi_depth_control_attributes::optical_timestamp_attribute,
+                                                                 md_prop_offset));
+        }
 
         depth_sensor.register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
                                        make_attribute_parser(&md_mipi_depth_mode::exposure_time,

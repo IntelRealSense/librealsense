@@ -46,7 +46,7 @@
         return RS2_SENSOR_MODE_QVGA;
     else if ((width == 640 && height == 480) || (height == 640 && width == 480))
         return RS2_SENSOR_MODE_VGA;
-    else if ((width == 1024 && height == 768) || (height == 768 && width == 1024))
+    else if ((width == 1024 && height == 768) || (height == 1024 && width == 768))
         return RS2_SENSOR_MODE_XGA;
     else
         return RS2_SENSOR_MODE_COUNT;

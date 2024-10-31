@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2016-24 Intel Corporation. All Rights Reserved.
 
 #include <mutex>
 #include <chrono>
@@ -10,6 +10,7 @@
 #include "device.h"
 #include "image.h"
 #include "metadata-parser.h"
+#include "context.h"
 
 #include <src/core/matcher-factory.h>
 

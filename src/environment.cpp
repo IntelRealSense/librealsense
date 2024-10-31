@@ -133,7 +133,7 @@ namespace librealsense
         }
 
         if (!invalid_ids.empty())
-            LOG_INFO("Found " << invalid_ids.size() << " unreachable streams, " << std::dec << counter << " extrinsics deleted");
+            LOG_DEBUG("Found " << invalid_ids.size() << " unreachable streams, " << std::dec << counter << " extrinsics deleted");
     }
 
     int extrinsics_graph::find_stream_profile(const stream_interface& p, bool add_if_not_there)

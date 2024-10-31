@@ -73,6 +73,7 @@ if not the SDK will use a timer polling approach which is less sensitive for dev
 
 2. Run Intel Realsense permissions script from _librealsense2_ root directory:
    ```sh
+   cd librealsense
    ./scripts/setup_udev_rules.sh
    ```
    Notice: You can always remove permissions by running: `./scripts/setup_udev_rules.sh --uninstall`
