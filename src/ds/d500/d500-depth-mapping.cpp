@@ -15,7 +15,8 @@
 #include "ds/ds-timestamp.h"
 #include "ds/ds-options.h"
 #include <src/backend.h>
-#include <src/fourcc.h>
+#include <rsutils/type/fourcc.h>
+using rs_fourcc = rsutils::type::fourcc;
 #include "stream.h"
 
 #include "platform/platform-utils.h"
