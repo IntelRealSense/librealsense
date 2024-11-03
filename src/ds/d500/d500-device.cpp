@@ -382,7 +382,8 @@ namespace librealsense
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
-          _color_stream(nullptr)
+          _color_stream(nullptr),
+          _hw_monitor_response(std::make_shared<ds::d500_hwmon_response>())
     {
         _depth_device_idx
             = add_sensor( create_depth_device( dev_info->get_context(), dev_info->get_group().uvc_devices ) );
@@ -407,13 +408,13 @@ namespace librealsense
             _hw_monitor = std::make_shared<hw_monitor_extended_buffers>(
                 std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>( *raw_sensor, depth_xu, DS5_HWMONITOR ),
-                    raw_sensor), std::make_shared<ds::d500_hwmon_response>());
+                    raw_sensor), _hw_monitor_response);
         }
         else
         {
             _hw_monitor = std::make_shared< hw_monitor_extended_buffers >(
                 std::make_shared< locked_transfer >( get_backend()->create_usb_device( group.usb_devices.front() ),
-                                                     raw_sensor ), std::make_shared<ds::d500_hwmon_response>());
+                                                     raw_sensor ), _hw_monitor_response);
         }
 
         _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor);
@@ -455,8 +456,19 @@ namespace librealsense
         bool advanced_mode = false;
         bool usb_modality = true;
         group_multiple_fw_calls(depth_sensor, [&]() {
+            
+            // D500 device can get enumerated before the whole HW in the camera is ready.
+            // Since GVD gather all information from all the HW, it might need some more time to finish all hand shakes.
+            // on this case it will return HW_NOT_READY error code.
+            // Note: D500 error codes list is different than D400.
 
-            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::fw_cmd::GVD);
+            const std::set< int32_t > gvd_retry_errors{ _hw_monitor_response->HW_NOT_READY };
+
+            _hw_monitor->get_gvd( gvd_buff.size(),
+                                  gvd_buff.data(),
+                                  ds::fw_cmd::GVD,
+                                  &gvd_retry_errors );
+
             get_gvd_details(gvd_buff, &gvd_parsed_fields);
             
             _device_capabilities = ds_caps::CAP_ACTIVE_PROJECTOR | ds_caps::CAP_RGB_SENSOR | ds_caps::CAP_IMU_SENSOR |
