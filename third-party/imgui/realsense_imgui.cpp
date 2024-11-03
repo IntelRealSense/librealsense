@@ -65,16 +65,17 @@ bool ImGui::SliderIntWithSteps(const char* label, int* v, int v_min, int v_max, 
     if (!display_format)
         display_format = "%d";
 
-    int tmp_val = *v;
-    bool value_changed = ImGui::SliderInt(label, &tmp_val, v_min, v_max, display_format);
+    if (!display_format)
+        display_format = "%.0f";
 
-    // Round the actual slider value to the cloasest bound interval
-    if (v_step > 1)
-        tmp_val -= (tmp_val - v_min) % v_step;
-    *v = tmp_val;
+    float v_f = (float)*v;
+    bool value_changed = SliderFloat(label, &v_f, (float)v_min, (float)v_max, display_format, 1.0f);
+
+    *v = (int)v_f;
 
     return value_changed;
 }
+
 
 // Parse display precision back from the display format string
 int ImGui::ParseFormatPrecision(const char* fmt, int default_precision)
@@ -163,7 +164,6 @@ IMGUI_API bool ImGui::CustomComboBox(const char* label, int* current_item, const
 
     // the preview value - selected item
     const char* preview_value = (*current_item >= 0 && *current_item < items_count) ? items[*current_item] : "Select an item";
-
     if (ImGui::BeginCombo(label, ""))
     {
         //insert combobox items
@@ -196,4 +196,15 @@ IMGUI_API bool ImGui::CustomComboBox(const char* label, int* current_item, const
 
     ImGui::PopItemWidth();
     return value_changed;
+}
+
+IMGUI_API void ImGui::SizedToolTip(const char* text)
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+    const ImVec2 text_size = ImGui::CalcTextSize(text);
+    ImGui::SetNextWindowSize(ImVec2(text_size.x + 10 , text_size.y + 10));
+    ImGui::BeginTooltipEx(ImGuiTooltipFlags_None, ImGuiWindowFlags_NoScrollbar);
+    ImGui::TextUnformatted(text);
+    ImGui::EndTooltip();
+    ImGui::PopStyleVar(1);
 }

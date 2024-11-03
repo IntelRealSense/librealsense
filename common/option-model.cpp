@@ -257,7 +257,8 @@ bool option_model::draw_combobox( notifications_model & model,
     if( new_line )
         ImGui::SetCursorPosX( combo_position_x );
 
-    ImGui::PushItemWidth( new_line ? -1.f : 100.f );
+    float combo_width = 315 - combo_position_x;
+    ImGui::PushItemWidth( new_line ? combo_width : 100.f );
 
     int selected;
     std::vector< const char * > labels = get_combo_labels( &selected );
@@ -265,7 +266,7 @@ bool option_model::draw_combobox( notifications_model & model,
 
     try
     {
-        ImGui::PushItemWidth(184); // Set the width for the combo box itself
+       ImGui::PushItemWidth(combo_width); // Set the width for the combo box itself
         if( ImGui::CustomComboBox( id.c_str(), &selected, labels.data(), static_cast< int >( labels.size() ) ) )
         {
             float tmp_value = range.min + range.step * selected;
@@ -394,8 +395,9 @@ bool option_model::draw_slider( notifications_model & model,
         }
     }
 
-    ImGui::PushItemWidth( -1 );
-
+    ImGui::PushItemWidth(245);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, black);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, black);
     try
     {
         if( read_only )
@@ -503,7 +505,7 @@ bool option_model::draw_slider( notifications_model & model,
                                            static_cast< int >( range.min ),
                                            static_cast< int >( range.max ),
                                            static_cast< int >( range.step ),
-                                           "%.0f" ) )  // integers don't have any precision
+                                           "%.3f" ) )  // integers don't have any precision
             {
                 // TODO: Round to step?
                 slider_clicked = slider_selected( opt,
@@ -582,7 +584,7 @@ bool option_model::draw_slider( notifications_model & model,
     {
         error_message = error_to_string( e );
     }
-
+    ImGui::PopStyleColor(2);
     return slider_clicked;
 }
 

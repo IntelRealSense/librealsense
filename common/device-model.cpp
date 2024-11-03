@@ -2461,7 +2461,7 @@ namespace rs2
                 {
                     bool stop_recording = false;
 
-                    ImGui::SetCursorPos({ windows_width - 60, pos.y + 3 });
+                    ImGui::SetCursorPos({ windows_width - 60, pos.y + 7 });
                     ImGui_ScopePushFont(window.get_font());
 
                     ImGui_ScopePushStyleColor(ImGuiCol_Button, sensor_bg);
@@ -2548,13 +2548,8 @@ namespace rs2
                             }
                             if (ImGui::IsItemHovered())
                             {
-                                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
-                                ImGui::SetNextWindowSize(ImVec2(255, 30));
                                 window.link_hovered();
-                                ImGui::BeginTooltipEx(ImGuiTooltipFlags_None,ImGuiWindowFlags_NoScrollbar);
-                                ImGui::TextUnformatted("Start streaming data from this sensor");
-                                ImGui::EndTooltip();
-                                ImGui::PopStyleVar();
+                                ImGui::SizedToolTip("Start streaming data from this sensor");
                             }
                         }
                     }
@@ -2588,13 +2583,8 @@ namespace rs2
                         }
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
-                            ImGui::SetNextWindowSize(ImVec2(310, 30));
                             window.link_hovered();
-                            ImGui::BeginTooltipEx(ImGuiTooltipFlags_None, ImGuiWindowFlags_NoScrollbar);
-                            ImGui::TextUnformatted("Stop streaming data from selected sub-device");
-                            ImGui::EndTooltip();
-                            ImGui::PopStyleVar();
+                            ImGui::SizedToolTip("Stop streaming data from selected sub-device");;
                         }
                     }
 
@@ -2628,6 +2618,7 @@ namespace rs2
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 10, 10 });
             ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
             ImGuiTreeNodeFlags flags{};
+            ImGui::AlignTextToFramePadding();
             if (show_depth_only) flags = ImGuiTreeNodeFlags_DefaultOpen;
             if (ImGui::TreeNodeEx(label.c_str(), flags))
             {
@@ -2776,7 +2767,7 @@ namespace rs2
                                 }
                                 if (ImGui::IsItemHovered())
                                 {
-                                    ImGui::SetTooltip("Enable post-processing filters");
+                                    ImGui::SizedToolTip("Enable post-processing filters");
                                     window.link_hovered();
                                 }
                             }
@@ -2803,7 +2794,7 @@ namespace rs2
                                 }
                                 if (ImGui::IsItemHovered())
                                 {
-                                    ImGui::SetTooltip("Disable post-processing filters");
+                                    ImGui::SizedToolTip("Disable post-processing filters");
                                     window.link_hovered();
                                 }
                             }
@@ -2886,7 +2877,7 @@ namespace rs2
                                             if (ImGui::IsItemHovered())
                                             {
                                                 label = rsutils::string::from() << "Enable " << pb->get_name() << " post-processing filter";
-                                                ImGui::SetTooltip("%s", label.c_str());
+                                                ImGui::SizedToolTip(label.c_str());
                                                 window.link_hovered();
                                             }
                                         }
@@ -2908,7 +2899,7 @@ namespace rs2
                                             {
                                                 label = rsutils::string::from()
                                                      << "Disable " << pb->get_name() << " post-processing filter";
-                                                ImGui::SetTooltip("%s", label.c_str());
+                                                ImGui::SizedToolTip(label.c_str());
                                                 window.link_hovered();
                                             }
                                         }
@@ -2947,7 +2938,7 @@ namespace rs2
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(3);
 
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10);
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY());
         }
 
         for (auto&& sub : subdevices)

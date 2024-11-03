@@ -37,6 +37,7 @@ namespace ImGui
     //IMGUI_API bool          SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_min, float v_max, float power, int decimal_precision, ImGuiSliderFlags flags, bool render_bg);
     IMGUI_API float         RoundScalar(float value, int decimal_precision);
     IMGUI_API bool          CustomComboBox(const char* label, int* current_item, const char* const items[], int items_count);
+    IMGUI_API void          SizedToolTip(const char* text);
 }
 #define CONCAT_(x,y) x##y
 #define CONCAT(x,y) CONCAT_(x,y)

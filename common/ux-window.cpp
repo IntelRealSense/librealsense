@@ -216,11 +216,6 @@ namespace rs2
    
     void ux_window::open_window()
     {
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-        io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;   // added in order to prevents cursor chang when interacting with other element (when nedded remove the flag accordingly)
 
         if (_win)
         {
@@ -228,6 +223,7 @@ namespace rs2
             if (_use_glsl_proc) rs2::gl::shutdown_processing();
 
             ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
+            ImGui_ImplOpenGL3_Shutdown();
             ImGui_ImplGlfw_Shutdown();
             ImGui::DestroyContext();
             glfwDestroyWindow(_win);
@@ -379,6 +375,11 @@ namespace rs2
 
         setup_icon();
 
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;   // added in order to prevents cursor chang when interacting with other element (when nedded remove the flag accordingly)
         ImGui_ImplGlfw_InitForOpenGL(_win, false);
         ImGui_ImplOpenGL3_Init();
 
@@ -592,7 +593,7 @@ namespace rs2
         while (res && (!_app_ready || _splash_timer.get_elapsed_ms() < 2000.f))
         {
             res = !glfwWindowShouldClose(_win);
-           // glfwPollEvents();
+            glfwPollEvents();
 
             begin_frame();
 
