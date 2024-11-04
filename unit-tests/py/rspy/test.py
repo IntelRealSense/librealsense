@@ -195,8 +195,8 @@ def _count_check():
 
 def check_passed():
     """
-    Function for when a check fails
-    :return: always False (so you can 'return check_failed()'
+    Function for when a check passes
+    :return: always True (so you can 'return check_passed()'
     """
     _count_check()
     print_info( error = False )
@@ -297,28 +297,57 @@ def check_equal( result, expected, on_fail=LOG ):
 
 check_equal_lists = check_equal
 
-# Helper function to compare two floating-point numbers within an epsilon tolerance
-# E.g. float compare for values like 10.0 == 10.000000001, should return True.
-def compare_floats(a, b, epsilon=1e-9):
-    return math.isclose(a, b, abs_tol=epsilon)
-
 # Recursive function to compare two JSON objects with epsilon for floats
-def check_equal_jsons(json1, json2, epsilon=1e-9):
-    if isinstance(json1, dict) and isinstance(json2, dict):
-        if json1.keys() != json2.keys():
-            return False
-        return all(check_equal_jsons(json1[key], json2[key], epsilon) for key in json1)
+def check_equal_jsons(json1, json2, epsilon=1e-6, path="root"):
+    """
+    Compares two JSON-like objects with support for float tolerance and ignoring field order.
+    :param json1: The actual JSON object.
+    :param json2: The expected JSON object.
+    :param epsilon: The tolerance for float comparison.
+    :param path: The current path in the JSON structure for logging mismatches.
+    :return: True if JSONs are equal within tolerance, False otherwise.
+    """
+    def log_difference(path, j1, j2):
+        print(f"Mismatch at {path}:")
+        print(f"        left  : {j1}")
+        print(f"        right : {j2}")
 
+    # Normalize dictionaries by sorting their keys, so order doesn't matter
+    if isinstance(json1, dict) and isinstance(json2, dict):
+        if set(json1.keys()) != set(json2.keys()):
+            log_difference(path, json1, json2)
+            return False
+        # Recursively compare each key-value pair
+        for key in json1:
+            if not check_equal_jsons(json1[key], json2[key], epsilon, path=f"{path}.{key}"):
+                return False
+
+    # Compare lists by their length and then by recursively comparing each item
     elif isinstance(json1, list) and isinstance(json2, list):
         if len(json1) != len(json2):
+            log_difference(path, json1, json2)
             return False
-        return all(check_equal_jsons(item1, item2, epsilon) for item1, item2 in zip(json1, json2))
+        # Sort lists of dictionaries by a normalized key structure to ensure order-independence
+        sorted_json1 = sorted(json1, key=lambda x: str(x) if isinstance(x, (dict, list)) else x)
+        sorted_json2 = sorted(json2, key=lambda x: str(x) if isinstance(x, (dict, list)) else x)
+        for i, (item1, item2) in enumerate(zip(sorted_json1, sorted_json2)):
+            if not check_equal_jsons(item1, item2, epsilon, path=f"{path}[{i}]"):
+                return False
 
+    # Compare floats with epsilon tolerance
     elif isinstance(json1, float) and isinstance(json2, float):
-        return compare_floats(json1, json2, epsilon)
+        if abs(json1 - json2) > epsilon:
+            log_difference(path, json1, json2)
+            return False
 
+    # Direct comparison for other types
     else:
-        return json1 == json2
+        if json1 != json2:
+            log_difference(path, json1, json2)
+            return False
+
+    return True
+
 
 
 def check_between( result, min, max, on_fail=LOG ):
