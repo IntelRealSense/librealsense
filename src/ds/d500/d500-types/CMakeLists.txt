@@ -5,5 +5,7 @@ target_sources(${LRS_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/application-config.h"
         "${CMAKE_CURRENT_LIST_DIR}/calibration-config.h"
+        "${CMAKE_CURRENT_LIST_DIR}/safety-interface-config.h"
+        "${CMAKE_CURRENT_LIST_DIR}/safety-preset.h"
         "${CMAKE_CURRENT_LIST_DIR}/common.h"
 )
