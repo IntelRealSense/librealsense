@@ -20,34 +20,34 @@ app_config_json_str = '''
 			"mechanisms_sampling_interval": [0, 0, 0, 0, 0, 0, 0, 0],
 			"tc_consecutives_failures_threshold": 3
 		},
-		"dev_rules_selection": 0,
+		"dev_rules_selection": 65,
 		"depth_pipe_safety_checks_override": 0,
 		"triggered_calib_safety_checks_override": 0,
 		"smcu_bypass_directly_to_maintenance_mode": 0,
 		"smcu_skip_spi_error": 0,
 		"temp_thresholds":
 		{
-		    "ir_right": [0, 0, 0, 0],
-			"ir_left": [0, 0, 0, 0],
-			"apm_left": [0, 0, 0, 0],
-			"apm_right": [0, 0, 0, 0],
-			"hkr_core": [0, 0, 0, 0],
-			"smcu_right": [0, 0, 0, 0],
-			"sht4x": [0, 0, 0, 0],
-			"imu": [0, 0, 0, 0]
+		    "ir_right": [100, 120, -40, -50],
+			"ir_left": [100, 120, -40, -50],
+			"apm_left": [100, 120, -40, -50],
+			"apm_right": [100, 120, -40, -50],
+			"hkr_core": [100, 120, -40, -50],
+			"smcu_right": [100, 120, -40, -50],
+			"sht4x": [100, 120, -40, -50],
+			"imu": [100, 120, -40, -50]
 		},
-		"sht4x_humidity_threshold": 23,
+		"sht4x_humidity_threshold": 80,
 		"voltage_thresholds":
 		{
-			"vdd3v3": 0,
-			"vdd1v8": 0,
-			"vdd1v2": 0,
-			"vdd1v1": 0,
-			"vdd0v8": 0,
-			"vdd0v6": 0,
-			"vdd5vo_u": 0,
-			"vdd5vo_l": 0,
-			"vdd0v8_ddr": 0
+			"vdd3v3": 15,
+			"vdd1v8": 15,
+			"vdd1v2": 15,
+			"vdd1v1": 15,
+			"vdd0v8": 15,
+			"vdd0v6": 15,
+			"vdd5vo_u": 15,
+			"vdd5vo_l": 15,
+			"vdd0v8_ddr": 15
 		},
 		"developer_mode":
 		{
