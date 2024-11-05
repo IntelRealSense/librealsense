@@ -272,7 +272,7 @@ namespace librealsense
         {
             validate_json(j);
             m_attributes = j.at("attributes").get<uint16_t>();
-            m_minimal_range = j.at("attributes").get<float>();
+            m_minimal_range = j.at("minimal_range").get<float>();
             m_roi = roi(j.at("region_of_interests"));
         }
 
