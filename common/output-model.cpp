@@ -893,6 +893,7 @@ void output_model::add_log(rs2_log_severity severity, std::string filename, int 
 
 void output_model::run_command(std::string command, device_models_list & device_models)
 {
+    std::string opcode_error_as_string = "";
     try
     {
         if (to_lower(command) == "clear")
@@ -990,7 +991,11 @@ void output_model::run_command(std::string command, device_models_list & device_
                 {
                     found = true;
                     auto res = dbg.send_and_receive_raw_data(buffer);
-
+                    if (res.data())
+                    {
+                        int8_t opcode = *res.data();
+                        opcode_error_as_string = dbg.get_opcode_string(opcode);
+                    }
                     std::string response = rsutils::string::from() << "\n" << terminal_parser.parse_response(to_lower(command), res);
                     add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, response);
                 }
@@ -1006,7 +1011,10 @@ void output_model::run_command(std::string command, device_models_list & device_
     }
     catch(const std::exception& ex)
     {
-        add_log( RS2_LOG_SEVERITY_ERROR, __FILE__, __LINE__, ex.what() );
+        std::string foo = rsutils::string::from() << ex.what();
+        if (opcode_error_as_string != "")
+            foo = rsutils::string::from() << foo << " (" << opcode_error_as_string << ")";
+        add_log( RS2_LOG_SEVERITY_ERROR, __FILE__, __LINE__, foo);
     }
 }
 
