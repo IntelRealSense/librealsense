@@ -313,6 +313,7 @@ const char * get_string( rs2_extension value )
     CASE( MAX_USABLE_RANGE_SENSOR )
     CASE( DEBUG_STREAM_SENSOR )
     CASE( CALIBRATION_CHANGE_DEVICE )
+    CASE( ROTATION_FILTER )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
