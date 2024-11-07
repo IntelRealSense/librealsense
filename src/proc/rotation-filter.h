@@ -35,7 +35,7 @@ namespace librealsense
         uint16_t                _rotated_width;     
         uint16_t                _rotated_height;
 
-        int _value;
+        float _value;
     };
     MAP_EXTENSION( RS2_EXTENSION_ROTATION_FILTER, librealsense::rotation_filter );
     }
