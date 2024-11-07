@@ -215,6 +215,9 @@ namespace rs2
                     model->enable(false);
             }
 
+            if( shared_filter->is< rotation_filter >() )
+                model->enable( false ); 
+
             if (shared_filter->is<threshold_filter>())
             {
                 if (s->supports(RS2_CAMERA_INFO_PRODUCT_ID))

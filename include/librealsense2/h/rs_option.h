@@ -125,6 +125,7 @@ extern "C" {
         RS2_OPTION_SOC_PVT_TEMPERATURE, /**< Temperature of PVT SOC */
         RS2_OPTION_GYRO_SENSITIVITY,/**< Control of the gyro sensitivity level, see rs2_gyro_sensitivity for values */
         RS2_OPTION_REGION_OF_INTEREST,/**< The rectangular area used from the streaming profile */
+        RS2_OPTION_ROTATION,/**Rotates frames*/
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
