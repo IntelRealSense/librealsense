@@ -380,7 +380,7 @@ namespace rs2
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;   // added in order to prevents cursor chang when interacting with other element (when nedded remove the flag accordingly)
-        ImGui_ImplGlfw_InitForOpenGL(_win, false);
+        ImGui_ImplGlfw_InitForOpenGL(_win, true);
         ImGui_ImplOpenGL3_Init();
 
         if (_use_glsl_render)
@@ -395,19 +395,21 @@ namespace rs2
 
         glfwSetCursorPosCallback(_win, [](GLFWwindow* w, double cx, double cy)
         {
+            ImGui_ImplGlfw_CursorPosCallback(w, cx, cy); // Forward the cursor position to ImGui
             auto data = reinterpret_cast<ux_window*>(glfwGetWindowUserPointer(w));
             data->_mouse.cursor = { (float)cx / data->_scale_factor,
                 (float)cy / data->_scale_factor };
         });
         glfwSetMouseButtonCallback(_win, [](GLFWwindow* w, int button, int action, int mods)
         {
-            ImGui_ImplGlfw_MouseButtonCallback(w, button, action, mods);
+            ImGui_ImplGlfw_MouseButtonCallback(w, button, action, mods);// Forward the event to ImGui's GLFW implementation
             auto data = reinterpret_cast<ux_window*>(glfwGetWindowUserPointer(w));
             data->_mouse.mouse_down[0] = (button == GLFW_MOUSE_BUTTON_1) && (action != GLFW_RELEASE);
             data->_mouse.mouse_down[1] = (button == GLFW_MOUSE_BUTTON_2) && (action != GLFW_RELEASE);
         });
         glfwSetScrollCallback(_win, [](GLFWwindow * w, double xoffset, double yoffset)
         {
+            ImGui_ImplGlfw_ScrollCallback(w, xoffset, yoffset); // Forwards scroll events to ImGui
             auto data = reinterpret_cast<ux_window*>(glfwGetWindowUserPointer(w));
             data->_mouse.mouse_wheel = static_cast<int>(yoffset);
             data->_mouse.ui_wheel += static_cast<int>(yoffset);
@@ -424,6 +426,8 @@ namespace rs2
                 data->on_file_drop(paths[i]);
             }
         });
+
+        glfwSetKeyCallback(_win, ImGui_ImplGlfw_KeyCallback);
 
         rs2::gl::init_rendering(_use_glsl_render);
         if (_use_glsl_proc) rs2::gl::init_processing(_win, _use_glsl_proc);

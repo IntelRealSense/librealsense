@@ -304,11 +304,14 @@ namespace rs2
         ImGui::PopFont();
         hovered = hovered || ImGui::IsItemHovered();
 
+        ImGui::PushStyleColor(ImGuiCol_Text,white);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
         if (hovered)
         {
             win.link_hovered();
             ImGui::SetTooltip("%s", description);
         }
+        ImGui::PopStyleColor(2);
 
         if (clicked && !disabled)
         {
@@ -2406,7 +2409,7 @@ namespace rs2
             ImGui::SetNextWindowSize({ w, h });
 
             flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar;
 
             ImGui_ScopePushFont(window.get_font());
             ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
@@ -2473,7 +2476,9 @@ namespace rs2
 
                 ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + 65) });
                 ImGui::Separator();
-
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
                 if (tab == 0)
                 {
                     int recording_setting = temp_cfg.get(configurations::record::file_save_mode);
@@ -2929,7 +2934,8 @@ namespace rs2
                 {
                     ImGui::SetTooltip("%s", "Close window without saving any changes to the settings");
                 }
-
+                ImGui::PopStyleColor(2);
+                ImGui::PopStyleVar();
                 ImGui::EndPopup();
             }
 
@@ -2952,7 +2958,7 @@ namespace rs2
             ImGui::SetNextWindowSize({ w, h });
 
             flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar;
 
             ImGui_ScopePushFont(window.get_font());
             ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);

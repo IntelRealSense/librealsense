@@ -30,7 +30,7 @@ int main(int argc, char * argv[]) try
     // Setup Dear ImGui context
     ImGui::CreateContext();
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(app, true);
+    ImGui_ImplGlfw_InitForOpenGL(app, false);
     ImGui_ImplOpenGL3_Init();
     rs2::colorizer c;                     // Helper to colorize depth images
     texture renderer;                     // Helper for renderig images
@@ -175,11 +175,12 @@ void render_slider(rect location, float& clipping_dist)
     ImGui::PushStyleColor(ImGuiCol_FrameBg, { 0.2f / 255, 0.3f / 255, 0.7f / 255 ,1});
     ImGui::PushStyleColor(ImGuiCol_SliderGrab, { 215.f / 255, 215.0f / 255, 215.0f / 255,1 });
     ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, { 215.f / 255, 215.0f / 255, 215.0f / 255,1 });
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, { 1.0f, 1.0f, 1.0f, 1.0f });  // White slider bar (background)
     auto slider_size = ImVec2(slider_window_width / 2, location.h - (pixels_to_buttom_of_stream_text * 2) - 20);
-    ImGui::VSliderFloat("##vslider", slider_size, &clipping_dist, 0.0f, 6.0f," % .2f");
+    ImGui::VSliderFloat("##vslider", slider_size, &clipping_dist, 0.0f, 6.0f, "", 1.0f, true);
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Depth Clipping Distance: %.3f", clipping_dist);
-    ImGui::PopStyleColor(3);
+    ImGui::PopStyleColor(4);
 
     //Display bars next to slider
     float bars_dist = (slider_size.y / 6.0f);

@@ -662,7 +662,7 @@ int main(int argc, const char** argv) try
                 }
             }
 
-            ImGui::SetNextWindowContentSize(ImVec2(ImGui::GetWindowWidth(), ImGui::GetWindowHeight()));
+            ImGui::SetNextWindowContentSize(ImVec2(windows_width, 0.0f));
 
             auto pos = ImGui::GetCursorScreenPos();
             auto h = ImGui::GetWindowHeight();

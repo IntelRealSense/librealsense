@@ -922,8 +922,8 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
             ImGui::PushStyleColor(ImGuiCol_Text, white);
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
             ImGui::SetTooltip("%s", show_device_info ? "Hide Device Details" : "Show Device Details");
             window.link_hovered();
             ImGui::PopStyleColor(2);
@@ -1261,8 +1261,8 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
             ImGui::PushStyleColor(ImGuiCol_Text, white);
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
             std::string record_button_hover_text = get_record_button_hover_text(is_streaming);
             ImGui::SetTooltip("%s", record_button_hover_text.c_str());
             if (is_streaming) window.link_hovered();
@@ -1281,16 +1281,15 @@ namespace rs2
         auto sync_button_color = is_sync_enabled ? light_blue : light_grey;
         ImGui::PushStyleColor(ImGuiCol_Text, sync_button_color);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, sync_button_color);
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.f));
         if (ImGui::ButtonEx(sync_button_name.c_str(), device_panel_icons_size, ImGuiItemFlags_Disabled))
         {
             is_sync_enabled = !is_sync_enabled;
         }
-        ImGui::PopStyleColor(3);
+        ImGui::PopStyleColor(2);
         if (ImGui::IsItemHovered())
         {
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
             ImGui::PushStyleColor(ImGuiCol_Text, white);
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
             ImGui::SetTooltip("%s", is_sync_enabled ? "Disable streams synchronization" : "Enable streams synchronization");
             ImGui::PopStyleColor(2);
         }
@@ -1312,8 +1311,8 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
             ImGui::PushStyleColor(ImGuiCol_Text, white);
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
             ImGui::SetTooltip("%s", "Click for more");
             window.link_hovered();
             ImGui::PopStyleColor(2);
@@ -1372,8 +1371,8 @@ namespace rs2
                     }
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
                         ImGui::PushStyleColor(ImGuiCol_Text, white);
+                        ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                         std::string tooltip = rsutils::string::from()
                                            << "Install official signed firmware from file to the device"
                                            << ( is_streaming ? " (Disabled while streaming)" : "" );
@@ -1401,8 +1400,8 @@ namespace rs2
 
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
                         ImGui::PushStyleColor(ImGuiCol_Text, white);
+                        ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                         std::string tooltip = rsutils::string::from() << "Check for SW / FW updates";
                         ImGui::SetTooltip("%s", tooltip.c_str());
                         ImGui::PopStyleColor(2);
@@ -1426,8 +1425,8 @@ namespace rs2
                         }
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
                             ImGui::PushStyleColor(ImGuiCol_Text, white);
+                            ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                             std::string tooltip = rsutils::string::from()
                                                << "Install non official unsigned firmware from file to the device"
                                                << ( is_streaming ? " (Disabled while streaming)" : "" );
@@ -2318,7 +2317,7 @@ namespace rs2
 
             if (ImGui::IsItemHovered())
             {
-                ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
+                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                 ImGui::PushStyleColor(ImGuiCol_Text, white);
                 ImGui::SetTooltip("Remove selected device from current view\n(can be restored by clicking Add Source)");
                 window.link_hovered();
@@ -2439,7 +2438,7 @@ namespace rs2
         ImGui::PopStyleColor(2);
 
         auto sensor_top_y = ImGui::GetCursorPosY();
-        ImGui::SetNextWindowContentSize(ImVec2(ImGui::GetWindowWidth() - 36, ImGui::GetWindowHeight()));
+        ImGui::SetWindowSize(ImVec2(windows_width -36, 0.0f));
 
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -2467,7 +2466,7 @@ namespace rs2
                     ImGui_ScopePushStyleColor(ImGuiCol_Button, sensor_bg);
                     ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
                     ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
-
+                    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
                     int font_size = window.get_font_size();
                     ImVec2 button_size = { font_size * 3.0f, font_size * 1.0f };
                     
@@ -2498,15 +2497,21 @@ namespace rs2
                                 {
                                     if (ImGui::IsItemHovered())
                                     {
+                                        ImGui::PushStyleColor(ImGuiCol_Text, white);
+                                        ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                                         // ImGui::SetTooltip("Selected configuration (FPS, Resolution) is not supported");
                                         ImGui::SetTooltip("Selected value is not supported");
+                                        ImGui::PopStyleColor(2);
                                     }
                                 }
                                 else
                                 {
                                     if (ImGui::IsItemHovered())
                                     {
+                                        ImGui::PushStyleColor(ImGuiCol_Text, white);
+                                        ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                                         ImGui::SetTooltip("No stream selected");
+                                        ImGui::PopStyleColor(2);
                                     }
                                 }
                             }
@@ -2548,8 +2553,11 @@ namespace rs2
                             }
                             if (ImGui::IsItemHovered())
                             {
+                                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                                 window.link_hovered();
-                                ImGui::SizedToolTip("Start streaming data from this sensor");
+                                ImGui::SetTooltip("Start streaming data from this sensor");
+                                ImGui::PopStyleColor(2);
                             }
                         }
                     }
@@ -2583,8 +2591,11 @@ namespace rs2
                         }
                         if (ImGui::IsItemHovered())
                         {
+                            ImGui::PushStyleColor(ImGuiCol_Text, white);
+                            ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                             window.link_hovered();
-                            ImGui::SizedToolTip("Stop streaming data from selected sub-device");;
+                            ImGui::SetTooltip("Stop streaming data from selected sub-device");
+                            ImGui::PopStyleColor(2);
                         }
                     }
 
@@ -2604,6 +2615,7 @@ namespace rs2
                             }
                         }
                     }
+                    ImGui::PopStyleVar();
                 });
             }
 
@@ -2618,7 +2630,7 @@ namespace rs2
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 10, 10 });
             ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
             ImGuiTreeNodeFlags flags{};
-            ImGui::AlignTextToFramePadding();
+            ImGui::AlignTextToFramePadding();//Ensures that text aligns visually with UI elements that have padding (for the TreeNode visual alignment)
             if (show_depth_only) flags = ImGuiTreeNodeFlags_DefaultOpen;
             if (ImGui::TreeNodeEx(label.c_str(), flags))
             {
@@ -2767,8 +2779,11 @@ namespace rs2
                                 }
                                 if (ImGui::IsItemHovered())
                                 {
-                                    ImGui::SizedToolTip("Enable post-processing filters");
+                                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                                    ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
+                                    ImGui::SetTooltip("Enable post-processing filters");
                                     window.link_hovered();
+                                    ImGui::PopStyleColor(2);
                                 }
                             }
                             else
@@ -2794,8 +2809,11 @@ namespace rs2
                                 }
                                 if (ImGui::IsItemHovered())
                                 {
-                                    ImGui::SizedToolTip("Disable post-processing filters");
+                                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                                    ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
+                                    ImGui::SetTooltip("Disable post-processing filters");
                                     window.link_hovered();
+                                    ImGui::PopStyleColor(2);
                                 }
                             }
                             ImGui::PopStyleColor(5);
@@ -2876,9 +2894,12 @@ namespace rs2
                                             }
                                             if (ImGui::IsItemHovered())
                                             {
+                                                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                                                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                                                 label = rsutils::string::from() << "Enable " << pb->get_name() << " post-processing filter";
-                                                ImGui::SizedToolTip(label.c_str());
+                                                ImGui::SetTooltip(label.c_str());
                                                 window.link_hovered();
+                                                ImGui::PopStyleColor(2);
                                             }
                                         }
                                         else
@@ -2897,10 +2918,13 @@ namespace rs2
                                             }
                                             if (ImGui::IsItemHovered())
                                             {
+                                                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                                                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                                                 label = rsutils::string::from()
                                                      << "Disable " << pb->get_name() << " post-processing filter";
-                                                ImGui::SizedToolTip(label.c_str());
+                                                ImGui::SetTooltip(label.c_str());
                                                 window.link_hovered();
+                                                ImGui::PopStyleColor(2);
                                             }
                                         }
                                     }

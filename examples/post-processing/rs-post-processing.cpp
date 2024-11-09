@@ -58,7 +58,7 @@ int main(int argc, char * argv[]) try
     // Setup Dear ImGui context
     ImGui::CreateContext();
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(app, true);
+    ImGui_ImplGlfw_InitForOpenGL(app, false);
     ImGui_ImplOpenGL3_Init();
 
     // Construct objects to manage view state
@@ -269,6 +269,9 @@ void render_ui(float w, float h, std::vector<filter_options>& filters)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
     ImGui::SetNextWindowSize({ w, h });
+    ImGui::GetStyle().Colors[ImGuiCol_FrameBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+    ImGui::GetStyle().Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+    ImGui::GetStyle().Colors[ImGuiCol_FrameBgActive] = ImVec4(0.35f, 0.35f, 0.35f, 1.0f);
     ImGui::Begin("app", nullptr, flags);
 
     // Using ImGui library to provide slide controllers for adjusting the filter options

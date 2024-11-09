@@ -29,7 +29,7 @@ int main(int argc, char * argv[]) try
     // Setup Dear ImGui context
     ImGui::CreateContext();
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(app, true);
+    ImGui_ImplGlfw_InitForOpenGL(app, false);
     ImGui_ImplOpenGL3_Init();
 
     // Create booleans to control GUI (recorded - allow play button, recording - show 'recording to file' text)
@@ -71,6 +71,7 @@ int main(int argc, char * argv[]) try
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::SetNextWindowSize({ app.width(), app.height() });
         ImGui::Begin("app", nullptr, flags);
 

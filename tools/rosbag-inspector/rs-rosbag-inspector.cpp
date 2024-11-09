@@ -414,13 +414,16 @@ int main(int argc, const char** argv) try
         ImGui::PushStyleColor(ImGuiCol_HeaderActive, from_rgba(0, 115, 210, 255));
         ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(37, 40, 48, 255));
         ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+        ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(0.286f, 0.298f, 0.549f, 1.0f));
         ImGuiStyle& style = ImGui::GetStyle();
         style.FramePadding.x = 10;
         style.FramePadding.y = 5;
         int flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings;
 
         static bool open = true;
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::SetNextWindowSize({ float(window.width()), float(window.height()) }, ImGuiCond_FirstUseEver);
+        style.WindowRounding = 10.0f; // Set the window rounding
         if (ImGui::Begin("Rosbag Inspector", nullptr, flags | ImGuiWindowFlags_MenuBar))
         {
             draw_menu_bar();
@@ -435,7 +438,7 @@ int main(int argc, const char** argv) try
             draw_error_modal();
         }
         ImGui::End();
-        ImGui::PopStyleColor(10);
+        ImGui::PopStyleColor(11);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     // Cleanup

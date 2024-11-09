@@ -51,7 +51,7 @@ int main(int argc, char * argv[]) try
     // Setup Dear ImGui context
     ImGui::CreateContext();
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(app, true);
+    ImGui_ImplGlfw_InitForOpenGL(app, false);
     ImGui_ImplOpenGL3_Init();
     rs2::colorizer c;                     // Helper to colorize depth images
     texture depth_image, color_image;     // Helpers for renderig images
@@ -154,6 +154,21 @@ void render_slider(rect location, float* alpha, direction* dir)
 
     ImGui::SetNextWindowPos({ location.x, location.y });
     ImGui::SetNextWindowSize({ location.w, location.h });
+    ImGui::SetNextWindowBgAlpha(0.5f); // Set the background alpha to 50% transparency
+    ImGui::GetStyle().WindowRounding = 10.0f; // Set the window rounding to 10.0f 
+
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImVec4* colors = style.Colors;
+    colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f); // Set the main background color to dark gray
+
+    // Set frame and button colors to gray
+    colors[ImGuiCol_FrameBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f); 
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.35f, 0.35f, 0.35f, 1.0f); 
+    
+    colors[ImGuiCol_CheckMark] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f); // Change the color of the checkmark to gray
+
+    colors[ImGuiCol_SliderGrab] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f); // Change the color of the slider grab to gray
 
     // Render transparency slider:
     ImGui::Begin("slider", nullptr, flags);

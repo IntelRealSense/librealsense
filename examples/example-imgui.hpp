@@ -47,10 +47,28 @@ public:
         ImGui::SetNextWindowPos(_position);
         //concate the name given with seq_id in order to make a unique name (uniqeness is needed for Begin())
         std::string name_id = std::string(_name) + std::to_string(_seq_id);
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImVec4* colors = style.Colors;
+        colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f); // Set the main background color to black
+        style.WindowRounding = 10.0f; // Set the window rounding
+        style.WindowBorderSize = 0.0f;
+
+        // Set other window-related colors 
+        colors[ImGuiCol_TitleBg] = ImVec4(0.286f, 0.298f, 0.549f, 1.0f); 
+        colors[ImGuiCol_TitleBgActive] = ImVec4(0.286f, 0.298f, 0.549f, 1.0f);
+
+        // Set frame and button colors to gray
+        colors[ImGuiCol_FrameBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+        colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+        colors[ImGuiCol_FrameBgActive] = ImVec4(0.35f, 0.35f, 0.35f, 1.0f);
+
+        colors[ImGuiCol_CheckMark] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f); // Change the color of the checkmark to gray
+
+        colors[ImGuiCol_SliderGrab] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f); // Change the color of the slider grab to gray
         ImGui::Begin(name_id.c_str(), nullptr, _sliders_flags);
         ImGui::Text("%s",_name);
         bool is_changed =
-            ImGui::SliderFloat("Slider Label", &_value, _min_value, _max_value, "%.3f", ImGuiSliderFlags_Logarithmic); //5.0f for logarithmic scale 
+            ImGui::SliderFloat("##HDRSlider", &_value, _min_value, _max_value, "%.3f", ImGuiSliderFlags_Logarithmic);
         if (is_changed) {
             _sensor.set_option(RS2_OPTION_SEQUENCE_ID, float(_seq_id));
             _sensor.set_option(_option, _value);
@@ -123,7 +141,7 @@ public:
         _text_box_hdr_explain("HDR Tutorial", { 120, 20 }, { 1000, 140 }),
         _text_box_first_frame("frame 1", { 200, 150 }, { 170, 40 }),
         _text_box_second_frame("frame 2", { 460, 150 }, { 170, 40 }),
-        _text_box_hdr_frame("hdr", { 850, 280 }, { 170, 40 })
+        _text_box_hdr_frame("hdr", { 850, 280 }, { 170, 20 })
     {
         // init frames map
         //for initilize only - an empty frame with its properties

@@ -41,7 +41,7 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
     ImGui::SetNextWindowSize({ positions.w, positions.h });
 
     auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings ;
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar;
 
     ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
@@ -144,6 +144,8 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
         ImGui::SetCursorPos({ positions.w - 145, positions.h - 25 });
 
         auto enabled = ignore || no_update_needed;
+        ImGui::PushStyleColor(ImGuiCol_Border, black); 
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.5f);
         if (enabled)
         {
             if (_fw_update_state != fw_update_states::started)
@@ -180,12 +182,16 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
             }
             if (ImGui::IsItemHovered())
             {
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                 ImGui::SetTooltip("To close this window you must install all essential update\n"
                     "or agree to the warning of closing without it");
-
+                ImGui::PopStyleColor(2);
             }
             ImGui::PopStyleColor(2);
         }
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor();
         ImGui::EndPopup();
     }
     ImGui::PopStyleColor(3);
@@ -438,9 +444,11 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
 
             if (ImGui::IsItemHovered())
             {
+                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                 std::string tooltip = "This will redirect you to download the selected software from:\n" + selected_software_update.download_link;
                 ImGui::SetTooltip("%s", tooltip.c_str());
                 window.link_hovered();
+                ImGui::PopStyleColor();
             }
 
             ImGui::PopStyleColor(3);
