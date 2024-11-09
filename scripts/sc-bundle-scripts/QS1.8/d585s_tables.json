@@ -1,0 +1,383 @@
+{
+    "safety_preset":
+    {
+        "platform_config": 
+        {
+            "transformation_link":
+            {
+                "rotation":
+                [
+                    [ 0.0,  0.0,  1.0],
+                    [-1.0,  0.0,  0.0],
+                    [ 0.0, -1.0,  0.0]
+                ],
+                "translation": [0.0, 0.0, 0.27]
+            },
+            "robot_height": 1.0,
+            "reserved": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        },
+        "safety_zones": 
+        {
+            "danger_zone":
+            {
+                "zone_polygon":
+                {
+                    "p0": {"x": 0.5, "y":  0.1},
+                    "p1": {"x": 0.8, "y":  0.1},
+                    "p2": {"x": 0.8, "y": -0.1},
+                    "p3": {"x": 0.5, "y": -0.1}
+                },
+                "safety_trigger_confidence": 3,
+                "reserved": [0, 0, 0, 0, 0, 0, 0]
+            },
+            "warning_zone":
+            {
+                "zone_polygon":
+                {
+                    "p0": {"x": 0.8, "y":  0.1},
+                    "p1": {"x": 1.2, "y":  0.1},
+                    "p2": {"x": 1.2, "y": -0.1},
+                    "p3": {"x": 0.8, "y": -0.1}
+                },
+                "safety_trigger_confidence": 3,
+                "reserved": [0, 0, 0, 0, 0, 0, 0]
+            }
+        },
+        "masking_zones": 
+        {
+            "0":
+            {
+                "attributes": 0,
+                "minimal_range": 0.5,
+                "region_of_interests":
+                {
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
+                }
+            },
+            "1":
+            {
+                "attributes": 0,
+                "minimal_range": 0.5,
+                "region_of_interests":
+                {
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
+                }
+            },
+            "2":
+            {
+                "attributes": 0,
+                "minimal_range": 0.5,
+                "region_of_interests":
+                {
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
+                }
+            },
+            "3":
+            {
+                "attributes": 0,
+                "minimal_range": 0.5,
+                "region_of_interests":
+                {
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
+                }
+            },
+            "4":
+            {
+                "attributes": 0,
+                "minimal_range": 0.5,
+                "region_of_interests":
+                {
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
+                }
+            },
+            "5":
+            {
+                "attributes": 0,
+                "minimal_range": 0.5,
+                "region_of_interests":
+                {
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
+                }
+            },
+            "6":
+            {
+                "attributes": 0,
+                "minimal_range": 0.5,
+                "region_of_interests":
+                {
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
+                }
+            },
+            "7":
+            {
+                "attributes": 1,
+                "minimal_range": 0,
+                "region_of_interests":
+                {
+                    "vertex_0": [500, 3300],
+                    "vertex_1": [800, 3300],
+                    "vertex_2": [800, 3100],
+                    "vertex_3": [500, 3100]
+                }
+            }
+        },
+
+        "environment": 
+        {
+            "safety_trigger_duration" : 1.0,
+            "zero_safety_monitoring" : 0,
+            "hara_history_continuation" : 0,
+            "reserved1": [0, 0],
+            "angular_velocity" : 0.0,
+            "payload_weight" : 0.0,
+            "surface_inclination" : 15.0,
+            "surface_height" : 0.05,
+            "diagnostic_zone_fill_rate_threshold" : 255,
+            "floor_fill_threshold" : 255,
+            "depth_fill_threshold" : 255,
+            "diagnostic_zone_height_median_threshold" : 255,
+            "vision_hara_persistency" : 1,
+            "crypto_signature" : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "reserved2": [0, 0, 0]
+        },
+        "reserved": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    },
+    "safety_interface_config":
+    {
+        "m12_safety_pins_configuration":
+        {
+            "power":
+            {
+                "direction": "In",
+                "functionality": "p24VDC"
+            },
+            "ossd1_b":
+            {
+                "direction": "Out",
+                "functionality": "pOSSD1_B"
+            },
+            "ossd1_a":
+            {
+                "direction": "Out",
+                "functionality": "pOSSD1_A"
+            },
+            "preset3_a":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect3_A"
+            },
+            "preset3_b":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect3_B"
+            },
+            "preset4_a":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect4_A"
+            },
+            "preset1_b":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect1_B"
+            },
+            "preset1_a":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect1_A"
+            },
+            "gpio_0":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect5_A"
+            },
+            "gpio_1":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect5_B"
+            },
+            "gpio_3":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect6_B"
+            },
+            "gpio_2":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect6_A"
+            },
+            "preset2_b":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect2_B"
+            },
+            "gpio_4":
+            {
+                "direction": "Out",
+                "functionality": "pDeviceReady"
+            },
+            "preset2_a":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect2_A"
+            },
+            "preset4_b":
+            {
+                "direction": "In",
+                "functionality": "pPresetSelect4_B"
+            },
+            "ground":
+            {
+                "direction": "In",
+                "functionality": "pGND"
+            }
+        },
+        "gpio_stabilization_interval" : 150,
+        "camera_position":
+        {
+            "rotation":
+            [
+                [ 0.0,  0.0,  1.0],
+                [-1.0,  0.0,  0.0],
+                [ 0.0, -1.0,  0.0]
+            ],
+            "translation": [0.0, 0.0, 0.27]
+        },
+        "occupancy_grid_params":
+        {
+            "grid_cell_seed" : 20,
+            "close_range_quorum" : 12 ,
+            "mid_range_quorum" : 6,
+            "long_range_quorum" : 4
+        },
+        "smcu_arbitration_params":
+        {
+            "l_0_total_threshold": 100,
+            "l_0_sustained_rate_threshold": 20,
+            "l_1_total_threshold": 100,
+            "l_1_sustained_rate_threshold": 20,
+            "l_2_total_threshold": 10,
+            "hkr_stl_timeout": 15,
+            "mcu_stl_timeout": 10,
+            "sustained_aicv_frame_drops": 95,
+            "ossd_self_test_pulse_width": 23
+        },
+        "crypto_signature": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    },
+    "calibration_config":
+    {
+        "roi_num_of_segments": 0,
+        "roi_0":
+        {
+            "vertex_0": [ 0, 0 ],
+            "vertex_1": [ 0, 0 ],
+            "vertex_2": [ 0, 0 ],
+            "vertex_3": [ 0, 0 ]
+        },
+        "roi_1": 
+        {
+            "vertex_0": [ 0, 0 ],
+            "vertex_1": [ 0, 0 ],
+            "vertex_2": [ 0, 0 ],
+            "vertex_3": [ 0, 0 ]
+        },
+        "roi_2": 
+        {
+            "vertex_0": [ 0, 0 ],
+            "vertex_1": [ 0, 0 ],
+            "vertex_2": [ 0, 0 ],
+            "vertex_3": [ 0, 0 ]
+        },
+        "roi_3": 
+        {
+            "vertex_0": [ 0, 0 ],
+            "vertex_1": [ 0, 0 ],
+            "vertex_2": [ 0, 0 ],
+            "vertex_3": [ 0, 0 ]
+        },
+        "camera_position":
+        {
+            "rotation":
+            [
+                [ 0.0,  0.0,  1.0],
+                [-1.0,  0.0,  0.0],
+                [ 0.0, -1.0,  0.0]
+            ],
+            "translation": [0.0, 0.0, 0.27]
+        },
+        "crypto_signature": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    },
+    "application_config":
+	{
+		"sip":
+		{
+			"immediate_mode_safety_features_selection": 0,
+			"temporal_safety_features_selection": 0,
+			"mechanisms_thresholds": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			"mechanisms_sampling_interval": [0, 0, 0, 0, 0, 0, 0, 0],
+			"tc_consecutives_failures_threshold": 3
+		},
+		"dev_rules_selection": 65,
+		"depth_pipe_safety_checks_override": 0,
+		"triggered_calib_safety_checks_override": 0,
+		"smcu_bypass_directly_to_maintenance_mode": 0,
+		"smcu_skip_spi_error": 0,
+		"temp_thresholds":
+		{
+		    "ir_right": [100, 120, -40, -50],
+			"ir_left": [100, 120, -40, -50],
+			"apm_left": [100, 120, -40, -50],
+			"apm_right": [100, 120, -40, -50],
+			"hkr_core": [100, 120, -40, -50],
+			"smcu_right": [100, 120, -40, -50],
+			"sht4x": [100, 120, -40, -50],
+			"imu": [100, 120, -40, -50]
+		},
+		"sht4x_humidity_threshold": 80,
+		"voltage_thresholds":
+		{
+			"vdd3v3": 15,
+			"vdd1v8": 15,
+			"vdd1v2": 15,
+			"vdd1v1": 15,
+			"vdd0v8": 15,
+			"vdd0v6": 15,
+			"vdd5vo_u": 15,
+			"vdd5vo_l": 15,
+			"vdd0v8_ddr": 15
+		},
+		"developer_mode":
+		{
+			"hkr": 0,
+			"smcu": 0,
+			"hkr_simulated_lock_state": 0,
+			"sc": 0
+		},
+        "depth_pipeline_config": 0,
+        "depth_roi": 0,
+        "ir_for_sip": 0,
+        "peripherals_sensors_disable_mask": 0,
+        "digital_signature": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	}
+}
