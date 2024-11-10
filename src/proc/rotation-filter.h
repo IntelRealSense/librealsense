@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../include/librealsense2/hpp/rs_frame.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
+#include <librealsense2/hpp/rs_frame.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
 #include "proc/synthetic-stream.h"
 
 namespace librealsense
@@ -26,15 +26,13 @@ namespace librealsense
     private:
         void    update_output_profile(const rs2::frame& f);
 
-        
-        int                _control_val;
+        int                     _control_val;
         rs2::stream_profile     _source_stream_profile;
         rs2::stream_profile     _target_stream_profile;
         uint16_t                _real_width;        
         uint16_t                _real_height;       
         uint16_t                _rotated_width;     
         uint16_t                _rotated_height;
-
         float _value;
     };
     MAP_EXTENSION( RS2_EXTENSION_ROTATION_FILTER, librealsense::rotation_filter );

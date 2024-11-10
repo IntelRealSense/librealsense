@@ -91,7 +91,6 @@ namespace librealsense {
                                    static_cast< const uint8_t * >( src.get_data() ),
                                    rotated_height,
                                    rotated_width );
-                auto temp = static_cast< uint8_t * >( const_cast< void * >( tgt.get_data() ) );
                 break;
             }
                 
@@ -100,7 +99,6 @@ namespace librealsense {
                                    static_cast< const uint8_t * >( src.get_data() ),
                                    rotated_height,
                                    rotated_width );
-                auto temp = static_cast< uint16_t * >( const_cast< void * >( tgt.get_data() ) );
                 break;
             }
                 
