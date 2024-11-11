@@ -460,6 +460,7 @@ std::string const & get_string_( rs2_option value )
         CASE( OHM_TEMPERATURE )
         CASE( SOC_PVT_TEMPERATURE )
         CASE( GYRO_SENSITIVITY )
+        CASE( ROTATION )
         arr[RS2_OPTION_REGION_OF_INTEREST] = "Region of Interest";
 #undef CASE
         return arr;

@@ -54,8 +54,27 @@ namespace librealsense {
         if( _value == rotation_default_val )
             return f;
 
-        auto src = f.as<rs2::video_frame>();
         rs2::stream_profile profile = f.get_profile();
+        rs2_stream type = profile.stream_type();
+        rs2_extension tgt_type;
+        if( type == RS2_STREAM_INFRARED )
+        {
+            tgt_type = RS2_EXTENSION_VIDEO_FRAME;
+        }
+        else if( f.is< rs2::disparity_frame >() )
+        {
+            tgt_type = RS2_EXTENSION_DISPARITY_FRAME;
+        }
+        else if( f.is< rs2::depth_frame >() )
+        {
+            tgt_type = RS2_EXTENSION_DEPTH_FRAME;
+        }
+        else
+        {
+            return f;
+        }
+
+        auto src = f.as< rs2::video_frame >();
         _target_stream_profile = profile;
 
         if( _value == 90 || _value == -90 )
@@ -70,20 +89,11 @@ namespace librealsense {
         }
         auto bpp = src.get_bytes_per_pixel();
         update_output_profile( f );
-
-        rs2_stream type = profile.stream_type();
-        rs2_extension tgt_type;
-        if (type == RS2_STREAM_COLOR || type == RS2_STREAM_INFRARED)
-            tgt_type = RS2_EXTENSION_VIDEO_FRAME;
-        else
-            tgt_type = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
-
-
         if (auto tgt = prepare_target_frame(f, source, tgt_type))
         {
             int rotated_width = ( _value == 90 || _value == -90 ) ? src.get_height() : src.get_width();
             int rotated_height = ( _value == 90 || _value == -90 ) ? src.get_width() : src.get_height();
-  
+
             switch( bpp )
             {
             case 1: {
@@ -93,7 +103,7 @@ namespace librealsense {
                                    rotated_width );
                 break;
             }
-                
+
             case 2: {
                 rotate_depth< 2 >( static_cast< uint8_t * >( const_cast< void * >( tgt.get_data() ) ),
                                    static_cast< const uint8_t * >( src.get_data() ),
@@ -101,7 +111,7 @@ namespace librealsense {
                                    rotated_width );
                 break;
             }
-                
+
             default:
                 LOG_ERROR( "Rotation transform does not support format: "
                            + std::string( rs2_format_to_string( tgt.get_profile().format() ) ) );
@@ -170,8 +180,7 @@ namespace librealsense {
     }
 
     template< size_t SIZE >
-    void rotation_filter::rotate_depth( uint8_t * const out, const uint8_t * source,
-        int width, int height)
+    void rotation_filter::rotate_depth( uint8_t * const out, const uint8_t * source, int width, int height )
     {
         if( _value != 90 && _value != -90 && _value != 180 )
         {
@@ -181,30 +190,32 @@ namespace librealsense {
         int width_out = ( _value == 90 || _value == -90 ) ? height : width;
         int height_out = ( _value == 90 || _value == -90 ) ? width : height;
 
-        auto compute_out_index = [&]( int i, int j )
-        {
-            switch( static_cast< int >( _value ) )
-            {
-            case 90:
-                return ( j * width_out + ( width_out - i - 1 ) ) * SIZE;
-            case -90:
-                return ( ( height_out - j - 1 ) * width_out + i ) * SIZE;
-            case 180:
-                return ( ( height_out - i - 1 ) * width_out + ( width_out - j - 1 ) ) * SIZE;
-            }
-            return size_t( 0 );  // Will not be reached due to angle validation
-        };
-
         for( int i = 0; i < height; ++i )
         {
             for( int j = 0; j < width; ++j )
             {
                 size_t src_index = ( i * width + j ) * SIZE;
-                size_t out_index = compute_out_index( i, j );
+                size_t out_index;
+
+                if( _value == 90 )
+                {
+                    out_index = ( j * width_out + ( width_out - i - 1 ) ) * SIZE;
+                }
+                else if( _value == -90 )
+                {
+                    out_index = ( ( height_out - j - 1 ) * width_out + i ) * SIZE;
+                }
+                else
+                {  // 180 degrees
+                    out_index = ( ( height_out - i - 1 ) * width_out + ( width_out - j - 1 ) ) * SIZE;
+                }
+
                 std::memcpy( &out[out_index], &source[src_index], SIZE );
             }
         }
+
     }
+        
 
 }
 
