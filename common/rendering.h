@@ -734,40 +734,46 @@ namespace rs2
             }
         }
 
-        void upload_occupancy_frame(const rs2::frame& frame, const void* data)
+        void upload_occupancy_frame(const rs2::frame &frame, const void *data)
         {
             if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS) ||
                 !frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS))
                 throw std::runtime_error("Occupancy rows / columns could not be read from frame metadata");
 
-            auto occup_cols = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS));  // width
-            auto occup_rows = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS));     // height
+            auto occup_cols = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS)); // width
+            auto occup_rows = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS));    // height
 
             // We want to reverse the data's bit, because AICV algo is packing each 8 cells into one byte, but in an opposite order
             // than we (and OpenGL) expect. The rightest bit (LSB) inside the packed byte from AICV algo represnts the first bit we want to draw from this byte
             // e.g. Occupancy Cells: 0 0 1 1 0 0 1 0 ---> AICV packing algo ---> bytes[i] = 01001100. The order is reversed, so we reverse it again.
-            // Worth checking if AICV can improve their solution to support normal order, so we can save time of reversing bytes.
             // Each byte represents 8 cells (1 bit <==> 1 cell), therefore the size is ==> rows(height) * cols(width) / 8
-            rsutils::number::reverse_byte_array_bits((uint8_t*)data, occup_rows * occup_cols / 8);
 
-            // Set up pixel transfer maps. We want to map our 0's and 1's to white RGBA[0,0,0,0] and black RGBA[1,1,1,1].
-            // The index array used in these functions contains the mapping values. In this case, it contains only two elements: 0.0 and 1.0
-            // This means that when an intensity value is 0.0, it will be mapped to the minimum value for the respective color
-            // component (e.g., 0.0 for red, green, blue, and alpha).
-            // Similarly, an intensity value of 1.0 will be mapped to the maximum value (e.g., 1.0 for red, green, blue, and alpha).
-            float index[] = {0.0, 1.0};
-            glPixelMapfv(GL_PIXEL_MAP_I_TO_R, 2, index);
-            glPixelMapfv(GL_PIXEL_MAP_I_TO_G, 2, index);
-            glPixelMapfv(GL_PIXEL_MAP_I_TO_B, 2, index);
-            glPixelMapfv(GL_PIXEL_MAP_I_TO_A, 2, index);
+            std::vector<uint8_t> vec;
+            uint8_t *byte_array = (uint8_t *)data;
 
-            // the "4" is internal format, number of color components in the texture. Ref: https://docs.gl/gl2/glTexImage2D
-            // The texture format is specified as GL_COLOR_INDEX, which means the pixel data represents color indices rather than actual RGB values.
-            // GL_BITMAP means that each color index is represented by a single bit (0 or 1)
-            glTexImage2D(GL_TEXTURE_2D, 0, 4, occup_cols, occup_rows, 0, GL_COLOR_INDEX, GL_BITMAP, data);
+            for (int i = 0; i < occup_rows * occup_cols / 8; i++)
+            {
+                for (int k = 0; k < 8; k++)
+                {
+                    vec.push_back(((byte_array[i] >> k) & 1) ? 0xFF : 0);
+                }
+            }
+
+            // Default alignment is 4 byte on windows, store it and work with 1 as our grid columns are not a multiple of 4
+            GLint unpackAlignment;
+            glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlignment);
+
+            // Change alignment to 1
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+            // Render
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, occup_cols, occup_rows, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, vec.data());
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+            // Restore default alignment
+            glPixelStorei(GL_UNPACK_ALIGNMENT, unpackAlignment);
         }
 
         static void  draw_axes(float axis_size = 1.f, float axisWidth = 4.f)
