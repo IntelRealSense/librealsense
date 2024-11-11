@@ -1011,10 +1011,10 @@ void output_model::run_command(std::string command, device_models_list & device_
     }
     catch(const std::exception& ex)
     {
-        std::string foo = rsutils::string::from() << ex.what();
+        std::string error_string = rsutils::string::from() << ex.what();
         if (opcode_error_as_string != "")
-            foo = rsutils::string::from() << foo << " (" << opcode_error_as_string << ")";
-        add_log( RS2_LOG_SEVERITY_ERROR, __FILE__, __LINE__, foo);
+            error_string = rsutils::string::from() << error_string << " (" << opcode_error_as_string << ")";
+        add_log( RS2_LOG_SEVERITY_ERROR, __FILE__, __LINE__, error_string);
     }
 }
 
