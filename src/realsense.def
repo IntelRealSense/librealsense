@@ -456,4 +456,5 @@ EXPORTS
     rs2_set_calibration_config
     rs2_get_application_config
     rs2_set_application_config
+    rs2_hw_monitor_get_opcode_string
     

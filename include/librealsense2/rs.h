@@ -137,6 +137,8 @@ float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2
 */
 rs2_time_t rs2_get_time( rs2_error** error);
 
+void rs2_hw_monitor_get_opcode_string(int opcode, char* buffer, size_t buffer_size,rs2_device* device, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

@@ -148,6 +148,11 @@ namespace librealsense
         return result;
     }
 
+    std::string d400_device::get_opcode_string(int opcode) const
+    {
+        return ds::d400_hwmon_response().hwmon_error2str(opcode);
+    }
+
     class d400_depth_sensor
         : public synthetic_sensor
         , public video_sensor_interface
