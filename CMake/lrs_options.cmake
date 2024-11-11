@@ -1,3 +1,9 @@
+## This file is also being used to generate our build flags document at https://intelrealsense.github.io/librealsense/build-flags-docs/build-flags.html
+## Formatting notes for this file:
+## Options are listed as: <name> | <description> [comment] | <value>
+## regular comments should be ABOVE their relevent option
+## use double # for comments that should not show in the options doc
+
 option(ENABLE_CCACHE "Build with ccache." ON)
 option(BUILD_WITH_CUDA "Enable CUDA" OFF)
 option(BUILD_GLSL_EXTENSIONS "Build GLSL extensions API" ON)
@@ -48,9 +54,3 @@ option(BUILD_PC_STITCHING "Build pointcloud-stitching example" OFF)
 option(BUILD_WITH_DDS "Access camera devices through DDS topics (requires CMake 3.16.3)" OFF)
 option(BUILD_RS2_ALL "Build realsense2-all static bundle containing all realsense libraries (with BUILD_SHARED_LIBS=OFF)" ON)
  
- 
-## This file is also being used to generate our build flags document at https://intelrealsense.github.io/librealsense/build-flags-docs/build-flags.html
-## Formatting notes for this file:
-## Options are listed as: <name> | <description> [comment] | <value>
-## regular comments should be ABOVE their relevent option
-## use double # for comments that should not show in the options doc

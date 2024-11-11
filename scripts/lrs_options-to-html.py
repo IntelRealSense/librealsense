@@ -39,7 +39,7 @@ in_else = False
 current_condition = None
 current_comment = ""
 
-for line in lines:
+for i, line in enumerate(lines):
     if line.strip().startswith(('option(', 'set(')):
         line = ' '.join(line.split())  # remove consecutive spaces
         parts = line.strip().split(' ')
@@ -91,6 +91,8 @@ for line in lines:
         continue  # ignore internal comments
     elif line.startswith('#'):
         current_comment += line.strip('# \n')
+    elif line.strip():  # if we've reached a non-empty line, throw an error
+        raise Exception(f"{i, line} cannot be handled")
 
 
 def format_dict_values():
