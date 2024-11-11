@@ -116,6 +116,11 @@ namespace librealsense
         throw not_implemented_exception("D500 device does not support unsigned FW update");
     }
 
+    std::string d500_device::get_opcode_string(int opcode) const 
+    {
+        return _hw_monitor_response->hwmon_error2str(opcode);
+    }
+
     class d500_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:
