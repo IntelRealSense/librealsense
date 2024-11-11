@@ -173,36 +173,34 @@ namespace librealsense {
     void rotation_filter::rotate_depth( uint8_t * const out, const uint8_t * source,
         int width, int height)
     {
-        auto width_out = ( _value == 90 || _value == -90 ) ? height : width;
-        auto height_out = ( _value == 90 || _value == -90 ) ? width : height;
+        if( _value != 90 && _value != -90 && _value != 180 )
+        {
+            throw std::invalid_argument( "Invalid rotation angle. Only 90, -90, and 180 degrees are supported." );
+        }
+
+        int width_out = ( _value == 90 || _value == -90 ) ? height : width;
+        int height_out = ( _value == 90 || _value == -90 ) ? width : height;
+
+        auto compute_out_index = [&]( int i, int j )
+        {
+            switch( static_cast< int >( _value ) )
+            {
+            case 90:
+                return ( j * width_out + ( width_out - i - 1 ) ) * SIZE;
+            case -90:
+                return ( ( height_out - j - 1 ) * width_out + i ) * SIZE;
+            case 180:
+                return ( ( height_out - i - 1 ) * width_out + ( width_out - j - 1 ) ) * SIZE;
+            }
+            return size_t( 0 );  // Will not be reached due to angle validation
+        };
 
         for( int i = 0; i < height; ++i )
         {
             for( int j = 0; j < width; ++j )
             {
-                auto src_index = ( i * width + j ) * SIZE;
-                size_t out_index;
-
-                if( _value == 90 )
-                {
-                    // 90-degree rotation
-                    out_index = ( j * width_out + ( width_out - i - 1 ) ) * SIZE;
-                }
-                else if( _value == -90 )
-                {
-                    // -90-degree rotation
-                    out_index = ( ( height_out - j - 1 ) * width_out + i ) * SIZE;
-                }
-                else if( _value == 180 )
-                {
-                    // 180-degree rotation
-                    out_index = ( ( height_out - i - 1 ) * width_out + ( width_out - j - 1 ) ) * SIZE;
-                }
-                else
-                {
-                    throw std::invalid_argument( "Unsupported rotation angle" );
-                }
-
+                size_t src_index = ( i * width + j ) * SIZE;
+                size_t out_index = compute_out_index( i, j );
                 std::memcpy( &out[out_index], &source[src_index], SIZE );
             }
         }
