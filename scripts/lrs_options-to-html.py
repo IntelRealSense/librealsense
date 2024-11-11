@@ -1,3 +1,6 @@
+import sys
+
+
 def add_style(option, val):
     # colorize ON and OFF keywords
     val = val.replace('ON', '<span style="color: #4CAF50;">ON</span>')
@@ -106,18 +109,14 @@ def format_dict_values():
                     for option, description, value in table_rows.values())
 
 def get_sdk_version():
-    version_info = {}
-    with open('include/librealsense2/rs.h', 'r') as file:
-        lines = file.readlines()
+    if len(sys.argv) > 1:
+        # the script can get the version number as a parameter
+        version = sys.argv[1]
+        return f'Version {version}'
+    else:
+        # if no parameter provided - no version number will be included
+        return ""
 
-    for line in lines:
-        if line.startswith('#define RS2_API_MAJOR_VERSION'):
-            version_info['major'] = line.split()[2]
-        elif line.startswith('#define RS2_API_MINOR_VERSION'):
-            version_info['minor'] = line.split()[2]
-        elif line.startswith('#define RS2_API_PATCH_VERSION'):
-            version_info['patch'] = line.split()[2]
-    return 'Version ' + '.'.join(version_info.values())
 
 html = f'''<!DOCTYPE html>
 <html>
