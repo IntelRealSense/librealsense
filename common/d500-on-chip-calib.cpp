@@ -8,12 +8,11 @@
 namespace rs2
 {
     d500_on_chip_calib_manager::d500_on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub,
-        device_model& model, device dev, std::shared_ptr<subdevice_model> sub_safety)
+        device_model& model, device dev)
         : process_manager("D500 On-Chip Calibration"),
         _model(model),
         _dev(dev),
-        _sub(sub),
-        _sub_safety(sub_safety)
+        _sub(sub)
     {
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) &&
             std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) != "D500")
@@ -82,11 +81,15 @@ namespace rs2
     void d500_on_chip_calib_manager::prepare_for_calibration()
     {
         // safety sensor in service mode - if safety sensor exists
-        if (_sub_safety && _sub_safety->s->is<rs2::safety_sensor>())
+        auto sensors = _dev.query_sensors();
+        for (auto&& s : sensors)
         {
-            auto safety_sensor = _sub_safety->s->as<rs2::safety_sensor>();
-            set_option_if_needed<rs2::safety_sensor>(safety_sensor,
-                RS2_OPTION_SAFETY_MODE, RS2_SAFETY_MODE_SERVICE);
+            if (s.is<rs2::safety_sensor>())
+            {
+                set_option_if_needed<rs2::safety_sensor>(s.as<rs2::safety_sensor>(),
+                    RS2_OPTION_SAFETY_MODE, RS2_SAFETY_MODE_SERVICE);
+                break;
+            }
         }
 
         // set depth preset as default preset, turn projector ON and depth AE ON
