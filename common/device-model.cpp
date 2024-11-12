@@ -3434,15 +3434,6 @@ namespace rs2
         std::string& error_message)
     {
         bool has_autocalib = false;
-        std::shared_ptr< subdevice_model> sub_safety;
-        for (auto&& sub : subdevices)
-        {
-            if (sub->s->is<rs2::safety_sensor>())
-            {
-                sub_safety = sub;
-                break;
-            }
-        }
 
         bool streaming = is_streaming();
         ImGuiSelectableFlags avoid_selection_flag = (streaming) ? ImGuiSelectableFlags_Disabled : 0;
@@ -3474,7 +3465,7 @@ namespace rs2
                         }
                         else
                         {
-                            manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev);
+                            manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev );
                             n = std::make_shared< d500_autocalib_notification_model >( "", manager, false );
                         }
                         viewer.not_model->add_notification( n );
