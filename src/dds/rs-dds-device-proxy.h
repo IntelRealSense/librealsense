@@ -84,6 +84,7 @@ private:
                                           uint32_t param4 = 0,
                                           uint8_t const * data = nullptr,
                                           size_t dataLength = 0 ) const override;
+    std::string get_opcode_string(int opcode) const override;
 
     // updatable: unsigned, non-recovery-mode
 private:
