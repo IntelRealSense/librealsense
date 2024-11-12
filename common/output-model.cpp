@@ -997,7 +997,8 @@ void output_model::run_command(std::string command, device_models_list & device_
                         opcode_error_as_string = dbg.get_opcode_string(opcode);
                     }
                     std::string response = rsutils::string::from() << "\n" << terminal_parser.parse_response(to_lower(command), res);
-                    add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, response);
+                    if (response != "\n")
+                        add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, response);
                 }
             }
 

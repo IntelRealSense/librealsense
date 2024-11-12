@@ -61,10 +61,11 @@ namespace librealsense
             data_vec.insert(data_vec.begin(), data.begin(), data.end());
             return data_vec;
         }
-        else
+        else if (std::all_of(response.begin() + 1, response.end(), [](int x) { return x == 0; })) // if the response contains only the opcode, the response is empty
         {
-            return response;
+            return {};
         }
+        return response;
     }
 
     vector<uint8_t> terminal_parser::build_raw_command_data(const command_from_xml& command, const vector<string>& params) const
