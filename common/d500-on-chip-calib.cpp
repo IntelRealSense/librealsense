@@ -86,8 +86,8 @@ namespace rs2
         {
             if (s.is<rs2::safety_sensor>())
             {
-                set_option_if_needed<rs2::safety_sensor>(s.as<rs2::safety_sensor>(),
-                    RS2_OPTION_SAFETY_MODE, RS2_SAFETY_MODE_SERVICE);
+                rs2::safety_sensor safety_s = s.as<rs2::safety_sensor>();
+                set_option_if_needed<rs2::safety_sensor>(safety_s, RS2_OPTION_SAFETY_MODE, RS2_SAFETY_MODE_SERVICE);
                 break;
             }
         }
