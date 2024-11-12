@@ -82,7 +82,7 @@ namespace rs2
     void d500_on_chip_calib_manager::prepare_for_calibration()
     {
         // safety sensor in service mode - if safety sensor exists
-        if (_sub_safety->s->is<rs2::safety_sensor>())
+        if (_sub_safety && _sub_safety->s->is<rs2::safety_sensor>())
         {
             auto safety_sensor = _sub_safety->s->as<rs2::safety_sensor>();
             set_option_if_needed<rs2::safety_sensor>(safety_sensor,
