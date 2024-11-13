@@ -336,7 +336,7 @@ bool filter_slider_ui::render(const float3& location, bool enabled)
     if (is_int)
     {
         int value_as_int = static_cast<int>(value);
-        value_changed = ImGui::SliderInt(("##" + name).c_str(), &value_as_int, static_cast<int>(range.min), static_cast<int>(range.max), "%.0f");
+        value_changed = ImGui::SliderIntTofloat(("##" + name).c_str(), &value_as_int, static_cast<int>(range.min), static_cast<int>(range.max), "%.0f");
         if( step > 1 )
         {
             value_as_int = static_cast< int >( range.min )

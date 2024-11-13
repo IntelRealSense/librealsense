@@ -109,7 +109,7 @@ int main() try
     // Setup Dear ImGui context
     ImGui::CreateContext();
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(app, true);
+    ImGui_ImplGlfw_InitForOpenGL(app, false);
     ImGui_ImplOpenGL3_Init();
 
     // init hdr_widgets object

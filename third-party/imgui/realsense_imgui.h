@@ -2,8 +2,8 @@
 /* Copyright(c) 2024 Intel Corporation. All Rights Reserved. */
 #pragma once
 
-#include<imgui.h>
-#include<imgui_internal.h>
+#include "imgui.h"
+#include "imgui_internal.h"
 
 namespace ImGui
 {
@@ -26,17 +26,12 @@ namespace ImGui
         ScopePushStyleVar(ImGuiStyleVar idx, const ImVec2& val) { PushStyleVar(idx, val); }
         ~ScopePushStyleVar() { PopStyleVar(); }
     };
-    IMGUI_API void          RenderCollapseTriangle(ImVec2 p_min, bool is_open, float scale = 1.0f, bool shadow = false);
-    IMGUI_API bool          SeekSlider(const char* label, int* v, const char* display_format = "%.0f%%");
-    IMGUI_API bool          SliderIntWithSteps(const char* label, int* v, int v_min, int v_max, int v_step = 1, const char* display_format = "%.3f");
-    IMGUI_API bool          IsHovered(const ImRect& bb, ImGuiID id, bool flatten_childs = false);
-    IMGUI_API void          SetScrollHere(float center_y_ratio = 0.5f);
-    IMGUI_API int           ParseFormatPrecision(const char* fmt, int default_precision);
+    IMGUI_API bool          SliderIntWithSteps(const char* label, int* v, int v_min, int v_max, int v_step = 1);
     IMGUI_API float         RoundScalar(float value, int decimal_precision);
     IMGUI_API bool          CustomComboBox(const char* label, int* current_item, const char* const items[], int items_count);
-    IMGUI_API bool          VSliderFloat(const char* label, const ImVec2& size, float* v, float v_min, float v_max, const char* display_format, float power, bool render_bg);
-    IMGUI_API bool          InputScalarAsWidgetReplacement(const ImRect& aabb, const char* label, ImGuiDataType data_type, void* data_ptr, ImGuiID id, int decimal_precision);
     IMGUI_API bool          SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_min, float v_max, float power, int decimal_precision, ImGuiSliderFlags flags, bool render_bg);
+    IMGUI_API bool          VSliderFloat(const char* label, const ImVec2& size, float* v, float v_min, float v_max, const char* display_format, float power, bool render_bg);
+    IMGUI_API bool          SliderIntTofloat(const char* label, int* v, int v_min, int v_max, const char* display_format = "%.0f");
 
 }
 #define CONCAT_(x,y) x##y

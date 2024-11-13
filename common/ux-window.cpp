@@ -216,7 +216,6 @@ namespace rs2
    
     void ux_window::open_window()
     {
-
         if (_win)
         {
             rs2::gl::shutdown_rendering();
@@ -637,7 +636,8 @@ namespace rs2
         }
 
         // reset graphic pipe
-        begin_frame();        
+        begin_frame();
+
         if (_link_hovered)
             glfwSetCursor(_win, _hand_cursor);
         else if (_cross_hovered)

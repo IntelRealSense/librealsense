@@ -8,7 +8,6 @@
 #define GL_SILENCE_DEPRECATION
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
-#include <imgui_impl_glfw.h>
 
 #include <string>
 #include <sstream>
@@ -21,6 +20,7 @@
 
 #include "../third-party/stb_easy_font.h"
 #include "example-utils.hpp"
+#include "../third-party/imgui/imgui_impl_glfw.h"
 
 #ifndef PI
 #define PI  3.14159265358979323846
@@ -531,28 +531,40 @@ public:
         glfwSetWindowUserPointer(win, this);
         glfwSetMouseButtonCallback(win, [](GLFWwindow* w, int button, int action, int mods)
             {
-                ImGui_ImplGlfw_MouseButtonCallback(w, button, action, mods);// Forward the event to ImGui's GLFW implementation
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_MouseButtonCallback(w, button, action, mods);// Forward the event to ImGui's GLFW implementation
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
             });
 
         glfwSetScrollCallback(win, [](GLFWwindow* w, double xoffset, double yoffset)
             {
-                ImGui_ImplGlfw_ScrollCallback(w, xoffset, yoffset); // Forwards scroll events to ImGui
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_ScrollCallback(w, xoffset, yoffset); // Forwards scroll events to ImGui
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 s->on_mouse_scroll(xoffset, yoffset);
             });
 
         glfwSetCursorPosCallback(win, [](GLFWwindow* w, double x, double y)
             {
-                ImGui_ImplGlfw_CursorPosCallback(w, x, y); // Forward the cursor position to ImGui
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_CursorPosCallback(w, x, y); // Forward the cursor position to ImGui
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 s->on_mouse_move(x, y);
             });
 
         glfwSetKeyCallback(win, [](GLFWwindow* w, int key, int scancode, int action, int mods)
             {
-                ImGui_ImplGlfw_KeyCallback(w, key, scancode, action, mods);
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_KeyCallback(w, key, scancode, action, mods);
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 if (0 == action) // on key release
                 {
@@ -607,24 +619,40 @@ public:
         glfwSetWindowUserPointer(win, this);
         glfwSetMouseButtonCallback(win, [](GLFWwindow* w, int button, int action, int mods)
             {
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_MouseButtonCallback(w, button, action, mods);// Forward the event to ImGui's GLFW implementation
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
             });
 
         glfwSetScrollCallback(win, [](GLFWwindow* w, double xoffset, double yoffset)
             {
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_ScrollCallback(w, xoffset, yoffset); // Forwards scroll events to ImGui
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 s->on_mouse_scroll(xoffset, yoffset);
             });
 
         glfwSetCursorPosCallback(win, [](GLFWwindow* w, double x, double y)
             {
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_CursorPosCallback(w, x, y); // Forward the cursor position to ImGui
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 s->on_mouse_move(x, y);
             });
 
         glfwSetKeyCallback(win, [](GLFWwindow* w, int key, int scancode, int action, int mods)
             {
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_KeyCallback(w, key, scancode, action, mods);
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 if (0 == action) // on key release
                 {

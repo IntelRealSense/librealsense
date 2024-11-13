@@ -5547,8 +5547,8 @@ bool ImGui::BeginChildEx(const char* name, ImGuiID id, const ImVec2& size_arg, I
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
     if (window_flags & ImGuiWindowFlags_AlwaysUseWindowPadding)
         child_flags |= ImGuiChildFlags_AlwaysUseWindowPadding;
-    if (window_flags & ImGuiWindowFlags_NavFlattened)
-        child_flags |= ImGuiChildFlags_NavFlattened;
+    //if (window_flags & ImGuiWindowFlags_NavFlattened)
+    //    child_flags |= ImGuiChildFlags_NavFlattened;
 #endif
     if (child_flags & ImGuiChildFlags_AutoResizeX)
         child_flags &= ~ImGuiChildFlags_ResizeX;

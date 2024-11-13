@@ -19,6 +19,9 @@ else()
     endif()
 endif()
 
+# Add all imgui cpp source files and store the list in the IMGUI_SOURCES variable
+file(GLOB IMGUI_SOURCES "../third-party/imgui/*.cpp") 
+
 # We need tclap for command-line interface
 list(APPEND DEPENDENCIES tclap)
 

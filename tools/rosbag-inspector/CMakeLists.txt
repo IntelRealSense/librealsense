@@ -15,15 +15,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             ../../common/os.h
             ../../common/os.cpp
             ../../third-party/glad/glad.c
-            ../../third-party/imgui/imgui.cpp
-            ../../third-party/imgui/imgui_draw.cpp
-            ../../third-party/imgui/imgui_impl_glfw.cpp
-            ../../third-party/imgui/imgui_impl_opengl3.cpp
-            ../../third-party/imgui/imgui_widgets.cpp
-            ../../third-party/imgui/imgui_tables.cpp
-            ../../third-party/imgui/realsense_imgui.cpp
-            ../../third-party/imgui/imgui-fonts-karla.hpp
-            ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+            ${IMGUI_SOURCES}
             ../../third-party/tinyfiledialogs/tinyfiledialogs.c
             ../../third-party/tinyfiledialogs/tinyfiledialogs.h
         )

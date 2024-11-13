@@ -560,7 +560,7 @@ namespace rs2
             }
             else
             {
-                ImGui::PushItemWidth(170); // Set the width for the combo box itself
+                ImGui::PushItemWidth(-1); // Set the width for the combo box itself
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                 auto tmp_selected_res_id = ui.selected_res_id;
                 if (ImGui::CustomComboBox(label.c_str(), &tmp_selected_res_id, res_chars.data(),
@@ -639,7 +639,7 @@ namespace rs2
             }
             else
             {
-                ImGui::PushItemWidth(170); // Set the width for the combo box itself
+                ImGui::PushItemWidth(-1); // Set the width for the combo box itself
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                 if (ImGui::CustomComboBox(label.c_str(), &ui.selected_shared_fps_id, fps_chars.data(),
                     static_cast<int>(fps_chars.size())))
@@ -718,7 +718,7 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::PushItemWidth(170); // Set the width for the combo box itself
+                    ImGui::PushItemWidth(-1); // Set the width for the combo box itself
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                     ImGui::CustomComboBox(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
                         static_cast<int>(formats_chars.size()));
@@ -745,7 +745,7 @@ namespace rs2
                     }
                     else
                     {
-                        ImGui::PushItemWidth(170); // Set the width for the combo box itself
+                        ImGui::PushItemWidth(-1); // Set the width for the combo box itself
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                         ImGui::CustomComboBox(label.c_str(), &ui.selected_fps_id[f.first], fps_chars.data(),
                             static_cast<int>(fps_chars.size()));
@@ -800,7 +800,7 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::PushItemWidth(170); // Set the width for the combo box itself
+                    ImGui::PushItemWidth(-1); // Set the width for the combo box itself
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                     auto tmp_selected_res_id = ui.selected_res_id_map[stream_type_id];
                     if (ImGui::CustomComboBox(label.c_str(), &tmp_selected_res_id, res_chars.data(),
@@ -933,7 +933,7 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::PushItemWidth(170); // Set the width for the combo box itself
+                    ImGui::PushItemWidth(-1); // Set the width for the combo box itself
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                     ImGui::CustomComboBox(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
                         static_cast<int>(formats_chars.size()));

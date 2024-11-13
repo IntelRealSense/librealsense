@@ -2,23 +2,54 @@
 /* Copyright(c) 2024 Intel Corporation. All Rights Reserved. */
 
 //Overloading imgui functions to accommodate realsense GUI
-#include <realsense_imgui.h>
+#include "realsense_imgui.h"
 
-
-static void ClosePopup(ImGuiID id);
-
-bool ImGui::SeekSlider(const char* label, int* v, const char* display_format) {
-    return SliderInt(label, v, 0, 100, display_format, true);
-}
-
-// center_y_ratio: 0.0f top of last item, 0.5f vertical center of last item, 1.0f bottom of last item.
-void ImGui::SetScrollHere(float center_y_ratio)
+bool ImGui::SliderIntWithSteps(const char* label, int* v, int v_min, int v_max, int v_step)
 {
-    ImGuiWindow* window = GetCurrentWindow();
-    float target_y = window->DC.CursorPosPrevLine.y + (window->DC.PrevLineTextBaseOffset * center_y_ratio) + (GImGui->Style.ItemSpacing.y * (center_y_ratio - 0.5f) * 2.0f); // Precisely aim above, in the middle or below the last line.
-    SetScrollFromPosY(target_y - window->Pos.y, center_y_ratio);
+    float originalValue = *v;
+    bool changed = false;
+
+    float tempValue = static_cast<float>(*v); //to use SliderFloat (integers don't have any precision)
+
+    // Create the slider with float precision during drag
+    if (ImGui::SliderFloat(label, &tempValue, static_cast<float>(v_min), static_cast<float>(v_max), "%.3f")) {
+        changed = true;
+
+        // Round to nearest step while dragging
+        if (ImGui::IsItemActive()) {
+            tempValue = roundf(tempValue / static_cast<float>(v_step)) * static_cast<float>(v_step);
+            *v = static_cast<int>(tempValue);
+        }
+        else {
+            // When not dragging ensure we have a round integer value
+            *v = static_cast<int>(roundf(tempValue));
+        }
+
+        // ensure the value is between min and max
+        *v = ImClamp(*v, v_min, v_max);
+    }
+
+    return changed && (*v != originalValue);
 }
-static bool Items_SingleStringGetter(void* data, int idx, const char** out_text)
+
+float ImGui::RoundScalar(float value, int decimal_precision)
+{
+    // Round past decimal precision
+    // So when our value is 1.99999 with a precision of 0.001 we'll end up rounding to 2.0
+    // FIXME: Investigate better rounding methods
+    static const float min_steps[10] = { 1.0f, 0.1f, 0.01f, 0.001f, 0.0001f, 0.00001f, 0.000001f, 0.0000001f, 0.00000001f, 0.000000001f };
+    float min_step = (decimal_precision >= 0 && decimal_precision < 10) ? min_steps[decimal_precision] : powf(10.0f, (float)-decimal_precision);
+    bool negative = value < 0.0f;
+    value = fabsf(value);
+    float remainder = fmodf(value, min_step);
+    if (remainder <= min_step * 0.5f)
+        value -= remainder;
+    else
+        value += (min_step - remainder);
+    return negative ? -value : value;
+}
+
+bool Items_SingleStringGetter(void* data, int idx, const char** out_text)
 {
     // FIXME-OPT: we could pre-compute the indices to fasten this. But only 1 active combo means the waste is limited.
     const char* items_separated_by_zeros = (const char*)data;
@@ -36,119 +67,6 @@ static bool Items_SingleStringGetter(void* data, int idx, const char** out_text)
     if (out_text)
         *out_text = p;
     return true;
-}
-static bool Items_ArrayGetter(void* data, int idx, const char** out_text)
-{
-    const char** items = (const char**)data;
-    if (out_text)
-        *out_text = items[idx];
-    return true;
-}
-// NB: This is an internal helper. The user-facing IsItemHovered() is using data emitted from ItemAdd(), with a slightly different logic.
-bool ImGui::IsHovered(const ImRect& bb, ImGuiID id, bool flatten_childs)
-{
-    ImGuiContext& g = *GImGui;
-    if (g.HoveredId == 0 || g.HoveredId == id || g.HoveredIdAllowOverlap)
-    {
-        ImGuiWindow* window = GetCurrentWindowRead();
-        if (g.HoveredWindow == window || (flatten_childs && g.HoveredWindow == window->RootWindow))
-            if ((g.ActiveId == 0 || g.ActiveId == id || g.ActiveIdAllowOverlap) && IsMouseHoveringRect(bb.Min, bb.Max))
-                if (IsWindowContentHoverable(g.HoveredWindow))
-                    return true;
-    }
-    return false;
-}
-
-// Provide GUI slider with values according to interval steps 
-bool ImGui::SliderIntWithSteps(const char* label, int* v, int v_min, int v_max, int v_step, const char* display_format)
-{
-    if (!display_format)
-        display_format = "%d";
-
-    if (!display_format)
-        display_format = "%.0f";
-
-    float v_f = (float)*v;
-    bool value_changed = SliderFloat(label, &v_f, (float)v_min, (float)v_max, display_format, 1.0f);
-
-    *v = (int)v_f;
-
-    return value_changed;
-}
-
-
-// Parse display precision back from the display format string
-int ImGui::ParseFormatPrecision(const char* fmt, int default_precision)
-{
-    int precision = default_precision;
-    while ((fmt = strchr(fmt, '%')) != NULL)
-    {
-        fmt++;
-        if (fmt[0] == '%') { fmt++; continue; } // Ignore "%%"
-        while (*fmt >= '0' && *fmt <= '9')
-            fmt++;
-        if (*fmt == '.')
-        {
-            precision = atoi(fmt + 1);
-            if (precision < 0 || precision > 10)
-                precision = default_precision;
-        }
-        break;
-    }
-    return precision;
-}
-float ImGui::RoundScalar(float value, int decimal_precision)
-{
-    // Round past decimal precision
-    // So when our value is 1.99999 with a precision of 0.001 we'll end up rounding to 2.0
-    // FIXME: Investigate better rounding methods
-    static const float min_steps[10] = { 1.0f, 0.1f, 0.01f, 0.001f, 0.0001f, 0.00001f, 0.000001f, 0.0000001f, 0.00000001f, 0.000000001f };
-    float min_step = (decimal_precision >= 0 && decimal_precision < 10) ? min_steps[decimal_precision] : powf(10.0f, (float)-decimal_precision);
-    bool negative = value < 0.0f;
-    value = fabsf(value);
-    float remainder = fmodf(value, min_step);
-    if (remainder <= min_step * 0.5f)
-        value -= remainder;
-    else
-        value += (min_step - remainder);
-    return negative ? -value : value;
-}
-static void ClosePopup(ImGuiID id)
-{
-    if (!ImGui::IsPopupOpen(id, ImGuiPopupFlags_AnyPopupLevel))
-        return;
-    ImGuiContext& g = *GImGui;
-    ImGui::ClosePopupToLevel(g.OpenPopupStack.Size - 1,true);
-}
-
-// Render a triangle to denote expanded/collapsed state
-void ImGui::RenderCollapseTriangle(ImVec2 p_min, bool is_open, float scale, bool shadow)
-{
-    ImGuiContext& g = *GImGui;
-    ImGuiWindow* window = GetCurrentWindow();
-
-    const float h = g.FontSize * 1.00f;
-    const float r = h * 0.40f * scale;
-    ImVec2 center = ImVec2(h * 0.50f+ p_min.x, h * 0.50f * scale+ p_min.y);
-
-    ImVec2 a, b, c;
-    if (is_open)
-    {
-        center.y -= r * 0.25f;
-        a = ImVec2(0 * r+ center.x, 1 * r+ center.y) ;
-        b = ImVec2(-0.866f * r+ center.x, -0.5f * r+ center.y) ;
-        c = ImVec2(0.866f * r + center.x, -0.5f * r + center.y) ;
-    }
-    else
-    {
-        a =  ImVec2(1 * r+ center.x, 0 * r+ center.y) ;
-        b = ImVec2(-0.500f*r+ center.x, 0.866f*r+ center.y);
-        c = ImVec2(-0.500f*r+ center.x, -0.866f*r+ center.y);
-    }
-
-    if (shadow && (window->Flags) != 0)
-        window->DrawList->AddTriangleFilled(ImVec2(2+a.x, 2+a.y), ImVec2(2+b.x, 2+b.y), ImVec2(2+c.x, 2+c.y), GetColorU32(ImGuiCol_BorderShadow));
-    window->DrawList->AddTriangleFilled(a, b, c, GetColorU32(ImGuiCol_Text));
 }
 
 IMGUI_API bool ImGui::CustomComboBox(const char* label, int* current_item, const char* const items[], int items_count)
@@ -385,60 +303,6 @@ IMGUI_API bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* 
     return value_changed;
 }
 
-// Create text input in place of a slider (when CTRL+Clicking on slider)
-IMGUI_API  bool ImGui::InputScalarAsWidgetReplacement(const ImRect& aabb, const char* label, ImGuiDataType data_type, void* data_ptr, ImGuiID id, int decimal_precision)
-{
-    ImGuiContext& g = *GImGui;
-    ImGuiWindow* window = GetCurrentWindow();
-
-    // Track whether the item is being used for text input
-    bool start_text_input = false;
-
-    // First, determine if we should start text input (e.g., CTRL+Click on the slider)
-    if (ImGui::IsItemFocused() || (ImGui::IsItemHovered() && g.IO.MouseClicked[0]))
-    {
-        SetActiveID(id, window);
-        FocusWindow(window);
-
-        if (ImGui::IsItemFocused() || g.IO.KeyCtrl)
-        {
-            start_text_input = true;
-        }
-    }
-
-    // If we are in text input mode or if the item is actively being edited, use InputText
-    if (start_text_input || (g.ActiveId == id && g.ActiveIdSource == ImGuiInputSource_Keyboard))
-    {
-        bool text_value_changed = false;
-
-        // Use InputScalar to handle scalar input (e.g., float, int)
-        switch (data_type)
-        {
-        case ImGuiDataType_Float:
-            text_value_changed = ImGui::InputScalar(label, data_type, data_ptr, NULL, NULL, ".3f");
-            break;
-        case ImGuiDataType_S32:
-            text_value_changed = ImGui::InputScalar(label, data_type, data_ptr, NULL, NULL, 0);
-            break;
-            // Add other cases if you need support for other scalar types
-        default:
-            break;
-        }
-
-        if (text_value_changed)
-        {
-            return true; // If the value changed, return true
-        }
-    }
-    else
-    {
-        // If not in text input mode, render the slider as usual
-        ImGui::SliderFloat(label, (float*)data_ptr, 0.0f, 6.0f);
-    }
-
-    return false;
-}
-
 bool ImGui::VSliderFloat(const char* label, const ImVec2& size, float* v, float v_min, float v_max, const char* display_format, float power, bool render_bg)
 {
     ImGuiWindow* window = GetCurrentWindow();
@@ -457,13 +321,13 @@ bool ImGui::VSliderFloat(const char* label, const ImVec2& size, float* v, float 
     if (!ItemAdd(frame_bb, id))
         return false;
 
-    const bool hovered = IsHovered(frame_bb, id);
+    const bool hovered = IsItemHovered();
     if (hovered)
         SetHoveredID(id);
 
     if (!display_format)
         display_format = "%.3f";
-    int decimal_precision = ParseFormatPrecision(display_format, 3);
+    int decimal_precision = ImParseFormatPrecision(display_format, 3);
 
     if (hovered && g.IO.MouseClicked[0])
     {
@@ -482,5 +346,15 @@ bool ImGui::VSliderFloat(const char* label, const ImVec2& size, float* v, float 
     if (label_size.x > 0.0f)
         RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label);
 
+    return value_changed;
+}
+
+bool ImGui::SliderIntTofloat(const char* label, int* v, int v_min, int v_max, const char* display_format)
+{
+    if (!display_format)
+        display_format = "%.0f";
+    float v_f = (float)*v;
+    bool value_changed = SliderFloat(label, &v_f, (float)v_min, (float)v_max, display_format, 1.0f);
+    *v = (int)v_f;
     return value_changed;
 }

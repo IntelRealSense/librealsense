@@ -12,7 +12,7 @@
 #include <cstring>
 #include "imgui_impl_glfw.h"
 #include <imgui_impl_opengl3.h>
-#include<realsense_imgui.h>
+#include <realsense_imgui.h>
 
 void render_slider(rect location, float& clipping_dist);
 void remove_background(rs2::video_frame& other, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist);
@@ -172,15 +172,14 @@ void render_slider(rect location, float& clipping_dist)
 
     //Render the vertical slider
     ImGui::Begin("slider", nullptr, flags);
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, { 0.2f / 255, 0.3f / 255, 0.7f / 255 ,1});
-    ImGui::PushStyleColor(ImGuiCol_SliderGrab, { 215.f / 255, 215.0f / 255, 215.0f / 255,1 });
-    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, { 215.f / 255, 215.0f / 255, 215.0f / 255,1 });
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, { 1.0f, 1.0f, 1.0f, 1.0f });  // White slider bar (background)
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor(215.f / 255, 215.0f / 255, 215.0f / 255).Value);
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImColor(215.f / 255, 215.0f / 255, 215.0f / 255).Value);
+    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImColor(215.f / 255, 215.0f / 255, 215.0f / 255).Value);
     auto slider_size = ImVec2(slider_window_width / 2, location.h - (pixels_to_buttom_of_stream_text * 2) - 20);
     ImGui::VSliderFloat("##vslider", slider_size, &clipping_dist, 0.0f, 6.0f, "", 1.0f, true);
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Depth Clipping Distance: %.3f", clipping_dist);
-    ImGui::PopStyleColor(4);
+    ImGui::PopStyleColor(3);
 
     //Display bars next to slider
     float bars_dist = (slider_size.y / 6.0f);

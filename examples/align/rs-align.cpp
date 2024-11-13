@@ -7,7 +7,7 @@
 
 #include "imgui_impl_glfw.h"
 #include <imgui_impl_opengl3.h>
-#include<realsense_imgui.h>
+#include <realsense_imgui.h>
 
 /*
  This example introduces the concept of spatial stream alignment.

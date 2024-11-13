@@ -798,7 +798,7 @@ namespace rs2
         float seek_bar_width = 300.f;
         ImGui::PushItemWidth(seek_bar_width);
         std::string label1 = "## " + id;
-        if (ImGui::SeekSlider(label1.c_str(), &seek_pos, ""))
+        if (ImGui::SliderInt(label1.c_str(), &seek_pos, 0, 100, ""))
         {
             //Seek was dragged
             if (playback_status != RS2_PLAYBACK_STATUS_STOPPED) //Ignore seek when playback is stopped

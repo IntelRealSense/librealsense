@@ -9,10 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 if(BUILD_GRAPHICAL_EXAMPLES AND NOT APPLE)
 
-add_executable( ${PROJECT_NAME} rs-align-gl.cpp
-    ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp 
-    ../../third-party/imgui/realsense_imgui.cpp ../../third-party/imgui/imgui_impl_opengl3.cpp ../../third-party/imgui/imgui_widgets.cpp ../../third-party/imgui/imgui_tables.cpp
-    )
+add_executable( ${PROJECT_NAME} rs-align-gl.cpp ${IMGUI_SOURCES})
 set_property( TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11 )
 target_link_libraries( ${PROJECT_NAME} ${DEPENDENCIES} realsense2-gl )
 include_directories( ../../third-party/imgui ../../examples )
