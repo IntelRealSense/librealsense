@@ -263,7 +263,12 @@ void log_callback_end( uint32_t fps,
             dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_Z16);
             res.push_back(dec);
         }
-        res.push_back( std::make_shared< rotation_filter >() );
+        std::vector<stream_filter> streams_to_rotate;
+        stream_filter depth_filter( RS2_STREAM_DEPTH, RS2_FORMAT_Z16, -1);
+        streams_to_rotate.push_back( depth_filter );
+        stream_filter ir_filter( RS2_STREAM_INFRARED, RS2_FORMAT_Y8, -1 );
+        streams_to_rotate.push_back( ir_filter );
+        res.push_back( std::make_shared< rotation_filter >( streams_to_rotate ) );
         return res;
     }
 

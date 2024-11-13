@@ -863,6 +863,12 @@ namespace rs2
         {
         }
 
+        rotation_filter( float value )
+            : filter( init(), 1 )
+        {
+            set_option( RS2_OPTION_ROTATION, value );
+        }
+
         rotation_filter( filter f )
             : filter( f )
         {

@@ -194,8 +194,6 @@ namespace rs2
         }
         catch (...) {}
 
-        auto filters = s->get_recommended_filters();
-
         for (auto&& f : s->get_recommended_filters())
         {
             auto shared_filter = std::make_shared<filter>(f);

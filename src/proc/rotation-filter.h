@@ -15,6 +15,8 @@ namespace librealsense
     public:
         rotation_filter();
 
+        rotation_filter( std::vector< stream_filter > streams_to_rotate );
+
     protected:
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source, rs2_extension tgt_type);
 
@@ -23,16 +25,19 @@ namespace librealsense
 
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
+        bool should_process( const rs2::frame & frame ) override;
+
     private:
         void    update_output_profile(const rs2::frame& f);
 
-        int                     _control_val;
-        rs2::stream_profile     _source_stream_profile;
-        rs2::stream_profile     _target_stream_profile;
-        uint16_t                _real_width;        
-        uint16_t                _real_height;       
-        uint16_t                _rotated_width;     
-        uint16_t                _rotated_height;
+        std::vector< stream_filter > _streams_to_rotate;
+        int                       _control_val;
+        rs2::stream_profile       _source_stream_profile;
+        rs2::stream_profile       _target_stream_profile;
+        uint16_t                  _real_width;        
+        uint16_t                  _real_height;       
+        uint16_t                  _rotated_width;     
+        uint16_t                  _rotated_height;
         float _value;
     };
     MAP_EXTENSION( RS2_EXTENSION_ROTATION_FILTER, librealsense::rotation_filter );
