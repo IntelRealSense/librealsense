@@ -294,7 +294,7 @@ namespace librealsense
         }
         catch( const std::exception &e )
         {
-            LOG_ERROR("Failed reading stereo baseline, using a default value --> " << e.what() );
+            LOG_ERROR("Failed reading stereo baseline, using default value --> " << e.what() );
         }
 
         return baseline;

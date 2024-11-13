@@ -62,7 +62,7 @@ namespace librealsense
             }
             else // In case we got an empty table we will run with default values
             {
-                LOG_ERROR("cannot read intrinsic values, setting defaults");
+                LOG_ERROR("cannot read intrinsic values, using default values");
                 rs2_intrinsics intrinsics = {0};
                 intrinsics.height = height;
                 intrinsics.width = width;
