@@ -23,6 +23,7 @@ namespace librealsense {
         , _real_height( 0 )
         , _rotated_width( 0 )
         , _rotated_height( 0 )
+        , _value( 0 )
     {
         auto rotation_control = std::make_shared< ptr_option< int > >( rotation_min_val,
                                                                        rotation_max_val,
@@ -51,49 +52,32 @@ namespace librealsense {
         register_option( RS2_OPTION_ROTATION, rotation_control ); 
     }
 
-    rotation_filter::rotation_filter( std::vector< stream_filter > streams_to_rotate ):
-        stream_filter_processing_block("Rotation Filter"), 
-        _streams_to_rotate(streams_to_rotate),
-        _control_val(rotation_default_val),
-        _real_width(0),
-        _real_height(0),
-        _rotated_width(0),
-        _rotated_height(0)
-    {
-        auto rotation_control = std::make_shared< ptr_option< int > >(
-            rotation_min_val,
-            rotation_max_val,
-            rotation_step,
-            rotation_default_val,
-            &_control_val, "Rotation angle");
-
-        auto weak_rotation_control = std::weak_ptr< ptr_option< int > >( rotation_control );
-        rotation_control->on_set(
-            [this, weak_rotation_control]( float val )
-        {
-            auto strong_rotation_control = weak_rotation_control.lock();
-            if(!strong_rotation_control) return;
-
-            std::lock_guard<std::mutex> lock(_mutex);
-
-            if( ! strong_rotation_control->is_valid( val ) )
-                throw invalid_value_exception( rsutils::string::from()
-                                               << "Unsupported rotation scale " << val << " is out of range." );
-
-            _value = val; 
-            
-        });
-
-        register_option( RS2_OPTION_ROTATION, rotation_control );
-    }
-
     rs2::frame rotation_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         if( _value == rotation_default_val )
             return f;
 
-        auto src = f.as< rs2::video_frame >();
         rs2::stream_profile profile = f.get_profile();
+        rs2_stream type = profile.stream_type();
+        rs2_extension tgt_type;
+        if( type == RS2_STREAM_INFRARED )
+        {
+            tgt_type = RS2_EXTENSION_VIDEO_FRAME;
+        }
+        else if( f.is< rs2::disparity_frame >() )
+        {
+            tgt_type = RS2_EXTENSION_DISPARITY_FRAME;
+        }
+        else if( f.is< rs2::depth_frame >() )
+        {
+            tgt_type = RS2_EXTENSION_DEPTH_FRAME;
+        }
+        else
+        {
+            return f;
+        }
+
+        auto src = f.as< rs2::video_frame >();
         _target_stream_profile = profile;
 
         if( _value == 90 || _value == -90 )
@@ -108,13 +92,6 @@ namespace librealsense {
         }
         auto bpp = src.get_bytes_per_pixel();
         update_output_profile( f );
-
-        rs2_stream type = profile.stream_type();
-        rs2_extension tgt_type;
-        if( type == RS2_STREAM_COLOR || type == RS2_STREAM_INFRARED )
-            tgt_type = RS2_EXTENSION_VIDEO_FRAME;
-        else
-            tgt_type = f.is< rs2::disparity_frame >() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
 
         if (auto tgt = prepare_target_frame(f, source, tgt_type))
         {
@@ -242,20 +219,6 @@ namespace librealsense {
         }
 
     }
-
-    bool rotation_filter::should_process( const rs2::frame & frame )
-    {
-        if( ! frame || frame.is< rs2::frameset >() )
-            return false;
-        auto profile = frame.get_profile();
-        for( auto stream : _streams_to_rotate )
-        {
-            if( stream.match( frame ) )
-                return true;
-        }
-        return false;
-    }
-        
-
+       
 }
 

@@ -71,6 +71,7 @@ int main(int argc, char * argv[]) try
 
     // Declare filters
     rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
+    rs2::rotation_filter rot_filter;    // Rotation - rotates frames
     rs2::threshold_filter thr_filter;   // Threshold  - removes values outside recommended range
     rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
     rs2::temporal_filter temp_filter;   // Temporal   - reduces temporal noise
@@ -85,6 +86,7 @@ int main(int argc, char * argv[]) try
 
     // The following order of emplacement will dictate the orders in which filters are applied
     filters.emplace_back("Decimate", dec_filter);
+    filters.emplace_back( "Rotate", rot_filter );
     filters.emplace_back("Threshold", thr_filter);
     filters.emplace_back(disparity_filter_name, depth_to_disparity);
     filters.emplace_back("Spatial", spat_filter);
@@ -115,11 +117,12 @@ int main(int argc, char * argv[]) try
             /* Apply filters.
             The implemented flow of the filters pipeline is in the following order:
             1. apply decimation filter
-            2. apply threshold filter
-            3. transform the scene into disparity domain
-            4. apply spatial filter
-            5. apply temporal filter
-            6. revert the results back (if step Disparity filter was applied
+            2. apply rotation filter
+            3. apply threshold filter
+            4. transform the scene into disparity domain
+            5. apply spatial filter
+            6. apply temporal filter
+            7. revert the results back (if step Disparity filter was applied
             to depth domain (each post processing block is optional and can be applied independantly).
             */
             bool revert_disparity = false;
@@ -269,11 +272,29 @@ void render_ui(float w, float h, std::vector<filter_options>& filters)
         ImGui::Checkbox(filter.filter_name.c_str(), &tmp_value);
         filter.is_enabled = tmp_value;
         ImGui::PopStyleColor();
+        
+         
+        if( filter.filter_name == "Rotate" )  // Combo box specifically for the rotation filter
+        {
+            offset_y += elements_margin;
+            ImGui::PushItemWidth( w / 4 );
+            ImGui::SetCursorPos( { offset_x, offset_y } );
+            static const char * rotation_modes[] = { "0", "90", "180", "270" };
+            static int current_rotation_mode = 0;
+            if( ImGui::Combo( "Rotation Angle", &current_rotation_mode, rotation_modes, 4 ) )
+            {
+                float rotation_value = std::stof( rotation_modes[current_rotation_mode] );
+                filter.supported_options[RS2_OPTION_ROTATION].value = rotation_value;
 
-        if (filter.supported_options.size() == 0)
+                // Set the filter's option using the new value
+                filter.filter.set_option( RS2_OPTION_ROTATION, rotation_value );
+            }
+        }
+        if( filter.supported_options.size() == 0 )
         {
             offset_y += elements_margin;
         }
+       
         // Draw a slider for each of the filter's options
         for (auto& option_slider_pair : filter.supported_options)
         {
