@@ -157,6 +157,9 @@ void init_processing(py::module &m) {
     decimation_filter.def(py::init<>())
         .def(py::init<float>(), "magnitude"_a);
 
+    py::class_< rs2::rotation_filter, rs2::filter > rotation_filter(m, "rotation_filter","Performs rotation of frames." );
+    rotation_filter.def( py::init<>() ).def( py::init< float >(), "value"_a );
+
     py::class_<rs2::temporal_filter, rs2::filter> temporal_filter(m, "temporal_filter", "Temporal filter smooths the image by calculating multiple frames "
                                                                   "with alpha and delta settings. Alpha defines the weight of current frame, and delta defines the"
                                                                   "threshold for edge classification and preserving.");
