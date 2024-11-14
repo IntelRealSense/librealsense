@@ -65,6 +65,7 @@ void init_processing(py::module &m) {
             return new rs2::filter(filter_function, queue_size);
         }), "filter_function"_a, "queue_size"_a = 1)
         .def(BIND_DOWNCAST(filter, decimation_filter))
+        .def( BIND_DOWNCAST( filter, rotation_filter ) )
         .def(BIND_DOWNCAST(filter, disparity_transform))
         .def(BIND_DOWNCAST(filter, hole_filling_filter))
         .def(BIND_DOWNCAST(filter, spatial_filter))

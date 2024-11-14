@@ -2,6 +2,7 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #include "proc/decimation-filter.h"
+#include "proc/rotation-filter.h"
 #include "proc/threshold.h"
 #include "proc/disparity-transform.h"
 #include "proc/spatial-filter.h"
@@ -513,6 +514,7 @@ namespace librealsense
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_HOLE_FILLING_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_HDR_MERGE);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_SEQUENCE_ID_FILTER);
+        RETURN_IF_EXTENSION(block, RS2_EXTENSION_ROTATION_FILTER);
 
 #undef RETURN_IF_EXTENSION
 
