@@ -43,33 +43,33 @@ namespace librealsense
         rs2_intrinsics get_d500_intrinsic_by_resolution(const vector<uint8_t>& raw_data, d500_calibration_table_id table_id, 
             uint32_t width, uint32_t height, bool is_symmetrization_enabled)
         {
-            
-            if (!raw_data.empty()) 
+            switch (table_id)
             {
-                switch (table_id)
-                {
-                case d500_calibration_table_id::depth_calibration_id:
-                {
+            case d500_calibration_table_id::depth_calibration_id:
+            {
+                if ( !raw_data.empty() )
                     return get_d500_depth_intrinsic_by_resolution(raw_data, width, height, is_symmetrization_enabled);
-                }
-                case d500_calibration_table_id::rgb_calibration_id:
-                {
-                    return get_d500_color_intrinsic_by_resolution(raw_data, width, height);
-                }
-                default:
-                    throw invalid_value_exception(rsutils::string::from() << "Parsing Calibration table type " << static_cast<int>(table_id) << " is not supported");
-                }
+                else
+                    LOG_ERROR("Cannot read depth table intrinsic values, using default values");
             }
-            else // In case we got an empty table we will run with default values
+            case d500_calibration_table_id::rgb_calibration_id:
             {
-                LOG_ERROR("cannot read intrinsic values, using default values");
-                rs2_intrinsics intrinsics = {0};
-                intrinsics.height = height;
-                intrinsics.width = width;
-                intrinsics.ppx = intrinsics.fx = width / 2.f;
-                intrinsics.ppy = intrinsics.fy = height / 2.f;
-                return intrinsics;
+                if ( !raw_data.empty() )
+                    return get_d500_color_intrinsic_by_resolution(raw_data, width, height);
+                else
+                    LOG_ERROR("Cannot read color table intrinsic values, using default values");
             }
+            default:
+                throw invalid_value_exception(rsutils::string::from() << "Parsing Calibration table type " << static_cast<int>(table_id) << " is not supported");
+            }
+
+            // If we got here, the table is empty so continue with default values
+            rs2_intrinsics intrinsics = {0};
+            intrinsics.height = height;
+            intrinsics.width = width;
+            intrinsics.ppx = intrinsics.fx = width / 2.f;
+            intrinsics.ppy = intrinsics.fy = height / 2.f;
+            return intrinsics;
         }
 
         // Algorithm prepared by Oscar Pelc in matlab:
