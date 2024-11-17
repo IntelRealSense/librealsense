@@ -333,8 +333,18 @@ namespace librealsense
     float d500_device::get_stereo_baseline_mm() const // to be d500 adapted
     {
         using namespace ds;
-        auto table = check_calib<d500_coefficients_table>(*_coefficients_table_raw);
-        return fabs(table->baseline);
+        float baseline = 100.0f; // so we will have a non zero value if cannot read from table
+        try
+        {
+            auto table = check_calib<d500_coefficients_table>(*_coefficients_table_raw);
+            baseline = fabs(table->baseline);
+        }
+        catch( const std::exception &e )
+        {
+            LOG_ERROR("Failed reading stereo baseline, using default value --> " << e.what() );
+        }
+
+        return baseline;
     }
 
     std::vector<uint8_t> d500_device::get_d500_raw_calibration_table(ds::d500_calibration_table_id table_id) const // to be d500 adapted
