@@ -61,9 +61,11 @@ namespace librealsense
             data_vec.insert(data_vec.begin(), data.begin(), data.end());
             return data_vec;
         }
-        else if (std::all_of(response.begin() + 1, response.end(), [](int x) { return x == 0; })) // if the response contains only the opcode, the response is empty
+        else if (response.size() == 4) // if the response contains only the opcode, there's no response other than the opcode, return success message
         {
-            return {};
+            unsigned opcode = response[0];
+            auto str = (rsutils::string::from() << "Command succeeded, returned 0x" << hex << opcode).str();
+            return std::vector<uint8_t>(str.begin(), str.end());
         }
         return response;
     }
