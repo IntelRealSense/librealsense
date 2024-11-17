@@ -518,6 +518,24 @@ namespace librealsense
             data[2] = static_cast<float>(msg->angular_velocity.z);
             LOG_DEBUG("RS2_STREAM_GYRO " << motion_frame);
         }
+        if (stream_id.stream_type == RS2_STREAM_MOTION)
+        {
+            auto data = reinterpret_cast<double*>(motion_frame->data.data());
+            // orientation part
+            data[0] = static_cast<float>(msg->orientation.x);
+            data[1] = static_cast<float>(msg->orientation.y);
+            data[2] = static_cast<float>(msg->orientation.z);
+            data[3] = static_cast<float>(msg->orientation.w);
+            // ACCEL part
+            data[4] = static_cast<float>(msg->linear_acceleration.x);
+            data[5] = static_cast<float>(msg->linear_acceleration.y);
+            data[6] = static_cast<float>(msg->linear_acceleration.z);
+            // GYRO part
+            data[7] = static_cast<float>(msg->angular_velocity.x);
+            data[8] = static_cast<float>(msg->angular_velocity.y);
+            data[9] = static_cast<float>(msg->angular_velocity.z);
+            LOG_DEBUG("RS2_STREAM_MOTION " << motion_frame);
+        }
         else
         {
             throw io_exception( rsutils::string::from() << "Unsupported stream type " << stream_id.stream_type );

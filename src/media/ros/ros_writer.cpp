@@ -227,6 +227,23 @@ namespace librealsense
             imu_msg.angular_velocity.y = data_ptr[1];
             imu_msg.angular_velocity.z = data_ptr[2];
         }
+        else if (stream_id.stream_type == RS2_STREAM_MOTION)
+        {
+            const double* data_double = reinterpret_cast<const double*>(data_ptr);
+            // orientation part
+            imu_msg.orientation.x = data_double[0];
+            imu_msg.orientation.y = data_double[1];
+            imu_msg.orientation.z = data_double[2];
+            imu_msg.orientation.w = data_double[3];
+            // ACCEL part
+            imu_msg.linear_acceleration.x = data_double[4];
+            imu_msg.linear_acceleration.y = data_double[5];
+            imu_msg.linear_acceleration.z = data_double[6];
+            // GYRO part
+            imu_msg.angular_velocity.x = data_double[7];
+            imu_msg.angular_velocity.y = data_double[8];
+            imu_msg.angular_velocity.z = data_double[9];
+        }
         else
         {
             throw io_exception("Unsupported stream type for a motion frame");
