@@ -22,6 +22,7 @@ struct filter_slider_ui
     std::string description;
     bool is_int;
     float value;
+    float step;
     rs2::option_range range;
 
     bool render(const float3& location, bool enabled);
@@ -86,7 +87,7 @@ int main(int argc, char * argv[]) try
 
     // The following order of emplacement will dictate the orders in which filters are applied
     filters.emplace_back("Decimate", dec_filter);
-    filters.emplace_back( "Rotate", rot_filter );
+    filters.emplace_back("Rotate", rot_filter);
     filters.emplace_back("Threshold", thr_filter);
     filters.emplace_back(disparity_filter_name, depth_to_disparity);
     filters.emplace_back("Spatial", spat_filter);
@@ -273,23 +274,6 @@ void render_ui(float w, float h, std::vector<filter_options>& filters)
         filter.is_enabled = tmp_value;
         ImGui::PopStyleColor();
         
-         
-        if( filter.filter_name == "Rotate" )  // Combo box specifically for the rotation filter
-        {
-            offset_y += elements_margin;
-            ImGui::PushItemWidth( w / 4 );
-            ImGui::SetCursorPos( { offset_x, offset_y } );
-            static const char * rotation_modes[] = { "0", "90", "180", "270" };
-            static int current_rotation_mode = 0;
-            if( ImGui::Combo( "Rotation Angle", &current_rotation_mode, rotation_modes, 4 ) )
-            {
-                float rotation_value = std::stof( rotation_modes[current_rotation_mode] );
-                filter.supported_options[RS2_OPTION_ROTATION].value = rotation_value;
-
-                // Set the filter's option using the new value
-                filter.filter.set_option( RS2_OPTION_ROTATION, rotation_value );
-            }
-        }
         if( filter.supported_options.size() == 0 )
         {
             offset_y += elements_margin;
@@ -337,11 +321,21 @@ bool filter_slider_ui::render(const float3& location, bool enabled)
     {
         int value_as_int = static_cast<int>(value);
         value_changed = ImGui::SliderInt(("##" + name).c_str(), &value_as_int, static_cast<int>(range.min), static_cast<int>(range.max), "%.0f");
+        if( step > 1 )
+        {
+            value_as_int = static_cast< int >( range.min )
+                         + ( ( value_as_int - static_cast< int >( range.min ) ) / static_cast< int >( step ) )
+                               * static_cast< int >( step );
+        }
         value = static_cast<float>(value_as_int);
     }
     else
     {
         value_changed = ImGui::SliderFloat(("##" + name).c_str(), &value, range.min, range.max, "%.3f", 1.0f);
+        if( step > 0.0f )
+        {
+            value = range.min + round( ( value - range.min ) / step ) * step;
+        }
     }
 
     ImGui::PopItemWidth();
@@ -377,12 +371,13 @@ filter_options::filter_options(const std::string name, rs2::filter& flt) :
     filter(flt),
     is_enabled(true)
 {
-    const std::array<rs2_option, 5> possible_filter_options = {
+    const std::array<rs2_option, 6> possible_filter_options = {
         RS2_OPTION_FILTER_MAGNITUDE,
         RS2_OPTION_FILTER_SMOOTH_ALPHA,
         RS2_OPTION_MIN_DISTANCE,
         RS2_OPTION_MAX_DISTANCE,
-        RS2_OPTION_FILTER_SMOOTH_DELTA
+        RS2_OPTION_FILTER_SMOOTH_DELTA,
+        RS2_OPTION_ROTATION
     };
 
     //Go over each filter option and create a slider for it
@@ -399,6 +394,7 @@ filter_options::filter_options(const std::string name, rs2::filter& flt) :
             supported_options[opt].name = name + "_" + opt_name;
             std::string prefix = "Filter ";
             supported_options[opt].label = opt_name;
+            supported_options[opt].step = range.step;
         }
     }
 }
