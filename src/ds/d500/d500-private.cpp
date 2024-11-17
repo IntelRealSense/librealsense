@@ -51,6 +51,7 @@ namespace librealsense
                     return get_d500_depth_intrinsic_by_resolution(raw_data, width, height, is_symmetrization_enabled);
                 else
                     LOG_ERROR("Cannot read depth table intrinsic values, using default values");
+                break;
             }
             case d500_calibration_table_id::rgb_calibration_id:
             {
@@ -58,6 +59,7 @@ namespace librealsense
                     return get_d500_color_intrinsic_by_resolution(raw_data, width, height);
                 else
                     LOG_ERROR("Cannot read color table intrinsic values, using default values");
+                break;
             }
             default:
                 throw invalid_value_exception(rsutils::string::from() << "Parsing Calibration table type " << static_cast<int>(table_id) << " is not supported");
