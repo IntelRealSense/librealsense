@@ -99,7 +99,7 @@ with test.closure("Test rotation filter"):
     vs = create_video_stream(depth_intrinsics)
     depth_stream_profile = depth_sensor.add_video_stream(vs)
 
-    sync = rs.syncer()
+    frame_queue = rs.frame_queue(15)
 
     # Define rotation angles to test
     rotation_angles = [90, 180, -90]
@@ -109,7 +109,7 @@ with test.closure("Test rotation filter"):
 
         # Start depth sensor
         depth_sensor.open(depth_stream_profile)
-        depth_sensor.start(sync)
+        depth_sensor.start(frame_queue)
 
         for i in range(frames):
             # Create and process each frame
@@ -117,9 +117,8 @@ with test.closure("Test rotation filter"):
             depth_sensor.on_video_frame(frame)
 
             # Wait for frames and apply rotation filter
-            fset = sync.wait_for_frames()
-            depth = fset.first_or_default(rs.stream.depth)
-            filtered_depth = rotation_filter.process(depth)
+            depth_frame = frame_queue.wait_for_frame()
+            filtered_depth = rotation_filter.process(depth_frame)
 
             # Validate rotated frame results
             validate_rotation_results(filtered_depth, angle)
