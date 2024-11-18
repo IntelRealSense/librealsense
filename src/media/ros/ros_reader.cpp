@@ -486,9 +486,11 @@ namespace librealsense
             get_frame_metadata(m_file, info_topic, stream_id, motion_data, additional_data);
         }
 
+        size_t size_of_imu_data = (stream_id.stream_type == RS2_STREAM_MOTION) ? sizeof(rs2_combined_motion) : 3 * sizeof(float);
+
         frame_interface * frame = m_frame_source->alloc_frame(
             { stream_id.stream_type, stream_id.stream_index, RS2_EXTENSION_MOTION_FRAME },
-            3 * sizeof( float ),
+            size_of_imu_data,
             std::move( additional_data ),
             true );
         if (frame == nullptr)
@@ -522,18 +524,18 @@ namespace librealsense
         {
             auto data = reinterpret_cast<double*>(motion_frame->data.data());
             // orientation part
-            data[0] = static_cast<float>(msg->orientation.x);
-            data[1] = static_cast<float>(msg->orientation.y);
-            data[2] = static_cast<float>(msg->orientation.z);
-            data[3] = static_cast<float>(msg->orientation.w);
-            // ACCEL part
-            data[4] = static_cast<float>(msg->linear_acceleration.x);
-            data[5] = static_cast<float>(msg->linear_acceleration.y);
-            data[6] = static_cast<float>(msg->linear_acceleration.z);
+            data[0] = msg->orientation.x;
+            data[1] = msg->orientation.y;
+            data[2] = msg->orientation.z;
+            data[3] = msg->orientation.w;
             // GYRO part
-            data[7] = static_cast<float>(msg->angular_velocity.x);
-            data[8] = static_cast<float>(msg->angular_velocity.y);
-            data[9] = static_cast<float>(msg->angular_velocity.z);
+            data[4] = msg->angular_velocity.x;
+            data[5] = msg->angular_velocity.y;
+            data[6] = msg->angular_velocity.z;
+            // ACCEL part
+            data[7] = msg->linear_acceleration.x;
+            data[8] = msg->linear_acceleration.y;
+            data[9] = msg->linear_acceleration.z;
             LOG_DEBUG("RS2_STREAM_MOTION " << motion_frame);
         }
         else

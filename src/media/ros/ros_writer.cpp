@@ -229,20 +229,20 @@ namespace librealsense
         }
         else if (stream_id.stream_type == RS2_STREAM_MOTION)
         {
-            const double* data_double = reinterpret_cast<const double*>(data_ptr);
+            auto data_imu = *reinterpret_cast<const rs2_combined_motion*>(frame.frame->get_frame_data());
             // orientation part
-            imu_msg.orientation.x = data_double[0];
-            imu_msg.orientation.y = data_double[1];
-            imu_msg.orientation.z = data_double[2];
-            imu_msg.orientation.w = data_double[3];
-            // ACCEL part
-            imu_msg.linear_acceleration.x = data_double[4];
-            imu_msg.linear_acceleration.y = data_double[5];
-            imu_msg.linear_acceleration.z = data_double[6];
+            imu_msg.orientation.x = data_imu.orientation.x;
+            imu_msg.orientation.y = data_imu.orientation.y;
+            imu_msg.orientation.z = data_imu.orientation.z;
+            imu_msg.orientation.w = data_imu.orientation.w;
             // GYRO part
-            imu_msg.angular_velocity.x = data_double[7];
-            imu_msg.angular_velocity.y = data_double[8];
-            imu_msg.angular_velocity.z = data_double[9];
+            imu_msg.angular_velocity.x = data_imu.angular_velocity.x;
+            imu_msg.angular_velocity.y = data_imu.angular_velocity.y;
+            imu_msg.angular_velocity.z = data_imu.angular_velocity.z;
+            // ACCEL part
+            imu_msg.linear_acceleration.x = data_imu.linear_acceleration.x;
+            imu_msg.linear_acceleration.y = data_imu.linear_acceleration.y;
+            imu_msg.linear_acceleration.z = data_imu.linear_acceleration.z;
         }
         else
         {
