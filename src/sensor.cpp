@@ -10,6 +10,7 @@
 #include "image.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
+#include "proc/rotation-filter.h"
 #include "global_timestamp_reader.h"
 #include "device-calibration.h"
 #include "core/notification.h"
@@ -262,6 +263,7 @@ void log_callback_end( uint32_t fps,
             dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_Z16);
             res.push_back(dec);
         }
+        res.push_back( std::make_shared< rotation_filter >( ));
         return res;
     }
 
