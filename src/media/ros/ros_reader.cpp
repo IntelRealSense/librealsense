@@ -522,20 +522,20 @@ namespace librealsense
         }
         if (stream_id.stream_type == RS2_STREAM_MOTION)
         {
-            auto data = reinterpret_cast<double*>(motion_frame->data.data());
+            auto data = reinterpret_cast<rs2_combined_motion*>(motion_frame->data.data());
             // orientation part
-            data[0] = msg->orientation.x;
-            data[1] = msg->orientation.y;
-            data[2] = msg->orientation.z;
-            data[3] = msg->orientation.w;
+            data->orientation.x = msg->orientation.x;
+            data->orientation.y = msg->orientation.y;
+            data->orientation.z = msg->orientation.z;
+            data->orientation.w = msg->orientation.w;
             // GYRO part
-            data[4] = msg->angular_velocity.x;
-            data[5] = msg->angular_velocity.y;
-            data[6] = msg->angular_velocity.z;
+            data->angular_velocity.x = msg->angular_velocity.x;
+            data->angular_velocity.y = msg->angular_velocity.y;
+            data->angular_velocity.z = msg->angular_velocity.z;
             // ACCEL part
-            data[7] = msg->linear_acceleration.x;
-            data[8] = msg->linear_acceleration.y;
-            data[9] = msg->linear_acceleration.z;
+            data->linear_acceleration.x = msg->linear_acceleration.x;
+            data->linear_acceleration.y = msg->linear_acceleration.y;
+            data->linear_acceleration.z = msg->linear_acceleration.z;
             LOG_DEBUG("RS2_STREAM_MOTION " << motion_frame);
         }
         else
