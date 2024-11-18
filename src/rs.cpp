@@ -4093,7 +4093,9 @@ rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_p
     VALIDATE_NOT_NULL(command);
     VALIDATE_NOT_NULL(response);
     VALIDATE_LE(size_of_command, 1000); //bufer shall be less than 1000 bytes or similar
-    VALIDATE_LE(size_of_response, 5000);//bufer shall be less than 5000 bytes or similar
+
+    // some commands may return a longer length as a response
+    //VALIDATE_LE(size_of_response, 5000);//bufer shall be less than 5000 bytes or similar
 
 
     std::string command_string;
