@@ -184,11 +184,11 @@ valid_sp_json_str = """
             "payload_weight": 0.0,
             "surface_inclination": 15.0,
             "surface_height": 0.05,
-            "diagnostic_zone_fill_rate_threshold": 255,
+            "diagnostic_zone_fill_rate_threshold": 90,
             "floor_fill_threshold": 255,
-            "depth_fill_threshold": 255,
+            "depth_fill_threshold": 20,
             "diagnostic_zone_height_median_threshold": 255,
-            "vision_hara_persistency": 1,
+            "vision_hara_persistency": 2,
             "crypto_signature": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "reserved2": [0, 0, 0]
         }
