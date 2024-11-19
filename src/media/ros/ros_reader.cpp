@@ -520,7 +520,7 @@ namespace librealsense
             data[2] = static_cast<float>(msg->angular_velocity.z);
             LOG_DEBUG("RS2_STREAM_GYRO " << motion_frame);
         }
-        if (stream_id.stream_type == RS2_STREAM_MOTION)
+        else if (stream_id.stream_type == RS2_STREAM_MOTION)
         {
             auto data = reinterpret_cast<rs2_combined_motion*>(motion_frame->data.data());
             // orientation part
