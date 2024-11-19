@@ -99,13 +99,17 @@ namespace librealsense {
             {
             case 1: {
                 rotate_frame< 1 >( static_cast< uint8_t * >( const_cast< void * >( tgt.get_data() ) ),
-                                   static_cast< const uint8_t * >( src.get_data() ));
+                                   static_cast< const uint8_t * >( src.get_data() ),
+                                   src.get_height(),
+                                   src.get_width() );
                 break;
             }
 
             case 2: {
                 rotate_frame< 2 >( static_cast< uint8_t * >( const_cast< void * >( tgt.get_data() ) ),
-                                   static_cast< const uint8_t * >( src.get_data() ) );
+                                   static_cast< const uint8_t * >( src.get_data() ) ,
+                                   src.get_height(),
+                                   src.get_width() );
                 break;
             }
 
@@ -177,21 +181,24 @@ namespace librealsense {
     }
 
     template< size_t SIZE >
-    void rotation_filter::rotate_frame( uint8_t * const out, const uint8_t * source )
+    void rotation_filter::rotate_frame( uint8_t * const out, const uint8_t * source, int height, int width )
     {
         if( _value != 90 && _value != -90 && _value != 180 )
         {
             throw std::invalid_argument( "Invalid rotation angle. Only 90, -90, and 180 degrees are supported." );
         }
 
-        int width_out = ( _value == 90 || _value == -90 ) ? _rotated_width : _rotated_height;
-        int height_out = ( _value == 90 || _value == -90 ) ? _rotated_height : _rotated_width;
+        int width_in = ( _value == 90 || _value == -90 ) ? height : width; //else rotation angle is 180 
+        int height_in = ( _value == 90 || _value == -90 ) ? width : height; //else rotation angle is 180 
 
-        for( int i = 0; i < _rotated_width; ++i )
+        int width_out = ( _value == 90 || _value == -90 ) ? _rotated_width : _rotated_height; //else rotation angle is 180 
+        int height_out = ( _value == 90 || _value == -90 ) ? _rotated_height : _rotated_width; //else rotation angle is 180 
+
+        for( int i = 0; i < width_in; ++i )
         {
-            for( int j = 0; j < _rotated_height; ++j )
+            for( int j = 0; j < height_in; ++j )
             {
-                size_t src_index = ( i * _rotated_height + j ) * SIZE;
+                size_t src_index = ( i * height_in + j ) * SIZE;
                 size_t out_index;
 
                 if( _value == 90 )
