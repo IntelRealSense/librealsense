@@ -95,8 +95,8 @@ namespace librealsense
     {
         bool is_d555 = false;
         auto dev = As< device >( _debug_dev );
-        std::string dev_name = dev ? dev->get_info( RS2_CAMERA_INFO_NAME ) : "";
-        if( dev_name.find( "D555" ) != std::string::npos )
+        std::string pid_str = dev ? dev->get_info( RS2_CAMERA_INFO_PRODUCT_ID ) : "";
+        if( pid_str == "0B56" || pid_str == "DDS" )
             is_d555 = true;
 
         if( is_d555 )

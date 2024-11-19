@@ -88,8 +88,7 @@ namespace rs2
             auto depth_sensor = _sub->s->as <rs2::depth_sensor>();
 
             // disabling the depth visual preset change for D555 - not needed
-            std::string dev_name = _dev.supports( RS2_CAMERA_INFO_NAME ) ? _dev.get_info( RS2_CAMERA_INFO_NAME ) : "";
-            if( dev_name.find( "D555" ) == std::string::npos )
+            if (get_device_pid() != "0B56" && get_device_pid() != "DDS")
             {
                 // set depth preset as default preset
                 set_option_if_needed<rs2::depth_sensor>(depth_sensor, RS2_OPTION_VISUAL_PRESET, 1);
