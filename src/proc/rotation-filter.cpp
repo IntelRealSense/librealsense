@@ -95,24 +95,21 @@ namespace librealsense {
 
         if (auto tgt = prepare_target_frame(f, source, tgt_type))
         {
-            int rotated_width = ( _value == 90 || _value == -90 ) ? src.get_height() : src.get_width();
-            int rotated_height = ( _value == 90 || _value == -90 ) ? src.get_width() : src.get_height();
-
             switch( bpp )
             {
             case 1: {
-                rotate_depth< 1 >( static_cast< uint8_t * >( const_cast< void * >( tgt.get_data() ) ),
+                rotate_frame< 1 >( static_cast< uint8_t * >( const_cast< void * >( tgt.get_data() ) ),
                                    static_cast< const uint8_t * >( src.get_data() ),
-                                   rotated_height,
-                                   rotated_width );
+                                   src.get_width(),
+                                   src.get_height() );
                 break;
             }
 
             case 2: {
-                rotate_depth< 2 >( static_cast< uint8_t * >( const_cast< void * >( tgt.get_data() ) ),
-                                   static_cast< const uint8_t * >( src.get_data() ),
-                                   rotated_height,
-                                   rotated_width );
+                rotate_frame< 2 >( static_cast< uint8_t * >( const_cast< void * >( tgt.get_data() ) ),
+                                   static_cast< const uint8_t * >( src.get_data() ) ,
+                                   src.get_width(),
+                                   src.get_height());
                 break;
             }
 
@@ -184,40 +181,44 @@ namespace librealsense {
     }
 
     template< size_t SIZE >
-    void rotation_filter::rotate_depth( uint8_t * const out, const uint8_t * source, int width, int height )
+    void rotation_filter::rotate_frame( uint8_t * const out, const uint8_t * source, int width, int height )
     {
         if( _value != 90 && _value != -90 && _value != 180 )
         {
             throw std::invalid_argument( "Invalid rotation angle. Only 90, -90, and 180 degrees are supported." );
         }
 
-        int width_out = ( _value == 90 || _value == -90 ) ? height : width;
-        int height_out = ( _value == 90 || _value == -90 ) ? width : height;
+        // Define output dimensions
+        int width_out = ( _value == 90 || _value == -90 ) ? height : width;  // rotate by 180 will keep the values as is
+        int height_out = ( _value == 90 || _value == -90 ) ? width : height;  // rotate by 180 will keep the values as is
 
-        for( int i = 0; i < height; ++i )
+        // Perform rotation
+        for( int i = 0; i < height; ++i ) 
         {
             for( int j = 0; j < width; ++j )
             {
+                // Calculate source index
                 size_t src_index = ( i * width + j ) * SIZE;
-                size_t out_index;
 
+                // Determine output index based on rotation angle
+                size_t out_index;
                 if( _value == 90 )
                 {
-                    out_index = ( j * width_out + ( width_out - i - 1 ) ) * SIZE;
+                    out_index = ( j * height + ( height - i - 1 ) ) * SIZE;
                 }
                 else if( _value == -90 )
                 {
-                    out_index = ( ( height_out - j - 1 ) * width_out + i ) * SIZE;
+                    out_index = ( ( width - j - 1 ) * height + i ) * SIZE;
                 }
-                else
-                {  // 180 degrees
-                    out_index = ( ( height_out - i - 1 ) * width_out + ( width_out - j - 1 ) ) * SIZE;
+                else  // 180 degrees
+                {
+                    out_index = ( ( height - i - 1 ) * width + ( width - j - 1 ) ) * SIZE;
                 }
 
+                // Copy pixel data from source to destination
                 std::memcpy( &out[out_index], &source[src_index], SIZE );
             }
         }
-
     }
        
 }

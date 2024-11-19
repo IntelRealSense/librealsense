@@ -19,7 +19,7 @@ namespace librealsense
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source, rs2_extension tgt_type);
 
         template< size_t SIZE >
-        void rotate_depth( uint8_t * const out, const uint8_t * source, int width, int height );
+        void rotate_frame( uint8_t * const out, const uint8_t * source, int width, int height );
 
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
