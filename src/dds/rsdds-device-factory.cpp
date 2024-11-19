@@ -51,8 +51,15 @@ public:
         _device_watcher->on_device_added(
             [this]( std::shared_ptr< realdds::dds_device > const & dev )
             {
-                dev->wait_until_ready();  // make sure handshake is complete
-                _callbacks.raise( dev, true );
+                try
+                {
+                    dev->wait_until_ready();  // make sure handshake is complete, might throw
+                    _callbacks.raise( dev, true );
+                }
+                catch (std::runtime_error e)
+                {
+                    LOG_ERROR( "Discovered DDS device failed to be ready within timeout" << e.what() );
+                }
             } );
 
         _device_watcher->on_device_removed( [this]( std::shared_ptr< realdds::dds_device > const & dev )
