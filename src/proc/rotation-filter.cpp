@@ -189,8 +189,8 @@ namespace librealsense {
         }
 
         // Define output dimensions
-        int width_out = ( _value == 180 ) ? width : height; // else 90 or -90 degrees rotation
-        int height_out = ( _value == 180 ) ? height : width; // else 90 or -90 degrees rotation
+        int width_out = ( _value == 90 || _value == -90 ) ? height : width;  // rotate by 180 will keep the values as is
+        int height_out = ( _value == 90 || _value == -90 ) ? width : height;  // rotate by 180 will keep the values as is
 
         // Perform rotation
         for( int i = 0; i < height; ++i ) 
