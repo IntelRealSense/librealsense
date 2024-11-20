@@ -185,7 +185,7 @@ valid_sp_json_str = """
             "surface_inclination": 15.0,
             "surface_height": 0.05,
             "diagnostic_zone_fill_rate_threshold": 90,
-            "floor_fill_threshold": 255,
+            "floor_fill_threshold": 0,
             "depth_fill_threshold": 20,
             "diagnostic_zone_height_median_threshold": 255,
             "vision_hara_persistency": 2,
