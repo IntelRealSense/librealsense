@@ -194,8 +194,6 @@ namespace rs2
         }
         catch (...) {}
 
-        auto filters = s->get_recommended_filters();
-
         for (auto&& f : s->get_recommended_filters())
         {
             auto shared_filter = std::make_shared<filter>(f);
@@ -214,6 +212,9 @@ namespace rs2
                 if (is_rgb_camera)
                     model->enable(false);
             }
+
+            if( shared_filter->is< rotation_filter >() )
+                model->enable( false ); 
 
             if (shared_filter->is<threshold_filter>())
             {

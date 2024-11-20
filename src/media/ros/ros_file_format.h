@@ -417,6 +417,7 @@ namespace librealsense
 
             case RS2_STREAM_GYRO:
             case RS2_STREAM_ACCEL:
+            case RS2_STREAM_MOTION:
                 return ros_imu_type_str();
 
             case RS2_STREAM_POSE:

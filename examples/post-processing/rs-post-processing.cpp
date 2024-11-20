@@ -22,6 +22,7 @@ struct filter_slider_ui
     std::string description;
     bool is_int;
     float value;
+    float step;
     rs2::option_range range;
 
     bool render(const float3& location, bool enabled);
@@ -71,6 +72,7 @@ int main(int argc, char * argv[]) try
 
     // Declare filters
     rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
+    rs2::rotation_filter rot_filter;    // Rotation - rotates frames
     rs2::threshold_filter thr_filter;   // Threshold  - removes values outside recommended range
     rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
     rs2::temporal_filter temp_filter;   // Temporal   - reduces temporal noise
@@ -85,6 +87,7 @@ int main(int argc, char * argv[]) try
 
     // The following order of emplacement will dictate the orders in which filters are applied
     filters.emplace_back("Decimate", dec_filter);
+    filters.emplace_back("Rotate", rot_filter);
     filters.emplace_back("Threshold", thr_filter);
     filters.emplace_back(disparity_filter_name, depth_to_disparity);
     filters.emplace_back("Spatial", spat_filter);
@@ -115,11 +118,12 @@ int main(int argc, char * argv[]) try
             /* Apply filters.
             The implemented flow of the filters pipeline is in the following order:
             1. apply decimation filter
-            2. apply threshold filter
-            3. transform the scene into disparity domain
-            4. apply spatial filter
-            5. apply temporal filter
-            6. revert the results back (if step Disparity filter was applied
+            2. apply rotation filter
+            3. apply threshold filter
+            4. transform the scene into disparity domain
+            5. apply spatial filter
+            6. apply temporal filter
+            7. revert the results back (if step Disparity filter was applied
             to depth domain (each post processing block is optional and can be applied independantly).
             */
             bool revert_disparity = false;
@@ -269,11 +273,12 @@ void render_ui(float w, float h, std::vector<filter_options>& filters)
         ImGui::Checkbox(filter.filter_name.c_str(), &tmp_value);
         filter.is_enabled = tmp_value;
         ImGui::PopStyleColor();
-
-        if (filter.supported_options.size() == 0)
+        
+        if( filter.supported_options.size() == 0 )
         {
             offset_y += elements_margin;
         }
+       
         // Draw a slider for each of the filter's options
         for (auto& option_slider_pair : filter.supported_options)
         {
@@ -316,11 +321,21 @@ bool filter_slider_ui::render(const float3& location, bool enabled)
     {
         int value_as_int = static_cast<int>(value);
         value_changed = ImGui::SliderInt(("##" + name).c_str(), &value_as_int, static_cast<int>(range.min), static_cast<int>(range.max), "%.0f");
+        if( step > 1 )
+        {
+            value_as_int = static_cast< int >( range.min )
+                         + ( ( value_as_int - static_cast< int >( range.min ) ) / static_cast< int >( step ) )
+                               * static_cast< int >( step );
+        }
         value = static_cast<float>(value_as_int);
     }
     else
     {
         value_changed = ImGui::SliderFloat(("##" + name).c_str(), &value, range.min, range.max, "%.3f", 1.0f);
+        if( step > 0.0f )
+        {
+            value = range.min + round( ( value - range.min ) / step ) * step;
+        }
     }
 
     ImGui::PopItemWidth();
@@ -356,12 +371,13 @@ filter_options::filter_options(const std::string name, rs2::filter& flt) :
     filter(flt),
     is_enabled(true)
 {
-    const std::array<rs2_option, 5> possible_filter_options = {
+    const std::array<rs2_option, 6> possible_filter_options = {
         RS2_OPTION_FILTER_MAGNITUDE,
         RS2_OPTION_FILTER_SMOOTH_ALPHA,
         RS2_OPTION_MIN_DISTANCE,
         RS2_OPTION_MAX_DISTANCE,
-        RS2_OPTION_FILTER_SMOOTH_DELTA
+        RS2_OPTION_FILTER_SMOOTH_DELTA,
+        RS2_OPTION_ROTATION
     };
 
     //Go over each filter option and create a slider for it
@@ -378,6 +394,7 @@ filter_options::filter_options(const std::string name, rs2::filter& flt) :
             supported_options[opt].name = name + "_" + opt_name;
             std::string prefix = "Filter ";
             supported_options[opt].label = opt_name;
+            supported_options[opt].step = range.step;
         }
     }
 }

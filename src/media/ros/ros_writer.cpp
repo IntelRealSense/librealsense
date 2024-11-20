@@ -2,6 +2,7 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #include "proc/decimation-filter.h"
+#include "proc/rotation-filter.h"
 #include "proc/threshold.h"
 #include "proc/disparity-transform.h"
 #include "proc/spatial-filter.h"
@@ -225,6 +226,23 @@ namespace librealsense
             imu_msg.angular_velocity.x = data_ptr[0];
             imu_msg.angular_velocity.y = data_ptr[1];
             imu_msg.angular_velocity.z = data_ptr[2];
+        }
+        else if (stream_id.stream_type == RS2_STREAM_MOTION)
+        {
+            auto data_imu = *reinterpret_cast<const rs2_combined_motion*>(frame.frame->get_frame_data());
+            // orientation part
+            imu_msg.orientation.x = data_imu.orientation.x;
+            imu_msg.orientation.y = data_imu.orientation.y;
+            imu_msg.orientation.z = data_imu.orientation.z;
+            imu_msg.orientation.w = data_imu.orientation.w;
+            // GYRO part
+            imu_msg.angular_velocity.x = data_imu.angular_velocity.x;
+            imu_msg.angular_velocity.y = data_imu.angular_velocity.y;
+            imu_msg.angular_velocity.z = data_imu.angular_velocity.z;
+            // ACCEL part
+            imu_msg.linear_acceleration.x = data_imu.linear_acceleration.x;
+            imu_msg.linear_acceleration.y = data_imu.linear_acceleration.y;
+            imu_msg.linear_acceleration.z = data_imu.linear_acceleration.z;
         }
         else
         {
@@ -513,6 +531,7 @@ namespace librealsense
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_HOLE_FILLING_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_HDR_MERGE);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_SEQUENCE_ID_FILTER);
+        RETURN_IF_EXTENSION(block, RS2_EXTENSION_ROTATION_FILTER);
 
 #undef RETURN_IF_EXTENSION
 
