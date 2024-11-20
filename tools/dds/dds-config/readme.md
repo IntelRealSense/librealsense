@@ -1,32 +1,32 @@
 # dds-config tool
 
 ## Goal
-This tool is used to configer DDS based device and ensure it operates correctly within a DDS environment.  
-It allows users to manage connection priorities, enabling the selection of either DDS or USB as the preferred connection method when both options are available.
+This tool is used to configure Ethernet based devices.
+
 ## Description
-The dds-config tool allows users to prioritize either the DDS or USB connection and configure network parameters for the device.  
-It also provides information about the connected devices when executed.
+The dds-config tool offers connection configuration information for connected devices and allows users to manage connection priorities. 
+It enables the selection of the preferred connection method, whether Ethernet or USB, when both options are available, and provides the ability to set network parameters.
 
 ## Command Line Parameters
 | Flag | Description |
 |---|---|
-|-h --help|Show command line help menu|
-|--usb-first|Prioritize USB before Ethernet|
+|-h --help|Show command line help menu with all available options|
+|--version|Displays version information|
+|--usb-first|Prioritize USB and fall back to Ethernet after link timeout|
 |--eth-first|Prioritize Ethernet and fall back to USB after link timeout|
 |--dynamic-priority|Dynamically prioritize the last-working connection method (the default)|
-|--version|Displays version information and exits|
 |--serial-number <S/N>|Device serial-number to use, if more than one device is available|
 |--reset|Hardware reset without making any changes|
 |--link-timeout <milliseconds>|Milliseconds before --eth-first link times out and falls back to USB|
 |--dhcp <on/off>|DHCP dynamic IP discovery 'on' or 'off'|
 |--ip <address>|Device static IP address to use when DHCP is off|
+|--mask <1.2.3.4>|Device static IP network mask to use when DHCP is off|
+|--gateway <1.2.3.4>|Gateway to use when DHCP is off|
 |--domain-id <0-232>|DDS Domain ID to use (default is 0), note:this is the device domain ID not librealsense domain ID|
+|--dhcp-timeout <seconds>|Seconds before DHCP times out and falls back to a static IP|
+|--no-reset|Do not hardware reset after changes are made|
 |--golden| Show R/O golden values vs. current; mutually exclusive with any changes|
 |--factory-reset|Reset settings back to the --golden values|
-|--dhcp-timeout <seconds>|Seconds before DHCP times out and falls back to a static IP|
-|--mask <1.2.3.4>|Device static IP network mask to use when DHCP is off|
-|--gateway <1.2.3.4>|Displays version information and exits|
-|--no-reset|Do not hardware reset after changes are made|
 
 ## Usage example
 Prioritize Ethernet connection by using `rs-dds-config.exe --eth-first`:  
