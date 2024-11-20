@@ -1,25 +1,32 @@
 # dds-config tool
 
 ## Goal
-This tool is used to define a device as a DDS-compatible device and ensure it operates correctly within a DDS environment.  
+This tool is used to configer DDS based device and ensure it operates correctly within a DDS environment.  
 It allows users to manage connection priorities, enabling the selection of either DDS or USB as the preferred connection method when both options are available.
-
 ## Description
-Typically, the PC which the device needs to be connected to will have only one ethernet port.  
-However, two ethernet ports are required for the setup:  
-* One Ethernet port is needed to connect to the network - for remote access.
-* The second Ethernet port is needed to connect to the device - for DDS communication.
-
-To enable this configuration, a USB to ethernet adapter can be used, allowing the network connection to be routed through a USB port.  
-The dds-config tool helps manage this setup by enabling users to prioritize either the USB or DDS connection, based on the specified parameters. It also provides information about the connected devices when executed.  
+The dds-config tool allows users to prioritize either the DDS or USB connection and configure network parameters for the device.  
+It also provides information about the connected devices when executed.
 
 ## Command Line Parameters
 | Flag | Description |
 |---|---|
-|'-h --help'|Show command line help menu|
-|'--usb-first'|Prioritize USB before Ethernet|
-|'--eth-first'|Prioritize Ethernet and fall back to USB after link timeout|
-|'--dynamic-priority'|Dynamically prioritize the last-working connection method (the default)|
+|-h --help|Show command line help menu|
+|--usb-first|Prioritize USB before Ethernet|
+|--eth-first|Prioritize Ethernet and fall back to USB after link timeout|
+|--dynamic-priority|Dynamically prioritize the last-working connection method (the default)|
+|--version|Displays version information and exits|
+|--serial-number <S/N>|Device serial-number to use, if more than one device is available|
+|--reset|Hardware reset without making any changes|
+|--link-timeout <milliseconds>|Milliseconds before --eth-first link times out and falls back to USB|
+|--dhcp <on/off>|DHCP dynamic IP discovery 'on' or 'off'|
+|--ip <address>|Device static IP address to use when DHCP is off|
+|--domain-id <0-232>|DDS Domain ID to use (default is 0), note:this is the device domain ID not librealsense domain ID|
+|--golden| Show R/O golden values vs. current; mutually exclusive with any changes|
+|--factory-reset|Reset settings back to the --golden values|
+|--dhcp-timeout <seconds>|Seconds before DHCP times out and falls back to a static IP|
+|--mask <1.2.3.4>|Device static IP network mask to use when DHCP is off|
+|--gateway <1.2.3.4>|Displays version information and exits|
+|--no-reset|Do not hardware reset after changes are made|
 
 ## Usage example
 Prioritize Ethernet connection by using `rs-dds-config.exe --eth-first`:  
