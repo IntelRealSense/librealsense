@@ -1,8 +1,10 @@
 /* License: Apache 2.0. See LICENSE file in root directory. */
 /* Copyright(c) 2024 Intel Corporation. All Rights Reserved. */
 
-//Overloading imgui functions to accommodate realsense GUI
+//Overloading and adding on imgui functions to accommodate realsense GUI
 #include "realsense_imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 bool ImGui::SliderIntWithSteps(const char* label, int* v, int v_min, int v_max, int v_step)
 {
@@ -69,7 +71,7 @@ bool Items_SingleStringGetter(void* data, int idx, const char** out_text)
     return true;
 }
 
-IMGUI_API bool ImGui::CustomComboBox(const char* label, int* current_item, const char* const items[], int items_count)
+bool ImGui::CustomComboBox(const char* label, int* current_item, const char* const items[], int items_count)
 {
     bool value_changed = false;
 
@@ -116,7 +118,7 @@ IMGUI_API bool ImGui::CustomComboBox(const char* label, int* current_item, const
     return value_changed;
 }
 
-IMGUI_API bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_min, float v_max, float power, int decimal_precision, ImGuiSliderFlags flags, bool render_bg)
+bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_min, float v_max, float power, int decimal_precision, ImGuiSliderFlags flags, bool render_bg)
 {
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = GetCurrentWindow();
@@ -357,4 +359,20 @@ bool ImGui::SliderIntTofloat(const char* label, int* v, int v_min, int v_max, co
     bool value_changed = SliderFloat(label, &v_f, (float)v_min, (float)v_max, display_format, 1.0f);
     *v = (int)v_f;
     return value_changed;
+}
+
+void ImGui::PushNewFrame()
+{
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+}
+
+void ImGui::PopNewFrame()
+{
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 }

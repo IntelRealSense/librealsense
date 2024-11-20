@@ -68,9 +68,7 @@ int main(int argc, char * argv[]) try
             | ImGuiWindowFlags_NoResize
             | ImGuiWindowFlags_NoMove;
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        ImGui::PushNewFrame();
         ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::SetNextWindowSize({ app.width(), app.height() });
         ImGui::Begin("app", nullptr, flags);
@@ -208,9 +206,7 @@ int main(int argc, char * argv[]) try
         depth_image.render(depth, { app.width() * 0.25f, app.height() * 0.25f, app.width() * 0.5f, app.height() * 0.75f  });
     }
     // Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+    ImGui::PopNewFrame();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)

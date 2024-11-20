@@ -130,17 +130,12 @@ int main(int argc, char * argv[]) try
         glDisable(GL_BLEND);
 
         // Render the UI:
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        ImGui::PushNewFrame();
         render_slider({ 15.f, app.height() - 60, app.width() - 30, app.height() }, &alpha, &dir);
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
-    // Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+    ImGui::PopNewFrame();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)

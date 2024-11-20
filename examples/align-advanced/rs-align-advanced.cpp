@@ -116,18 +116,14 @@ int main(int argc, char * argv[]) try
         renderer.show(pip_stream);
 
         // Using ImGui library to provide a slide controller to select the depth clipping distance
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        ImGui::PushNewFrame();
         render_slider({ 5.f, 0, w, h }, depth_clipping_distance);
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     }
     // Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+    ImGui::PopNewFrame();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)

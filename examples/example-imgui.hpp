@@ -10,6 +10,7 @@
 #include "example.hpp"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 
 //////////////////////////////
@@ -163,9 +164,6 @@ public:
     //we need slider 2 to be showen before slider 1 (otherwise slider 1 padding is covering slider 2)
     void render_widgets() {
 
-        //start a new frame of ImGui
-        ImGui_ImplGlfw_NewFrame();
-
         _exposure_slider_seq_2.show();
         _exposure_slider_seq_1.show();
         _gain_slider_seq_2.show();
@@ -183,7 +181,7 @@ public:
 
         //render the ImGui features: sliders and text
         ImGui::Render();
-
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
     // return a reference to frames map

@@ -27,6 +27,7 @@
 #include <imgui_impl_glfw.h>
 #include "imgui_impl_opengl3.h"
 #include <imgui_internal.h>
+#include <realsense_imgui.h>
 #ifdef _MSC_VER
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -69,9 +70,7 @@ public:
         glfwGetWindowSize(_window, &_w, &_h);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        ImGui::PushNewFrame();
         _first_frame = false;
         return res;
     }
@@ -442,9 +441,7 @@ int main(int argc, const char** argv) try
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     // Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+    ImGui::PopNewFrame();
     glfwTerminate();
     return 0;
 }

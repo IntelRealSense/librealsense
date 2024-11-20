@@ -11,6 +11,7 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include <realsense_imgui.h>
 
 #include "device-model.h"
 
@@ -222,9 +223,7 @@ namespace rs2
             if (_use_glsl_proc) rs2::gl::shutdown_processing();
 
             ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
-            ImGui_ImplOpenGL3_Shutdown();
-            ImGui_ImplGlfw_Shutdown();
-            ImGui::DestroyContext();
+            ImGui::PopNewFrame();
             glfwDestroyWindow(_win);
             glfwDestroyCursor(_hand_cursor);
             glfwDestroyCursor(_cross_cursor);
@@ -671,7 +670,7 @@ namespace rs2
         }
 
         ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
-        ImGui_ImplGlfw_Shutdown();
+        ImGui::PopNewFrame();
         glfwDestroyWindow(_win);
 
         glfwDestroyCursor(_hand_cursor);
@@ -757,9 +756,7 @@ namespace rs2
         ImGui::GetIO().MouseWheel = _mouse.ui_wheel;
         _mouse.ui_wheel = 0.f;
         
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        ImGui::PushNewFrame();
     }
 
     void ux_window::begin_viewport()

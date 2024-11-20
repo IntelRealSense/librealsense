@@ -226,10 +226,7 @@ int main(int argc, char * argv[]) try
     // (Not the safest way to join a thread, please wrap your threads in some RAII manner)
     stopped = true;
     processing_thread.join();
-    // Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+    ImGui::PopNewFrame();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
@@ -265,9 +262,7 @@ void render_ui(float w, float h, std::vector<filter_options>& filters)
         | ImGuiWindowFlags_NoResize
         | ImGuiWindowFlags_NoMove;
 
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+    ImGui::PushNewFrame();
     ImGui::SetNextWindowSize({ w, h });
     ImGui::GetStyle().Colors[ImGuiCol_FrameBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
     ImGui::GetStyle().Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
