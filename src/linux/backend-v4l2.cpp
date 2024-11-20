@@ -1205,7 +1205,10 @@ namespace librealsense
         }
 
         v4l_uvc_device::v4l_uvc_device(const uvc_device_info& info, bool use_memory_map)
-            : _name(""), _info(),
+            : _name(info.id), 
+              _device_path(info.device_path),
+              _device_usb_spec(info.conn_spec),
+              _info(info),
               _is_capturing(false),
               _is_alive(true),
               _is_started(false),
@@ -1217,19 +1220,6 @@ namespace librealsense
               _buf_dispatch(use_memory_map),
               _frame_drop_monitor(DEFAULT_KPI_FRAME_DROPS_PERCENTAGE)
         {
-            foreach_uvc_device([&info, this](const uvc_device_info& i, const std::string& name)
-            {
-                if (i == info)
-                {
-                    _name = name;
-                    _info = i;
-                    _device_path = i.device_path;
-                    _device_usb_spec = i.conn_spec;
-                }
-            });
-            if (_name == "")
-                throw linux_backend_exception("device is no longer connected!");
-
             _named_mtx = std::unique_ptr<named_mutex>(new named_mutex(_name, 5000));
         }
 

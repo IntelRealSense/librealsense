@@ -30,6 +30,7 @@
 #include "proc/disparity-transform.h"
 #include "proc/syncer-processing-block.h"
 #include "proc/decimation-filter.h"
+#include "proc/rotation-filter.h"
 #include "proc/spatial-filter.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/color-formats-converter.h"
@@ -1944,6 +1945,7 @@ int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_ext
     switch (extension_type)
     {
     case RS2_EXTENSION_DECIMATION_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::decimation_filter) != nullptr;
+    case RS2_EXTENSION_ROTATION_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::rotation_filter) != nullptr;
     case RS2_EXTENSION_THRESHOLD_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::threshold) != nullptr;
     case RS2_EXTENSION_DISPARITY_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::disparity_transform) != nullptr;
     case RS2_EXTENSION_SPATIAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::spatial_filter) != nullptr;
@@ -2778,6 +2780,14 @@ rs2_processing_block* rs2_create_decimation_filter_block(rs2_error** error) BEGI
     return new rs2_processing_block{ block };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block * rs2_create_rotation_filter_block( rs2_error ** error ) BEGIN_API_CALL
+{
+    auto block = std::make_shared< librealsense::rotation_filter >();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN( nullptr )
 
 rs2_processing_block* rs2_create_temporal_filter_block(rs2_error** error) BEGIN_API_CALL
 {
@@ -4013,7 +4023,9 @@ rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_p
     VALIDATE_NOT_NULL(command);
     VALIDATE_NOT_NULL(response);
     VALIDATE_LE(size_of_command, 1000); //bufer shall be less than 1000 bytes or similar
-    VALIDATE_LE(size_of_response, 5000);//bufer shall be less than 5000 bytes or similar
+
+    // some commands may return a longer length as a response
+    //VALIDATE_LE(size_of_response, 5000);//bufer shall be less than 5000 bytes or similar
 
 
     std::string command_string;
@@ -4452,3 +4464,13 @@ void rs2_set_calibration_config(
     auto_calib->set_calibration_config(calibration_config_json_str);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, calibration_config_json_str)
+
+void rs2_hw_monitor_get_opcode_string(int opcode, char* buffer, size_t buffer_size,
+    rs2_device* device,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    auto device_interface = VALIDATE_INTERFACE(device->device, librealsense::debug_interface);
+    strncpy(buffer, device_interface->get_opcode_string(opcode).c_str(), buffer_size);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)

@@ -194,3 +194,15 @@ jobs:
             echo "Error - The minimal CMake version required for LibRS is ${EXPECTED_CMAKE_MAJOR_VER}.${EXPECTED_CMAKE_MINOR_VER} but on this build the minimal CMake version that works is $CURRENT_CMAKE_MAJOR_VER.$CURRENT_CMAKE_MINOR_VER"
             exit 1
           fi              
+
+  build_flags_docs:
+    name: "Generate build-flags.html"
+    timeout-minutes: 10
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 #v3
+
+      - name: Build docs 
+        run: |
+            python3 scripts/lrs_options-to-html.py

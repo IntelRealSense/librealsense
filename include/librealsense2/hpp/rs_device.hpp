@@ -1042,6 +1042,14 @@ namespace rs2
 
             return results;
         }
+
+        std::string get_opcode_string(int opcode)
+        {
+            rs2_error* e = nullptr;
+            char buffer[1024];
+            rs2_hw_monitor_get_opcode_string(opcode, buffer, sizeof(buffer), _dev.get(), &e);
+            return std::string(buffer);
+        }
     };
 
     class device_list

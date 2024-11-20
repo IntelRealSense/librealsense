@@ -28,6 +28,7 @@
 
 #include <src/ds/d500/d500-auto-calibration.h>
 #include <src/ds/d500/d500-debug-protocol-calibration-engine.h>
+#include <src/ds/d400/d400-private.h>
 using rsutils::json;
 
 
@@ -556,9 +557,9 @@ void dds_device_proxy::tag_default_profile_of_stream(
         // Superset = picked up in pipeline with enable_all_stream() config
         // We want color and depth to be default, and add infrared as superset
         int tag = PROFILE_TAG_SUPERSET;
-        if( stream->type_string() == "color" || stream->type_string() == "depth" )
+        if( strcmp( stream->type_string(), "color" ) == 0 || strcmp( stream->type_string(), "depth" ) == 0 )
             tag |= PROFILE_TAG_DEFAULT;
-        else if( stream->type_string() != "infrared" || profile->get_stream_index() >= 2 )
+        else if( strcmp( stream->type_string(), "ir" ) != 0 || profile->get_stream_index() >= 2 )
             return;  // leave untagged
         profile->tag_profile( tag );
     }
@@ -576,6 +577,22 @@ void dds_device_proxy::hardware_reset()
     json control = json::object( { { realdds::topics::control::key::id, realdds::topics::control::hw_reset::id } } );
     json reply;
     _dds_dev->send_control( control, &reply );
+}
+
+std::string dds_device_proxy::get_opcode_string(int opcode) const
+{
+    std::string product_line = get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+    if (product_line.find("D400") != std::string::npos)
+    {
+        // d400 device
+        return ds::d400_hwmon_response().hwmon_error2str(opcode);
+    }
+    else if (product_line.find("D500") != std::string::npos)
+    {
+        // d500 device
+        return ds::d500_hwmon_response().hwmon_error2str(opcode);
+    }
+    return "";
 }
 
 

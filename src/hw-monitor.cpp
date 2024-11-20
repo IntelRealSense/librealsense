@@ -2,6 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #include "hw-monitor.h"
 #include "types.h"
+#include <rsutils/string/from.h>
 #include <iomanip>
 #include <limits>
 #include <sstream>
@@ -226,10 +227,36 @@ namespace librealsense
     }
 
 
-    void hw_monitor::get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const
+    void hw_monitor::get_gvd( size_t sz,
+                              unsigned char * gvd,
+                              uint8_t gvd_cmd,
+                              const std::set< int32_t > * retry_error_codes ) const
     {
         command command(gvd_cmd);
-        auto data = send(command);
+        hwmon_response_type response;
+        auto data = send( command, &response );
+        // If we get an error code that match to the error code defined as require retry,
+        // we will retry the command until it succeed or we reach a timeout
+        bool should_retry = retry_error_codes && retry_error_codes->find( response ) != retry_error_codes->end();
+        if( should_retry )
+        {
+            constexpr size_t RETRIES = 50;
+            for( int i = 0; i < RETRIES; ++i )
+            {
+                LOG_WARNING( "GVD not ready - retrying GET_GVD command" );
+                std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+                data = send( command, &response );
+                if( response == _hwmon_response->success_value() )
+                    break;
+                // If we failed after 'RETRIES' retries or it is less `RETRIES` and the error
+                // code is not in the retry list than , raise an exception
+                if( i >= ( RETRIES - 1 ) || retry_error_codes->find( response ) == retry_error_codes->end() )
+                    throw io_exception( rsutils::string::from()
+                                        << "error in querying GVD, error:"
+                                        << _hwmon_response->hwmon_error2str( response ) );
+                
+            }
+        }
         auto minSize = std::min(sz, data.size());
         std::memcpy( gvd, data.data(), minSize );
     }

@@ -176,7 +176,10 @@ namespace librealsense
             uint8_t const * data = nullptr,
             size_t dataLength = 0);
 
-        void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
+        void get_gvd( size_t sz,
+                      unsigned char * gvd,
+                      uint8_t gvd_cmd,
+                      const std::set< int32_t > * retry_error_codes = nullptr ) const;
 
         template<typename T>
         std::string get_firmware_version_string( const std::vector< uint8_t > & buff,
