@@ -156,7 +156,9 @@ namespace librealsense
         {
             register_metadata_mipi(color_ep);
         }
-        register_processing_blocks();       
+        register_processing_blocks();
+
+        auto_calibrated::add_color_write_observer( [this]() {  _color_calib_table_raw.reset(); } );
     }
 
     void d400_color::register_options()

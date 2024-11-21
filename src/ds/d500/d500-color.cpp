@@ -111,6 +111,8 @@ namespace librealsense
         register_options();
         register_metadata();
         register_color_processing_blocks();
+
+        d500_auto_calibrated::add_color_write_observer( [this]() {  _color_calib_table_raw.reset(); } );
     }
 
     void d500_color::register_color_processing_blocks()

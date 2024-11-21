@@ -969,6 +969,12 @@ namespace librealsense
         std::string curr_version= _fw_version;
 
         register_features();
+
+        auto_calibrated::add_depth_write_observer( [this]()
+        { 
+            _coefficients_table_raw.reset();
+            _new_calib_table_raw.reset();
+        } );
     }
 
     void d400_device::register_features()

@@ -432,6 +432,12 @@ namespace librealsense
     void d500_auto_calibrated::write_calibration() const
     {
         _calib_engine->write_calibration(_curr_calibration);
+
+        for( auto & cb : _depth_write_callbacks )
+            cb();
+        // Currently only depth calibrations are supported, call correct callbacks based on table type otherwise
+        //for( auto & cb : _color_write_callbacks )
+        //    cb();
     }
 
     void d500_auto_calibrated::set_calibration_table(const std::vector<uint8_t>& calibration)
@@ -463,6 +469,12 @@ namespace librealsense
     void d500_auto_calibrated::reset_to_factory_calibration() const
     {
         throw not_implemented_exception(rsutils::string::from() << "Reset to factory Calibration not applicable for this device");
+
+        // Uncomment if function implemented
+        //for( auto & cb : _depth_write_callbacks )
+        //    cb();
+        //for( auto & cb : _color_write_callbacks )
+        //    cb();
     }
 
     std::vector< uint8_t > d500_auto_calibrated::run_focal_length_calibration( rs2_frame_queue * left,
