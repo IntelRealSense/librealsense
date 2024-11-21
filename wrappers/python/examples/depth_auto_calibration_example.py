@@ -110,6 +110,7 @@ def run_on_chip_calibration(speed, scan):
     cfg.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
     pipe = rs.pipeline(ctx)
     pp = pipe.start(cfg)
+    pipe.wait_for_frames()
     dev = pp.get_device()
 
     try:
@@ -199,6 +200,7 @@ def run_tare_calibration(accuracy, scan, gt, target_size):
     cfg.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
     pipe = rs.pipeline(ctx)
     pp = pipe.start(cfg)
+    pipe.wait_for_frames()
     dev = pp.get_device()
 
     try:
@@ -206,7 +208,7 @@ def run_tare_calibration(accuracy, scan, gt, target_size):
         print(f'\tAccuracy:\t{accuracy}')
         print(f'\tScan:\t{scan}')
         adev = dev.as_auto_calibrated_device()
-        table = adev.run_tare_calibration(target_z, args, progress_callback, 30000)
+        table, health = adev.run_tare_calibration(target_z, args, progress_callback, 30000)
         print('Tare calibration finished')
         adev.set_calibration_table(table)
         adev.write_calibration()
