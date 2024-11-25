@@ -126,7 +126,7 @@ namespace librealsense
     {
         firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
 
-        if( fw_ver >= firmware_version( 5, 10, 9, 0 ) )
+        if( fw_ver >= firmware_version( 5, 10, 9, 0 ) && _pid != ds::RS405_PID ) //D405 does not support an actual RGB sensor
             register_feature( std::make_shared< auto_exposure_roi_feature >( get_color_sensor(), _hw_monitor, true ) );
     }
 
