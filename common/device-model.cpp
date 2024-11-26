@@ -2001,7 +2001,7 @@ namespace rs2
 
                         try
                         {
-                            if (ImGui::CustomComboBox(opt_model.id.c_str(), &selected, labels.data(),
+                            if (RsImGui::CustomComboBox(opt_model.id.c_str(), &selected, labels.data(),
                                 static_cast<int>(labels.size())))
                             {
                                 *opt_model.invalidate_flag = true;
@@ -2897,7 +2897,7 @@ namespace rs2
                                                 ImGui::PushStyleColor(ImGuiCol_Text, white);
                                                 ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                                                 label = rsutils::string::from() << "Enable " << pb->get_name() << " post-processing filter";
-                                                ImGui::SetTooltip(label.c_str());
+                                                ImGui::SetTooltip("%s",label.c_str());
                                                 window.link_hovered();
                                                 ImGui::PopStyleColor(2);
                                             }
@@ -2922,7 +2922,7 @@ namespace rs2
                                                 ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                                                 label = rsutils::string::from()
                                                      << "Disable " << pb->get_name() << " post-processing filter";
-                                                ImGui::SetTooltip(label.c_str());
+                                                ImGui::SetTooltip("%s",label.c_str());
                                                 window.link_hovered();
                                                 ImGui::PopStyleColor(2);
                                             }

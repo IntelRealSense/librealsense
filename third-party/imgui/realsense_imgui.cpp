@@ -6,7 +6,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-bool ImGui::SliderIntWithSteps(const char* label, int* v, int v_min, int v_max, int v_step)
+bool RsImGui::SliderIntWithSteps(const char* label, int* v, int v_min, int v_max, int v_step)
 {
     float originalValue = *v;
     bool changed = false;
@@ -34,7 +34,7 @@ bool ImGui::SliderIntWithSteps(const char* label, int* v, int v_min, int v_max, 
     return changed && (*v != originalValue);
 }
 
-float ImGui::RoundScalar(float value, int decimal_precision)
+float RsImGui::RoundScalar(float value, int decimal_precision)
 {
     // Round past decimal precision
     // So when our value is 1.99999 with a precision of 0.001 we'll end up rounding to 2.0
@@ -51,27 +51,7 @@ float ImGui::RoundScalar(float value, int decimal_precision)
     return negative ? -value : value;
 }
 
-bool Items_SingleStringGetter(void* data, int idx, const char** out_text)
-{
-    // FIXME-OPT: we could pre-compute the indices to fasten this. But only 1 active combo means the waste is limited.
-    const char* items_separated_by_zeros = (const char*)data;
-    int items_count = 0;
-    const char* p = items_separated_by_zeros;
-    while (*p)
-    {
-        if (idx == items_count)
-            break;
-        p += strlen(p) + 1;
-        items_count++;
-    }
-    if (!*p)
-        return false;
-    if (out_text)
-        *out_text = p;
-    return true;
-}
-
-bool ImGui::CustomComboBox(const char* label, int* current_item, const char* const items[], int items_count)
+bool RsImGui::CustomComboBox(const char* label, int* current_item, const char* const items[], int items_count)
 {
     bool value_changed = false;
 
@@ -118,10 +98,10 @@ bool ImGui::CustomComboBox(const char* label, int* current_item, const char* con
     return value_changed;
 }
 
-bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_min, float v_max, float power, int decimal_precision, ImGuiSliderFlags flags, bool render_bg)
+bool RsImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_min, float v_max, float power, int decimal_precision, ImGuiSliderFlags flags, bool render_bg)
 {
     ImGuiContext& g = *GImGui;
-    ImGuiWindow* window = GetCurrentWindow();
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
     const ImGuiStyle& style = g.Style;
 
     const bool is_non_linear = fabsf(power - 1.0f) > 0.0001f;
@@ -131,7 +111,7 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
     if (!render_bg)
     {
         // Draw frame
-        RenderFrame(frame_bb.Min, frame_bb.Max, GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
+        ImGui::RenderFrame(frame_bb.Min, frame_bb.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
     }
 
 
@@ -202,7 +182,7 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
             }
 
             // Round past decimal precision, verify that it remains within min/max range
-            new_value = RoundScalar(new_value, decimal_precision);
+            new_value = RsImGui::RoundScalar(new_value, decimal_precision);
             if (new_value > v_max)  new_value = v_max;
             if (new_value < v_min)  new_value = v_min;
 
@@ -214,7 +194,7 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
         }
         else
         {
-            ClearActiveID();
+            ImGui::ClearActiveID();
         }
     }
 
@@ -293,21 +273,21 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
             radius = width;// / 2.5;
         }
         // Draw frame
-        RenderFrame(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg), false, 10.0f);
-        RenderFrame(fill_br.Min, fill_br.Max, ImGui::ColorConvertFloat4ToU32({ 0, 112.f / 255, 197.f / 255, 1 }), false, 10.0f);
-        window->DrawList->AddCircleFilled(graber_size, radius, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), 16);
+        ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), false, 10.0f);
+        ImGui::RenderFrame(fill_br.Min, fill_br.Max, ImGui::ColorConvertFloat4ToU32({ 0, 112.f / 255, 197.f / 255, 1 }), false, 10.0f);
+        window->DrawList->AddCircleFilled(graber_size, radius, ImGui::GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), 16);
     }
     else
     {
-        window->DrawList->AddRectFilled(grab_bb.Min, grab_bb.Max, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), style.GrabRounding);
+        window->DrawList->AddRectFilled(grab_bb.Min, grab_bb.Max, ImGui::GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), style.GrabRounding);
     }
 
     return value_changed;
 }
 
-bool ImGui::VSliderFloat(const char* label, const ImVec2& size, float* v, float v_min, float v_max, const char* display_format, float power, bool render_bg)
+bool RsImGui::VSliderFloat(const char* label, const ImVec2& size, float* v, float v_min, float v_max, const char* display_format, float power, bool render_bg)
 {
-    ImGuiWindow* window = GetCurrentWindow();
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
     if (window->SkipItems)
         return false;
 
@@ -315,17 +295,17 @@ bool ImGui::VSliderFloat(const char* label, const ImVec2& size, float* v, float 
     const ImGuiStyle& style = g.Style;
     const ImGuiID id = window->GetID(label);
 
-    const ImVec2 label_size = CalcTextSize(label, NULL, true);
+    const ImVec2 label_size = ImGui::CalcTextSize(label, NULL, true);
     const ImRect frame_bb(window->DC.CursorPos, ImVec2(window->DC.CursorPos.x + size.x, window->DC.CursorPos.y + size.y));
     const ImRect bb(frame_bb.Min,ImVec2(label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x + frame_bb.Max .x: frame_bb.Max.x, frame_bb.Max.y));
 
-    ItemSize(bb, style.FramePadding.y);
-    if (!ItemAdd(frame_bb, id))
+    ImGui::ItemSize(bb, style.FramePadding.y);
+    if (!ImGui::ItemAdd(frame_bb, id))
         return false;
 
-    const bool hovered = IsItemHovered();
+    const bool hovered = ImGui::IsItemHovered();
     if (hovered)
-        SetHoveredID(id);
+        ImGui::SetHoveredID(id);
 
     if (!display_format)
         display_format = "%.3f";
@@ -333,35 +313,35 @@ bool ImGui::VSliderFloat(const char* label, const ImVec2& size, float* v, float 
 
     if (hovered && g.IO.MouseClicked[0])
     {
-        SetActiveID(id, window);
-        FocusWindow(window);
+        ImGui::SetActiveID(id, window);
+        ImGui::FocusWindow(window);
     }
 
     // Actual slider behavior + render grab
-    bool value_changed = SliderBehavior(frame_bb, id, v, v_min, v_max, power, decimal_precision, ImGuiSliderFlags_Vertical, render_bg);
+    bool value_changed = RsImGui::SliderBehavior(frame_bb, id, v, v_min, v_max, power, decimal_precision, ImGuiSliderFlags_Vertical, render_bg);
 
     // Display value using user-provided display format so user can add prefix/suffix/decorations to the value.
     // For the vertical slider we allow centered text to overlap the frame padding
     char value_buf[64];
     char* value_buf_end = value_buf + ImFormatString(value_buf, IM_ARRAYSIZE(value_buf), display_format, *v);
-    RenderTextClipped(ImVec2(frame_bb.Min.x, frame_bb.Min.y + style.FramePadding.y), frame_bb.Max, value_buf, value_buf_end, NULL);
+    ImGui::RenderTextClipped(ImVec2(frame_bb.Min.x, frame_bb.Min.y + style.FramePadding.y), frame_bb.Max, value_buf, value_buf_end, NULL);
     if (label_size.x > 0.0f)
-        RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label);
+        ImGui::RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label);
 
     return value_changed;
 }
 
-bool ImGui::SliderIntTofloat(const char* label, int* v, int v_min, int v_max, const char* display_format)
+bool RsImGui::SliderIntTofloat(const char* label, int* v, int v_min, int v_max, const char* display_format)
 {
     if (!display_format)
         display_format = "%.0f";
     float v_f = (float)*v;
-    bool value_changed = SliderFloat(label, &v_f, (float)v_min, (float)v_max, display_format, 1.0f);
+    bool value_changed = ImGui::SliderFloat(label, &v_f, (float)v_min, (float)v_max, display_format, 1.0f);
     *v = (int)v_f;
     return value_changed;
 }
 
-void ImGui::PushNewFrame()
+void RsImGui::PushNewFrame()
 {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
@@ -369,7 +349,7 @@ void ImGui::PushNewFrame()
     ImGui::NewFrame();
 }
 
-void ImGui::PopNewFrame()
+void RsImGui::PopNewFrame()
 {
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();

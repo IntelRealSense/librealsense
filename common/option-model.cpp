@@ -265,7 +265,7 @@ bool option_model::draw_combobox( notifications_model & model,
 
     try
     {
-        if( ImGui::CustomComboBox( id.c_str(), &selected, labels.data(), static_cast< int >( labels.size() ) ) )
+        if( RsImGui::CustomComboBox( id.c_str(), &selected, labels.data(), static_cast< int >( labels.size() ) ) )
         {
             float tmp_value = range.min + range.step * selected;
             model.add_log( rsutils::string::from()
@@ -497,7 +497,7 @@ bool option_model::draw_slider( notifications_model & model,
             // runs when changing a value with slider and not the textbox
             auto int_value = static_cast< int >( value_as_float() );
 
-            if( ImGui::SliderIntWithSteps( id.c_str(),
+            if( RsImGui::SliderIntWithSteps( id.c_str(),
                                            &int_value,
                                            static_cast< int >( range.min ),
                                            static_cast< int >( range.max ),

@@ -116,14 +116,14 @@ int main(int argc, char * argv[]) try
         renderer.show(pip_stream);
 
         // Using ImGui library to provide a slide controller to select the depth clipping distance
-        ImGui::PushNewFrame();
+        RsImGui::PushNewFrame();
         render_slider({ 5.f, 0, w, h }, depth_clipping_distance);
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     }
     // Cleanup
-    ImGui::PopNewFrame();
+    RsImGui::PopNewFrame();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
@@ -172,7 +172,7 @@ void render_slider(rect location, float& clipping_dist)
     ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImColor(215.f / 255, 215.0f / 255, 215.0f / 255).Value);
     ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImColor(215.f / 255, 215.0f / 255, 215.0f / 255).Value);
     auto slider_size = ImVec2(slider_window_width / 2, location.h - (pixels_to_buttom_of_stream_text * 2) - 20);
-    ImGui::VSliderFloat("##vslider", slider_size, &clipping_dist, 0.0f, 6.0f, "", 1.0f, true);
+    RsImGui::VSliderFloat("##vslider", slider_size, &clipping_dist, 0.0f, 6.0f, "", 1.0f, true);
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Depth Clipping Distance: %.3f", clipping_dist);
     ImGui::PopStyleColor(3);

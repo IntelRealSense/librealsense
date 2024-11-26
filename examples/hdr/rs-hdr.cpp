@@ -150,14 +150,14 @@ int main() try
 
         //update frames in frames map in hdr_widgets
         hdr_widgets.update_frames_map(infrared_frame, depth_frame, hdr_frame, hdr_seq_id, hdr_seq_size);
-        ImGui::PushNewFrame();
+        RsImGui::PushNewFrame();
         //render hdr widgets sliders and text boxes
         hdr_widgets.render_widgets();
 
         //the show method, when applied on frame map, break it to frames and upload each frame into its specific tile
         app.show(hdr_widgets.get_frames_map());
     }
-    ImGui::PopNewFrame();
+    RsImGui::PopNewFrame();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error& e)

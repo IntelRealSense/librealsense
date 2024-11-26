@@ -70,7 +70,7 @@ public:
         glfwGetWindowSize(_window, &_w, &_h);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        ImGui::PushNewFrame();
+        RsImGui::PushNewFrame();
         _first_frame = false;
         return res;
     }
@@ -441,7 +441,7 @@ int main(int argc, const char** argv) try
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     // Cleanup
-    ImGui::PopNewFrame();
+    RsImGui::PopNewFrame();
     glfwTerminate();
     return 0;
 }

@@ -226,7 +226,7 @@ int main(int argc, char * argv[]) try
     // (Not the safest way to join a thread, please wrap your threads in some RAII manner)
     stopped = true;
     processing_thread.join();
-    ImGui::PopNewFrame();
+    RsImGui::PopNewFrame();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
@@ -262,7 +262,7 @@ void render_ui(float w, float h, std::vector<filter_options>& filters)
         | ImGuiWindowFlags_NoResize
         | ImGuiWindowFlags_NoMove;
 
-    ImGui::PushNewFrame();
+    RsImGui::PushNewFrame();
     ImGui::SetNextWindowSize({ w, h });
     ImGui::GetStyle().Colors[ImGuiCol_FrameBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
     ImGui::GetStyle().Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
@@ -331,7 +331,7 @@ bool filter_slider_ui::render(const float3& location, bool enabled)
     if (is_int)
     {
         int value_as_int = static_cast<int>(value);
-        value_changed = ImGui::SliderIntTofloat(("##" + name).c_str(), &value_as_int, static_cast<int>(range.min), static_cast<int>(range.max), "%.0f");
+        value_changed = RsImGui::SliderIntTofloat(("##" + name).c_str(), &value_as_int, static_cast<int>(range.min), static_cast<int>(range.max), "%.0f");
         if( step > 1 )
         {
             value_as_int = static_cast< int >( range.min )

@@ -223,7 +223,7 @@ namespace rs2
             if (_use_glsl_proc) rs2::gl::shutdown_processing();
 
             ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
-            ImGui::PopNewFrame();
+            RsImGui::PopNewFrame();
             glfwDestroyWindow(_win);
             glfwDestroyCursor(_hand_cursor);
             glfwDestroyCursor(_cross_cursor);
@@ -670,7 +670,7 @@ namespace rs2
         }
 
         ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
-        ImGui::PopNewFrame();
+        RsImGui::PopNewFrame();
         glfwDestroyWindow(_win);
 
         glfwDestroyCursor(_hand_cursor);
@@ -756,7 +756,7 @@ namespace rs2
         ImGui::GetIO().MouseWheel = _mouse.ui_wheel;
         _mouse.ui_wheel = 0.f;
         
-        ImGui::PushNewFrame();
+        RsImGui::PushNewFrame();
     }
 
     void ux_window::begin_viewport()
