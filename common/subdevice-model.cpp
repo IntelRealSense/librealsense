@@ -10,49 +10,6 @@
 
 namespace rs2
 {
-    static void width_height_from_resolution(rs2_sensor_mode mode, int& width, int& height)
-    {
-        switch (mode)
-        {
-        case RS2_SENSOR_MODE_VGA:
-            width = 640;
-            height = 480;
-            break;
-        case RS2_SENSOR_MODE_XGA:
-            width = 1024;
-            height = 768;
-            break;
-        case RS2_SENSOR_MODE_QVGA:
-            width = 320;
-            height = 240;
-            break;
-        default:
-            width = height = 0;
-            break;
-        }
-    }
-
-    static int get_resolution_id_from_sensor_mode(rs2_sensor_mode sensor_mode,
-        const std::vector< std::pair< int, int > >& res_values)
-    {
-        int width = 0, height = 0;
-        width_height_from_resolution(sensor_mode, width, height);
-        auto iter = std::find_if(res_values.begin(),
-            res_values.end(),
-            [width, height](std::pair< int, int > res) {
-                if (((res.first == width) && (res.second == height))
-                    || ((res.first == height) && (res.second == width)))
-                    return true;
-                return false;
-            });
-        if (iter != res_values.end())
-        {
-            return static_cast<int>(std::distance(res_values.begin(), iter));
-        }
-
-        throw std::runtime_error("cannot convert sensor mode to resolution ID");
-    }
-
     std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec)
     {
         std::vector<const char*> res;
@@ -436,33 +393,6 @@ namespace rs2
                 ui.selected_res_id = selection_index;
             }
 
-            if (new_device_connected)
-            {
-                // Have the various preset options automatically update based on the resolution of the
-                // (closed) stream...
-                // TODO we have no res_values when loading color rosbag, and color sensor isn't
-                // even supposed to support SENSOR_MODE... see RS5-7726
-                if (s->supports(RS2_OPTION_SENSOR_MODE) && !res_values.empty())
-                {
-                    // Watch out for read-only options in the playback sensor!
-                    try
-                    {
-                        auto requested_sensor_mode = static_cast<float>(resolution_from_width_height(
-                            res_values[ui.selected_res_id].first,
-                            res_values[ui.selected_res_id].second));
-
-                        auto currest_sensor_mode = s->get_option(RS2_OPTION_SENSOR_MODE);
-
-                        if (requested_sensor_mode != currest_sensor_mode)
-                            s->set_option(RS2_OPTION_SENSOR_MODE, requested_sensor_mode);
-                    }
-                    catch (not_implemented_error const&)
-                    {
-                        // Just ignore for now: need to figure out a way to write to playback sensors...
-                    }
-                }
-            }
-
             if (ui.is_multiple_resolutions)
             {
                 for (auto it = ui.selected_res_id_map.begin(); it != ui.selected_res_id_map.end(); ++it)
@@ -568,46 +498,8 @@ namespace rs2
                     res = true;
                     _options_invalidated = true;
 
-                    // Set sensor mode only at the Viewer app,
-                    // DQT app will handle the sensor mode when the streaming is off (while reseting the stream)
-                    if (s->supports(RS2_OPTION_SENSOR_MODE) && !allow_change_resolution_while_streaming)
-                    {
-                        auto width = res_values[tmp_selected_res_id].first;
-                        auto height = res_values[tmp_selected_res_id].second;
-                        auto res = resolution_from_width_height(width, height);
-                        if (res >= RS2_SENSOR_MODE_VGA && res < RS2_SENSOR_MODE_COUNT)
-                        {
-                            try
-                            {
-                                s->set_option(RS2_OPTION_SENSOR_MODE, float(res));
-                            }
-                            catch (const error& e)
-                            {
-                                error_message = error_to_string(e);
-                            }
+                    ui.selected_res_id = tmp_selected_res_id;
 
-                            // Only update the cached value once set_option is done! That way, if it doesn't change anything...
-                            try
-                            {
-                                int sensor_mode_val = static_cast<int>(s->get_option(RS2_OPTION_SENSOR_MODE));
-                                {
-                                    ui.selected_res_id = get_resolution_id_from_sensor_mode(
-                                        static_cast<rs2_sensor_mode>(sensor_mode_val),
-                                        res_values);
-                                }
-                            }
-                            catch (...) {}
-                        }
-                        else
-                        {
-                            error_message = rsutils::string::from() << "Resolution " << width << "x" << height
-                                << " is not supported on this device";
-                        }
-                    }
-                    else
-                    {
-                        ui.selected_res_id = tmp_selected_res_id;
-                    }
                 }
                 ImGui::PopStyleColor();
                 ImGui::PopItemWidth();
@@ -807,47 +699,9 @@ namespace rs2
                     {
                         res = true;
                         _options_invalidated = true;
+                        
+                        ui.selected_res_id_map[stream_type_id] = tmp_selected_res_id;
 
-                        // Set sensor mode only at the Viewer app,
-                        // DQT app will handle the sensor mode when the streaming is off (while reseting the stream)
-                        if (s->supports(RS2_OPTION_SENSOR_MODE) && !allow_change_resolution_while_streaming)
-                        {
-                            auto width = res_values[tmp_selected_res_id].first;
-                            auto height = res_values[tmp_selected_res_id].second;
-                            auto res = resolution_from_width_height(width, height);
-                            if (res >= RS2_SENSOR_MODE_VGA && res < RS2_SENSOR_MODE_COUNT)
-                            {
-                                try
-                                {
-                                    s->set_option(RS2_OPTION_SENSOR_MODE, float(res));
-                                }
-                                catch (const error& e)
-                                {
-                                    error_message = error_to_string(e);
-                                }
-
-                                // Only update the cached value once set_option is done! That way, if it doesn't change anything...
-                                try
-                                {
-                                    int sensor_mode_val = static_cast<int>(s->get_option(RS2_OPTION_SENSOR_MODE));
-                                    {
-                                        ui.selected_res_id = get_resolution_id_from_sensor_mode(
-                                            static_cast<rs2_sensor_mode>(sensor_mode_val),
-                                            res_values);
-                                    }
-                                }
-                                catch (...) {}
-                            }
-                            else
-                            {
-                                error_message = rsutils::string::from() << "Resolution " << width << "x" << height
-                                    << " is not supported on this device";
-                            }
-                        }
-                        else
-                        {
-                            ui.selected_res_id_map[stream_type_id] = tmp_selected_res_id;
-                        }
                     }
                     ImGui::PopStyleColor();
                     ImGui::PopItemWidth();

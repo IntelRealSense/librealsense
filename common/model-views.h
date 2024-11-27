@@ -48,8 +48,6 @@ namespace rs2
 
     static const float FEET_TO_METER = 0.3048f;
 
-    rs2_sensor_mode resolution_from_width_height(int width, int height);
-
     template<class T>
     void sort_together(std::vector<T>& vec, std::vector<std::string>& names)
     {
