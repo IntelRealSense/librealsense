@@ -124,7 +124,7 @@ enum class ERealSenseOptionType : uint8
     INVALIDATION_BYPASS                        , /**< Enable\disable pixel invalidation */
     AMBIENT_LIGHT                              , /**< Change the depth ambient light see rs2_ambient_light for values */
     DIGITAL_GAIN = AMBIENT_LIGHT               , /**< Change the depth digital gain see rs2_digital_gain for values */
-    SENSOR_MODE                                , /**< The resolution mode: see rs2_sensor_mode for values */
+    SENSOR_MODE                                , /**< Deprecated!! - The resolution mode: see rs2_sensor_mode for values */
     EMITTER_ALWAYS_ON                          , /**< Enable Laser On constantly (GS SKU Only) */
     THERMAL_COMPENSATION                       , /**< Depth Thermal Compensation for selected D400 SKUs */
     TRIGGER_CAMERA_ACCURACY_HEALTH             , /**< DEPRECATED! */

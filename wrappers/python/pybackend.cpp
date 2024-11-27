@@ -176,7 +176,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("activate_pixel_invalidation", RS2_OPTION_INVALIDATION_BYPASS)
         .value("ambient_light_environment_level", RS2_OPTION_AMBIENT_LIGHT)
         .value("digital_gain", RS2_OPTION_DIGITAL_GAIN)
-        .value("sensor_resolution_mode", RS2_OPTION_SENSOR_MODE)
+        .value("sensor_resolution_mode", RS2_OPTION_SENSOR_MODE)  // Deprecated
         .value("emitter_always_on", RS2_OPTION_EMITTER_ALWAYS_ON)
         .value("thermal_compensation", RS2_OPTION_THERMAL_COMPENSATION)
         .value("host_performance", RS2_OPTION_HOST_PERFORMANCE)
