@@ -77,6 +77,7 @@ namespace rs2
                 image = std::vector< uint8_t >( hex, hex + size );
             }
         }
+        break;
         case RS2_PRODUCT_LINE_D500:
         {
             bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
