@@ -207,34 +207,6 @@ inline stream_profile find_confidence_corresponding_to_depth(rs2::depth_sensor d
     return *confidence_profile;
 }
 
-inline stream_profile
-find_profile( rs2::depth_sensor depth_sens, rs2_stream stream, rs2_sensor_mode mode )
-{
-    std::vector< stream_profile > stream_profiles;
-    REQUIRE_NOTHROW( stream_profiles = depth_sens.get_stream_profiles() );
-
-    std::map< rs2_sensor_mode, std::pair< uint32_t, uint32_t > > sensor_mode_to_resolution
-        = { { { RS2_SENSOR_MODE_VGA }, { 640, 480 } },
-            { { RS2_SENSOR_MODE_XGA }, { 1024, 768 } },
-            { { RS2_SENSOR_MODE_QVGA }, { 320, 240 } } };
-
-
-    auto profile
-        = std::find_if( stream_profiles.begin(), stream_profiles.end(), [&]( stream_profile sp ) {
-              auto vp = sp.as< video_stream_profile >();
-              if( vp )
-              {
-                  return sp.stream_type() == stream
-                      && vp.width() == sensor_mode_to_resolution[mode].first
-                      && vp.height() == sensor_mode_to_resolution[mode].second;
-              }
-              return false;
-          } );
-
-    REQUIRE( profile != stream_profiles.end() );
-    return *profile;
-}
-
 inline void do_while_streaming( rs2::sensor depth_sens,
                                 std::vector< stream_profile > profiles,
                                 std::function< void() > action )
