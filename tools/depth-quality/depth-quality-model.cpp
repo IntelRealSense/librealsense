@@ -550,7 +550,8 @@ namespace rs2
 
                         if (_depth_sensor_model->draw_stream_selection(_error_message))
                         {
-                            if (_depth_sensor_model->is_selected_combination_supported())
+                            if (_depth_sensor_model->is_selected_combination_supported() &&
+                                !_depth_sensor_model->is_depth_calibration_profile())
                             {
                                 // Preserve streams and ui selections
                                 auto primary = _depth_sensor_model->get_selected_profiles().front().as<video_stream_profile>();

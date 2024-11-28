@@ -1419,6 +1419,45 @@ namespace rs2
         return is_cal_format;
     }
 
+    bool subdevice_model::is_depth_calibration_profile() const
+    {
+        // Check if D555 at depth resolution of 1280x800
+        std::string dev_name = "";
+        if( dev.supports( RS2_CAMERA_INFO_NAME ) )
+            dev_name = dev.get_info( RS2_CAMERA_INFO_NAME );
+
+        if( dev_name.find( "D555" ) != std::string::npos )
+        {
+            // More efficient to check resolution before format
+            if( ui.selected_res_id > 0 && res_values.size() > ui.selected_res_id &&  // Verify res_values is initialized
+                res_values[ui.selected_res_id].first == 1280 && res_values[ui.selected_res_id].second == 800 )
+            {
+                for( auto it = stream_enabled.begin(); it != stream_enabled.end(); ++it )
+                {
+                    if( it->second )
+                    {
+                        int selected_format_index = -1;
+                        if( ui.selected_format_id.count( it->first ) > 0 )
+                            selected_format_index = ui.selected_format_id.at( it->first );
+
+                        if( format_values.count( it->first ) > 0 && selected_format_index > -1 )
+                        {
+                            auto formats = format_values.at( it->first );
+                            if( formats.size() > selected_format_index )
+                            {
+                                auto format = formats[selected_format_index];
+                                if( format == RS2_FORMAT_Z16 )
+                                    return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
     std::pair<int, int> subdevice_model::get_max_resolution(rs2_stream stream) const
     {
         if (resolutions_per_stream.count(stream) > 0)
