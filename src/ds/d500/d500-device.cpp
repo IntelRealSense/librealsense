@@ -23,6 +23,7 @@
 #include "proc/depth-formats-converter.h"
 #include "proc/y8i-to-y8y8.h"
 #include "proc/y16i-to-y10msby10msb.h"
+#include <common/fw/firmware-version.h>
 
 #include <rsutils/type/fourcc.h>
 using rs_fourcc = rsutils::type::fourcc;
@@ -489,7 +490,7 @@ namespace librealsense
             _device_capabilities = ds_caps::CAP_ACTIVE_PROJECTOR | ds_caps::CAP_RGB_SENSOR | ds_caps::CAP_IMU_SENSOR |
                 ds_caps::CAP_BMI_085 | ds_caps::CAP_GLOBAL_SHUTTER | ds_caps::CAP_INTERCAM_HW_SYNC;
 
-            _fw_version = rsutils::version(gvd_parsed_fields.fw_version);
+            _fw_version = rsutils::version(gvd_parsed_fields.fw_version);            
 
             auto _usb_mode = usb3_type;
             usb_type_str = usb_spec_names.at(_usb_mode);
@@ -519,6 +520,11 @@ namespace librealsense
 
             _is_locked = _ds_device_common->is_locked( gvd_buff.data(), is_camera_locked_offset );
 
+            // Recommended FW only for D555
+            if (pid_hex_str == "0B56")
+            {
+                _recommended_fw_version = firmware_version(D555_RECOMMENDED_FIRMWARE_VERSION);
+            }
 
             //EXPOSURE AND GAIN - preparing uvc options
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
@@ -695,8 +701,11 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D500");
-        // Uncomment once D500 recommended FW exist
-        //register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
+        // Recommended FW only for D555
+        if (pid_hex_str == "0B56")
+        {
+            register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
+        }
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 
         if (usb_modality)
