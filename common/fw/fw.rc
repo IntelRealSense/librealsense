@@ -1,2 +1,3 @@
 #include "D4XX_FW_Image.rc"
+#include "D555_FW_Image.rc"
 

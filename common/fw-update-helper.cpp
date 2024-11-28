@@ -57,7 +57,7 @@ namespace rs2
     std::string get_available_firmware_version(int product_line, const std::string& pid)
     {
         if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
-        else if (pid == "0B56") return FW_D555_FW_IMAGE_VERSION;
+        else if (pid == "0B56" || pid == "DDS") return FW_D555_FW_IMAGE_VERSION;
         else return "";
     }
 
@@ -75,6 +75,16 @@ namespace rs2
                 int size = 0;
                 auto hex = fw_get_D4XX_FW_Image( size );
                 image = std::vector< uint8_t >( hex, hex + size );
+            }
+        }
+        case RS2_PRODUCT_LINE_D500:
+        {
+            bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
+            if (strlen(FW_D555_FW_IMAGE_VERSION) && !allow_rc_firmware)
+            {
+                int size = 0;
+                auto hex = fw_get_D555_FW_Image(size);
+                image = std::vector< uint8_t >(hex, hex + size);
             }
         }
         break;
