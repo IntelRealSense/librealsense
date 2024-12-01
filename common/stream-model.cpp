@@ -1294,11 +1294,15 @@ namespace rs2
             case 6: return "PAUSE_STATE";
             case 7: return "WARNING_STATE";
             case 8: return "DANGER_STATE";
-            case 9: return "NON_CRITICAL_ERROR_STATE";
-            case 10: return "IRRECOVERABLE_LOCK_ERROR_STATE";
-            case 11: return "INTERLOCK_DANGER_STATE";
+            case 9: return "DANGER_ERROR_STATE";
+            case 10: return "INTERLOCK_DANGER_STATE";
+            case 11: return "NON_CRITICAL_ERROR_STATE";
+            case 12: return "IRRECOVERABLE_LOCK_ERROR_STATE";
+            case 13: return "DFU_MCU_STATE";
+            case 14: return "PENDING_STATE";
+
         }
-        return "UNDEFINED_STATE";
+        return rsutils::string::from() << "UNDEFINED:" << attribute_val;
     }
 
     std::string stream_model::format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const
