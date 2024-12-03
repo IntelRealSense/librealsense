@@ -14,7 +14,7 @@ This example demonstrates usage of the following processing blocks:
 * Temporal
   * Filters depth data by looking into previous frames.
 * Rotation
-  *Rotates depth and IR frames.
+  * Rotates depth and IR frames.
 
 
 For further infomration please refer to [Depth Post-Processing for Intel® RealSense™ Depth Camera D400 Series](https://dev.intelrealsense.com/docs/depth-post-processing)
