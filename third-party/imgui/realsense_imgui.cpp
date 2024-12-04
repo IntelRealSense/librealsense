@@ -8,7 +8,7 @@
 
 bool RsImGui::SliderIntWithSteps(const char* label, int* v, int v_min, int v_max, int v_step)
 {
-    float originalValue = *v;
+    float originalValue = static_cast<float>(*v);
     bool changed = false;
 
     float tempValue = static_cast<float>(*v); //to use SliderFloat (integers don't have any precision)
@@ -55,13 +55,6 @@ bool RsImGui::CustomComboBox(const char* label, int* current_item, const char* c
 {
     bool value_changed = false;
 
-    // calculate dimensions and spacing for the combo box
-    ImGuiStyle& style = ImGui::GetStyle();
-    float w = ImGui::CalcItemWidth();
-    float spacing = style.ItemInnerSpacing.x;
-    float button_sz = ImGui::GetFrameHeight();
-    ImGui::PushItemWidth(w - spacing * 2.0f - button_sz);
-
     // the preview value - selected item
     const char* preview_value = (*current_item >= 0 && *current_item < items_count) ? items[*current_item] : "Select an item";
     if (ImGui::BeginCombo(label, ""))
@@ -84,17 +77,25 @@ bool RsImGui::CustomComboBox(const char* label, int* current_item, const char* c
     // Center the text in the combo box when closed
     ImVec2 pos = ImGui::GetItemRectMin();
     ImVec2 size = ImGui::GetItemRectSize();
+    float arrowWidth = 20.0f; // Width reserved for the arrow
+    float availableWidth = size.x - arrowWidth;
+
     ImVec2 textSize = ImGui::CalcTextSize(preview_value);
-    float centerX = pos.x + (size.x - textSize.x) * 0.5f - 5.0f ;
+    float centerX = pos.x + (availableWidth - textSize.x) * 0.5f;
     float centerY = pos.y + (size.y - textSize.y) * 0.5f;
 
-    // draw centered text when combo box is closed
+    // Ensure text stays within bounds
+    if (centerX + textSize.x > pos.x + availableWidth)
+        centerX = pos.x; // Align left if overflowing
+
     if (!ImGui::IsItemActive())
     {
-        ImGui::GetWindowDrawList()->AddText(ImVec2(centerX, centerY), ImGui::GetColorU32(ImGuiCol_Text), preview_value);
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        drawList->PushClipRect(pos, ImVec2(pos.x + size.x - arrowWidth, pos.y + size.y));
+        drawList->AddText(ImVec2(centerX, centerY), ImGui::GetColorU32(ImGuiCol_Text), preview_value);
+        drawList->PopClipRect();
     }
 
-    ImGui::PopItemWidth();
     return value_changed;
 }
 
@@ -336,7 +337,7 @@ bool RsImGui::SliderIntTofloat(const char* label, int* v, int v_min, int v_max, 
     if (!display_format)
         display_format = "%.0f";
     float v_f = (float)*v;
-    bool value_changed = ImGui::SliderFloat(label, &v_f, (float)v_min, (float)v_max, display_format, 1.0f);
+    bool value_changed = ImGui::SliderFloat(label, &v_f, (float)v_min, (float)v_max, display_format, ImGuiSliderFlags_None);
     *v = (int)v_f;
     return value_changed;
 }

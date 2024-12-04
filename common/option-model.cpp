@@ -257,7 +257,7 @@ bool option_model::draw_combobox( notifications_model & model,
     if( new_line )
         ImGui::SetCursorPosX( combo_position_x );
 
-    ImGui::PushItemWidth( new_line ? -1.f : 100.f );
+    ImGui::PushItemWidth( new_line ? ImGui::GetContentRegionAvail().x - 25 : 100.f );
 
     int selected;
     std::vector< const char * > labels = get_combo_labels( &selected );

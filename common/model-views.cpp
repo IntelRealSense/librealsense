@@ -293,15 +293,15 @@ namespace rs2
 
     bool yes_no_dialog(const std::string& title, const std::string& message_text, bool& approved, ux_window& window, const std::string& error_message, bool disabled, const std::string& disabled_reason)
     {
-        ImGui_ScopePushFont(window.get_font());
-        ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
-        ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_header_light_blue); //TODO: Change color?
-        ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, regular_blue); //TODO: Change color?
-        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
-        ImGui_ScopePushStyleColor(ImGuiCol_TitleBg, header_color);
-        ImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
-        ImGui_ScopePushStyleColor(ImGuiCol_BorderShadow, dark_grey);
-        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 10));
+        RsImGui_ScopePushFont(window.get_font());
+        RsImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
+        RsImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_header_light_blue); //TODO: Change color?
+        RsImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, regular_blue); //TODO: Change color?
+        RsImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+        RsImGui_ScopePushStyleColor(ImGuiCol_TitleBg, header_color);
+        RsImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+        RsImGui_ScopePushStyleColor(ImGuiCol_BorderShadow, dark_grey);
+        RsImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 10));
         auto clicked = false;
 
         ImGui::OpenPopup(title.c_str());
@@ -309,13 +309,13 @@ namespace rs2
         if (ImGui::BeginPopup(title.c_str()))
         {
             {
-                ImGui_ScopePushStyleColor(ImGuiCol_Text, almost_white_bg);
+                RsImGui_ScopePushStyleColor(ImGuiCol_Text, almost_white_bg);
 
                 ImGui::SetWindowFontScale(1.3f);
                 ImGui::Text("%s", title.c_str());
             }
             {
-                ImGui_ScopePushStyleColor(ImGuiCol_Text, light_grey);
+                RsImGui_ScopePushStyleColor(ImGuiCol_Text, light_grey);
                 ImGui::Separator();
                 ImGui::SetWindowFontScale(1.1f);
                 ImGui::Text("\n%s\n", message_text.c_str());
@@ -345,7 +345,7 @@ namespace rs2
                 {
                     ImGui::NewLine();
                     {
-                        ImGui_ScopePushStyleColor(ImGuiCol_Text, red);
+                        RsImGui_ScopePushStyleColor(ImGuiCol_Text, red);
                         ImGui::Text("%s\n\n", disabled_reason.c_str());
                     }
                     auto window_width = ImGui::GetWindowWidth();
@@ -367,16 +367,16 @@ namespace rs2
     // and close button activated by the caller
     bool status_dialog(const std::string& title, const std::string& process_topic_text, const std::string& process_status_text , bool enable_close, ux_window& window)
     {
-        ImGui_ScopePushFont(window.get_font());
-        ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
-        ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_header_light_blue); //TODO: Change color?
-        ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, regular_blue); //TODO: Change color?
-        ImGui_ScopePushStyleColor(ImGuiCol_Text, light_grey);
-        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
-        ImGui_ScopePushStyleColor(ImGuiCol_TitleBg, header_color);
-        ImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
-        ImGui_ScopePushStyleColor(ImGuiCol_BorderShadow, dark_grey);
-        ImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 10));
+        RsImGui_ScopePushFont(window.get_font());
+        RsImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
+        RsImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_header_light_blue); //TODO: Change color?
+        RsImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, regular_blue); //TODO: Change color?
+        RsImGui_ScopePushStyleColor(ImGuiCol_Text, light_grey);
+        RsImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+        RsImGui_ScopePushStyleColor(ImGuiCol_TitleBg, header_color);
+        RsImGui_ScopePushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+        RsImGui_ScopePushStyleColor(ImGuiCol_BorderShadow, dark_grey);
+        RsImGui_ScopePushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 10));
         auto close_clicked = false;
 
         ImGui::OpenPopup(title.c_str());
@@ -384,7 +384,7 @@ namespace rs2
         if (ImGui::BeginPopup(title.c_str()))
         {
             {
-                ImGui_ScopePushStyleColor(ImGuiCol_Text, almost_white_bg);
+                RsImGui_ScopePushStyleColor(ImGuiCol_Text, almost_white_bg);
 
                 ImGui::SetWindowFontScale(1.3f);
                 ImGui::Text("%s", title.c_str());

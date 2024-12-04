@@ -6,10 +6,10 @@ project(realsense-viewer)
 
 if(WIN32)
     add_executable( ${PROJECT_NAME} WIN32 "" )
-    list( APPEND DEPENDENCIES OpenGL::GL)
+    target_link_libraries( ${PROJECT_NAME} OpenGL::GL)
 else()
     add_executable( ${PROJECT_NAME} "" )
-    list( APPEND DEPENDENCIES OpenGL::GL dl) # Check the platform and conditionally link OpenGL and libdl (for linux)
+    target_link_libraries( ${PROJECT_NAME} OpenGL::GL dl) # Check the platform and conditionally link OpenGL and libdl (for linux)
 endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)

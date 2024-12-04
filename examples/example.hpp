@@ -1167,3 +1167,26 @@ void get_screen_resolution(unsigned int& window_width, unsigned int& window_heig
     window_width = mode->width;
     window_height = mode->height;
 }
+
+void ImGuiSetStyleColors() {
+    ImGui::SetNextWindowBgAlpha(0.5f); // Set the background alpha to 50% transparency
+    ImGui::GetStyle().WindowRounding = 10.0f; // Set the window rounding to 10.0f 
+    ImGui::GetStyle().WindowBorderSize = 0.0f;
+
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImVec4* colors = style.Colors;
+    colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f); // Set the main background color to dark gray
+
+    // Set other window-related colors 
+    colors[ImGuiCol_TitleBg] = ImVec4(0.286f, 0.298f, 0.549f, 1.0f);
+    colors[ImGuiCol_TitleBgActive] = ImVec4(0.286f, 0.298f, 0.549f, 1.0f);
+
+    // Set frame and button colors to gray
+    colors[ImGuiCol_FrameBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.35f, 0.35f, 0.35f, 1.0f);
+
+    colors[ImGuiCol_CheckMark] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f); // Change the color of the checkmark to gray
+
+    colors[ImGuiCol_SliderGrab] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f); // Change the color of the slider grab to gray
+}

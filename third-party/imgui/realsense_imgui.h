@@ -37,8 +37,9 @@ namespace RsImGui
 
 }
 
-#define CONCAT_(x,y) x##y
-#define CONCAT(x,y) CONCAT_(x,y)
-#define ImGui_ScopePushFont(f) RsImGui::ScopePushFont CONCAT(scope_push_font, __LINE__) (f)
-#define ImGui_ScopePushStyleColor(idx, col) RsImGui::ScopePushStyleColor CONCAT(scope_push_style_color, __LINE__) (idx, col)
-#define ImGui_ScopePushStyleVar(idx, val) RsImGui::ScopePushStyleVar CONCAT(scope_push_style_var, __LINE__) (idx, val)
+// Macros to create unique function names using the current line number (__LINE__)
+#define IMGUI_CONCAT_(x,y) x##y
+#define IMGUI_CONCAT(x,y) IMGUI_CONCAT_(x,y)
+#define RsImGui_ScopePushFont(f) RsImGui::ScopePushFont IMGUI_CONCAT(scope_push_font, __LINE__) (f)
+#define RsImGui_ScopePushStyleColor(idx, col) RsImGui::ScopePushStyleColor IMGUI_CONCAT(scope_push_style_color, __LINE__) (idx, col)
+#define RsImGui_ScopePushStyleVar(idx, val) RsImGui::ScopePushStyleVar IMGUI_CONCAT(scope_push_style_var, __LINE__) (idx, val)

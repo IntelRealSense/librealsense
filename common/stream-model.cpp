@@ -379,7 +379,7 @@ namespace rs2
         if (viewer.streams.size() > 1) ++num_of_buttons;
         if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
 
-        ImGui_ScopePushFont(font);
+        RsImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
@@ -1200,7 +1200,7 @@ namespace rs2
 
             std::string msg(ss.str().c_str());
 
-            ImGui_ScopePushFont(font);
+            RsImGui_ScopePushFont(font);
 
             // adjust windows size to the message length
             auto new_line_start_idx = msg.find_first_of('\n');

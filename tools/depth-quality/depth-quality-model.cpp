@@ -614,7 +614,7 @@ namespace rs2
                         ImGui::Text("Region of Interest:");
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
 
-                        ImGui::PushItemWidth(-1);
+                        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - 25);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
                         static std::vector<std::string> items{ "80%", "60%", "40%", "20%" };

@@ -21,15 +21,15 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         )
 
     if(WIN32)
-        list( APPEND DEPENDENCIES OpenGL::GL)
         add_executable(rs-rosbag-inspector WIN32 ${RS_ROSBAG_INSPECTOR_CPP})
         include_directories(../../third-party/imgui ../../common ../../third-party/glad
                                              ../../third-party/tinyfiledialogs ../../third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
+        target_link_libraries(rs-rosbag-inspector realsense-file OpenGL::GL)
     else()
-        list( APPEND DEPENDENCIES OpenGL::GL dl) # Check the platform and conditionally link OpenGL and libdl (for linux)
         add_executable(rs-rosbag-inspector ${RS_ROSBAG_INSPECTOR_CPP})
         include_directories(../../third-party/imgui ../../common ../../third-party/glad
                                              ../../third-party/tinyfiledialogs ../../third-party)
+        target_link_libraries(rs-rosbag-inspector realsense-file OpenGL::GL dl) # Check the platform and conditionally link OpenGL and libdl (for linux)
     endif()
     set_property(TARGET rs-rosbag-inspector PROPERTY CXX_STANDARD 11)
 

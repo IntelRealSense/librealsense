@@ -342,7 +342,7 @@ bool filter_slider_ui::render(const float3& location, bool enabled)
     }
     else
     {
-        value_changed = ImGui::SliderFloat(("##" + name).c_str(), &value, range.min, range.max, "%.3f", 1.0f);
+        value_changed = ImGui::SliderFloat(("##" + name).c_str(), &value, range.min, range.max, "%.3f", ImGuiSliderFlags_None);
         if( step > 0.0f )
         {
             value = range.min + round( ( value - range.min ) / step ) * step;

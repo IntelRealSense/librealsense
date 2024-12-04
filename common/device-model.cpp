@@ -1965,7 +1965,7 @@ namespace rs2
                         }
 
                         ImGui::SameLine();
-                        ImGui::PushItemWidth(210);
+                        ImGui::PushItemWidth(185);
 
                         ///////////////////////////////////////////
                         //TODO: make this a member function
@@ -1976,12 +1976,12 @@ namespace rs2
                             counters.push_back(i);
                         ///////////////////////////////////////////
 
-                        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, white);
-                        ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
-                        ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.1f);
-                        ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, button_color + 0.1f);
+                        RsImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, white);
+                        RsImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
+                        RsImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.1f);
+                        RsImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, button_color + 0.1f);
                         ImVec2 padding{ 2,2 };
-                        ImGui_ScopePushStyleVar(ImGuiStyleVar_FramePadding, padding);
+                        RsImGui_ScopePushStyleVar(ImGuiStyleVar_FramePadding, padding);
                         ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
                         ///////////////////////////////////////////
                         // Go over the loaded files and add them to the combo box
@@ -2371,7 +2371,7 @@ namespace rs2
             auto advanced_mode_pos = ImVec2{ pos.x + horizontal_space_before_device_control, pos.y + vertical_space_before_advanced_mode_control };
             ImGui::SetCursorPos(advanced_mode_pos);
             const float advanced_mode_panel_height = draw_preset_panel(panel_width, window, error_message, viewer, update_read_only_options, load_json_if_streaming, json_loading);
-            ImGui::SetCursorPos({ advanced_mode_pos.x, advanced_mode_pos.y + advanced_mode_panel_height+10});
+            ImGui::SetCursorPos({ advanced_mode_pos.x, advanced_mode_pos.y + advanced_mode_panel_height });
         }
 
         ////////////////////////////////////////
@@ -2461,12 +2461,11 @@ namespace rs2
                     bool stop_recording = false;
 
                     ImGui::SetCursorPos({ windows_width - 60, pos.y + 7 });
-                    ImGui_ScopePushFont(window.get_font());
+                    RsImGui_ScopePushFont(window.get_font());
 
-                    ImGui_ScopePushStyleColor(ImGuiCol_Button, sensor_bg);
-                    ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
-                    ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
-                    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+                    RsImGui_ScopePushStyleColor(ImGuiCol_Button, sensor_bg);
+                    RsImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                    RsImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
                     int font_size = window.get_font_size();
                     ImVec2 button_size = { font_size * 3.0f, font_size * 1.0f };
                     
@@ -2476,8 +2475,8 @@ namespace rs2
                                          <<textual_icons::toggle_off<<"   off "<< id << ", "
                                          << sub->s->get_info( RS2_CAMERA_INFO_NAME );
 
-                        ImGui_ScopePushStyleColor(ImGuiCol_Text, redish);
-                        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+                        RsImGui_ScopePushStyleColor(ImGuiCol_Text, redish);
+                        RsImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
 
                         std::vector<stream_profile> profiles;
                         auto is_comb_supported = sub->is_selected_combination_supported();
@@ -2566,8 +2565,8 @@ namespace rs2
                         std::string label = rsutils::string::from()
                                          << textual_icons::toggle_on << "   on  " << id << ","
                                          << sub->s->get_info( RS2_CAMERA_INFO_NAME );
-                        ImGui_ScopePushStyleColor(ImGuiCol_Text, light_blue);
-                        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+                        RsImGui_ScopePushStyleColor(ImGuiCol_Text, light_blue);
+                        RsImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
                         if( ImGui::Button( label.c_str(), button_size ) )
                         {
@@ -2615,7 +2614,6 @@ namespace rs2
                             }
                         }
                     }
-                    ImGui::PopStyleVar();
                 });
             }
 
@@ -2897,7 +2895,7 @@ namespace rs2
                                                 ImGui::PushStyleColor(ImGuiCol_Text, white);
                                                 ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                                                 label = rsutils::string::from() << "Enable " << pb->get_name() << " post-processing filter";
-                                                ImGui::SetTooltip("%s",label.c_str());
+                                                ImGui::SetTooltip("%s", label.c_str());
                                                 window.link_hovered();
                                                 ImGui::PopStyleColor(2);
                                             }
@@ -2922,7 +2920,7 @@ namespace rs2
                                                 ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                                                 label = rsutils::string::from()
                                                      << "Disable " << pb->get_name() << " post-processing filter";
-                                                ImGui::SetTooltip("%s",label.c_str());
+                                                ImGui::SetTooltip("%s", label.c_str());
                                                 window.link_hovered();
                                                 ImGui::PopStyleColor(2);
                                             }
@@ -2943,6 +2941,7 @@ namespace rs2
                             label = rsutils::string::from() << pb->get_name() << "##" << id;
                             if (ImGui::TreeNode(label.c_str()))
                             {
+                                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                                 pb->draw_options( viewer,
                                                   dev.is< playback >() || update_read_only_options,
                                                   false,
@@ -2962,7 +2961,7 @@ namespace rs2
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(3);
 
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY());
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2);
         }
 
         for (auto&& sub : subdevices)

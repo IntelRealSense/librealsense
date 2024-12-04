@@ -71,7 +71,7 @@ namespace rs2
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
 
-        ImGui_ScopePushFont(font);
+        RsImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -950,7 +950,7 @@ namespace rs2
     {
         auto font_dynamic = window.get_font();
 
-        ImGui_ScopePushFont(font_dynamic);
+        RsImGui_ScopePushFont(font_dynamic);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -1093,7 +1093,7 @@ namespace rs2
     void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id,
         const ImVec4& text_color, const std::string& tooltip)
     {
-        ImGui_ScopePushFont(font_18);
+        RsImGui_ScopePushFont(font_18);
 
         std::string label = rsutils::string::from() << label_str << id;
 
@@ -2258,7 +2258,7 @@ namespace rs2
         ImGui::SetNextWindowPos({ panel_width, 0 });
         ImGui::SetNextWindowSize({ window.width() - panel_width, panel_y });
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
         ImGui::Begin("Toolbar Panel", nullptr, flags);
 
@@ -2411,7 +2411,7 @@ namespace rs2
             flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar;
 
-            ImGui_ScopePushFont(window.get_font());
+            RsImGui_ScopePushFont(window.get_font());
             ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -2960,7 +2960,7 @@ namespace rs2
             flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar;
 
-            ImGui_ScopePushFont(window.get_font());
+            RsImGui_ScopePushFont(window.get_font());
             ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
