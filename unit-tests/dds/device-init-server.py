@@ -11,7 +11,15 @@ dds.debug( log.is_debug_on(), log.nested )
 
 
 participant = dds.participant()
-participant.init( 123, "device-init-server" )
+# in some cases we need a bigger buffer for our messages, to avoid missing messages sent
+settings = { "device" :
+                 { "notification" :
+                       { "history" :
+                             { "depth" : 60 }
+                         }
+                   }
+             }
+participant.init( 123, "device-init-server", settings )
 
 
 def test_one_stream():
@@ -77,8 +85,15 @@ def notification_flood():
         i = 0
         while server is not None:
             i += 1
-            log.d( f'----> {i}' )
-            server.publish_notification( { 'id' : 'some-notification', 'counter' : i } )
+            #log.d( f'----> {i}' )
+            try:
+                server.publish_notification( { 'id' : 'some-notification', 'counter' : i } )
+            except AttributeError as e:
+                # another thread had just made the server None at this point
+                if not server:
+                    log.d("tried calling publish_notification but server is None, was close_server called?")
+                else:
+                    raise e # unexpected error
             sleep( 0.005 )
     global notification_thread
     notification_thread = threading.Thread( target=notification_flooder )
