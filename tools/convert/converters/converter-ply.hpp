@@ -37,7 +37,7 @@ namespace rs2 {
                             auto frameColor = frameset.get_color_frame();
 
                             if (frameDepth && frameColor) {
-                                if (frames_map_get_and_set(rs2_stream::RS2_STREAM_ANY, frameDepth.get_frame_number())) {
+                                if (frames_map_get_and_set(rs2_stream::RS2_STREAM_ANY, frameDepth.get_profile().stream_index(), frameDepth.get_frame_number())) {
                                     return;
                                 }
 
