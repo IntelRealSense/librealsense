@@ -147,9 +147,10 @@ namespace librealsense
 
     float update_device::compute_progress(float progress, float start, float end, float threshold) const
     {
-        if (threshold < 1.f)
-            throw std::invalid_argument("Avoid division by zero");
-        return start + (ceil(progress * threshold) / threshold) * (end - start) / 100.f;
+        // NOTE: this is usually overriden; see derived classes!
+        if( threshold > 1.f )
+            progress = ceil( progress * threshold ) / threshold;
+        return start + progress * (end - start);
     }
 
     update_device::update_device( std::shared_ptr< const device_info > const & dev_info,
@@ -252,10 +253,10 @@ namespace librealsense
             {
                 // Only update every half-second to avoid spurious callbacks
                 // (we can get here many many times in a split second)
-                LOG_DEBUG( "fw update progress: " << progress );
+                LOG_DEBUG( "transfer progress: " << progress );
                 if( update_progress_callback )
                 {
-                    auto progress_for_bar = compute_progress( progress, 0.f, 20.f, 5.f ) / 100.f;
+                    auto progress_for_bar = compute_progress( progress, 0.f, 20.f, 0.f ) / 100.f;
                     update_progress_callback->on_update_progress( progress_for_bar );
                 }
                 sw.reset();
@@ -270,6 +271,7 @@ namespace librealsense
         if (sts != platform::RS2_USB_STATUS_SUCCESS)
             throw std::runtime_error("Failed to send final FW packet");
 
+        LOG_INFO( "Resetting device ..." );
         dfu_manifest_phase(messenger, update_progress_callback);
     }
 
@@ -338,6 +340,7 @@ namespace librealsense
 
     void update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
     {
+        LOG_INFO( "Uploading FW image ..." );
         if(_pid == "ABCD" || _pid == "BBCD")
         {
             update_mipi(fw_image, fw_image_size, update_progress_callback);
