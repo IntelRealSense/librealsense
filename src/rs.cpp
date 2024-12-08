@@ -3568,6 +3568,10 @@ void rs2_update_firmware_unsigned_cpp( const rs2_device * device,
 
     std::vector<uint8_t> buffer((uint8_t*)image, (uint8_t*)image + image_size);
 
+    if(!fwud->check_fw_compatibility(buffer))
+        throw std::runtime_error( std::string( "The firmware version is not compatible with " )
+                                  + device->device->get_info( RS2_CAMERA_INFO_NAME ) );
+
     fwud->update_flash( buffer, callback_ptr, update_mode );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, image, device)
@@ -3582,6 +3586,10 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
         throw std::runtime_error("This device does not support update protocol!");
 
     std::vector<uint8_t> buffer((uint8_t*)image, (uint8_t*)image + image_size);
+
+    if(!fwud->check_fw_compatibility( buffer ))
+        throw std::runtime_error( std::string( "The firmware version is not compatible with " )
+                                  + device->device->get_info( RS2_CAMERA_INFO_NAME ) );
 
     if (callback == NULL)
         fwud->update_flash(buffer, nullptr, update_mode);
