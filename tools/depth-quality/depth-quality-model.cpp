@@ -51,7 +51,6 @@ namespace rs2
             if (devices.size())
             {
                 auto dev = devices[0];
-                bool usb3_device = true;
                 if (dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
                 {
                     std::string usb_type = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
@@ -550,7 +549,8 @@ namespace rs2
 
                         if (_depth_sensor_model->draw_stream_selection(_error_message))
                         {
-                            if (_depth_sensor_model->is_selected_combination_supported())
+                            if (_depth_sensor_model->is_selected_combination_supported() &&
+                                !_depth_sensor_model->is_depth_calibration_profile())
                             {
                                 // Preserve streams and ui selections
                                 auto primary = _depth_sensor_model->get_selected_profiles().front().as<video_stream_profile>();
@@ -580,17 +580,6 @@ namespace rs2
                                 {
                                     try // Retries are needed to cope with HW stability issues
                                     {
-
-                                        auto dev = cfg.resolve(_pipe);
-                                        auto depth_sensor = dev.get_device().first< rs2::depth_sensor >();
-                                        if (depth_sensor.supports(RS2_OPTION_SENSOR_MODE))
-                                        {
-                                            auto depth_profile = dev.get_stream(RS2_STREAM_DEPTH);
-                                            auto w = depth_profile.as<video_stream_profile>().width();
-                                            auto h = depth_profile.as<video_stream_profile>().height();
-                                            depth_sensor.set_option(RS2_OPTION_SENSOR_MODE, (float)(resolution_from_width_height(w, h)));
-                                        }
-
                                         auto profile = _pipe.start(cfg);
                                         success = profile;
                                     }

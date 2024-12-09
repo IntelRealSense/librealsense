@@ -137,6 +137,8 @@ namespace rs2
         }
         inline rs2_extrinsics get_extrinsics_from_depth() const { return _extrinsics_from_depth; }
 
+        bool is_depth_calibration_profile() const;
+
         viewer_model& viewer;
         std::function<void()> on_frame = [] {};
 

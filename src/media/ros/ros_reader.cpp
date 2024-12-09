@@ -511,9 +511,11 @@ namespace librealsense
             get_frame_metadata(m_file, info_topic, stream_id, motion_data, additional_data);
         }
 
+        size_t size_of_imu_data = (stream_id.stream_type == RS2_STREAM_MOTION) ? sizeof(rs2_combined_motion) : 3 * sizeof(float);
+
         frame_interface * frame = m_frame_source->alloc_frame(
             { stream_id.stream_type, stream_id.stream_index, RS2_EXTENSION_MOTION_FRAME },
-            3 * sizeof( float ),
+            size_of_imu_data,
             std::move( additional_data ),
             true );
         if (frame == nullptr)
@@ -542,6 +544,24 @@ namespace librealsense
             data[1] = static_cast<float>(msg->angular_velocity.y);
             data[2] = static_cast<float>(msg->angular_velocity.z);
             LOG_DEBUG("RS2_STREAM_GYRO " << motion_frame);
+        }
+        else if (stream_id.stream_type == RS2_STREAM_MOTION)
+        {
+            auto data = reinterpret_cast<rs2_combined_motion*>(motion_frame->data.data());
+            // orientation part
+            data->orientation.x = msg->orientation.x;
+            data->orientation.y = msg->orientation.y;
+            data->orientation.z = msg->orientation.z;
+            data->orientation.w = msg->orientation.w;
+            // GYRO part
+            data->angular_velocity.x = msg->angular_velocity.x;
+            data->angular_velocity.y = msg->angular_velocity.y;
+            data->angular_velocity.z = msg->angular_velocity.z;
+            // ACCEL part
+            data->linear_acceleration.x = msg->linear_acceleration.x;
+            data->linear_acceleration.y = msg->linear_acceleration.y;
+            data->linear_acceleration.z = msg->linear_acceleration.z;
+            LOG_DEBUG("RS2_STREAM_MOTION " << motion_frame);
         }
         else
         {

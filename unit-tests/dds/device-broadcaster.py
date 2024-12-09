@@ -40,7 +40,9 @@ def close_server( instance ):
     Close the instance returned by broadcast_device()
     """
     global servers
-    del servers[instance]  # throws if does not exist
+    server = servers[instance]["server"]  # throws if does not exist
+    server.broadcast_disconnect()
+    del servers[instance]
 
 
 # From here down, we're in "interactive" mode (see test-device-init.py)
