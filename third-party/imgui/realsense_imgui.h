@@ -4,6 +4,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
+#include <functional>
 
 namespace RsImGui
 {
@@ -34,7 +35,7 @@ namespace RsImGui
     bool          SliderIntTofloat(const char* label, int* v, int v_min, int v_max, const char* display_format = "%.0f");
     void          PushNewFrame();
     void          PopNewFrame();
-
+    void          RsImButton(const std::function<void()> &f, bool disable_button = false);
 }
 
 // Macros to create unique function names using the current line number (__LINE__)

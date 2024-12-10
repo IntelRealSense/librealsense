@@ -357,3 +357,14 @@ void RsImGui::PopNewFrame()
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
+
+void RsImGui::RsImButton(const std::function<void()>& f, bool disable_button)
+{
+    if (disable_button)
+        ImGui::BeginDisabled();
+
+    f();
+
+    if (disable_button)
+        ImGui::EndDisabled();
+}

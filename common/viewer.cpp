@@ -2258,7 +2258,7 @@ namespace rs2
         ImGui::SetNextWindowPos({ panel_width, 0 });
         ImGui::SetNextWindowSize({ window.width() - panel_width, panel_y });
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::PushStyleColor(ImGuiCol_WindowBg, button_color);
         ImGui::Begin("Toolbar Panel", nullptr, flags);
 

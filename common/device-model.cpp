@@ -562,7 +562,8 @@ namespace rs2
         //////////////////// Step Backwards Button ////////////////////
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + space_width);
         std::string label = rsutils::string::from() << textual_icons::step_backward << "##Step Backward " << id;
-        if (ImGui::ButtonEx(label.c_str(), button_dim, supports_playback_step ? 0 : ImGuiItemFlags_Disabled))
+        RsImGui::RsImButton([&](){
+        if (ImGui::ButtonEx(label.c_str(), button_dim))
         {
             int fps = 0;
             for (auto&& s : viewer.streams)
@@ -577,6 +578,7 @@ namespace rs2
                 p.seek(std::chrono::nanoseconds(curr_frame - step));
             }
         }
+        }, !supports_playback_step);
         if (ImGui::IsItemHovered())
         {
             std::string tooltip = rsutils::string::from() << "Step Backwards" << (supports_playback_step ? "" : "(Not available)");
@@ -665,7 +667,8 @@ namespace rs2
         //////////////////// Step Forward Button ////////////////////
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + space_width);
         label = rsutils::string::from() << textual_icons::step_forward << "##Step Forward " << id;
-        if (ImGui::ButtonEx(label.c_str(), button_dim, supports_playback_step ? 0 : ImGuiItemFlags_Disabled))
+        RsImGui::RsImButton([&]() {
+        if (ImGui::ButtonEx(label.c_str(), button_dim))
         {
             int fps = 0;
             for (auto&& s : viewer.streams)
@@ -676,7 +679,7 @@ namespace rs2
             auto curr_frame = p.get_position();
             uint64_t step = fps ? uint64_t(1000.0 / (float)fps * 1e6) : 1000000ULL;
             p.seek(std::chrono::nanoseconds(curr_frame + step));
-        }
+        }}, !supports_playback_step);
         if (ImGui::IsItemHovered())
         {
             std::string tooltip = rsutils::string::from() << "Step Forward" << (supports_playback_step ? "" : "(Not available)");
@@ -1225,11 +1228,9 @@ namespace rs2
         auto record_button_color = is_recording ? light_blue : light_grey;
         ImGui::PushStyleColor(ImGuiCol_Text, record_button_color);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, record_button_color);
-        bool button_disabled = disable_record_button_logic(is_streaming, is_playback_device);
-        if (button_disabled)
-            ImGui::PushStyleColor(ImGuiCol_Text,ImVec4(0.5f,0.5f,0.5f,1.f));
 
-        if (ImGui::ButtonEx(record_button_name.c_str(), device_panel_icons_size, (disable_record_button_logic(is_streaming, is_playback_device)) ? ImGuiItemFlags_Disabled : 0))
+        RsImGui::RsImButton([&]() {
+        if (ImGui::ButtonEx(record_button_name.c_str(), device_panel_icons_size))
         {
             if (is_recording) //is_recording is changed inside stop/start_recording
             {
@@ -1258,7 +1259,7 @@ namespace rs2
 
                 if (path != "") start_recording(path, error_message);
             }
-        }
+        }}, disable_record_button_logic(is_streaming, is_playback_device));
         if (ImGui::IsItemHovered())
         {
             ImGui::PushStyleColor(ImGuiCol_Text, white);
@@ -1268,10 +1269,7 @@ namespace rs2
             if (is_streaming) window.link_hovered();
             ImGui::PopStyleColor(2);
         }
-        if(button_disabled)
-            ImGui::PopStyleColor(3);
-        else
-            ImGui::PopStyleColor(2);
+        ImGui::PopStyleColor(2);
         ImGui::SameLine();
         ////////////////////////////////////////
         // Draw Sync icon
@@ -1281,10 +1279,12 @@ namespace rs2
         auto sync_button_color = is_sync_enabled ? light_blue : light_grey;
         ImGui::PushStyleColor(ImGuiCol_Text, sync_button_color);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, sync_button_color);
-        if (ImGui::ButtonEx(sync_button_name.c_str(), device_panel_icons_size, ImGuiItemFlags_Disabled))
+        RsImGui::RsImButton([&]() {
+        if (ImGui::ButtonEx(sync_button_name.c_str(), device_panel_icons_size))
         {
             is_sync_enabled = !is_sync_enabled;
         }
+        }, true);
         ImGui::PopStyleColor(2);
         if (ImGui::IsItemHovered())
         {
@@ -1472,11 +1472,12 @@ namespace rs2
 
         ImGui::PushStyleColor(ImGuiCol_Text, record_button_color);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, record_button_color);
-        ImGui::ButtonEx(is_recording ? "Stop" : "Record", device_panel_icons_size, (!is_streaming ? ImGuiItemFlags_Disabled : 0));
+        RsImGui::RsImButton([&]() {ImGui::ButtonEx(is_recording ? "Stop" : "Record", device_panel_icons_size);}, !is_streaming);
         if (ImGui::IsItemHovered() && is_streaming) window.link_hovered();
         ImGui::PopStyleColor(2);
 
-        ImGui::SameLine();  ImGui::ButtonEx("Sync", device_panel_icons_size, ImGuiItemFlags_Disabled);
+        ImGui::SameLine();  
+        RsImGui::RsImButton([&]() {ImGui::ButtonEx("Sync", device_panel_icons_size);},true);
 
         auto info_button_color = show_device_info ? light_blue : light_grey;
         ImGui::PushStyleColor(ImGuiCol_Text, info_button_color);
@@ -2068,7 +2069,7 @@ namespace rs2
         const ImVec2 icons_size{ 20, 20 };
         //TODO: Change this once we have support for loading jsons with more data than only advanced controls
         bool is_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming; });
-        const int buttons_flags = serializable ? 0 : ImGuiItemFlags_Disabled;
+        const bool buttons_disable = !serializable;
         static bool require_advanced_mode_enable_prompt = false;
         auto advanced_dev = dev.as<advanced_mode>();
         auto is_advanced_device = false;
@@ -2092,8 +2093,10 @@ namespace rs2
         std::string upload_button_name = rsutils::string::from() << textual_icons::upload << "##" << id;
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
-
-        if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size, (is_streaming && !load_json_if_streaming) ? ImGuiItemFlags_Disabled : buttons_flags))
+        
+        bool load_button_disabled = (is_streaming && !load_json_if_streaming) || buttons_disable;
+        RsImGui::RsImButton([&]() {
+        if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size))
         {
             if (serializable && (!is_advanced_device || is_advanced_mode_enabled))
             {
@@ -2117,8 +2120,7 @@ namespace rs2
             {
                 require_advanced_mode_enable_prompt = true;
             }
-        }
-
+        }}, load_button_disabled);
         if (ImGui::IsItemHovered())
         {
             ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
@@ -2137,7 +2139,8 @@ namespace rs2
         ////////////////////////////////////////
         std::string save_button_name = rsutils::string::from() << textual_icons::download << "##" << id;
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1); //Align the two icons to buttom
-        if (ImGui::ButtonEx(save_button_name.c_str(), icons_size, buttons_flags))
+        RsImGui::RsImButton([&]() {
+        if (ImGui::ButtonEx(save_button_name.c_str(), icons_size))
         {
             if (serializable && (!is_advanced_device || is_advanced_mode_enabled))
             {
@@ -2152,7 +2155,7 @@ namespace rs2
                 require_advanced_mode_enable_prompt = true;
             }
 
-        }
+        }}, buttons_disable);
         if (ImGui::IsItemHovered())
         {
             ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
@@ -2860,7 +2863,7 @@ namespace rs2
 
                                             ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-                                            ImGui::ButtonEx(label.c_str(), button_size, ImGuiItemFlags_Disabled);
+                                            RsImGui::RsImButton([&]() {ImGui::ButtonEx(label.c_str(), button_size);}, true);
                                         }
                                         else
                                         {
@@ -2870,7 +2873,7 @@ namespace rs2
                                                              << pb->get_name();
                                             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-                                            ImGui::ButtonEx(label.c_str(), button_size, ImGuiItemFlags_Disabled);
+                                            RsImGui::RsImButton([&]() {ImGui::ButtonEx(label.c_str(), button_size);}, true);
                                         }
                                     }
                                     else
