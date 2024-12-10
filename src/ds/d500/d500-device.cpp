@@ -665,6 +665,7 @@ namespace librealsense
 
             depth_sensor.register_option( RS2_OPTION_ERROR_POLLING_ENABLED,
                                           std::make_shared< polling_errors_disable >( _polling_error_handler ) );
+
         }); //group_multiple_fw_calls
 
         // attributes of md_capture_timing
@@ -767,6 +768,12 @@ namespace librealsense
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
 
         register_features();
+
+        d500_auto_calibrated::add_depth_write_observer( [this]()
+        {
+            _coefficients_table_raw.reset();
+            _new_calib_table_raw.reset();
+        } );
     }
 
     void d500_device::register_features()

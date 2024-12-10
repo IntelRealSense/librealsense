@@ -40,18 +40,6 @@
 
 #include "opengl3.h"
 
- rs2_sensor_mode rs2::resolution_from_width_height(int width, int height)
-{
-    if ((width == 240 && height == 320) || (width == 320 && height == 240))
-        return RS2_SENSOR_MODE_QVGA;
-    else if ((width == 640 && height == 480) || (height == 640 && width == 480))
-        return RS2_SENSOR_MODE_VGA;
-    else if ((width == 1024 && height == 768) || (height == 1024 && width == 768))
-        return RS2_SENSOR_MODE_XGA;
-    else
-        return RS2_SENSOR_MODE_COUNT;
-}
-
 ImVec4 flip(const ImVec4& c)
 {
     return{ c.y, c.x, c.z, c.w };

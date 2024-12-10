@@ -1599,6 +1599,18 @@ namespace librealsense
 
         LOG_DEBUG("Flashing " << ((tbl_id == d400_calibration_table_id::coefficients_table_id) ? "Depth" : "RGB") << " calibration table");
 
+        switch( tbl_id )
+        {
+        case d400_calibration_table_id::coefficients_table_id:
+            for( auto & cb : _depth_write_callbacks )
+                cb();
+            break;
+        case d400_calibration_table_id::rgb_calibration_id:
+            for( auto & cb : _color_write_callbacks )
+                cb();
+            break;
+        // default: Will not arrive here, was thrown in previous switch
+        }
     }
 
     void auto_calibrated::set_calibration_table(const std::vector<uint8_t>& calibration)
@@ -1638,6 +1650,11 @@ namespace librealsense
     {
         command cmd(ds::fw_cmd::CAL_RESTORE_DFLT);
         _hw_monitor->send(cmd);
+
+        for( auto & cb : _depth_write_callbacks )
+            cb();
+        for( auto & cb : _color_write_callbacks )
+            cb();
     }
 
     std::vector<uint8_t> auto_calibrated::run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,

@@ -96,7 +96,7 @@ extern "C" {
         RS2_OPTION_INVALIDATION_BYPASS, /**< Enable\disable pixel invalidation */
         RS2_OPTION_AMBIENT_LIGHT, /**< DEPRECATED! - Use RS2_OPTION_DIGITAL_GAIN instead. */
         RS2_OPTION_DIGITAL_GAIN = RS2_OPTION_AMBIENT_LIGHT, /**< Change the depth digital gain see rs2_digital_gain for values */
-        RS2_OPTION_SENSOR_MODE, /**< The resolution mode: see rs2_sensor_mode for values */
+        RS2_OPTION_SENSOR_MODE, /**< DEPRECATED! - The resolution mode: see rs2_sensor_mode for values */
         RS2_OPTION_EMITTER_ALWAYS_ON, /**< Enable Laser On constantly (GS SKU Only) */
         RS2_OPTION_THERMAL_COMPENSATION, /**< Depth Thermal Compensation for selected D400 SKUs */
         RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, /**< DEPRECATED as of 2.46! */
@@ -125,6 +125,7 @@ extern "C" {
         RS2_OPTION_SOC_PVT_TEMPERATURE, /**< Temperature of PVT SOC */
         RS2_OPTION_GYRO_SENSITIVITY,/**< Control of the gyro sensitivity level, see rs2_gyro_sensitivity for values */ 
         RS2_OPTION_REGION_OF_INTEREST,/**< The rectangular area used from the streaming profile */
+        RS2_OPTION_ROTATION,/**Rotates frames*/
 
         // Safety camera options
         RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX, /**< Set / Get current active safety preset index**/
@@ -243,7 +244,7 @@ extern "C" {
     } rs2_l500_visual_preset;
     const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset);
 
-    /** \brief For setting the camera_mode option */
+    /** \brief DEPRECATED! - For setting the camera_mode option */
     typedef enum rs2_sensor_mode
     {
         RS2_SENSOR_MODE_VGA,

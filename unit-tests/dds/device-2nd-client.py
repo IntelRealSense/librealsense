@@ -8,7 +8,15 @@ dds.debug( log.is_debug_on(), log.nested )
 
 
 participant = dds.participant()
-participant.init( 123, f'client-{log.nested.strip()}' )
+# in some cases we need a bigger buffer for our messages, to avoid missing messages sent
+settings = { "device" :
+                 { "notification" :
+                       { "history" :
+                             { "depth" : 60 }
+                         }
+                   }
+             }
+participant.init( 123, f'client-{log.nested.strip()}', settings )
 
 
 info = dds.message.device_info()

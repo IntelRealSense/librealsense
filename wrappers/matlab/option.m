@@ -71,7 +71,7 @@ classdef option < int64
         invalidation_bypass             (68)
         ambient_light_env_level         (69) % Deprecated - Use DIGITAL_GAIN instead
         digital_gain                    (69)
-        sensor_mode                     (70)
+        sensor_mode                     (70) % Deprecated
         emitter_always_on               (71)
         thermal_compensation            (72)
         trigger_camera_accuracy_health  (73)

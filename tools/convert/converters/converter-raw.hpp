@@ -38,7 +38,7 @@ namespace rs2 {
                         return;
                     }
 
-                    if (frames_map_get_and_set(videoframe.get_profile().stream_type(), videoframe.get_frame_number())) {
+                    if (frames_map_get_and_set(videoframe.get_profile().stream_type(), videoframe.get_profile().stream_index(), videoframe.get_frame_number())) {
                         return;
                     }
 

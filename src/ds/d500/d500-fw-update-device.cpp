@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #include "d500-fw-update-device.h"
 #include "d500-private.h"
@@ -80,10 +80,8 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
                 return true;
             }
 
-            std::stringstream ss;
-            ss << "DFU_GETSTATUS called, state is: " << to_string(dfu_state); 
-            ss << ", iString equals: " << percentage_of_transfer << ", and bwPollTimeOut equals: " << status.bwPollTimeout << std::endl;
-            LOG_DEBUG(ss.str().c_str());
+            LOG_DEBUG( "DFU_GETSTATUS called, state is: " << dfu_state << ", iString equals: " << percentage_of_transfer
+                                                          << ", and bwPollTimeOut equals: " << status.bwPollTimeout );
 
             if (update_progress_callback)
             {

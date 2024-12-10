@@ -3444,10 +3444,10 @@ namespace rs2
             {
                 bool is_d555 = false;
 
-                if( dev.supports( RS2_CAMERA_INFO_PRODUCT_ID ) )
+                if( dev.supports( RS2_CAMERA_INFO_NAME ) )
                 {
-                    auto pid_str = std::string( dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ) );
-                    if( pid_str == "0B56" || pid_str == "DDS" )
+                    auto dev_name = std::string( dev.get_info( RS2_CAMERA_INFO_NAME ) );
+                    if( dev_name.find( "D555" ) != std::string::npos )
                         is_d555 = true;
                 }
 

@@ -393,7 +393,7 @@ int main(int argc, char** argv) try
     if( !device_count )
     {
         cout << "No device detected. Is it plugged in?\n";
-        return EXIT_SUCCESS;
+        return EXIT_FAILURE;
     }
 
     if (short_view || compact_view)
