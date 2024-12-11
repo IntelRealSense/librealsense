@@ -1101,8 +1101,8 @@ namespace librealsense
         // attributes of md_mipi_depth_control structure
         auto md_prop_offset = offsetof(metadata_mipi_depth_raw, depth_mode);
 
-        // timestamp metadata field alignment with FW was implemented on FW version 5.17.0.0
-        if ( _fw_version >= firmware_version( "5.17.0.0" ) ) 
+        // timestamp metadata field alignment with FW was implemented on FW version 5.16.3.3
+        if ( _fw_version >= firmware_version( "5.16.3.3" ) ) 
         {
             // optical_timestamp contains value of exposure/2
             depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
