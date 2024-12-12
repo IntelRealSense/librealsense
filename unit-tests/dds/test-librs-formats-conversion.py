@@ -5,7 +5,7 @@
 #test:retries:gha 2
 
 from rspy import log, test
-import librs as rs
+from rspy import librs as rs
 
 if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )

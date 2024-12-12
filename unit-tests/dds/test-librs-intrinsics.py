@@ -69,7 +69,7 @@ with test.remote.fork( nested_indent=None ) as remote:
 
     log.nested = 'C  '
 
-    import librs as rs
+    from rspy import librs as rs
     if log.is_debug_on():
         rs.log_to_console( rs.log_severity.debug )
 
