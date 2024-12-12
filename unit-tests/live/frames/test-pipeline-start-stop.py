@@ -1,19 +1,21 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023-2024 Intel Corporation. All Rights Reserved.
 
-# test:donotrun:!nightly
+
 # Currently, we exclude D457 as it's failing
 # test:device each(D400*) !D457
 # On D455 and other units with IMU it takes ~4 seconds per iteration
-# test:timeout 220
+# test:timeout 500
 
 import pyrealsense2 as rs
 from rspy.stopwatch import Stopwatch
 from rspy import test, log
 import time
 
+rs.log_to_file(rs.log_severity.debug, "pipeine_test_log.log")
+
 # Run multiple start stop of all streams and verify we get a frame for each once
-ITERATIONS_COUNT = 50
+ITERATIONS_COUNT = 500
 
 dev, ctx = test.find_first_device_or_exit()
 pipe = rs.pipeline(ctx)

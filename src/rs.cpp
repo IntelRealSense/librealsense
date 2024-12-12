@@ -2307,6 +2307,7 @@ NOEXCEPT_RETURN(, pipe)
 rs2_pipeline_profile* rs2_pipeline_start(rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(pipe);
+    LOG_WARNING("PIPELINE START");
     return new rs2_pipeline_profile{ pipe->pipeline->start(std::make_shared<pipeline::config>()) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe)

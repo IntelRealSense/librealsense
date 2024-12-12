@@ -2098,6 +2098,7 @@ namespace librealsense
 
                 ++pixel_format.index;
             }
+            LOG_WARNING("GET_PROFILES() - results_size = " << results.size());
             return results;
         }
 
