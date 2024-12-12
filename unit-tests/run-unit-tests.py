@@ -363,7 +363,7 @@ def get_tests():
     elif list_only:
         # We want to list all tests, even if they weren't built.
         # So we look for the source files instead of using the manifest
-        for cpp_test in file.find( test_dir, '(^|/)test-.*\.cpp' ):
+        for cpp_test in file.find( test_dir, r'(^|/)test-.*\.cpp' ):
             testparent = os.path.dirname( cpp_test )  # "log/internal" <-  "log/internal/test-all.py"
             if testparent:
                 testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( cpp_test )[
@@ -378,7 +378,7 @@ def get_tests():
 
     # Python unit-test scripts are in the same directory as us... we want to consider running them
     # (we may not if they're live and we have no pyrealsense2.pyd):
-    for py_test in file.find( test_dir, '(^|/)test-.*\.py' ):
+    for py_test in file.find( test_dir, r'(^|/)test-.*\.py' ):
         testparent = os.path.dirname( py_test )  # "log/internal" <-  "log/internal/test-all.py"
         if testparent:
             testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( py_test )[5:-3]  # remove .py
