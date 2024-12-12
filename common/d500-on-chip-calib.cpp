@@ -46,7 +46,7 @@ namespace rs2
 
         auto calib_dev = _dev.as<auto_calibrated_device>();
         float health = 0.f;
-        int timeout_ms = 120000; // 2 minutes
+        int timeout_ms = 240000; // increased to 4 minutes for additional algo processing
         auto ans = calib_dev.run_on_chip_calibration(json, &health,
             [&](const float progress) {_progress = progress; }, timeout_ms);
 
