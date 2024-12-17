@@ -260,6 +260,9 @@ namespace librealsense
         virtual void register_option_to_update( rs2_option id, std::shared_ptr< option > option );
         virtual void unregister_option_from_update( rs2_option id );
 
+        void prepare_for_bulk_operation() override { _raw_sensor->prepare_for_bulk_operation(); }
+        void finished_bulk_operation() override { _raw_sensor->finished_bulk_operation(); }
+
     private:
         void register_processing_block_options(const processing_block& pb);
         void unregister_processing_block_options(const processing_block& pb);
