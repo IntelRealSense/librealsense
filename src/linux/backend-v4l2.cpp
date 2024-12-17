@@ -360,7 +360,7 @@ namespace librealsense
             if (_use_memory_map)
             {
                if(munmap(_start, _original_length) < 0)
-                   linux_backend_exception("munmap");
+                   throw linux_backend_exception("munmap");
             }
             else
             {
