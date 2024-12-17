@@ -30,6 +30,7 @@ typedef enum rs2_camera_info {
     RS2_CAMERA_INFO_PRODUCT_ID                     , /**< Product ID as reported in the USB descriptor */
     RS2_CAMERA_INFO_CAMERA_LOCKED                  , /**< True iff EEPROM is locked */
     RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR            , /**< Designated USB specification: USB2/USB3 */
+    RS2_CAMERA_INFO_CONNECTION_TYPE = RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, /**< Other name for the USB connection type, adapted for non-usb connections */
     RS2_CAMERA_INFO_PRODUCT_LINE                   , /**< Device product line D400, etc. */
     RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER             , /**< ASIC serial number */
     RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID             , /**< Firmware update ID */
