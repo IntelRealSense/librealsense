@@ -170,6 +170,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     if( j.nested( "product-line" ).get_ex( str ) )
         register_info( RS2_CAMERA_INFO_PRODUCT_LINE, str );
     register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, j.nested( "locked" ).default_value( true ) ? "YES" : "NO" );
+    register_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, "DDS" );
 
     // Assumes dds_device initialization finished
     struct sensor_info
