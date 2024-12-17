@@ -920,6 +920,9 @@ HANDLE_EXCEPTIONS_AND_RETURN( , options, option_value )
 rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
+    rsutils::deferred bulk_op;
+    if( auto sensor = dynamic_cast<sensor_base *>(options->options) )
+        bulk_op = sensor->bulk_operation();
     auto rs2_list = new rs2_options_list;
     auto option_ids = options->options->get_supported_options();
     rs2_list->list.reserve( option_ids.size() );
