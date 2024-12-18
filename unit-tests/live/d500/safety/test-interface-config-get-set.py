@@ -116,10 +116,10 @@ valid_sic_table_as_json_str = """
         },
         "occupancy_grid_params":
         {
-            "grid_cell_seed" : 20,
-            "close_range_quorum" : 12 ,
-            "mid_range_quorum" : 6,
-            "long_range_quorum" : 4
+            "grid_cell_seed" : 70,
+            "close_range_quorum" : 98 ,
+            "mid_range_quorum" : 16,
+            "long_range_quorum" : 8
         },
         "smcu_arbitration_params":
         {
