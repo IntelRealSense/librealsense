@@ -6,8 +6,10 @@ project( rs-depth-quality )
 
 if(WIN32)
     add_executable( ${PROJECT_NAME} WIN32 "" )
+    target_link_libraries( ${PROJECT_NAME} OpenGL::GL)
 else()
     add_executable( ${PROJECT_NAME} "" )
+    target_link_libraries( ${PROJECT_NAME} OpenGL::GL dl) # Check the platform and conditionally link OpenGL and libdl (for linux)
 endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -34,11 +36,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         depth-quality-model.cpp
         depth-metrics.h
         ../../common/realsense-ui-advanced-mode.h
-        ../../third-party/imgui/imgui.cpp
-        ../../third-party/imgui/imgui_draw.cpp
-        ../../third-party/imgui/imgui_impl_glfw.cpp
-        ../../third-party/imgui/imgui-fonts-karla.hpp
-        ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+        ${IMGUI_SOURCES}
         ../../third-party/glad/glad.c
         ../../third-party/tinyfiledialogs/tinyfiledialogs.c
         ../../third-party/tinyfiledialogs/tinyfiledialogs.h
@@ -64,6 +62,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             ../../third-party/imgui/imgui.cpp
             ../../third-party/imgui/imgui_draw.cpp
             ../../third-party/imgui/imgui_impl_glfw.cpp
+            ../../third-party/imgui/imgui_impl_opengl3.cpp
             ../../third-party/imgui/imgui-fonts-karla.hpp
             ../../third-party/imgui/imgui-fonts-fontawesome.hpp)
 

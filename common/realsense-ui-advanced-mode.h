@@ -232,7 +232,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("Depth Control"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 
@@ -269,7 +269,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("Rsm"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 
@@ -301,7 +301,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("Rau Support Vector Control"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 
@@ -336,7 +336,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("Color Control"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 
@@ -368,7 +368,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("Rau Color Thresholds Control"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 
@@ -398,7 +398,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("SLO Color Thresholds Control"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 
@@ -428,7 +428,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("SLO Penalty Control"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 
@@ -461,7 +461,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("HDAD"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 
@@ -493,7 +493,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("Color Correction"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 
@@ -532,7 +532,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("Depth Table"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 
@@ -564,7 +564,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("AE Control"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 
@@ -592,7 +592,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("Census Enable Reg"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 
@@ -621,7 +621,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
     if (ImGui::TreeNode("Disparity Modulation"))
     {
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
         auto to_set = false;
 

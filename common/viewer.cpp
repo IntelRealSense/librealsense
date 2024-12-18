@@ -15,6 +15,7 @@
 #include <opengl3.h>
 
 #include <imgui_internal.h>
+#include <realsense_imgui.h>
 
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <third-party/arcball_camera.h>
@@ -72,7 +73,7 @@ namespace rs2
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
 
-        ImGui_ScopePushFont(font);
+        RsImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -305,11 +306,14 @@ namespace rs2
         ImGui::PopFont();
         hovered = hovered || ImGui::IsItemHovered();
 
+        ImGui::PushStyleColor(ImGuiCol_Text,white);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
         if (hovered)
         {
             win.link_hovered();
             ImGui::SetTooltip("%s", description);
         }
+        ImGui::PopStyleColor(2);
 
         if (clicked && !disabled)
         {
@@ -1036,7 +1040,7 @@ namespace rs2
     {
         auto font_dynamic = window.get_font();
 
-        ImGui_ScopePushFont(font_dynamic);
+        RsImGui_ScopePushFont(font_dynamic);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -1179,7 +1183,7 @@ namespace rs2
     void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id,
         const ImVec4& text_color, const std::string& tooltip)
     {
-        ImGui_ScopePushFont(font_18);
+        RsImGui_ScopePushFont(font_18);
 
         std::string label = rsutils::string::from() << label_str << id;
 
@@ -1485,8 +1489,8 @@ namespace rs2
 
         ImGui::SetNextWindowPos({ viewer_rect.x, viewer_rect.y });
         ImGui::SetNextWindowSize({ viewer_rect.w, viewer_rect.h });
-
-        ImGui::Begin("Viewport", nullptr, { viewer_rect.w, viewer_rect.h }, 0.f, flags);
+        ImGui::SetNextWindowBgAlpha(0.f);
+        ImGui::Begin("Viewport", nullptr,flags);
 
         try
         {
@@ -1953,7 +1957,7 @@ namespace rs2
 
                     // Don't draw text in boxes that are too small...
                     auto h = bbox.h;
-                    ImGui::PushStyleColor( ImGuiCol_Text, ImColor( 1.f, 1.f, 1.f, a ) );
+                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 1.f, a ) );
                     ImColor bg( dark_sensor_bg.x, dark_sensor_bg.y, dark_sensor_bg.z, dark_sensor_bg.w * a );
 
                     if( fabs(object.mean_depth) > 0.f )
@@ -2359,7 +2363,7 @@ namespace rs2
 
         glDisable(GL_DEPTH_TEST);
 
-        if (ImGui::IsKeyPressed('R') || ImGui::IsKeyPressed('r'))
+        if (ImGui::GetIO().KeysDown[ImGuiKey_R])
         {
             reset_camera();
         }
@@ -2533,9 +2537,9 @@ namespace rs2
             ImGui::SetNextWindowSize({ w, h });
 
             flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar;
 
-            ImGui_ScopePushFont(window.get_font());
+            RsImGui_ScopePushFont(window.get_font());
             ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -2600,7 +2604,9 @@ namespace rs2
 
                 ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + 65) });
                 ImGui::Separator();
-
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
                 if (tab == 0)
                 {
                     int recording_setting = temp_cfg.get(configurations::record::file_save_mode);
@@ -3056,7 +3062,8 @@ namespace rs2
                 {
                     ImGui::SetTooltip("%s", "Close window without saving any changes to the settings");
                 }
-
+                ImGui::PopStyleColor(2);
+                ImGui::PopStyleVar();
                 ImGui::EndPopup();
             }
 
@@ -3079,9 +3086,9 @@ namespace rs2
             ImGui::SetNextWindowSize({ w, h });
 
             flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar;
 
-            ImGui_ScopePushFont(window.get_font());
+            RsImGui_ScopePushFont(window.get_font());
             ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -3192,22 +3199,22 @@ namespace rs2
         auto x_axis = cross(dir, up);
         auto step = sec_since_update * 0.3f;
 
-        if (ImGui::IsKeyPressed('w') || ImGui::IsKeyPressed('W'))
+        if (ImGui::GetIO().KeysDown[ImGuiKey_W])
         {
             pos = pos + dir * step;
             target = target + dir * step;
         }
-        if (ImGui::IsKeyPressed('s') || ImGui::IsKeyPressed('S'))
+        if (ImGui::GetIO().KeysDown[ImGuiKey_S])
         {
             pos = pos - dir * step;
             target = target - dir * step;
         }
-        if (ImGui::IsKeyPressed('d') || ImGui::IsKeyPressed('D'))
+        if (ImGui::GetIO().KeysDown[ImGuiKey_D])
         {
             pos = pos + x_axis * step;
             target = target + x_axis * step;
         }
-        if (ImGui::IsKeyPressed('a') || ImGui::IsKeyPressed('A'))
+        if (ImGui::GetIO().KeysDown[ImGuiKey_A])
         {
             pos = pos - x_axis * step;
             target = target - x_axis * step;
@@ -3224,7 +3231,7 @@ namespace rs2
             auto cy = mouse.cursor.y + overflow.y;
             auto py = mouse.prev_cursor.y + overflow.y;
 
-            auto dragging = ImGui::IsKeyDown(GLFW_KEY_LEFT_CONTROL);
+            auto dragging = ImGui::GetIO().KeysDown[GLFW_KEY_LEFT_CONTROL];
 
             // Limit how much user mouse can jump between frames
             // This can work poorly when the app FPS is really terrible (< 10)
@@ -3473,7 +3480,7 @@ namespace rs2
                 _measurements.show_tooltip(window);
         }
 
-        if (ImGui::IsKeyPressed(' '))
+        if (ImGui::IsKeyPressed(ImGuiKey_Space))
         {
             if (paused)
             {

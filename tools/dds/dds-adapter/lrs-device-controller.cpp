@@ -733,7 +733,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             ( static_cast< long double >( f.get_timestamp() ) / 1e3 );
 
                         realdds::topics::image_msg image;
-                        image.set_height( video->get_image_header().width );
+                        image.set_height( video->get_image_header().height );
                         image.set_width( video->get_image_header().width );
                         image.set_timestamp( timestamp );
                         auto data = static_cast< const uint8_t * >( f.get_data() );

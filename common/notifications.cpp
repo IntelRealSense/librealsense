@@ -614,7 +614,7 @@ namespace rs2
 
                 auto s = ss.str();
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-                ImGui::InputTextMultiline("notification", const_cast<char*>(s.c_str()),
+                ImGui::InputTextMultiline("##notification", const_cast<char*>(s.c_str()),
                     s.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopStyleColor();
 

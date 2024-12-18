@@ -113,7 +113,7 @@ namespace librealsense
             if (!sts)
             {
                 auto lastResult = GetLastError();
-                LOG_ERROR("failed to set timeout policy, error: " << lastResult);
+                LOG_DEBUG( "failed to set timeout policy, error: " << lastResult );
                 return winusb_status_to_rs(lastResult);
             }
             return RS2_USB_STATUS_SUCCESS;
