@@ -491,14 +491,15 @@ namespace librealsense
                 }
 
                 // Enumerate all imaging devices
-                for (int member_index = 0; ; ++member_index)
+                for (DWORD member_index = 0; member_index < 0x10000; ++member_index)
                 {
                     // Get device information element from the device information set
                     if (SetupDiEnumDeviceInfo(device_info, member_index, &devInfo) == FALSE)
                     {
-                        if( GetLastError() == ERROR_NO_MORE_ITEMS )
-                            break; // stop when none left
-                        continue; // silently ignore other errors
+                        DWORD last_error = GetLastError();
+                        if ((last_error == ERROR_NO_MORE_ITEMS) || (last_error == ERROR_INVALID_HANDLE)) 
+                            break; // stop when none left 
+                        continue; // silently ignore other errors }
                     }
 
                     std::string parent_uid;
