@@ -10,6 +10,8 @@
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+#include <realsense_imgui.h>
 
 #include "device-model.h"
 
@@ -221,7 +223,7 @@ namespace rs2
             if (_use_glsl_proc) rs2::gl::shutdown_processing();
 
             ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
-            ImGui_ImplGlfw_Shutdown();
+            RsImGui::PopNewFrame();
             glfwDestroyWindow(_win);
             glfwDestroyCursor(_hand_cursor);
             glfwDestroyCursor(_cross_cursor);
@@ -371,7 +373,13 @@ namespace rs2
 
         setup_icon();
 
-        ImGui_ImplGlfw_Init(_win, true);
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;   // added in order to prevents cursor chang when interacting with other element (when nedded remove the flag accordingly)
+        ImGui_ImplGlfw_InitForOpenGL(_win, true);
+        ImGui_ImplOpenGL3_Init();
 
         if (_use_glsl_render)
             _2d_vis = std::make_shared<visualizer_2d>(std::make_shared<splash_screen_shader>());
@@ -385,18 +393,21 @@ namespace rs2
 
         glfwSetCursorPosCallback(_win, [](GLFWwindow* w, double cx, double cy)
         {
+            ImGui_ImplGlfw_CursorPosCallback(w, cx, cy); // Forward the cursor position to ImGui
             auto data = reinterpret_cast<ux_window*>(glfwGetWindowUserPointer(w));
             data->_mouse.cursor = { (float)cx / data->_scale_factor,
                 (float)cy / data->_scale_factor };
         });
         glfwSetMouseButtonCallback(_win, [](GLFWwindow* w, int button, int action, int mods)
         {
+            ImGui_ImplGlfw_MouseButtonCallback(w, button, action, mods);// Forward the event to ImGui's GLFW implementation
             auto data = reinterpret_cast<ux_window*>(glfwGetWindowUserPointer(w));
             data->_mouse.mouse_down[0] = (button == GLFW_MOUSE_BUTTON_1) && (action != GLFW_RELEASE);
             data->_mouse.mouse_down[1] = (button == GLFW_MOUSE_BUTTON_2) && (action != GLFW_RELEASE);
         });
         glfwSetScrollCallback(_win, [](GLFWwindow * w, double xoffset, double yoffset)
         {
+            ImGui_ImplGlfw_ScrollCallback(w, xoffset, yoffset); // Forwards scroll events to ImGui
             auto data = reinterpret_cast<ux_window*>(glfwGetWindowUserPointer(w));
             data->_mouse.mouse_wheel = static_cast<int>(yoffset);
             data->_mouse.ui_wheel += static_cast<int>(yoffset);
@@ -413,6 +424,8 @@ namespace rs2
                 data->on_file_drop(paths[i]);
             }
         });
+
+        glfwSetKeyCallback(_win, ImGui_ImplGlfw_KeyCallback);
 
         rs2::gl::init_rendering(_use_glsl_render);
         if (_use_glsl_proc) rs2::gl::init_processing(_win, _use_glsl_proc);
@@ -657,7 +670,7 @@ namespace rs2
         }
 
         ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
-        ImGui_ImplGlfw_Shutdown();
+        RsImGui::PopNewFrame();
         glfwDestroyWindow(_win);
 
         glfwDestroyCursor(_hand_cursor);
@@ -742,9 +755,8 @@ namespace rs2
 
         ImGui::GetIO().MouseWheel = _mouse.ui_wheel;
         _mouse.ui_wheel = 0.f;
-
-        ImGui_ImplGlfw_NewFrame(_scale_factor);
-        //ImGui::NewFrame();
+        
+        RsImGui::PushNewFrame();
     }
 
     void ux_window::begin_viewport()
@@ -766,7 +778,7 @@ namespace rs2
         if (!_first_frame)
         {
             ImGui::Render();
-
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
             glfwSwapBuffers(_win);
             _mouse.mouse_wheel = 0;
         }

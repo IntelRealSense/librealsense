@@ -8,7 +8,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(${PROJECT_NAME} rs-measure.cpp ../example.hpp)
+    add_executable(${PROJECT_NAME} rs-measure.cpp ../example.hpp ${IMGUI_SOURCES})
     set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
     target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} Threads::Threads)
     include_directories(../)

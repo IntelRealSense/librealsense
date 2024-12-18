@@ -2,6 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include "option-model.h"
+#include <realsense_imgui.h>
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -256,7 +257,7 @@ bool option_model::draw_combobox( notifications_model & model,
     if( new_line )
         ImGui::SetCursorPosX( combo_position_x );
 
-    ImGui::PushItemWidth( new_line ? -1.f : 100.f );
+    ImGui::PushItemWidth( new_line ? ImGui::GetContentRegionAvail().x - 25 : 100.f );
 
     int selected;
     std::vector< const char * > labels = get_combo_labels( &selected );
@@ -264,7 +265,7 @@ bool option_model::draw_combobox( notifications_model & model,
 
     try
     {
-        if( ImGui::Combo( id.c_str(), &selected, labels.data(), static_cast< int >( labels.size() ) ) )
+        if( RsImGui::CustomComboBox( id.c_str(), &selected, labels.data(), static_cast< int >( labels.size() ) ) )
         {
             float tmp_value = range.min + range.step * selected;
             model.add_log( rsutils::string::from()
@@ -337,7 +338,7 @@ bool option_model::draw_slider( notifications_model & model,
     ImGui::Text( "%s", txt.c_str() );
 
     ImGui::SameLine();
-    ImGui::SetCursorPosX( read_only ? 268.f : 245.f );
+    ImGui::SetCursorPosX( read_only ? 280.f : 257.f );
     ImGui::PushStyleColor( ImGuiCol_Text, grey );
     ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, grey );
     ImGui::PushStyleColor( ImGuiCol_ButtonActive, { 1.f, 1.f, 1.f, 0.f } );
@@ -353,7 +354,7 @@ bool option_model::draw_slider( notifications_model & model,
     if( ! read_only )
     {
         ImGui::SameLine();
-        ImGui::SetCursorPosX( 268 );
+        ImGui::SetCursorPosX( 280 );
         if( ! edit_mode )
         {
             std::string edit_id = rsutils::string::from() << textual_icons::edit << "##" << id;
@@ -390,9 +391,10 @@ bool option_model::draw_slider( notifications_model & model,
             ImGui::PopStyleColor( 4 );
         }
     }
-
-    ImGui::PushItemWidth( -1 );
-
+    float customWidth = 295 - ImGui::GetCursorPosX(); //set slider width from the current Xpos to the right border at 295 (the edit button pos)
+    ImGui::PushItemWidth(customWidth);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, black);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, black);
     try
     {
         if( read_only )
@@ -495,12 +497,11 @@ bool option_model::draw_slider( notifications_model & model,
             // runs when changing a value with slider and not the textbox
             auto int_value = static_cast< int >( value_as_float() );
 
-            if( ImGui::SliderIntWithSteps( id.c_str(),
+            if( RsImGui::SliderIntWithSteps( id.c_str(),
                                            &int_value,
                                            static_cast< int >( range.min ),
                                            static_cast< int >( range.max ),
-                                           static_cast< int >( range.step ),
-                                           "%.0f" ) )  // integers don't have any precision
+                                           static_cast< int >( range.step )) )
             {
                 // TODO: Round to step?
                 slider_clicked = slider_selected( opt,
@@ -579,7 +580,8 @@ bool option_model::draw_slider( notifications_model & model,
     {
         error_message = error_to_string( e );
     }
-
+    ImGui::PopStyleColor(2);
+    ImGui::PopItemWidth();
     return slider_clicked;
 }
 

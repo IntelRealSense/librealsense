@@ -475,8 +475,8 @@ namespace rs2
             // *********************
             // Creating window menus
             // *********************
+            ImGui::SetNextWindowContentSize(ImVec2(_viewer_model.panel_width - 26 , 0.0f));
             ImGui::Begin("Control Panel", nullptr, viewer_ui_traits::imgui_flags | ImGuiWindowFlags_AlwaysVerticalScrollbar);
-            ImGui::SetContentRegionWidth(_viewer_model.panel_width - 26);
 
             if (_device_model.get())
             {
@@ -511,7 +511,6 @@ namespace rs2
                 {
                     update_configuration();
                 }
-                ImGui::SetContentRegionWidth(windows_width);
                 auto pos = ImGui::GetCursorScreenPos();
 
                 for (auto&& lambda : draw_later)
@@ -604,7 +603,7 @@ namespace rs2
                         ImGui::Text("Region of Interest:");
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
 
-                        ImGui::PushItemWidth(-1);
+                        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - 25);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
                         static std::vector<std::string> items{ "80%", "60%", "40%", "20%" };

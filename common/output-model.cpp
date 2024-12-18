@@ -182,7 +182,7 @@ bool output_model::round_indicator(ux_window& win, std::string icon,
 
     auto pos = ImGui::GetCursorScreenPos();
     ImGui::GetWindowDrawList()->AddRectFilled({ pos.x, pos.y + 3 },
-                { pos.x + size.x + 15, pos.y + 27 }, ImColor(color), 12, 15);
+                { pos.x + size.x + 15, pos.y + 27 }, ImColor(color), 12, ImDrawFlags_RoundCornersNone);
 
     auto res = ImGui::Button(ss.str().c_str(), ImVec2(size.x + 15, 28));
     if (count > 0 && ImGui::IsItemHovered())
@@ -438,7 +438,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
 
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
-        ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, dark_sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, dark_sensor_bg);
 
         const float log_area_width = w - get_dashboard_width() - 2;
 
@@ -520,7 +520,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 4);
 
             std::string label = rsutils::string::from() << "##log_entry" << i++;
-            ImGui::InputTextEx(label.c_str(),
+            ImGui::InputTextEx(label.c_str(),NULL,
                         (char*)line.data(),
                         static_cast<int>(line.size() + 1),
                         ImVec2(-1, size.y + margin),
@@ -592,19 +592,19 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         ImGui::PushItemWidth( w - get_dashboard_width() - 30 );
 
         bool force_refresh = false;
-        if (ImGui::IsWindowFocused() && (ImGui::IsKeyPressed(GLFW_KEY_UP) || ImGui::IsKeyPressed(GLFW_KEY_DOWN)))
+        if (ImGui::IsWindowFocused() && (ImGui::GetIO().KeysDown[ImGuiKey_UpArrow] || ImGui::GetIO().KeysDown[ImGuiKey_DownArrow]))
         {
             if (commands_histroy.size())
             {
-                if (ImGui::IsKeyPressed(GLFW_KEY_UP)) history_offset = (history_offset + 1) % commands_histroy.size();
-                if (ImGui::IsKeyPressed(GLFW_KEY_DOWN)) history_offset = (history_offset - 1 + (int)commands_histroy.size()) % commands_histroy.size();
+                if (ImGui::GetIO().KeysDown[ImGuiKey_UpArrow]) history_offset = (history_offset + 1) % commands_histroy.size();
+                if (ImGui::GetIO().KeysDown[ImGuiKey_DownArrow]) history_offset = (history_offset - 1 + (int)commands_histroy.size()) % commands_histroy.size();
                 command_line = commands_histroy[history_offset];
 
                 force_refresh = true;
             }
         }
 
-        if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(GLFW_KEY_TAB))
+        if (ImGui::IsWindowFocused() && ImGui::GetIO().KeysDown[GLFW_KEY_TAB])
         {
             if (!autocomplete.size() || !starts_with(to_lower(autocomplete.front()), to_lower(command_line)))
             {
@@ -661,7 +661,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         ImGui::PopFont();
         ImGui::PopStyleColor();
 
-        if (ImGui::IsWindowFocused() && (ImGui::IsKeyPressed(GLFW_KEY_ENTER) || ImGui::IsKeyPressed(GLFW_KEY_KP_ENTER)))
+        if (ImGui::IsWindowFocused() && (ImGui::GetIO().KeysDown[GLFW_KEY_ENTER] || ImGui::GetIO().KeysDown[GLFW_KEY_KP_ENTER]))
         {
             if (commands_histroy.size() > 100) commands_histroy.pop_back();
             commands_histroy.push_front(command_line);
@@ -671,7 +671,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         }
         else command_focus = false;
 
-        if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(GLFW_KEY_ESCAPE))
+        if (ImGui::IsWindowFocused() && ImGui::GetIO().KeysDown[GLFW_KEY_ESCAPE])
         {
             command_line = "";
         }
@@ -862,7 +862,7 @@ void output_model::foreach_log(std::function<void(log_entry& line)> action)
 
     if (new_log)
     {
-        ImGui::SetScrollPosHere();
+        ImGui::SetScrollHereY();
         new_log = false;
     }
 }
