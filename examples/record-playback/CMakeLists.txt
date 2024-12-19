@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.8)
 project(RealsenseExamplesRecord-Playback)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(rs-record-playback rs-record-playback.cpp ../example.hpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp)
+    add_executable(rs-record-playback rs-record-playback.cpp ../example.hpp ${IMGUI_SOURCES})
     set_property(TARGET rs-record-playback PROPERTY CXX_STANDARD 11)
     target_link_libraries( rs-record-playback ${DEPENDENCIES} tclap )
     include_directories(../ ../../third-party/imgui)

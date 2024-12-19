@@ -8,7 +8,7 @@ project(RealsenseExamplesSoftwareDevice)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(rs-software-device rs-software-device.cpp)
+    add_executable(rs-software-device rs-software-device.cpp ${IMGUI_SOURCES})
     set_property(TARGET rs-software-device PROPERTY CXX_STANDARD 11)
     target_link_libraries( rs-software-device ${DEPENDENCIES} tclap )
     include_directories(../ ../../third-party/ ../../common/res)

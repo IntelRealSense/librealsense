@@ -870,10 +870,9 @@ namespace librealsense
         constexpr size_t gvd_header_size = 8;
         auto gvd_payload_data = gvd_buff.data() + gvd_header_size;
         auto computed_crc = rsutils::number::calc_crc32( gvd_payload_data, parsed_fields->payload_size );
-        LOG_INFO( "D500 GVD version is: " << static_cast< int >( parsed_fields->gvd_version[0] )
-                                          << "."
-                                          << static_cast< int >( parsed_fields->gvd_version[1] ) );
-        LOG_INFO( "D500 GVD payload_size is: " << parsed_fields->payload_size );
+        LOG_DEBUG( "D500 GVD version is: " << static_cast< int >( parsed_fields->gvd_version[0] ) << "."
+                                           << static_cast< int >( parsed_fields->gvd_version[1] )
+                                           << "\n\tD500 GVD payload_size is: " << parsed_fields->payload_size );
 
         if( computed_crc != parsed_fields->crc32 )
         {

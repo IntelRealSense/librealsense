@@ -6,6 +6,7 @@
 #include "viewer.h"
 #include "os.h"
 #include <imgui_internal.h>
+#include <realsense_imgui.h>
 
 struct attribute
 {
@@ -383,7 +384,7 @@ namespace rs2
     bool draw_combo_box(const std::string& id, const std::vector<std::string>& device_names, int& new_index)
     {
         std::vector<const char*>  device_names_chars = get_string_pointers(device_names);
-        return ImGui::Combo(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
+        return RsImGui::CustomComboBox(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
     }
 
     void stream_model::show_stream_header(ImFont* font, const rect &stream_rect, viewer_model& viewer)
@@ -396,7 +397,7 @@ namespace rs2
         if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
         if (RS2_STREAM_OCCUPANCY == profile.stream_type() && _normalized_zoom.w == 1) ++num_of_buttons; // Safety zones button
 
-        ImGui_ScopePushFont(font);
+        RsImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
@@ -1486,7 +1487,7 @@ namespace rs2
 
             std::string msg(ss.str().c_str());
 
-            ImGui_ScopePushFont(font);
+            RsImGui_ScopePushFont(font);
 
             // adjust windows size to the message length
             auto new_line_start_idx = msg.find_first_of('\n');

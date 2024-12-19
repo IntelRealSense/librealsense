@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(RealsenseExamplesLabeledPointcloud)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(rs-labeled-pointcloud rs-labeled-pointcloud.cpp ../example.hpp labeled-pointcloud-drawing.hpp ../../common/labeled-point-cloud-utilities.cpp)
+    add_executable(rs-labeled-pointcloud rs-labeled-pointcloud.cpp ../example.hpp labeled-pointcloud-drawing.hpp ../../common/labeled-point-cloud-utilities.cpp ${IMGUI_SOURCES})
     set_property(TARGET rs-labeled-pointcloud PROPERTY CXX_STANDARD 11)
     target_link_libraries(rs-labeled-pointcloud ${DEPENDENCIES})
     include_directories(../)

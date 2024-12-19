@@ -4,6 +4,7 @@
 #include "ux-alignment.h"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
+#include <realsense_imgui.h>
 #include <vector>
 #include <memory>
 
@@ -49,7 +50,7 @@ bool is_gui_aligned(GLFWwindow *win)
 
         glfwSwapBuffers(win);
 
-        ImGui_ImplGlfw_NewFrame(1.f);
+        RsImGui::PushNewFrame();
 
         SetFocus(hwn);
 
