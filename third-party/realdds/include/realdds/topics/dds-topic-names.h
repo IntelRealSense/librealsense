@@ -16,6 +16,8 @@ constexpr char SEPARATOR = '/';
 constexpr char const * ROOT = "realsense/";
 constexpr size_t ROOT_LEN = 10;
 // NOTE: actual streams will be ROS-compatible, meaning rt/ROOT
+constexpr char const * ROS2_ROOT = "rt/";
+constexpr size_t ROS2_ROOT_LEN = 3;
 
 constexpr char const * DEVICE_INFO_TOPIC_NAME = "realsense/device-info";
 
@@ -24,6 +26,14 @@ constexpr char const * NOTIFICATION_TOPIC_NAME = "/notification";
 constexpr char const * CONTROL_TOPIC_NAME = "/control";
 constexpr char const * METADATA_TOPIC_NAME = "/metadata";
 constexpr char const * DFU_TOPIC_NAME = "/dfu";
+
+constexpr char const * GET_PARAMETERS_NAME = "/get_parameters";
+constexpr char const * SET_PARAMETERS_NAME = "/set_parameters";
+constexpr char const * LIST_PARAMETERS_NAME = "/list_parameters";
+constexpr char const * DESCRIBE_PARAMETERS_NAME = "/describe_parameters";
+
+constexpr char const * REQUEST_SUFFIX = "Request";
+constexpr char const * RESPONSE_SUFFIX = "Response";
 
 
 namespace notification {
