@@ -6,6 +6,7 @@ Librealsense Post-Processing Filters
   * [Spatial Edge-Preserving filter](#spatial-filter)
   * [Temporal filter](#temporal-filter)
   * [Holes Filling filter](#hole-filling-filter)
+  * [Rotation filter](#rotation-filter)
 * [Design and Implementation](#post-processing-implementation)
   * [Using Filters in application code](#post-processing-api-usage)
 
@@ -69,6 +70,17 @@ The filter obtains the four immediate pixel "neighbors" (up, down, left, right),
 Controls | Operation |  Range | Default
 :------: | :-------- | :---- | :----:
 Hole Filling| Control the data that will be used to fill the invalid pixels | [0-2] enumerated:<br/>__*fill_from_left*__ - Use the value from the left neighbor pixel to fill the hole<br/>__*farest_from_around*__ - Use the value from the neighboring pixel which is furthest away from the sensor<br/>__*nearest_from_around*__ - - Use the value from the neighboring pixel closest to the sensor| 1 (Farest from around)
+
+### Rotation filter
+
+The rotation filter transforms depth and IR frames by rotating them by specified angles: 0°, 90°, 180°, and -90°.
+This allows re-orienting frames to fit the required perspective for various applications.
+
+After the resulted frame is produced, the frame intrinsic parameters are recalculated to account for rotation.
+
+Controls | Operation |  Range | Default
+:------: | :-------- | :---- | :----:
+Rotation| The frame rotation in degrees | Discrete steps: 0, 90, 180, -90| 0 degree
 
 ## Design and Implementation
 Post-processing modules are encapsulated into self-contained processing blocks, that provide for the following key requirements:
