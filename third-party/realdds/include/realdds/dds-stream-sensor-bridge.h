@@ -101,6 +101,9 @@ public:
     // Return true if the stream for the given server is currently streaming
     bool is_streaming( std::shared_ptr< dds_stream_server > const & ) const;
 
+    // Return the profile a server is set to, even if not yet streaming
+    std::shared_ptr< dds_stream_profile > get_profile( std::shared_ptr< dds_stream_server > const & ) const;
+
     // Notifications
 public:
     void on_readers_changed( readers_changed_callback callback ) { _on_readers_changed = std::move( callback ); }
