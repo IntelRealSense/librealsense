@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
@@ -7,6 +7,7 @@
 #include <realdds/dds-stream-profile.h>
 
 #include <rsutils/json-fwd.h>
+#include <rsutils/concurrency/concurrency.h>
 #include <map>
 #include <vector>
 
@@ -19,6 +20,8 @@ namespace realdds {
 class dds_device_server;
 class dds_stream_server;
 class dds_option;
+class dds_topic_reader;
+class dds_topic_writer;
 
 } // namespace realdds
 
@@ -50,6 +53,11 @@ private:
     bool on_dfu_apply( rsutils::json const &, rsutils::json & );
     bool on_open_streams( rsutils::json const &, rsutils::json & );
 
+    void on_get_params_request();
+    void on_set_params_request();
+    void on_list_params_request();
+    void on_describe_params_request();
+
     void override_default_profiles( const std::map< std::string, realdds::dds_stream_profiles > & stream_name_to_profiles,
                                     std::map< std::string, size_t > & stream_name_to_default_profile ) const;
     size_t get_index_of_profile( const realdds::dds_stream_profiles & profiles,
@@ -75,6 +83,17 @@ private:
 
     std::shared_ptr< realdds::dds_device_server > _dds_device_server;
     bool _md_enabled;
+
+    dispatcher _control_dispatcher;
+
+    std::shared_ptr< realdds::dds_topic_reader > _get_params_reader;
+    std::shared_ptr< realdds::dds_topic_writer > _get_params_writer;
+    std::shared_ptr< realdds::dds_topic_reader > _set_params_reader;
+    std::shared_ptr< realdds::dds_topic_writer > _set_params_writer;
+    std::shared_ptr< realdds::dds_topic_reader > _list_params_reader;
+    std::shared_ptr< realdds::dds_topic_writer > _list_params_writer;
+    std::shared_ptr< realdds::dds_topic_reader > _describe_params_reader;
+    std::shared_ptr< realdds::dds_topic_writer > _describe_params_writer;
 };  // class lrs_device_controller
 
 }  // namespace tools
