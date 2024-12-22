@@ -491,6 +491,7 @@ namespace librealsense
                 }
 
                 // Enumerate all imaging devices
+                // high limit is below loop has been added to avoid infinite loop
                 for (DWORD member_index = 0; member_index < 0x10000; ++member_index)
                 {
                     // Get device information element from the device information set
