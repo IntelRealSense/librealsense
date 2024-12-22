@@ -65,6 +65,7 @@ public:
     dds_guid const & guid() const;
     std::shared_ptr< dds_participant > participant() const;
     std::shared_ptr< dds_subscriber > subscriber() const { return _subscriber; }
+    std::shared_ptr< dds_publisher > publisher() const { return _publisher; }
     std::string const & topic_root() const { return _topic_root; }
     rsutils::string::slice debug_name() const;
 
