@@ -152,7 +152,7 @@ namespace librealsense
         // predefined platform specific extrinsic, IMU assembly transformation based on mechanical drawing (meters)
         rs2_extrinsics _def_extr;
 
-        if (_pid == ds::RS435I_PID)
+        if (_pid == ds::RS435I_PID || _pid == ds::RS436I_PID)
         {
             // D435i specific - Bosch BMI055
             _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 }, { -0.00552f, 0.0051f, 0.01174f} };
