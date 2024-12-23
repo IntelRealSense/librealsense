@@ -937,6 +937,227 @@ namespace librealsense
         bool compress_while_record() const override { return false; }
     };
 
+    class rs436i_device : public d400_active,
+        public d400_color,
+        public d400_motion,
+        public ds_advanced_mode_base,
+        public firmware_logger_device
+    {
+    public:
+        rs436i_device(std::shared_ptr< const d400_info > const& dev_info, bool register_device_notifications)
+            : device(dev_info, register_device_notifications)
+            , backend_device(dev_info, register_device_notifications)
+            , d400_device(dev_info)
+            , d400_active(dev_info)
+            , d400_color(dev_info)
+            , d400_motion(dev_info)
+            , ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor())
+            , firmware_logger_device(
+                dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command())
+        {
+            check_and_restore_rgb_stream_extrinsic();
+            if (_fw_version >= firmware_version(5, 16, 0, 0))
+                register_feature(
+                    std::make_shared< gyro_sensitivity_feature >(get_raw_motion_sensor(), get_motion_sensor()));
+        }
+
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<tagged_profile> get_profiles_tags() const override
+        {
+            std::vector<tagged_profile> tags;
+            auto usb_spec = get_usb_spec();
+            bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
+
+            int depth_width = usb3mode ? 848 : 640;
+            int depth_height = usb3mode ? 480 : 480;
+            int color_width = usb3mode ? 1280 : 640;
+            int color_height = usb3mode ? 720 : 480;
+            int fps = usb3mode ? 30 : 15;
+
+            tags.push_back({ RS2_STREAM_COLOR, -1, color_width, color_height, get_color_format(), fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_DEPTH, -1, depth_width, depth_height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_INFRARED, -1, depth_width, depth_height, RS2_FORMAT_Y8, fps, profile_tag::PROFILE_TAG_SUPERSET });
+            tags.push_back({ RS2_STREAM_GYRO, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, (int)odr::IMU_FPS_200, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_ACCEL, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, (int)odr::IMU_FPS_63, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_ACCEL, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, (int)odr::IMU_FPS_100, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            return tags;
+        };
+        bool compress_while_record() const override { return false; }
+
+    private:
+        void check_and_restore_rgb_stream_extrinsic()
+        {
+            for (auto iter = 0, rec = 0; iter < 2; iter++, rec++)
+            {
+                std::vector< uint8_t > cal;
+                try
+                {
+                    cal = *_color_calib_table_raw;
+                }
+                catch (...)
+                {
+                    LOG_WARNING("Cannot read RGB calibration table");
+                }
+
+                if (!is_rgb_extrinsic_valid(cal) && !rec)
+                {
+                    restore_rgb_extrinsic();
+                }
+                else
+                    break;
+            };
+        }
+
+        bool is_rgb_extrinsic_valid(const std::vector<uint8_t>& raw_data) const
+        {
+            try
+            {
+                // verify extrinsic calibration table structure
+                auto table = ds::check_calib<ds::d400_rgb_calibration_table>(raw_data);
+
+                if ((table->header.version != 0 && table->header.version != 0xffff) && (table->header.table_size >= sizeof(ds::d400_rgb_calibration_table) - sizeof(ds::table_header)))
+                {
+                    float3 trans_vector = table->translation_rect;
+                    // Translation Heuristic tests
+                    auto found = false;
+                    for (auto i = 0; i < 3; i++)
+                    {
+                        //Nan/Infinity are not allowed
+                        if (!std::isfinite(trans_vector[i]))
+                        {
+                            LOG_WARNING("RGB extrinsic - translation is corrupted: " << trans_vector);
+                            return false;
+                        }
+                        // Translation must be assigned for at least one axis
+                        if (std::fabs(trans_vector[i]) > std::numeric_limits<float>::epsilon())
+                            found = true;
+                    }
+
+                    if (!found)
+                    {
+                        LOG_WARNING("RGB extrinsic - invalid (zero) translation: " << trans_vector);
+                        return false;
+                    }
+
+                    // Rotation Heuristic tests
+                    auto num_found = 0;
+                    float3x3 rect_rot_mat = table->rotation_matrix_rect;
+                    for (auto i = 0; i < 3; i++)
+                    {
+                        for (auto j = 0; j < 3; j++)
+                        {
+                            //Nan/Infinity are not allowed
+                            if (!std::isfinite(rect_rot_mat(i, j)))
+                            {
+                                LOG_DEBUG("RGB extrinsic - rotation matrix corrupted:\n" << rect_rot_mat);
+                                return false;
+                            }
+
+                            if (std::fabs(rect_rot_mat(i, j)) > std::numeric_limits<float>::epsilon())
+                                num_found++;
+                        }
+                    }
+
+                    bool res = (num_found >= 3); // At least three matrix indexes must be non-zero
+                    if (!res) // At least three matrix indexes must be non-zero
+                        LOG_DEBUG("RGB extrinsic - rotation matrix invalid:\n" << rect_rot_mat);
+
+                    return res;
+                }
+                else
+                {
+                    LOG_WARNING("RGB extrinsic - header corrupted: "
+                        << "Version: " << std::setfill('0') << std::setw(4) << std::hex << table->header.version
+                        << ", type " << std::dec << table->header.table_type << ", size " << table->header.table_size);
+                    return false;
+                }
+            }
+            catch (...)
+            {
+                return false;
+            }
+        }
+
+        void assign_rgb_stream_extrinsic(const std::vector< uint8_t >& calib)
+        {
+            //write calibration to preset
+            command cmd(ds::fw_cmd::SETINTCALNEW, 0x20, 0x2);
+            cmd.data = calib;
+            d400_device::_hw_monitor->send(cmd);
+        }
+
+        std::vector< uint8_t > read_sector(const uint32_t address, const uint16_t size) const
+        {
+            if (size > ds_advanced_mode_base::HW_MONITOR_COMMAND_SIZE)
+                throw std::runtime_error(rsutils::string::from()
+                    << "Device memory read failed. max size: "
+                    << int(ds_advanced_mode_base::HW_MONITOR_COMMAND_SIZE)
+                    << ", requested: " << int(size));
+            command cmd(ds::fw_cmd::FRB, address, size);
+            return d400_device::_hw_monitor->send(cmd);
+        }
+
+        std::vector< uint8_t > read_rgb_gold() const
+        {
+            command cmd(ds::fw_cmd::LOADINTCAL, 0x20, 0x1);
+            return d400_device::_hw_monitor->send(cmd);
+        }
+
+        std::vector< uint8_t > restore_calib_factory_settings() const
+        {
+            command cmd(ds::fw_cmd::CAL_RESTORE_DFLT);
+            return d400_device::_hw_monitor->send(cmd);
+        }
+
+        void restore_rgb_extrinsic(void)
+        {
+            bool res = false;
+            LOG_WARNING("invalid RGB extrinsic was identified, recovery routine was invoked");
+            try
+            {
+                if ((res = is_rgb_extrinsic_valid(read_rgb_gold())))
+                {
+                    restore_calib_factory_settings();
+                }
+                else
+                {
+                    if (_fw_version == firmware_version("5.11.6.200"))
+                    {
+                        const uint32_t gold_address = 0x17c49c;
+                        const uint16_t bytes_to_read = 0x100;
+                        auto alt_calib = read_sector(gold_address, bytes_to_read);
+                        if ((res = is_rgb_extrinsic_valid(alt_calib)))
+                            assign_rgb_stream_extrinsic(alt_calib);
+                        else
+                            res = false;
+                    }
+                    else
+                        res = false;
+                }
+
+                // Update device's internal state
+                if (res)
+                {
+                    LOG_WARNING("RGB stream extrinsic successfully recovered");
+                    _color_calib_table_raw.reset();
+                    _color_extrinsic.get()->reset();
+                    environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
+                }
+                else
+                {
+                    LOG_ERROR("RGB Extrinsic recovery routine failed");
+                    _color_extrinsic.get()->reset();
+                }
+            }
+            catch (...)
+            {
+                LOG_ERROR("RGB Extrinsic recovery routine failed");
+            }
+        }
+    };
+
     class rs400_imu_device  :      public d400_motion,
                                 public ds_advanced_mode_base,
                                 public firmware_logger_device
@@ -1148,8 +1369,8 @@ namespace librealsense
             return std::make_shared< rs435_device >( dev_info, register_device_notifications );
         case RS435I_PID:
             return std::make_shared< rs435i_device >( dev_info, register_device_notifications );
-        case RS436_PID:
-            return std::make_shared< rs436_device >(dev_info, register_device_notifications);
+        case RS436I_PID:
+            return std::make_shared< rs436i_device >(dev_info, register_device_notifications);
         case RS_USB2_PID:
             return std::make_shared< rs410_device >( dev_info, register_device_notifications );
         case RS400_IMU_PID:
@@ -1355,7 +1576,7 @@ namespace librealsense
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
-    std::shared_ptr<matcher> rs436_device::create_matcher(const frame_holder& frame) const
+    std::shared_ptr<matcher> rs436i_device::create_matcher(const frame_holder& frame) const
     {
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
         // TODO - A proper matcher for High-FPS sensor is required
