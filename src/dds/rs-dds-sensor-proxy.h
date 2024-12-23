@@ -115,6 +115,9 @@ protected:
     virtual void add_no_metadata( frame *, streaming_impl & );
     virtual void add_frame_metadata( frame *, rsutils::json const & metadata, streaming_impl & );
 
+    void add_processing_block_settings( const std::string & filter_name,
+                                        std::shared_ptr< librealsense::processing_block_interface > & ppb ) const;
+
     friend class dds_device_proxy;  // Currently calls handle_new_metadata
 };
 
