@@ -61,6 +61,8 @@ Alternatively, one can use RealDDS to bypass librealsense. This will avoid some 
 
 Or you can directly interact with the DDS subsystem, using any implementation. This bypasses librealsense and RealDDS completely. While the protocol used by RealDDS (the topic structure, message formats, etc.) will likely not change much, it is not guaranteed to stay static in the face of new features or bugs.
 
+**Note**: In some systems where firewall is enabled, you may see the message "Do you want to allow networks to access this app", make sure to allow this in your network to ensure proper communication with the DDS device. This message shows up since we open and bind a socket when using DDS, so it should be allowed in the network security settings.
+
 # Next
 
 Start with [Discovery](doc/discovery.md), then continue on to [Device](doc/device.md).
