@@ -4110,21 +4110,7 @@ void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics* int
     pixel[1] = y * intrin->fy + intrin->ppy;
 }
 NOEXCEPT_RETURN(, pixel)
-
-/* return true in case all intrinsics distortion coefficient are zero.
-   otherwise, return false.*/
-const int DISTORTION_COEFF = 5;
-/*inline bool is_intrinsics_distortion_zero(const struct rs2_intrinsics* intrin)
-{
-    for(int i = 0;i < DISTORTION_COEFF;i++)
-    {
-        if (abs(intrin->coeffs[i]) > std::numeric_limits<double>::epsilon())
-            return false;
-    }
-    //return true;
-    return false;
-}*/
-
+/* Helper inner function (not part of the API) */
 inline bool is_intrinsics_distortion_zero(const struct rs2_intrinsics* intrin)
 {
     return (abs(intrin->coeffs[0]) < std::numeric_limits<double>::epsilon() && abs(intrin->coeffs[1]) < std::numeric_limits<double>::epsilon() &&
@@ -4135,33 +4121,18 @@ inline bool is_intrinsics_distortion_zero(const struct rs2_intrinsics* intrin)
 void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* intrin, const float pixel[2], float depth) BEGIN_API_CALL
 {
     assert(intrin->model != RS2_DISTORTION_MODIFIED_BROWN_CONRADY); // Cannot deproject from a forward-distorted image
-    //assert(intrin->model != RS2_DISTORTION_BROWN_CONRADY); // Cannot deproject to an brown conrady model
-
+ 
     float x = (pixel[0] - intrin->ppx) / intrin->fx;
     float y = (pixel[1] - intrin->ppy) / intrin->fy;
 
     float xo = x;
     float yo = y;
 
-    // Get the starting time point
-    //auto start = std::chrono::high_resolution_clock::now();
-
-    // Use const_cast to remove the const qualifier
-    //rs2_intrinsics* non_const_intrin = const_cast<rs2_intrinsics*>(intrin);
-
-    //non_const_intrin->coeffs[0] = 0.01;
-    //non_const_intrin->coeffs[1] = 0.02;
-    //non_const_intrin->coeffs[2] = 0.03;
-    //non_const_intrin->coeffs[3] = 0.04;
-    //non_const_intrin->coeffs[4] = 0.05;
-        
-
-    if(!is_intrinsics_distortion_zero(intrin))
-    {        
-
+    if (!is_intrinsics_distortion_zero(intrin))
+    {
         if (intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
         {
-            // need to loop until convergence 
+            // need to loop until convergence
             // 10 iterations determined empirically
             for (int i = 0; i < 10; i++)
             {
@@ -4174,11 +4145,10 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
                 x = (xo - delta_x) * icdist;
                 y = (yo - delta_y) * icdist;
             }
-
         }
         if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
         {
-            // need to loop until convergence 
+            // need to loop until convergence
             // 10 iterations determined empirically
             for (int i = 0; i < 10; i++)
             {
@@ -4189,43 +4159,44 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
                 x = (xo - delta_x) * icdist;
                 y = (yo - delta_y) * icdist;
             }
-        }
-    }    
-    if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
-    {
-        float rd = sqrtf(x * x + y * y);
-        if (rd < FLT_EPSILON)
-        {
-            rd = FLT_EPSILON;
-        }
 
-        float theta = rd;
-        float theta2 = rd * rd;
-        for (int i = 0; i < 4; i++)
+        }
+        if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
         {
-            float f = theta * (1 + theta2 * (intrin->coeffs[0] + theta2 * (intrin->coeffs[1] + theta2 * (intrin->coeffs[2] + theta2 * intrin->coeffs[3])))) - rd;
-            if (fabs(f) < FLT_EPSILON)
+            float rd = sqrtf(x * x + y * y);
+            if (rd < FLT_EPSILON)
             {
-                break;
+                rd = FLT_EPSILON;
             }
-            float df = 1 + theta2 * (3 * intrin->coeffs[0] + theta2 * (5 * intrin->coeffs[1] + theta2 * (7 * intrin->coeffs[2] + 9 * theta2 * intrin->coeffs[3])));
-            theta -= f / df;
-            theta2 = theta * theta;
+
+            float theta = rd;
+            float theta2 = rd * rd;
+            for (int i = 0; i < 4; i++)
+            {
+                float f = theta * (1 + theta2 * (intrin->coeffs[0] + theta2 * (intrin->coeffs[1] + theta2 * (intrin->coeffs[2] + theta2 * intrin->coeffs[3])))) - rd;
+                if (fabs(f) < FLT_EPSILON)
+                {
+                    break;
+                }
+                float df = 1 + theta2 * (3 * intrin->coeffs[0] + theta2 * (5 * intrin->coeffs[1] + theta2 * (7 * intrin->coeffs[2] + 9 * theta2 * intrin->coeffs[3])));
+                theta -= f / df;
+                theta2 = theta * theta;
+            }
+            float r = tan(theta);
+            x *= r / rd;
+            y *= r / rd;
         }
-        float r = tan(theta);
-        x *= r / rd;
-        y *= r / rd;
-    }
-    if (intrin->model == RS2_DISTORTION_FTHETA)
-    {
-        float rd = sqrtf(x * x + y * y);
-        if (rd < FLT_EPSILON)
+        if (intrin->model == RS2_DISTORTION_FTHETA)
         {
-            rd = FLT_EPSILON;
+            float rd = sqrtf(x * x + y * y);
+            if (rd < FLT_EPSILON)
+            {
+                rd = FLT_EPSILON;
+            }
+            float r = (float)(tan(intrin->coeffs[0] * rd) / atan(2 * tan(intrin->coeffs[0] / 2.0f)));
+            x *= r / rd;
+            y *= r / rd;
         }
-        float r = (float)(tan(intrin->coeffs[0] * rd) / atan(2 * tan(intrin->coeffs[0] / 2.0f)));
-        x *= r / rd;
-        y *= r / rd;
     }
 
     point[0] = depth * x;
