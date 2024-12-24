@@ -15,6 +15,7 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <rsutils/easylogging/easyloggingpp.h>
 
 using pixel = std::pair<int, int>;
 
@@ -100,6 +101,7 @@ void render_simple_distance(const rs2::depth_frame& depth,
 
 int main(int argc, char * argv[]) try
 {
+    rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
     auto settings = rs2::cli( "rs-measure example" )
         .process( argc, argv );
 
@@ -291,8 +293,23 @@ float dist_3d(const rs2::depth_frame& frame, pixel u, pixel v)
 
     // Deproject from pixel to point in 3D
     rs2_intrinsics intr = frame.get_profile().as<rs2::video_stream_profile>().get_intrinsics(); // Calibration data
+    // Get the starting time point
+    auto start = std::chrono::high_resolution_clock::now();
+
     rs2_deproject_pixel_to_point(upoint, &intr, upixel, udist);
+
+    // Get the ending time point
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // Calculate the elapsed time in milliseconds
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+
+    // Output the elapsed time
+    LOG_ERROR(duration.count());
+
     rs2_deproject_pixel_to_point(vpoint, &intr, vpixel, vdist);
+
+    
 
     // Calculate euclidean distance between the two points
     return sqrt(pow(upoint[0] - vpoint[0], 2.f) +

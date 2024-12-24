@@ -67,6 +67,7 @@
 #include <iostream>
 #include <chrono>
 #include <thread> // For std::this_thread::sleep_for
+#include <random>  // For random number generation
 
 ////////////////////////
 // API implementation //
@@ -4113,14 +4114,22 @@ NOEXCEPT_RETURN(, pixel)
 /* return true in case all intrinsics distortion coefficient are zero.
    otherwise, return false.*/
 const int DISTORTION_COEFF = 5;
-inline bool is_intrinsics_distortion_zero(const struct rs2_intrinsics* intrin)
+/*inline bool is_intrinsics_distortion_zero(const struct rs2_intrinsics* intrin)
 {
     for(int i = 0;i < DISTORTION_COEFF;i++)
     {
         if (abs(intrin->coeffs[i]) > std::numeric_limits<double>::epsilon())
             return false;
     }
-    return true;
+    //return true;
+    return false;
+}*/
+
+inline bool is_intrinsics_distortion_zero(const struct rs2_intrinsics* intrin)
+{
+    return (abs(intrin->coeffs[0]) < std::numeric_limits<double>::epsilon() && abs(intrin->coeffs[1]) < std::numeric_limits<double>::epsilon() &&
+        abs(intrin->coeffs[2]) < std::numeric_limits<double>::epsilon() && abs(intrin->coeffs[3]) < std::numeric_limits<double>::epsilon() &&
+        abs(intrin->coeffs[4]) < std::numeric_limits<double>::epsilon());
 }
 
 void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* intrin, const float pixel[2], float depth) BEGIN_API_CALL
@@ -4135,18 +4144,23 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
     float yo = y;
 
     // Get the starting time point
-    auto start = std::chrono::high_resolution_clock::now();
+    //auto start = std::chrono::high_resolution_clock::now();
 
-    std::cout << "rs2_deproject_pixel_to_point start" << std::endl;
+    // Use const_cast to remove the const qualifier
+    //rs2_intrinsics* non_const_intrin = const_cast<rs2_intrinsics*>(intrin);
+
+    //non_const_intrin->coeffs[0] = 0.01;
+    //non_const_intrin->coeffs[1] = 0.02;
+    //non_const_intrin->coeffs[2] = 0.03;
+    //non_const_intrin->coeffs[3] = 0.04;
+    //non_const_intrin->coeffs[4] = 0.05;
+        
 
     if(!is_intrinsics_distortion_zero(intrin))
-    {
-        std::cout << "rs2_deproject_pixel_to_point 1" << std::endl;
-         
+    {        
 
         if (intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
         {
-            std::cout << "rs2_deproject_pixel_to_point 2" << std::endl;
             // need to loop until convergence 
             // 10 iterations determined empirically
             for (int i = 0; i < 10; i++)
@@ -4164,7 +4178,6 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
         }
         if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
         {
-            std::cout << "rs2_deproject_pixel_to_point 3" << std::endl;
             // need to loop until convergence 
             // 10 iterations determined empirically
             for (int i = 0; i < 10; i++)
@@ -4180,7 +4193,6 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
     }    
     if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
     {
-        std::cout << "rs2_deproject_pixel_to_point 4" << std::endl;
         float rd = sqrtf(x * x + y * y);
         if (rd < FLT_EPSILON)
         {
@@ -4206,7 +4218,6 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
     }
     if (intrin->model == RS2_DISTORTION_FTHETA)
     {
-        std::cout << "rs2_deproject_pixel_to_point 5" << std::endl;
         float rd = sqrtf(x * x + y * y);
         if (rd < FLT_EPSILON)
         {
@@ -4222,13 +4233,13 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
     point[2] = depth;
 
     // Get the ending time point
-    auto end = std::chrono::high_resolution_clock::now();
+    //auto end = std::chrono::high_resolution_clock::now();
 
     // Calculate the elapsed time in milliseconds
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    //auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
     // Output the elapsed time
-    std::cout << "rs2_deproject_pixel_to_point Elapsed time: " << duration.count() << " milliseconds" << std::endl;
+    //std::cout << duration.count()  << std::endl;
 }
 NOEXCEPT_RETURN(, point)
 
