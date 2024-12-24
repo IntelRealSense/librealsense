@@ -885,6 +885,9 @@ namespace librealsense
             CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
             CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
             _power_state = D0;
+
+            for( auto && xu : _xus )
+                init_xu( xu );
         }
 
         void wmf_uvc_device::set_d3()

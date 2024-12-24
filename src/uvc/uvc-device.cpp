@@ -210,12 +210,6 @@ namespace librealsense
             return _power_state;
         }
 
-        void rs_uvc_device::init_xu(const extension_unit& xu)
-        {
-            // not supported
-            return;
-        }
-
         bool rs_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
         {
             return uvc_set_ctrl(xu.unit, ctrl, (void *) data, len);
