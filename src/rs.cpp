@@ -64,6 +64,10 @@
 #include <src/core/time-service.h>
 #include <rsutils/string/from.h>
 
+#include <iostream>
+#include <chrono>
+#include <thread> // For std::this_thread::sleep_for
+
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -4106,6 +4110,19 @@ void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics* int
 }
 NOEXCEPT_RETURN(, pixel)
 
+/* return true in case all intrinsics distortion coefficient are zero.
+   otherwise, return false.*/
+const int DISTORTION_COEFF = 5;
+inline bool is_intrinsics_distortion_zero(const struct rs2_intrinsics* intrin)
+{
+    for(int i = 0;i < DISTORTION_COEFF;i++)
+    {
+        if (abs(intrin->coeffs[i]) > std::numeric_limits<double>::epsilon())
+            return false;
+    }
+    return true;
+}
+
 void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* intrin, const float pixel[2], float depth) BEGIN_API_CALL
 {
     assert(intrin->model != RS2_DISTORTION_MODIFIED_BROWN_CONRADY); // Cannot deproject from a forward-distorted image
@@ -4117,39 +4134,53 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
     float xo = x;
     float yo = y;
 
-    if (intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
-    {
-        // need to loop until convergence 
-        // 10 iterations determined empirically
-        for (int i = 0; i < 10; i++)
-        {
-            float r2 = x * x + y * y;
-            float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
-            float xq = x / icdist;
-            float yq = y / icdist;
-            float delta_x = 2 * intrin->coeffs[2] * xq * yq + intrin->coeffs[3] * (r2 + 2 * xq * xq);
-            float delta_y = 2 * intrin->coeffs[3] * xq * yq + intrin->coeffs[2] * (r2 + 2 * yq * yq);
-            x = (xo - delta_x) * icdist;
-            y = (yo - delta_y) * icdist;
-        }
-    }
-    if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
-    {
-        // need to loop until convergence 
-        // 10 iterations determined empirically
-        for (int i = 0; i < 10; i++)
-        {
-            float r2 = x * x + y * y;
-            float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
-            float delta_x = 2 * intrin->coeffs[2] * x * y + intrin->coeffs[3] * (r2 + 2 * x * x);
-            float delta_y = 2 * intrin->coeffs[3] * x * y + intrin->coeffs[2] * (r2 + 2 * y * y);
-            x = (xo - delta_x) * icdist;
-            y = (yo - delta_y) * icdist;
-        }
+    // Get the starting time point
+    auto start = std::chrono::high_resolution_clock::now();
 
-    }
+    std::cout << "rs2_deproject_pixel_to_point start" << std::endl;
+
+    if(!is_intrinsics_distortion_zero(intrin))
+    {
+        std::cout << "rs2_deproject_pixel_to_point 1" << std::endl;
+         
+
+        if (intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
+        {
+            std::cout << "rs2_deproject_pixel_to_point 2" << std::endl;
+            // need to loop until convergence 
+            // 10 iterations determined empirically
+            for (int i = 0; i < 10; i++)
+            {
+                float r2 = x * x + y * y;
+                float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
+                float xq = x / icdist;
+                float yq = y / icdist;
+                float delta_x = 2 * intrin->coeffs[2] * xq * yq + intrin->coeffs[3] * (r2 + 2 * xq * xq);
+                float delta_y = 2 * intrin->coeffs[3] * xq * yq + intrin->coeffs[2] * (r2 + 2 * yq * yq);
+                x = (xo - delta_x) * icdist;
+                y = (yo - delta_y) * icdist;
+            }
+
+        }
+        if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
+        {
+            std::cout << "rs2_deproject_pixel_to_point 3" << std::endl;
+            // need to loop until convergence 
+            // 10 iterations determined empirically
+            for (int i = 0; i < 10; i++)
+            {
+                float r2 = x * x + y * y;
+                float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
+                float delta_x = 2 * intrin->coeffs[2] * x * y + intrin->coeffs[3] * (r2 + 2 * x * x);
+                float delta_y = 2 * intrin->coeffs[3] * x * y + intrin->coeffs[2] * (r2 + 2 * y * y);
+                x = (xo - delta_x) * icdist;
+                y = (yo - delta_y) * icdist;
+            }
+        }
+    }    
     if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
     {
+        std::cout << "rs2_deproject_pixel_to_point 4" << std::endl;
         float rd = sqrtf(x * x + y * y);
         if (rd < FLT_EPSILON)
         {
@@ -4175,6 +4206,7 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
     }
     if (intrin->model == RS2_DISTORTION_FTHETA)
     {
+        std::cout << "rs2_deproject_pixel_to_point 5" << std::endl;
         float rd = sqrtf(x * x + y * y);
         if (rd < FLT_EPSILON)
         {
@@ -4188,6 +4220,15 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
     point[0] = depth * x;
     point[1] = depth * y;
     point[2] = depth;
+
+    // Get the ending time point
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // Calculate the elapsed time in milliseconds
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+    // Output the elapsed time
+    std::cout << "rs2_deproject_pixel_to_point Elapsed time: " << duration.count() << " milliseconds" << std::endl;
 }
 NOEXCEPT_RETURN(, point)
 
