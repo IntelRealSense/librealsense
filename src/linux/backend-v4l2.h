@@ -407,6 +407,8 @@ namespace librealsense
 
             static bool get_devname_from_video_path(const std::string& real_path, std::string& devname);
 
+            std::recursive_mutex _power_lock;
+            std::atomic< int > _power_counter;
             power_state _state = D3;
             std::string _name = "";
             std::string _device_path = "";

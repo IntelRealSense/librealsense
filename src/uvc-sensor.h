@@ -101,8 +101,6 @@ private:
 
     std::shared_ptr< platform::uvc_device > _device;
     std::vector< platform::stream_profile > _internal_config;
-    std::atomic< int > _user_count;
-    std::mutex _power_lock;
     std::mutex _configure_lock;
     std::unique_ptr< power > _power;
     std::unique_ptr< frame_timestamp_reader > _timestamp_reader;

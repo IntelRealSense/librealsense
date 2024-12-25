@@ -96,7 +96,8 @@ namespace librealsense
 
             const uvc_device_info                   _info;
             power_state                             _power_state = D3; // power state change is unsupported
-
+            std::recursive_mutex                    _power_lock;
+            std::atomic< int >                      _power_counter;
             std::vector<profile_and_callback>       _streams;
 
             std::string                             _location;

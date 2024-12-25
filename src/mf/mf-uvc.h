@@ -73,7 +73,7 @@ namespace librealsense
             void stop_callbacks() override;
             void close(stream_profile profile) override;
             void set_power_state(power_state state) override;
-            power_state get_power_state() const override { return _power_state; }
+            power_state get_power_state() const override;
             std::vector<stream_profile> get_profiles() const override;
 
             static bool is_connected(const uvc_device_info& info);
@@ -119,7 +119,6 @@ namespace librealsense
             std::shared_ptr<const wmf_backend>      _backend;
 
             const uvc_device_info                   _info;
-            power_state                             _power_state = D3;
 
             CComPtr<IMFSourceReader>                _reader = nullptr;
             CComPtr<IMFMediaSource>                 _source = nullptr;
@@ -138,6 +137,7 @@ namespace librealsense
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;
 
+            mutable std::recursive_mutex            _source_lock; // Guarding access to _source
             named_mutex                             _systemwide_lock;
             std::string                             _location;
             usb_spec                                _device_usb_spec;
@@ -147,6 +147,7 @@ namespace librealsense
             bool                                    _streaming = false;
             std::atomic<bool>                       _is_started = false;
             std::wstring                            _device_id;
+            std::atomic< int >                      _power_counter;
             std::vector< platform::extension_unit > _xus;
         };
 
