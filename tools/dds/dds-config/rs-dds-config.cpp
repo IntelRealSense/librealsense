@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include "eth-config.h"
+#include <rsutils/type/eth-config.h>
 
 #include <common/cli.h>
 

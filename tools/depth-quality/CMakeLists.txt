@@ -40,6 +40,8 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         ../../third-party/glad/glad.c
         ../../third-party/tinyfiledialogs/tinyfiledialogs.c
         ../../third-party/tinyfiledialogs/tinyfiledialogs.h
+        ../../third-party/rsutils/include/rsutils/type/eth-config.h
+        ../../third-party/rsutils/include/rsutils/type/eth-config.cpp
         )
 
     if(WIN32)

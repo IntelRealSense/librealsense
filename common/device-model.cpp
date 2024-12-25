@@ -371,7 +371,8 @@ namespace rs2
         _detected_objects(std::make_shared< atomic_objects_in_frame >()),
         _updates(viewer.updates),
         _updates_profile(std::make_shared<dev_updates_profile::update_profile>()),
-        _allow_remove(remove)
+        _allow_remove(remove),
+        _dds_model(dev)
     {
         auto name = get_device_name(dev);
         id = rsutils::string::from() << name.first << ", " << name.second;
@@ -1435,6 +1436,20 @@ namespace rs2
                         }
                     }
                 }
+                ImGuiSelectableFlags is_streaming_flag = (is_streaming) ? ImGuiSelectableFlags_Disabled : 0;
+                if (_dds_model.supports_DDS()) {
+                    if (ImGui::Selectable("DDS Configuration",false, is_streaming_flag))
+                    {
+                        _dds_model.open_dds_tool_window();
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        std::string tooltip = rsutils::string::from()
+                            << "Change the configuration of Ethernet based devices"
+                            << (is_streaming ? " (Disabled while streaming)" : "");
+                        ImGui::SetTooltip("%s", tooltip.c_str());
+                    }
+                }
             }
 
             draw_device_panel_auto_calib(viewer, something_to_show, error_message);
@@ -1457,6 +1472,7 @@ namespace rs2
         }
 
         _calib_model.update(window, error_message);
+        _dds_model.render_dds_config_window(window , error_message);
 
 
         ////////////////////////////////////////
