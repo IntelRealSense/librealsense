@@ -126,37 +126,51 @@ void rs2::dds_model::ipInputText(std::string label ,rsutils::type::ip_address &i
 
 void dds_model::render_dds_config_window(ux_window& window , std::string& error_message)
 {
+    const auto window_name = "DDS Configuration";
     if (_window_open)
     {
-        const auto window_name = "DDS Configuration";
+        try
+        {
+            _current_config = get_eth_config(_device, ACTUAL_VALUES);
+            _changed_config = _current_config;
+            ImGui::OpenPopup(window_name);
+        }
+        catch (std::exception e)
+        {
+            error_message = e.what();
+        }
+        _window_open = false;
+    }
 
-        // Calculate window position and size
-        const float w = 620;
-        const float h = 500;
-        const float x0 = std::max(window.width() - w, 0.f) / 2;
-        const float y0 = std::max(window.height() - h, 0.f) / 2;
-        ImGui::SetNextWindowPos({ x0, y0 });
-        ImGui::SetNextWindowSize({ w, h });
+    // Calculate window position and size
+    const float w = 620;
+    const float h = 500;
+    const float x0 = std::max(window.width() - w, 0.f) / 2;
+    const float y0 = std::max(window.height() - h, 0.f) / 2;
+    ImGui::SetNextWindowPos({ x0, y0 });
+    ImGui::SetNextWindowSize({ w, h });
 
-        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
 
-        ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
-        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
-        ImGui::PushStyleColor(ImGuiCol_Button, button_color);
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.1f);
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_color + 0.1f);
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+    ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+    ImGui::PushStyleColor(ImGuiCol_Button, button_color);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.1f);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_color + 0.1f);
         
 
-        ImGui::Begin(window_name, &_window_open, flags);
+    if (ImGui::BeginPopupModal(window_name, nullptr, flags))
+    {
+        if (error_message != "") ImGui::CloseCurrentPopup();
 
         // Title
         const char* title_message = window_name;
         ImVec2 title_size = ImGui::CalcTextSize(title_message);
-        float title_x = (w - title_size.x-10) / 2.0f;
+        float title_x = (w - title_size.x - 10) / 2.0f;
         ImGui::SetCursorPos({ title_x, 10.0f });
         ImGui::PushFont(window.get_large_font());
         ImGui::PushStyleColor(ImGuiCol_Text, white);
@@ -167,10 +181,10 @@ void dds_model::render_dds_config_window(ux_window& window , std::string& error_
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 15);
 
         // Version Display
-        ImGui::Text("Version: %s" , RS2_API_FULL_VERSION_STR);
+        ImGui::Text("Version: %s", RS2_API_FULL_VERSION_STR);
 
         // Main Scrollable Section
-        ImGui::BeginChild("MainContent", ImVec2(w-10, h - 120), true);
+        ImGui::BeginChild("MainContent", ImVec2(w - 10, h - 120), true);
         ImGui::PushItemWidth(150.0f);
 
         // Connection Priority Section
@@ -191,15 +205,15 @@ void dds_model::render_dds_config_window(ux_window& window , std::string& error_
             ImGui::RadioButton("USB First", reinterpret_cast<int*>(&connection_priority), 1);
             ImGui::RadioButton("Dynamic Priority", reinterpret_cast<int*>(&connection_priority), 2);
             switch (connection_priority) {
-                case ETH_FIRST:
-                    _changed_config.link.priority = link_priority::eth_first;
-                    break;
-                case USB_FIRST:
-                    _changed_config.link.priority = link_priority::usb_first;
-                    break;
-                case DYNAMIC:
-                    _changed_config.link.priority = _current_config.link.speed ? link_priority::dynamic_eth_first : link_priority::dynamic_usb_first;
-                    break;
+            case ETH_FIRST:
+                _changed_config.link.priority = link_priority::eth_first;
+                break;
+            case USB_FIRST:
+                _changed_config.link.priority = link_priority::usb_first;
+                break;
+            case DYNAMIC:
+                _changed_config.link.priority = _current_config.link.speed ? link_priority::dynamic_eth_first : link_priority::dynamic_usb_first;
+                break;
             }
         }
 
@@ -234,7 +248,7 @@ void dds_model::render_dds_config_window(ux_window& window , std::string& error_
         if (ImGui::InputInt("##Domain ID", &_changed_config.dds.domain_id)) {
             if (_changed_config.dds.domain_id < 0)
                 _changed_config.dds.domain_id = 0;
-            else if(_changed_config.dds.domain_id > 232)
+            else if (_changed_config.dds.domain_id > 232)
                 _changed_config.dds.domain_id = 232;
         }
         ImGui::Checkbox("No Reset after changes", &_no_reset);
@@ -250,9 +264,9 @@ void dds_model::render_dds_config_window(ux_window& window , std::string& error_
         ImGui::EndChild();
 
         //window buttons
-        float button_width = 105.0f;  
-        float spacing = 10.0f;        
-        float total_buttons_width = button_width * 4 + spacing * 2;  
+        float button_width = 105.0f;
+        float spacing = 10.0f;
+        float total_buttons_width = button_width * 4 + spacing * 2;
         float start_x = (w - total_buttons_width) / 2.0f;
         bool hasChanges = (_changed_config != _current_config);
 
@@ -270,7 +284,7 @@ void dds_model::render_dds_config_window(ux_window& window , std::string& error_
         ImGui::SameLine();
         if (ImGui::Button("Factory Reset", ImVec2(button_width, 25))) {
             enable_dds(error_message);
-            set_eth_config(_defult_config , error_message);
+            set_eth_config(_defult_config, error_message);
             close_window();
         }
         if (ImGui::IsItemHovered()) {
@@ -280,7 +294,7 @@ void dds_model::render_dds_config_window(ux_window& window , std::string& error_
         ImGui::SameLine();
         RsImGui::RsImButton([&]() {if (ImGui::ButtonEx("Revert changes", ImVec2(button_width, 25))) {
             _changed_config = _current_config;
-        };}, hasChanges);
+        };}, !hasChanges);
         if (ImGui::IsItemHovered()) {
             window.link_hovered();
             ImGui::SetTooltip("%s", "Revert to current configuration values");
@@ -290,7 +304,7 @@ void dds_model::render_dds_config_window(ux_window& window , std::string& error_
             enable_dds(error_message);
             set_eth_config(_changed_config, error_message);
             close_window();
-        };}, hasChanges);
+        };}, !hasChanges);
         if (ImGui::IsItemHovered()) {
             window.link_hovered();
             ImGui::SetTooltip("%s", "Apply changes");
@@ -303,17 +317,16 @@ void dds_model::render_dds_config_window(ux_window& window , std::string& error_
             }
             ImGui::EndPopup();
         }
-        ImGui::End();
-        ImGui::PopStyleColor(6);
-        ImGui::PopStyleVar(2);
+        ImGui::EndPopup();
+
     }
+    ImGui::PopStyleColor(6);
+    ImGui::PopStyleVar(2);
 
 }
 
 void rs2::dds_model::open_dds_tool_window()
 {
-    _current_config = get_eth_config(_device, ACTUAL_VALUES);
-    _changed_config = _current_config;
     _window_open = true;
 }
 

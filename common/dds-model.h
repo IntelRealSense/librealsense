@@ -40,7 +40,7 @@ namespace rs2
 
         void open_dds_tool_window();
 
-        void close_window() { _window_open = false; }
+        void close_window() { ImGui::CloseCurrentPopup(); }
 
         eth_config get_eth_config(rs2::debug_protocol dev, bool defult_val);
 
