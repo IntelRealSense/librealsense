@@ -202,12 +202,20 @@ namespace librealsense
             cmdFES.param2 = 1;
             auto res = hwm->send(cmdFES);
 
+            int max_transfer_size_per_packet = (int)HW_MONITOR_COMMAND_SIZE;
+
+            // This is a WORKAROUND to support MIPI camera D457.
+            // If the packet size is more than 128 bytes, FLASH_WRITE is not working as expected.
+            // Remove this line after fixing the issue.
+            max_transfer_size_per_packet = 128;
+
             for (int i = 0; i < ds::FLASH_SECTOR_SIZE; )
             {
                 auto index = sector_index * ds::FLASH_SECTOR_SIZE + i;
                 if (index >= offset + size)
                     break;
-                int packet_size = std::min((int)(HW_MONITOR_COMMAND_SIZE - (i % HW_MONITOR_COMMAND_SIZE)), (int)(ds::FLASH_SECTOR_SIZE - i));
+                int packet_size = std::min((int)(max_transfer_size_per_packet - (i % max_transfer_size_per_packet)), (int)(ds::FLASH_SECTOR_SIZE - i));
+
                 command cmdFWB(ds::FWB);
                 cmdFWB.require_response = true;
                 cmdFWB.param1 = (int)index;
