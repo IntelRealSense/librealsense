@@ -8,7 +8,7 @@
 #include <set>
 #include <rsutils/type/ip-address.h>
 #include <rsutils/string/hexdump.h>
-#include "../third-party/rsutils/include/rsutils/type/eth-config.h"
+#include <../third-party/rsutils/include/rsutils/type/eth-config.h>
 #include <rsutils/json.h>
 #include <rsutils/json-config.h>
 
@@ -34,8 +34,6 @@ namespace rs2
     public:
         dds_model(rs2::device dev);
 
-        bool supports_DDS();
-
         void render_dds_config_window(ux_window& window, std::string& error_message);
 
         void open_dds_tool_window();
@@ -48,6 +46,8 @@ namespace rs2
 
         void enable_dds(std::string& error_message);
 
+        bool supports_DDS();
+
 
     private:
         rs2::device _device;
@@ -57,10 +57,12 @@ namespace rs2
         eth_config _changed_config;
 
         bool _window_open;
-        bool _no_reset = false;
-        bool _set_defult = false;
+        bool _no_reset;
+        bool _set_defult;
+        bool _dds_supported;
 
         void ipInputText(std::string label, rsutils::type::ip_address &ip);
         priority classifyPriority(link_priority &pr);
+        bool check_DDS_support();
     };
 }

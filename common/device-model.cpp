@@ -1436,18 +1436,19 @@ namespace rs2
                         }
                     }
                 }
-                ImGuiSelectableFlags is_streaming_flag = (is_streaming) ? ImGuiSelectableFlags_Disabled : 0;
-                if (_dds_model.supports_DDS()) {
-                    if (ImGui::Selectable("DDS Configuration",false, is_streaming_flag))
+                ImGuiSelectableFlags is_streaming_flag = (is_streaming) ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None;
+                if( _dds_model.supports_DDS() )
+                {
+                    if( ImGui::Selectable( "DDS Configuration", false, is_streaming_flag ) )
                     {
                         _dds_model.open_dds_tool_window();
                     }
-                    if (ImGui::IsItemHovered())
+                    if( ImGui::IsItemHovered() )
                     {
                         std::string tooltip = rsutils::string::from()
-                            << "Change the configuration of Ethernet based devices"
-                            << (is_streaming ? " (Disabled while streaming)" : "");
-                        ImGui::SetTooltip("%s", tooltip.c_str());
+                                           << "Change the configuration of Ethernet based devices"
+                                           << ( is_streaming ? " (Disabled while streaming)" : "" );
+                        ImGui::SetTooltip( "%s", tooltip.c_str() );
                     }
                 }
             }
@@ -1472,7 +1473,10 @@ namespace rs2
         }
 
         _calib_model.update(window, error_message);
-        _dds_model.render_dds_config_window(window , error_message);
+        if( _dds_model.supports_DDS() )
+        {
+            _dds_model.render_dds_config_window( window, error_message );
+        }
 
 
         ////////////////////////////////////////
