@@ -25,6 +25,7 @@
 
 #include <src/proc/color-formats-converter.h>
 
+#include <rsutils/string/nocase.h>
 #include <rsutils/json.h>
 using rsutils::json;
 
@@ -664,13 +665,36 @@ void dds_sensor_proxy::add_processing_block( std::string const & filter_name )
         if( ! ppb )
             LOG_WARNING( "Unsupported processing block '" + filter_name + "' received" );
         else
+        {
+            // Currently processing block factory does not support block settings, add here if needed.
+            add_processing_block_settings( filter_name, ppb );
             super::add_processing_block( ppb );
+        }
     }
     catch( std::exception const & e )
     {
         // Bad settings, error in configuration, etc.
         LOG_ERROR( "Failed to create processing block '" << filter_name << "': " << e.what() );
     }
+}
+
+void dds_sensor_proxy::add_processing_block_settings( const std::string & filter_name,
+                                                      std::shared_ptr< librealsense::processing_block_interface > & ppb ) const
+{
+    if( rsutils::string::nocase_equal( filter_name, "Decimation Filter" ) )
+        if( !ppb->supports_option( RS2_OPTION_STREAM_FILTER ) )
+            LOG_ERROR( "Decimation Filter does not support stream filter option" );
+        else
+            if( rsutils::string::nocase_equal( get_name(), "RGB Camera" ) )
+            {
+                ppb->get_option( RS2_OPTION_STREAM_FILTER ).set( RS2_STREAM_COLOR );
+                ppb->get_option( RS2_OPTION_STREAM_FORMAT_FILTER ).set( RS2_FORMAT_ANY );
+            }
+            else
+            {
+                ppb->get_option( RS2_OPTION_STREAM_FILTER ).set( RS2_STREAM_DEPTH );
+                ppb->get_option( RS2_OPTION_STREAM_FORMAT_FILTER ).set( RS2_FORMAT_Z16 );
+            }
 }
 
 
