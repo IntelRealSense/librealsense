@@ -11,12 +11,13 @@ from rspy import test, log, devices
 from rspy import tests_wrapper as tw
 
 
-DEFAULT_PERCENTAGE_THRESHOLD = 15 #15%
+DEFAULT_PERCENTAGE_THRESHOLD = 80 #80%
 
 def build_header(table_array, table_id, version_array):
     version_major = version_array[0]
     version_minor = version_array[1]
     table_size = len(table_array)
+    print ("table size", table_size)
     counter = 0
     test_cal_version = 0
     crc_computed = zlib.crc32(table_array)
@@ -46,7 +47,7 @@ def generate_sip_part():
     sip_temporal_safety_features_selection = 0
     sip_mechanisms_thresholds = to_np_array(0, 16)
     sip_mechanisms_sampling_interval = to_np_array(0, 8)
-    tc_consecutives_failures_threshold = np.asarray([3], dtype=np.uint8)
+    tc_consecutives_failures_threshold = to_np_array(3, 1)
     sip_reserved = to_np_array(0, 63)
 
     sip1 = np.asarray([sip_immediate_mode_safety_features_selection, sip_temporal_safety_features_selection], dtype=np.uint8)
@@ -55,7 +56,7 @@ def generate_sip_part():
     sip4 = np.hstack((sip3, tc_consecutives_failures_threshold), dtype=np.uint8)
     sip5 = np.hstack((sip4, sip_reserved), dtype=np.uint8)
 
-    return sip4
+    return sip5
 
 
 def generate_dev_rules_selection_bitmap():
@@ -166,7 +167,7 @@ def generate_depth_sign_features():
     depth_roi = 0
     ir_for_sip = 0
     peripherals_sensors_disable_mask = to_np_array(0, 2)
-    reserved3 = to_np_array(0, 264)
+    reserved3 = to_np_array(0, 265)
     digital_signature = to_np_array(0, 32)
 
     ds_1 = np.asarray([depth_pipeline_config, depth_roi, ir_for_sip], dtype=np.uint8)
