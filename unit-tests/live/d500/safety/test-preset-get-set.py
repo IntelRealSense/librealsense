@@ -2,7 +2,7 @@
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #test:device D585S
-#test:priority 9
+#test:priority 10
 
 import pyrealsense2 as rs
 import random
@@ -162,14 +162,14 @@ valid_sp_json_str = """
             },
             "7":
             {
-                "attributes": 1,
+                "attributes": 0,
                 "minimal_range": 0,
                 "region_of_interests":
                 {
-                    "vertex_0": [500, 3300],
-                    "vertex_1": [800, 3300],
-                    "vertex_2": [800, 3100],
-                    "vertex_3": [500, 3100]
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
                 }
             }
         },

@@ -1,6 +1,7 @@
 import sys
 import json
 import pyrealsense2 as rs
+import time
 print(f"pyrealsense2 location: {rs.__file__}")
 #############################################################################################
 
@@ -21,16 +22,30 @@ print("Switching to Service Mode")  # See SRS ID 3.3.1.7.a
 safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
 
 #############################################################################################
+
+print("Setting Safety Interface Config table")
+safety_sensor.set_safety_interface_config(d585s_tables)
+
+
+print( "Sending HW-reset command" )
+dev.hardware_reset()
+
+print( "Sleep to give some time for the device to reconnect (10 sec)" )
+time.sleep( 10 )
+
+print( "Fetching new device" )
+dev = ctx.query_devices()[0]
+safety_sensor = dev.first_safety_sensor()
+
+print("Switching to Service Mode again")  # See SRS ID 3.3.1.7.a
+safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
+
+#############################################################################################
 print("Setting all Safety Zone tables")
 for x in range(64):
     sys.stdout.write("\rInit preset ID = " + repr(x))
     safety_sensor.set_safety_preset(x, d585s_tables)
 sys.stdout.write("\r")
-
-#############################################################################################
-
-print("Setting Safety Interface Config table")
-safety_sensor.set_safety_interface_config(d585s_tables)
 
 #############################################################################################
 

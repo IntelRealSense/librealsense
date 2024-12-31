@@ -4,7 +4,7 @@ import time
 
 #test:device D585S
 # we initialize the SIC table , before all other safety tests will run
-#test:priority 10
+#test:priority 9
 
 import pyrealsense2 as rs
 from rspy import test, log, devices

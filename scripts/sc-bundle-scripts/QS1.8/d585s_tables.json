@@ -131,14 +131,14 @@
             },
             "7":
             {
-                "attributes": 1,
-                "minimal_range": 0,
+                "attributes": 0,
+                "minimal_range": 0.5,
                 "region_of_interests":
                 {
-                    "vertex_0": [500, 3300],
-                    "vertex_1": [800, 3300],
-                    "vertex_2": [800, 3100],
-                    "vertex_3": [500, 3100]
+                    "vertex_0": [0, 0],
+                    "vertex_1": [0, 320],
+                    "vertex_2": [200, 320],
+                    "vertex_3": [200, 0]
                 }
             }
         },
@@ -266,10 +266,10 @@
         },
         "occupancy_grid_params":
         {
-            "grid_cell_seed" : 70,
-            "close_range_quorum" : 98 ,
-            "mid_range_quorum" : 16,
-            "long_range_quorum" : 8
+            "grid_cell_seed": 70,
+            "close_range_quorum": 98,
+            "mid_range_quorum": 16,
+            "long_range_quorum": 8
         },
         "smcu_arbitration_params":
         {
