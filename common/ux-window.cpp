@@ -102,6 +102,13 @@ namespace rs2
         config_file::instance().set_default(configurations::viewer::log_filename, path + "librealsense.log");
         config_file::instance().set_default(configurations::record::default_path, path);
 
+        auto const filename
+            = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
+        auto config = rsutils::json_config::load_from_file( filename );
+        bool enable_dds = config.nested( "context", "dds", "enabled" ).get_ex( enable_dds );
+        int domain_id = config.nested("context", "dds", "domain").get_ex(domain_id);
+        config_file::instance().set_default( configurations::dds::enable_dds, enable_dds );
+        config_file::instance().set_default( configurations::dds::domain_id, domain_id );
 #ifdef __APPLE__
 
         config_file::instance().set_default(configurations::performance::font_oversample, 2);

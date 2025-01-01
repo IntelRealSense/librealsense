@@ -109,6 +109,11 @@ namespace rs2
         {
             static const char* enable_writing{ "calibration.enable_writing" };
         }
+        namespace dds
+        {
+            static const char* enable_dds{ "context.dds.enabled" };
+            static const char* domain_id{ "context.dds.domain" };
+        }
         namespace viewer
         {
             static const char* is_3d_view{ "viewer_model.is_3d_view" };

@@ -44,8 +44,6 @@ namespace rs2
 
         void set_eth_config(eth_config &new_config , std::string& error_message);
 
-        void enable_dds(std::string& error_message);
-
         bool supports_DDS();
 
 

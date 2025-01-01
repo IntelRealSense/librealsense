@@ -64,33 +64,6 @@ void rs2::dds_model::set_eth_config( eth_config & new_config, std::string & erro
     }
 }
 
-void rs2::dds_model::enable_dds( std::string & error_message )
-{
-    if( _device.get_type() == "DDS" )
-    {
-        auto const filename
-            = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
-        auto config = rsutils::json_config::load_from_file( filename );
-
-        bool enabled;
-        if( ! config.nested( "context", "dds", "enabled" ).get_ex( enabled ) )
-        {
-            config["context"]["dds"]["enabled"] = true;
-            try
-            {
-                std::ofstream out( filename );
-                out << std::setw( 2 ) << config;
-                out.close();
-            }
-            catch( std::exception const & e )
-            {
-                error_message = e.what();
-                close_window();
-            }
-        }
-    }
-}
-
 bool rs2::dds_model::supports_DDS()
 {
     return _dds_supported;
@@ -199,11 +172,8 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         ImGui::Separator();
         ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 15 );
 
-        // Version Display
-        ImGui::Text( "Version: %s", RS2_API_FULL_VERSION_STR );
-
         // Main Scrollable Section
-        ImGui::BeginChild( "MainContent", ImVec2( w - 10, h - 120 ), true );
+        ImGui::BeginChild( "MainContent", ImVec2( w - 10, h - 100 ), true );
         ImGui::PushItemWidth( 150.0f );
 
         // Connection Priority Section
@@ -261,12 +231,15 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
                 ImGui::SetCursorPosX( textbox_align );
                 ipInputText( "Gateway", _changed_config.configured.gateway );
             }
-            ImGui::Text( "DHCP Timeout (seconds)" );
-            ImGui::SameLine();
-            int tempTimeout = static_cast< int >( _changed_config.dhcp.timeout );
-            if( ImGui::InputInt( "##DHCP Timeout (seconds)", &tempTimeout ) )
+            else
             {
-                _changed_config.dhcp.timeout = static_cast< uint16_t >( std::max( 0, tempTimeout ) );
+                ImGui::Text( "DHCP Timeout (seconds)" );
+                ImGui::SameLine();
+                int tempTimeout = static_cast< int >( _changed_config.dhcp.timeout );
+                if( ImGui::InputInt( "##DHCP Timeout (seconds)", &tempTimeout ) )
+                {
+                    _changed_config.dhcp.timeout = static_cast< uint16_t >( std::max( 0, tempTimeout ) );
+                }
             }
         }
 
@@ -281,7 +254,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         }
         ImGui::Checkbox( "No Reset after changes", &_no_reset );
 
-        if( ImGui::Checkbox( "Set to defult values", &_set_defult ) )
+        if( ImGui::Checkbox( "Load to defult values", &_set_defult ) )
         {
             if( _set_defult )
                 _changed_config = _defult_config;
@@ -293,7 +266,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         ImGui::EndChild();
 
         // window buttons
-        float button_width = 105.0f;
+        float button_width = 115.0f;
         float spacing = 10.0f;
         float total_buttons_width = button_width * 4 + spacing * 2;
         float start_x = ( w - total_buttons_width ) / 2.0f;
@@ -315,7 +288,6 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         ImGui::SameLine();
         if( ImGui::Button( "Factory Reset", ImVec2( button_width, 25 ) ) )
         {
-            enable_dds( error_message );
             set_eth_config( _defult_config, error_message );
             close_window();
         }
@@ -345,7 +317,6 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
             {
                 if( ImGui::ButtonEx( "Apply", ImVec2( button_width, 25 ) ) )
                 {
-                    enable_dds( error_message );
                     set_eth_config( _changed_config, error_message );
                     close_window();
                 };
