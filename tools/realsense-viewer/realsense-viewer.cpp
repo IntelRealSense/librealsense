@@ -472,7 +472,7 @@ int main(int argc, const char** argv) try
                 if (dev.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
                 {
                     dev_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
-                    if (dev_type == "USB")
+                    if (dev_type == "USB" && dev.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ))
                         dev_type += dev.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
                 }
 
