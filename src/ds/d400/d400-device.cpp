@@ -964,7 +964,10 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DFU_DEVICE_PATH, group.uvc_devices.front().dfu_device_path);
 
         if (usb_modality)
+        {
+            register_info(RS2_CAMERA_INFO_CONNECTION_TYPE, "USB");
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+        }
         else
             register_info(RS2_CAMERA_INFO_CONNECTION_TYPE, "GMSL");
 

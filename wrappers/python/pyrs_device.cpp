@@ -54,8 +54,16 @@ void init_device(py::module &m) {
             if( self.supports( RS2_CAMERA_INFO_CAMERA_LOCKED )
                 && strcmp( "YES", self.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) ) )
                 ss << "  UNLOCKED";
-            if( self.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
-                ss << "  on USB" << self.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
+            if (self.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
+            {
+                auto connection_type = self.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
+                ss << "  on ";
+                ss << connection_type;
+                if (connection_type == "USB")
+                    if (self.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+                        ss << self.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+            }
+            
             else if( self.supports( RS2_CAMERA_INFO_PHYSICAL_PORT ) )
                 ss << "  @ " << self.get_info( RS2_CAMERA_INFO_PHYSICAL_PORT );
             ss << ")>";

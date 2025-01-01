@@ -2246,42 +2246,33 @@ namespace rs2
         else
         {
             ImGui::Text(" %s", ss.str().c_str());
+            if (dev.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
+            {
+                auto connection_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
 
-            if (dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
-            {
-                std::string desc = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
-                ss.str("");
-                ss << "   " << textual_icons::usb_type << " " << desc;
-                ImGui::SameLine();
-                if (!starts_with(desc, "3.")) ImGui::PushStyleColor(ImGuiCol_Text, yellow);
-                else ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-                ImGui::Text(" %s", ss.str().c_str());
-                ImGui::PopStyleColor();
-                ss.str("");
-                ss << "The camera was detected by the OS as connected to a USB " << desc << " port";
-                ImGui::PushFont(window.get_font());
-                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip(" %s", ss.str().c_str());
-                ImGui::PopStyleColor();
-                ImGui::PopFont();
-            }
-            else if(dev.supports(RS2_CAMERA_INFO_PRODUCT_ID))
-            {
-                std::string device_pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-                if(device_pid == "ABCD")// Specific for D457
+                if (connection_type == std::string("USB") && dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
                 {
-                    ss.str( "" );
-                    ss << "   " << "GMSL";
+                    std::string desc = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+                    ss.str("");
+                    ss << "   " << textual_icons::usb_type << " " << desc;
                     ImGui::SameLine();
-                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    if (!starts_with(desc, "3.")) ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+                    else ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                     ImGui::Text(" %s", ss.str().c_str());
                     ImGui::PopStyleColor();
+                    ss.str("");
+                    ss << "The camera was detected by the OS as connected to a USB " << desc << " port";
+                    ImGui::PushFont(window.get_font());
+                    ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip(" %s", ss.str().c_str());
+                    ImGui::PopStyleColor();
+                    ImGui::PopFont();
                 }
-                else if(device_pid == "DDS")
+                else
                 {
-                    ss.str( "" );
-                    ss << "   " << "DDS";
+                    ss.str("");
+                    ss << "   " << connection_type;
                     ImGui::SameLine();
                     ImGui::PushStyleColor(ImGuiCol_Text, white);
                     ImGui::Text(" %s", ss.str().c_str());
