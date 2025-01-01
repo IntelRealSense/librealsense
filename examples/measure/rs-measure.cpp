@@ -302,7 +302,7 @@ float dist_3d(const rs2::depth_frame& frame, pixel u, pixel v)
     auto end = std::chrono::high_resolution_clock::now();
 
     // Calculate the elapsed time in milliseconds
-    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
     // Output the elapsed time
     LOG_ERROR(duration.count());
