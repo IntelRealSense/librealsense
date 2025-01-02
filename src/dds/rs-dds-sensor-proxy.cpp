@@ -473,6 +473,9 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f,
 
 void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
 {
+    // Remove leftovers from previous starts.
+    _streaming_by_name.clear();
+
     for( auto & profile : sensor_base::get_active_streams() )
     {
         auto streamit = _streams.find( sid_index( profile->get_unique_id(), profile->get_stream_index() ) );
@@ -498,6 +501,7 @@ void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
                     invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
                 }
             } );
+        streaming.syncer.start();
 
         if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
         {
@@ -547,7 +551,10 @@ void dds_sensor_proxy::stop()
         dds_stream->stop_streaming();
         dds_stream->close();
 
-        _streaming_by_name[dds_stream->name()].syncer.on_frame_ready( nullptr );
+        // Nullifing the lambda is commented out because we don't want to nullify in middle of user callback (that might
+        // be long) instead we use start/stop.
+        //_streaming_by_name[dds_stream->name()].syncer.on_frame_ready( nullptr );
+        _streaming_by_name[dds_stream->name()].syncer.stop();
 
         if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
         {
@@ -566,7 +573,8 @@ void dds_sensor_proxy::stop()
 
     // Must be done after dds_stream->stop_streaming or we will need to add validity checks to on_data_available,
     // and after software_sensor::stop cause to make sure _is_streaming is false
-    _streaming_by_name.clear();
+    // Removed here, same reason of killing on_frame_ready lambda instance. Moved to start()
+    //_streaming_by_name.clear();
 }
 
 

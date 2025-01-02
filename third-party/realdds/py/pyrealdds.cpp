@@ -1211,6 +1211,12 @@ PYBIND11_MODULE(NAME, m) {
         dds_metadata_syncer()
         {
             on_frame_release( frame_releaser );
+            start();
+        }
+
+        ~dds_metadata_syncer()
+        {
+            stop();
         }
 
         void enqueue_frame( key_type key, frame_type const & img )
