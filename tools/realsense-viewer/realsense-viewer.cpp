@@ -469,16 +469,11 @@ int main(int argc, const char** argv) try
 
                 auto dev = connected_devs[i];
                 std::string dev_type;
-                if( dev.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
+                if (dev.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
                 {
-                    dev_type = "USB";
-                    dev_type += dev.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
-                }
-                else if( dev.supports( RS2_CAMERA_INFO_PRODUCT_ID ) )
-                {
-                    dev_type = dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID );
-                    if( dev_type == "ABCD" ) // Specific for D457
-                        dev_type = "GMSL";
+                    dev_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
+                    if (dev_type == "USB" && dev.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ))
+                        dev_type += dev.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
                 }
 
                 std::string line = rsutils::string::from() << dev.get_info( RS2_CAMERA_INFO_NAME ) << " (" << dev_type

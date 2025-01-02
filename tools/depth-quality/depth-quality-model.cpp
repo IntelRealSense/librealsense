@@ -46,21 +46,25 @@ namespace rs2
             rs2::pipeline_profile active_profile;
 
             // Adjust settings according to USB type
-            bool usb3_device = true;
+            bool usb2_device = false;
             auto devices = _ctx.query_devices();
             if (devices.size())
             {
                 auto dev = devices[0];
-                if (dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+                if (dev.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
                 {
-                    std::string usb_type = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
-                    usb3_device = !(std::string::npos != usb_type.find("2."));
+                    auto connection_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
+                    if (connection_type == std::string("USB") && dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+                    {
+                        std::string usb_type = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+                        usb2_device = (std::string::npos != usb_type.find("2."));
+                    }
                 }
             }
             else
                 return valid_config;
 
-            int requested_fps = usb3_device ? 30 : 15;
+            int requested_fps = usb2_device ? 15 : 30;
 
             // open Depth and Infrared streams using default profile
             {
