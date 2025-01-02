@@ -555,7 +555,7 @@ namespace librealsense
         default_450_mid_low_res_color_only(p);
     }
 
-    // D436 has same depth as D435 and same color as D455
+    // D436i has same depth as D435 and same color as D455
     void default_436(preset& p)
     {
         default_430_except_color(p);
