@@ -18,6 +18,7 @@
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
 #include <rsutils/json-config.h>
+#include <rsutils/concurrency/control-c-handler.h>
 
 #include <string>
 #include <iostream>
@@ -195,8 +196,10 @@ try
             device_handlers_list.erase( dev );
         } );
 
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 0);// Pend until CTRL + C is pressed 
-
+    {
+        rsutils::concurrency::control_c_handler control_c;
+        control_c.wait();
+    }
     std::cout << "Shutting down rs-dds-adapter..." << std::endl;
 
     return EXIT_SUCCESS;
