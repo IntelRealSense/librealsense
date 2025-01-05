@@ -491,8 +491,8 @@ namespace librealsense
                 }
 
                 // Enumerate all imaging devices
-                // 0x10000 ia a large enough limit to permit maximum connection, while avoiding infinite loop
-                for (DWORD member_index = 0; member_index < 0x10000; ++member_index)
+                // 0x1000 ia a large enough limit to permit maximum connection, while avoiding infinite loop
+                for (DWORD member_index = 0; member_index < 0x1000; ++member_index)
                 {
                     // Get device information element from the device information set
                     if (SetupDiEnumDeviceInfo(device_info, member_index, &devInfo) == FALSE)
