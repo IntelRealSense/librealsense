@@ -498,7 +498,7 @@ namespace librealsense
                     if (SetupDiEnumDeviceInfo(device_info, member_index, &devInfo) == FALSE)
                     {
                         DWORD last_error = GetLastError();
-                        if ((last_error == ERROR_NO_MORE_ITEMS) || (last_error == ERROR_INVALID_HANDLE)) 
+                        if (last_error == ERROR_NO_MORE_ITEMS) 
                             break; // stop when none left 
                         continue; // silently ignore other errors }
                     }
