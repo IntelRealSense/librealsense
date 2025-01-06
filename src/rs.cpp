@@ -4113,10 +4113,10 @@ NOEXCEPT_RETURN(, pixel)
 /* Helper inner function (not part of the API) */
 inline bool is_intrinsics_distortion_zero(const struct rs2_intrinsics* intrin)
 {
-    return true;
-    //return (abs(intrin->coeffs[0]) < std::numeric_limits<double>::epsilon() && abs(intrin->coeffs[1]) < std::numeric_limits<double>::epsilon() &&
-      //  abs(intrin->coeffs[2]) < std::numeric_limits<double>::epsilon() && abs(intrin->coeffs[3]) < std::numeric_limits<double>::epsilon() &&
-        //abs(intrin->coeffs[4]) < std::numeric_limits<double>::epsilon());
+    //return false;
+    return (abs(intrin->coeffs[0]) < std::numeric_limits<double>::epsilon() && abs(intrin->coeffs[1]) < std::numeric_limits<double>::epsilon() &&
+        abs(intrin->coeffs[2]) < std::numeric_limits<double>::epsilon() && abs(intrin->coeffs[3]) < std::numeric_limits<double>::epsilon() &&
+       abs(intrin->coeffs[4]) < std::numeric_limits<double>::epsilon());
 }
 
 void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* intrin, const float pixel[2], float depth) BEGIN_API_CALL
@@ -4162,7 +4162,6 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
                 x = (xo - delta_x) * icdist;
                 y = (yo - delta_y) * icdist;
             }
-            LOG_ERROR("i=" << i);
 
         }
         if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
@@ -4205,8 +4204,8 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
     else
     {
 
-        int i = 0;
-        LOG_ERROR("i=" << i);
+        //int i = 0;
+        //LOG_ERROR("i=" << i);
     }
 
     point[0] = depth * x;

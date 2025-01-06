@@ -11,7 +11,7 @@
 
 #include <iostream>
 
-#ifdef __SSSE3__
+#ifdef __SSE4__
 
 #include <tmmintrin.h> // For SSSE3 intrinsics
 
@@ -56,7 +56,7 @@ namespace librealsense
             const rs2_intrinsics &depth_intrinsics, 
             const rs2::depth_frame& depth_frame)
     {
-#ifdef __SSSE3__
+#ifdef __SSE4__
 
         auto depth_image = (const uint16_t*)depth_frame.get_data();
 
@@ -145,7 +145,7 @@ namespace librealsense
     {
         auto tex_ptr = texture_map;
 
-#ifdef __SSSE3__
+#ifdef __SSE4__
         auto point = reinterpret_cast<const float*>(points);
         auto res = reinterpret_cast<float*>(tex_ptr);
         auto res1 = reinterpret_cast<float*>(pixels_ptr);

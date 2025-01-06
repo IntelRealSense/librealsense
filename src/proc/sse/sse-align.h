@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
-#ifdef __SSSE3__
+#ifdef __SSE4__
 
 #include "proc/align.h"
 #include <src/float3.h>
@@ -87,4 +87,4 @@ namespace librealsense
         std::shared_ptr<image_transform> _stream_transform;
     };
 }
-#endif // __SSSE3__
+#endif // __SSE4__

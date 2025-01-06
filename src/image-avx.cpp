@@ -6,7 +6,7 @@
 #include "image-avx.h"
 
 #ifndef ANDROID
-    #if defined(__SSSE3__) && defined(__AVX2__)
+    #if defined(__SSE4__) && defined(__AVX2__)
     #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
     #include <immintrin.h>
 

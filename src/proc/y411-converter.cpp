@@ -6,7 +6,7 @@
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"
 #endif
-#ifdef __SSSE3__
+#ifdef __SSE4__
 #include <tmmintrin.h> // For SSSE3 intrinsics
 #endif
 
@@ -44,7 +44,7 @@ namespace librealsense
     // See https://www.fourcc.org/pixel-format/yuv-y411/ 
     //
 
-#if defined __SSSE3__ && ! defined ANDROID
+#if defined __SSE4__ && ! defined ANDROID
     void unpack_y411_sse( uint8_t * const dest, const uint8_t * const s, int w, int h, int actual_size)
     {
         auto n = w * h;
@@ -297,7 +297,7 @@ namespace librealsense
     // The size of the frame must be bigger than 4 pixels and product of 32
     void unpack_y411( uint8_t * const dest[], const uint8_t * const s, int w, int h, int actual_size )
     {
-#if defined __SSSE3__ && ! defined ANDROID
+#if defined __SSE4__ && ! defined ANDROID
         unpack_y411_sse(dest[0], s, w, h, actual_size);
 #else
         unpack_y411_native(dest[0], s, w, h, actual_size);

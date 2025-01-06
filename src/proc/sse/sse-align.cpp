@@ -1,6 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-#ifdef __SSSE3__
+#ifdef __SSE4__
 
 #include "sse-align.h"
 #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse

@@ -13,7 +13,7 @@
 
 #if defined(RS2_USE_CUDA)
 #include "proc/cuda/cuda-align.h"
-#elif defined(__SSSE3__)
+#elif defined(__SSE4__)
 #include "proc/sse/sse-align.h"
 #endif
 #include "proc/neon/neon-align.h"
@@ -26,7 +26,7 @@ namespace librealsense
     {
         #if defined(RS2_USE_CUDA)
             return std::make_shared<librealsense::align_cuda>(align_to);
-        #elif defined(__SSSE3__)
+        #elif defined(__SSE4__)
             return std::make_shared<librealsense::align_sse>(align_to);
         #elif defined(__ARM_NEON) && ! defined(ANDROID)
             return std::make_shared<librealsense::align_neon>(align_to);
@@ -51,7 +51,14 @@ namespace librealsense
                 {
                     // Map the top-left corner of the depth pixel onto the other image
                     float depth_pixel[2] = { depth_x - 0.5f, depth_y - 0.5f }, depth_point[3], other_point[3], other_pixel[2];
+
+                    auto start = std::chrono::high_resolution_clock::now();
                     rs2_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
+                    auto end = std::chrono::high_resolution_clock::now();
+                    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+                    // Output the duration
+                    std::cout << duration.count() << "\n";
+
                     rs2_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs2_project_point_to_pixel(other_pixel, &other_intrin, other_point);
                     const int other_x0 = static_cast<int>(other_pixel[0] + 0.5f);
