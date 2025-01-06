@@ -9,7 +9,7 @@ log.nested = 'C  '
 
 import d435i
 import d405
-import librs as rs
+from rspy import librs as rs
 if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )
 from time import sleep

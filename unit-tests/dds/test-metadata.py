@@ -181,7 +181,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
     #############################################################################################
     #
     with test.closure( "Initialize librs device", on_fail=test.ABORT ):
-        import librs as rs
+        from rspy import librs as rs
         if log.is_debug_on():
             rs.log_to_console( rs.log_severity.debug )
         context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'librs' }} )
