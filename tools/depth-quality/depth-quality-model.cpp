@@ -53,8 +53,8 @@ namespace rs2
                 auto dev = devices[0];
                 if (dev.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
                 {
-                    auto connection_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
-                    if (connection_type == std::string("USB") && dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+                    std::string connection_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
+                    if (connection_type == "USB" && dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
                     {
                         std::string usb_type = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
                         usb2_device = (std::string::npos != usb_type.find("2."));

@@ -195,8 +195,8 @@ bool is_mipi_device( const rs2::device & dev )
     bool is_mipi_device = false;
     if (dev.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
     {
-        auto connection_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
-        if (connection_type == std::string("GMSL"))
+        std::string connection_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
+        if (connection_type == "GMSL")
             is_mipi_device = true;
     }
     return is_mipi_device;

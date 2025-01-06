@@ -2248,8 +2248,8 @@ namespace rs2
             ImGui::Text(" %s", ss.str().c_str());
             if (dev.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
             {
-                auto connection_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
-                if (connection_type == std::string("USB") && dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+                std::string connection_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
+                if (connection_type == "USB" && dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
                 {
                     std::string desc = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
                     ss.str("");
