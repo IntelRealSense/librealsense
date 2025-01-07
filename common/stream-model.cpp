@@ -847,14 +847,11 @@ namespace rs2
         stream_details.push_back(
             { "Pixel Format", rsutils::string::from() << rs2_format_to_string( profile.format() ), "" } );
 
-        double fps_tmp = fps.get_fps();
-        std::string fps_value = (fps_tmp > 0) ? (rsutils::string::from() << std::setprecision(2) << std::fixed << fps_tmp).str() : std::string("--");
-
         stream_details.push_back(
             { "Hardware FPS",
-              fps_value,
+              rsutils::string::from() << std::setprecision( 2 ) << std::fixed << fps.get_fps(),
               "Hardware FPS captures the number of frames per second produced by the device.\n"
-              "It is possible and likely that not all of these frames will make it to the application." });        
+              "It is possible and likely that not all of these frames will make it to the application." } );
 
         stream_details.push_back(
             { "Viewer FPS",

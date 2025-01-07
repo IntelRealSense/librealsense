@@ -58,10 +58,9 @@ namespace rs2
         fps_calc()
             : _counter(0),
             _delta(0),
-            _last_timestamp(0.0),
+            _last_timestamp(0),
             _num_of_frames(0),
-            _skip_frames(0),//initialiy set to zero in order to minimize the time where _delta and _num_of_frames are uninitialized and the display on screen will be NA.
-            _last_frame_counter(0)
+			_last_frame_counter(0)
         {}
 
         fps_calc(const fps_calc& other)
@@ -77,11 +76,10 @@ namespace rs2
             std::lock_guard<std::mutex> lock(_mtx);
             if (++_counter >= _skip_frames)
             {
-                if (_last_timestamp > std::numeric_limits<double>::epsilon() && frame_counter > _last_frame_counter)
+                if (abs(_last_timestamp) > std::numeric_limits<double>::epsilon() && frame_counter > _last_frame_counter)
                 {
                     _delta = timestamp - _last_timestamp;
                     _num_of_frames = frame_counter - _last_frame_counter;
-                    _skip_frames = _skip_frames_default;// now that _delta and _num_of_frames are initialized we can recover to default value.
                 }
 
                 _last_frame_counter = frame_counter;
@@ -93,7 +91,7 @@ namespace rs2
         double get_fps() const
         {
             std::lock_guard<std::mutex> lock(_mtx);
-            if (_delta < std::numeric_limits<double>::epsilon())
+            if (abs(_delta) < std::numeric_limits<double>::epsilon())
                 return 0;
 
             return (static_cast<double>(_numerator) * _num_of_frames) / _delta;
@@ -101,8 +99,7 @@ namespace rs2
 
     private:
         static const int _numerator = 1000;
-        static const int _skip_frames_default = 5;
-        int _skip_frames;
+        static const int _skip_frames = 5;
         int _counter;
         double _delta;
         double _last_timestamp;
