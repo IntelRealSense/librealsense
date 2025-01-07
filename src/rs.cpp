@@ -4157,17 +4157,6 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
             }
 
         }
-        if (intrin->model == RS2_DISTORTION_FTHETA)
-        {
-            float rd = sqrtf(x * x + y * y);
-            if (rd < FLT_EPSILON)
-            {
-                rd = FLT_EPSILON;
-            }
-            float r = (float)(tan(intrin->coeffs[0] * rd) / atan(2 * tan(intrin->coeffs[0] / 2.0f)));
-            x *= r / rd;
-            y *= r / rd;
-        }
     }
     if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
     {
@@ -4191,6 +4180,17 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
             theta2 = theta * theta;
         }
         float r = tan(theta);
+        x *= r / rd;
+        y *= r / rd;
+    }
+    if (intrin->model == RS2_DISTORTION_FTHETA)
+    {
+        float rd = sqrtf(x * x + y * y);
+        if (rd < FLT_EPSILON)
+        {
+            rd = FLT_EPSILON;
+        }
+        float r = (intrin->coeffs[0] < FLT_EPSILON) ? 0.0f : (float)(tan(intrin->coeffs[0] * rd) / atan(2 * tan(intrin->coeffs[0] / 2.0f)));
         x *= r / rd;
         y *= r / rd;
     }
