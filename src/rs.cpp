@@ -4108,9 +4108,9 @@ NOEXCEPT_RETURN(, pixel)
 /* Helper inner function (not part of the API) */
 inline bool is_intrinsics_distortion_zero(const struct rs2_intrinsics* intrin)
 {
-    return (abs(intrin->coeffs[0]) < std::numeric_limits<double>::epsilon() && abs(intrin->coeffs[1]) < std::numeric_limits<double>::epsilon() &&
-        abs(intrin->coeffs[2]) < std::numeric_limits<double>::epsilon() && abs(intrin->coeffs[3]) < std::numeric_limits<double>::epsilon() &&
-       abs(intrin->coeffs[4]) < std::numeric_limits<double>::epsilon());
+    return (std::fabs(intrin->coeffs[0]) < FLT_EPSILON && std::fabs(intrin->coeffs[1]) < FLT_EPSILON &&
+            std::fabs(intrin->coeffs[2]) < FLT_EPSILON && std::fabs(intrin->coeffs[3]) < FLT_EPSILON &&
+            std::fabs(intrin->coeffs[4]) < FLT_EPSILON);
 }
 
 void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* intrin, const float pixel[2], float depth) BEGIN_API_CALL
@@ -4171,7 +4171,7 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
         for (int i = 0; i < 4; i++)
         {
             float f = theta * (1 + theta2 * (intrin->coeffs[0] + theta2 * (intrin->coeffs[1] + theta2 * (intrin->coeffs[2] + theta2 * intrin->coeffs[3])))) - rd;
-            if (fabs(f) < FLT_EPSILON)
+            if (std::fabs(f) < FLT_EPSILON)
             {
                 break;
             }
@@ -4190,7 +4190,7 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
         {
             rd = FLT_EPSILON;
         }
-        float r = (fabs(intrin->coeffs[0]) < FLT_EPSILON) ? 0.0f : (float)(tan(intrin->coeffs[0] * rd) / atan(2 * tan(intrin->coeffs[0] / 2.0f)));
+        float r = (std::fabs(intrin->coeffs[0]) < FLT_EPSILON) ? 0.0f : (float)(tan(intrin->coeffs[0] * rd) / atan(2 * tan(intrin->coeffs[0] / 2.0f)));
         x *= r / rd;
         y *= r / rd;
     }
