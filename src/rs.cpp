@@ -4164,31 +4164,6 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
             }
 
         }
-        if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
-        {
-            float rd = sqrtf(x * x + y * y);
-            if (rd < FLT_EPSILON)
-            {
-                rd = FLT_EPSILON;
-            }
-
-            float theta = rd;
-            float theta2 = rd * rd;
-            for (int i = 0; i < 4; i++)
-            {
-                float f = theta * (1 + theta2 * (intrin->coeffs[0] + theta2 * (intrin->coeffs[1] + theta2 * (intrin->coeffs[2] + theta2 * intrin->coeffs[3])))) - rd;
-                if (fabs(f) < FLT_EPSILON)
-                {
-                    break;
-                }
-                float df = 1 + theta2 * (3 * intrin->coeffs[0] + theta2 * (5 * intrin->coeffs[1] + theta2 * (7 * intrin->coeffs[2] + 9 * theta2 * intrin->coeffs[3])));
-                theta -= f / df;
-                theta2 = theta * theta;
-            }
-            float r = tan(theta);
-            x *= r / rd;
-            y *= r / rd;
-        }
         if (intrin->model == RS2_DISTORTION_FTHETA)
         {
             float rd = sqrtf(x * x + y * y);
@@ -4201,11 +4176,30 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
             y *= r / rd;
         }
     }
-    else
+    if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
     {
+        float rd = sqrtf(x * x + y * y);
+        if (rd < FLT_EPSILON)
+        {
+            rd = FLT_EPSILON;
+        }
 
-        //int i = 0;
-        //LOG_ERROR("i=" << i);
+        float theta = rd;
+        float theta2 = rd * rd;
+        for (int i = 0; i < 4; i++)
+        {
+            float f = theta * (1 + theta2 * (intrin->coeffs[0] + theta2 * (intrin->coeffs[1] + theta2 * (intrin->coeffs[2] + theta2 * intrin->coeffs[3])))) - rd;
+            if (fabs(f) < FLT_EPSILON)
+            {
+                break;
+            }
+            float df = 1 + theta2 * (3 * intrin->coeffs[0] + theta2 * (5 * intrin->coeffs[1] + theta2 * (7 * intrin->coeffs[2] + 9 * theta2 * intrin->coeffs[3])));
+            theta -= f / df;
+            theta2 = theta * theta;
+        }
+        float r = tan(theta);
+        x *= r / rd;
+        y *= r / rd;
     }
 
     point[0] = depth * x;

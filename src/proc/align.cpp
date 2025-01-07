@@ -39,6 +39,7 @@ namespace librealsense
     void align_images(const rs2_intrinsics& depth_intrin, const rs2_extrinsics& depth_to_other,
         const rs2_intrinsics& other_intrin, GET_DEPTH get_depth, TRANSFER_PIXEL transfer_pixel)
     {
+        auto start = std::chrono::high_resolution_clock::now();
         // Iterate over the pixels of the depth image
 #pragma omp parallel for schedule(dynamic)
         for (int depth_y = 0; depth_y < depth_intrin.height; ++depth_y)
@@ -52,12 +53,9 @@ namespace librealsense
                     // Map the top-left corner of the depth pixel onto the other image
                     float depth_pixel[2] = { depth_x - 0.5f, depth_y - 0.5f }, depth_point[3], other_point[3], other_pixel[2];
 
-                    auto start = std::chrono::high_resolution_clock::now();
+                   
                     rs2_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
-                    auto end = std::chrono::high_resolution_clock::now();
-                    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                    // Output the duration
-                    std::cout << duration.count() << "\n";
+                    
 
                     rs2_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs2_project_point_to_pixel(other_pixel, &other_intrin, other_point);
@@ -86,6 +84,10 @@ namespace librealsense
                 }
             }
         }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+        // Output the duration
+        std::cout << duration.count() << "\n";
     }
 
     align::align(rs2_stream to_stream) : align(to_stream, "Align")
