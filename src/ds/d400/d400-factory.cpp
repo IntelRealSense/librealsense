@@ -890,53 +890,6 @@ namespace librealsense
         bool compress_while_record() const override { return false; }
     };
 
-    class rs436_device : public d400_active,
-        public d400_color,
-        public d400_motion,
-        public ds_advanced_mode_base,
-        public firmware_logger_device
-    {
-    public:
-        rs436_device(std::shared_ptr< const d400_info > const& dev_info, bool register_device_notifications)
-            : device(dev_info, register_device_notifications)
-            , backend_device(dev_info, register_device_notifications)
-            , d400_device(dev_info)
-            , d400_active(dev_info)
-            , d400_color(dev_info)
-            , d400_motion(dev_info)
-            , ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor())
-            , firmware_logger_device(
-                dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command())
-        {
-            register_feature(std::make_shared< gyro_sensitivity_feature >(get_raw_motion_sensor(), get_motion_sensor()));
-        }
-
-
-        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
-
-        std::vector<tagged_profile> get_profiles_tags() const override
-        {
-            std::vector<tagged_profile> tags;
-            auto usb_spec = get_usb_spec();
-            bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
-
-            int depth_width = usb3mode ? 848 : 640;
-            int depth_height = usb3mode ? 480 : 480;
-            int color_width = usb3mode ? 1280 : 640;
-            int color_height = usb3mode ? 720 : 480;
-            int fps = usb3mode ? 30 : 15;
-
-            tags.push_back({ RS2_STREAM_COLOR, -1, color_width, color_height, get_color_format(), fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_DEPTH, -1, depth_width, depth_height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_INFRARED, -1, depth_width, depth_height, RS2_FORMAT_Y8, fps, profile_tag::PROFILE_TAG_SUPERSET });
-            tags.push_back({ RS2_STREAM_GYRO, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, (int)odr::IMU_FPS_200, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_ACCEL, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, (int)odr::IMU_FPS_63, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_ACCEL, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, (int)odr::IMU_FPS_100, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            return tags;
-        };
-        bool compress_while_record() const override { return false; }
-    };
-
     class rs436i_device : public d400_active,
         public d400_color,
         public d400_motion,
