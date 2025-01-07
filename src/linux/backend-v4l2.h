@@ -329,8 +329,9 @@ namespace librealsense
 
             static uvc_device_info get_info_from_mipi_device_path(const std::string& video_path, const std::string& name);
 
+            static uint16_t get_mipi_device_pid(const std::string& dev_name);
             static void get_mipi_device_info(const std::string& dev_name,
-                                             std::string& bus_info, std::string& card, uint16_t& product_id);
+                                             std::string& bus_info, std::string& card);
 
             v4l_uvc_device(const uvc_device_info& info, bool use_memory_map = false);
 
