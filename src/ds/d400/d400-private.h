@@ -39,6 +39,7 @@ namespace librealsense
         const uint16_t RS455_PID = 0x0B5C; // D455
         const uint16_t RS457_PID = 0xabcd; // D457
         const uint16_t RS457_RECOVERY_PID = 0xbbcd; // D457 DFU Recovery
+        const uint16_t RS430_GMSL_PID = 0xabce; // D450 GMSL
 
         // d400 Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
@@ -64,7 +65,8 @@ namespace librealsense
             ds::RS416_PID,
             ds::RS405_PID,
             ds::RS455_PID,
-            ds::RS457_PID
+            ds::RS457_PID,
+            ds::RS430_GMSL_PID
         };
 
         static const std::set<std::uint16_t> d400_multi_sensors_pid = {
@@ -77,11 +79,13 @@ namespace librealsense
             ds::RS435_RGB_PID,
             ds::RS435I_PID,
             ds::RS455_PID,
-            ds::RS457_PID
+            ds::RS457_PID,
+            ds::RS430_GMSL_PID
         };
 
         static const std::set<std::uint16_t> d400_mipi_device_pid = {
-            ds::RS457_PID
+            ds::RS457_PID,
+            ds::RS430_GMSL_PID
         };
 
         static const std::set<std::uint16_t> d400_hid_sensors_pid = {
@@ -133,6 +137,7 @@ namespace librealsense
             { RS455_PID,            "Intel RealSense D455" },
             { RS457_PID,            "Intel RealSense D457" },
             { RS457_RECOVERY_PID,   "Intel RealSense D457 Recovery"},
+            { RS430_GMSL_PID,       "Intel RealSense D430" },
         };
 
         static std::map<uint16_t, std::string> d400_device_to_fw_min_version = {
@@ -161,7 +166,8 @@ namespace librealsense
             {RS405_PID, "5.12.11.8" },
             {RS455_PID, "5.13.0.50" },
             {RS457_PID, "5.13.1.1" },
-            {RS457_RECOVERY_PID, "5.13.1.1" }
+            {RS457_RECOVERY_PID, "5.13.1.1" },
+            {RS430_GMSL_PID, "5.16.1.111" },
         };
 
         std::vector<platform::uvc_device_info> filter_d400_device_by_capability(

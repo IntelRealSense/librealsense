@@ -549,6 +549,34 @@ namespace librealsense
                     throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " xioctl(VIDIOC_QUERYCAP) failed");
             }
 
+
+/*
+        uint8_t gvd[276];
+        struct v4l2_ext_control ctrl;
+
+        memset(gvd,0,276);
+
+        ctrl.id = RS_CAMERA_CID_GVD;
+        ctrl.size = sizeof(gvd);
+        ctrl.p_u8 = gvd;
+
+        struct v4l2_ext_controls ext;
+
+        ext.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
+        ext.controls = &ctrl;
+        ext.count = 1;
+
+        if (ioctl(*fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
+	{
+//        memcpy(buffer, gvd + DS5_CMD_OPCODE_SIZE, 0x110);
+
+	    for (int i = 0; i < 16; i++)
+	    {
+	        std::cout << std::hex << (int) gvd[i] << std::endl;
+	    }
+	}
+*/
+
             return cap;
         }
 
@@ -806,7 +834,7 @@ namespace librealsense
         }
 
         void v4l_uvc_device::get_mipi_device_info(const std::string& dev_name,
-                                                  std::string& bus_info, std::string& card)
+                                                  std::string& bus_info, std::string& card, uint16_t& device_id)
         {
             struct v4l2_capability vcap;
             int fd = open(dev_name.c_str(), O_RDWR);
@@ -836,6 +864,48 @@ namespace librealsense
                 bus_info = reinterpret_cast<const char *>(vcap.bus_info);
                 card = reinterpret_cast<const char *>(vcap.card);
             }
+
+
+        uint8_t gvd[276];
+        struct v4l2_ext_control ctrl;
+
+        memset(gvd,0,276);
+
+        ctrl.id = RS_CAMERA_CID_GVD;
+        ctrl.size = sizeof(gvd);
+        ctrl.p_u8 = gvd;
+
+        struct v4l2_ext_controls ext;
+
+        ext.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
+        ext.controls = &ctrl;
+        ext.count = 1;
+
+        if (ioctl(fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
+	{
+//        memcpy(buffer, gvd + DS5_CMD_OPCODE_SIZE, 0x110);
+
+//            for (int i = 0; i < 16; i++)
+//            {
+//                std::cout << std::hex << (int) gvd[i] << std::endl;
+//            }
+
+	    uint8_t product_id = 0;
+
+	    product_id = gvd[4 + 4];
+//          std::cout << "product_id:" << (int) product_id << std::endl;
+
+	    switch(product_id)
+	    {
+	      case(0x0F):
+		    device_id = 0xABCE;
+		    break;
+	      default:
+	            device_id = 0xABCD;
+		    break;
+	    }
+	}
+
             ::close(fd);
         }
 
@@ -844,15 +914,18 @@ namespace librealsense
             uint16_t vid{}, pid{}, mi{};
             usb_spec usb_specification(usb_undefined);
             std::string bus_info, card;
+            uint16_t device_pid = 0;
 
             auto dev_name = "/dev/" + name;
 
-            get_mipi_device_info(dev_name, bus_info, card);
+            get_mipi_device_info(dev_name, bus_info, card, device_pid);
 
             // the following 2 lines need to be changed in order to enable multiple mipi devices support
             // or maybe another field in the info structure - TBD
             vid = 0x8086;
-            pid = 0xABCD; // D457 dev
+            pid = device_pid;
+
+//          std::cout << "video_path:" << video_path << ", name:" << dev_name << ", pid=" << std::hex << (int) pid << std::endl;
 
             static std::regex video_dev_index("\\d+$");
             std::smatch match;
@@ -876,9 +949,9 @@ namespace librealsense
             // further development is needed to permit use of several mipi devices
             static int  first_video_index = ind;
             // Use camera_video_nodes as number of /dev/video[%d] for each camera sensor subset
-            const int camera_video_nodes = 6;
+            const int camera_video_nodes = 5;
             int cam_id = ind / camera_video_nodes;
-            ind = (ind - first_video_index) % camera_video_nodes; // offset from first mipi video node and assume 6 nodes per mipi camera
+            ind = (ind - first_video_index) % camera_video_nodes; // offset from first mipi video node and assume 5 nodes per mipi camera
             if (ind == 0 || ind == 2 || ind == 4)
                 mi = 0; // video node indicator
             else if (ind == 1 | ind == 3)
@@ -2840,7 +2913,7 @@ namespace librealsense
 
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
-            bool mipi_device = 0xABCD == info.pid; // D457 development. Not for upstream
+            bool mipi_device = (0xABCD == info.pid || 0xABCE == info.pid); // D457 development. Not for upstream
             auto v4l_uvc_dev =        mipi_device ?         std::make_shared<v4l_mipi_device>(info) :
                               ((!info.has_metadata_node) ?  std::make_shared<v4l_uvc_device>(info) :
                                                             std::make_shared<v4l_uvc_meta_device>(info));
