@@ -5,7 +5,7 @@
 
 #include <assert.h>
 
-#ifdef __SSE4__
+#ifdef __SSSE3__
 #include <emmintrin.h>
 #include <smmintrin.h>
 #endif
@@ -24,7 +24,7 @@ void downsample_min_4x4(const cv::Mat& source, cv::Mat* pDest)
 
     const size_t sizeYresized = source.rows / DOWNSAMPLE_FACTOR;
 
-#ifdef __SSE4__
+#ifdef __SSSE3__
     __m128i ones = _mm_set1_epi16(1);
 
     // Note on multi-threading here, 2018-08-17

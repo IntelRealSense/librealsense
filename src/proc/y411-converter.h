@@ -24,7 +24,7 @@ namespace librealsense
 
     void unpack_y411( uint8_t * const dest[], const uint8_t * const s, int w, int h, int actual_size);
 
-#if defined __SSE4__ && ! defined ANDROID
+#if defined __SSSE3__ && ! defined ANDROID
     void unpack_y411_sse( uint8_t * const dest, const uint8_t * const s, int w, int h, int actual_size);
 #endif
 

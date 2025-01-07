@@ -42,7 +42,7 @@ if (NOT APPLE)
 else()
     option(CHECK_FOR_UPDATES "Checks for versions updates" OFF) 
 endif()
-option(BUILD_WITH_CPU_EXTENSIONS "Enable compiler optimizations using CPU extensions (such as AVX)" OFF)
+option(BUILD_WITH_CPU_EXTENSIONS "Enable compiler optimizations using CPU extensions (such as AVX)" ON)
 set(UNIT_TESTS_ARGS "" CACHE STRING "Command-line arguments to pass to unit-tests-config.py, e.g. '-t <tag> -r <regex>'")
 #Performance improvement with Ubuntu 18/20
 if(UNIX AND (NOT ANDROID_NDK_TOOLCHAIN_INCLUDED))

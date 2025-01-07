@@ -19,7 +19,7 @@
 #ifdef RS2_USE_CUDA
 #include "proc/cuda/cuda-pointcloud.h"
 #endif
-#ifdef __SSE4__
+#ifdef __SSSE3__
 #include "proc/sse/sse-pointcloud.h"
 #endif
 #include "proc/neon/neon-pointcloud.h"
@@ -397,7 +397,7 @@ namespace librealsense
     {
         #ifdef RS2_USE_CUDA
             return std::make_shared<librealsense::pointcloud_cuda>();
-        #elif defined(__SSE4__)
+        #elif defined(__SSSE3__)
             return std::make_shared<librealsense::pointcloud_sse>();
         #elif defined(__ARM_NEON)  && ! defined ANDROID
             return std::make_shared<librealsense::pointcloud_neon>();

@@ -64,11 +64,6 @@
 #include <src/core/time-service.h>
 #include <rsutils/string/from.h>
 
-#include <iostream>
-#include <chrono>
-#include <thread> // For std::this_thread::sleep_for
-#include <random>  // For random number generation
-
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -4113,7 +4108,6 @@ NOEXCEPT_RETURN(, pixel)
 /* Helper inner function (not part of the API) */
 inline bool is_intrinsics_distortion_zero(const struct rs2_intrinsics* intrin)
 {
-    //return false;
     return (abs(intrin->coeffs[0]) < std::numeric_limits<double>::epsilon() && abs(intrin->coeffs[1]) < std::numeric_limits<double>::epsilon() &&
         abs(intrin->coeffs[2]) < std::numeric_limits<double>::epsilon() && abs(intrin->coeffs[3]) < std::numeric_limits<double>::epsilon() &&
        abs(intrin->coeffs[4]) < std::numeric_limits<double>::epsilon());
@@ -4150,10 +4144,9 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
         }
         if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
         {
-            int i = 0;
             // need to loop until convergence
             // 10 iterations determined empirically
-            for (; i < 10; i++)
+            for (int i = 0; i < 10; i++)
             {
                 float r2 = x * x + y * y;
                 float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
@@ -4205,15 +4198,6 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
     point[0] = depth * x;
     point[1] = depth * y;
     point[2] = depth;
-
-    // Get the ending time point
-    //auto end = std::chrono::high_resolution_clock::now();
-
-    // Calculate the elapsed time in milliseconds
-    //auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-
-    // Output the elapsed time
-    //std::cout << duration.count()  << std::endl;
 }
 NOEXCEPT_RETURN(, point)
 

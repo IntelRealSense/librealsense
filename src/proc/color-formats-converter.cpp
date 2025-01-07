@@ -14,7 +14,7 @@
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"
 #endif
-#ifdef __SSE4__
+#ifdef __SSSE3__
 #include <tmmintrin.h> // For SSSE3 intrinsics
 #endif
 #include "neon/image-neon.h"
@@ -60,7 +60,7 @@ namespace librealsense
         rscuda::unpack_yuy2_cuda<FORMAT>(d, s, n);
         return;
 #endif
-#if defined __SSE4__ && ! defined ANDROID
+#if defined __SSSE3__ && ! defined ANDROID
         static bool do_avx = has_avx();
 #ifdef __AVX2__
 
@@ -477,7 +477,7 @@ namespace librealsense
         }
     }
 
-#if defined __SSE4__ && ! defined ANDROID
+#if defined __SSSE3__ && ! defined ANDROID
     // This method receives 1 line of y and one line of uv.
     // source_chunks_y  // yyyyyyyyyyyyyyyy
     // source_chunks_uv // uvuvuvuvuvuvuvuv
@@ -631,7 +631,7 @@ namespace librealsense
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 
-#if defined __SSE4__ && ! defined ANDROID
+#if defined __SSSE3__ && ! defined ANDROID
         static bool do_avx = has_avx();
 
         auto src = reinterpret_cast<const __m128i*>(s);
@@ -753,7 +753,7 @@ namespace librealsense
             m420_parse_one_line<FORMAT>(start_of_second_line, start_of_uv, &dst, width);
         }
         return;
-#endif // __SSE4__
+#endif // __SSSE3__
     }
 
     void unpack_yuy2(rs2_format dst_format, rs2_stream dst_stream, uint8_t * const d[], const uint8_t * s, int w, int h, int actual_size)
@@ -822,7 +822,7 @@ namespace librealsense
     {
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
-#ifdef __SSE4__
+#ifdef __SSSE3__
         auto src = reinterpret_cast<const __m128i *>(s);
         auto dst = reinterpret_cast<__m128i *>(d[0]);
         for (; n; n -= 16)
