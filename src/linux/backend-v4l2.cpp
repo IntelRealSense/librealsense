@@ -833,8 +833,60 @@ namespace librealsense
             return info;
         }
 
+        uint16_t v4l_uvc_device::get_mipi_device_pid(const std::string& dev_name)
+        {
+            uint16_t device_pid = 0;
+
+            struct v4l2_capability vcap;
+            int fd = open(dev_name.c_str(), O_RDWR);
+            if (fd < 0)
+                throw linux_backend_exception("Mipi device capability could not be grabbed");
+
+        uint8_t gvd[276];
+        struct v4l2_ext_control ctrl;
+
+        memset(gvd,0,276);
+
+        ctrl.id = RS_CAMERA_CID_GVD;
+        ctrl.size = sizeof(gvd);
+        ctrl.p_u8 = gvd;
+
+        struct v4l2_ext_controls ext;
+
+        ext.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
+        ext.controls = &ctrl;
+        ext.count = 1;
+
+        if (ioctl(fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
+	{
+//            for (int i = 0; i < 16; i++)
+//            {
+//                std::cout << std::hex << (int) gvd[i] << std::endl;
+//            }
+
+	    uint8_t product_pid = 0;
+
+	    product_pid = gvd[4 + 4];
+//            std::cout << "product_id:" << (int) product_pid << std::endl;
+
+	    switch(product_pid)
+	    {
+	      case(0x0F):
+		    device_pid = 0xABCE;
+		    break;
+	      default:
+	            device_pid = 0xABCD;
+		    break;
+	    }
+	}
+
+            ::close(fd);
+	    
+	    return device_pid;
+        }
+
         void v4l_uvc_device::get_mipi_device_info(const std::string& dev_name,
-                                                  std::string& bus_info, std::string& card, uint16_t& device_id)
+                                                  std::string& bus_info, std::string& card)
         {
             struct v4l2_capability vcap;
             int fd = open(dev_name.c_str(), O_RDWR);
@@ -865,47 +917,6 @@ namespace librealsense
                 card = reinterpret_cast<const char *>(vcap.card);
             }
 
-
-        uint8_t gvd[276];
-        struct v4l2_ext_control ctrl;
-
-        memset(gvd,0,276);
-
-        ctrl.id = RS_CAMERA_CID_GVD;
-        ctrl.size = sizeof(gvd);
-        ctrl.p_u8 = gvd;
-
-        struct v4l2_ext_controls ext;
-
-        ext.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
-        ext.controls = &ctrl;
-        ext.count = 1;
-
-        if (ioctl(fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
-	{
-//        memcpy(buffer, gvd + DS5_CMD_OPCODE_SIZE, 0x110);
-
-//            for (int i = 0; i < 16; i++)
-//            {
-//                std::cout << std::hex << (int) gvd[i] << std::endl;
-//            }
-
-	    uint8_t product_id = 0;
-
-	    product_id = gvd[4 + 4];
-//          std::cout << "product_id:" << (int) product_id << std::endl;
-
-	    switch(product_id)
-	    {
-	      case(0x0F):
-		    device_id = 0xABCE;
-		    break;
-	      default:
-	            device_id = 0xABCD;
-		    break;
-	    }
-	}
-
             ::close(fd);
         }
 
@@ -914,18 +925,10 @@ namespace librealsense
             uint16_t vid{}, pid{}, mi{};
             usb_spec usb_specification(usb_undefined);
             std::string bus_info, card;
-            uint16_t device_pid = 0;
 
             auto dev_name = "/dev/" + name;
 
-            get_mipi_device_info(dev_name, bus_info, card, device_pid);
-
-            // the following 2 lines need to be changed in order to enable multiple mipi devices support
-            // or maybe another field in the info structure - TBD
-            vid = 0x8086;
-            pid = device_pid;
-
-//          std::cout << "video_path:" << video_path << ", name:" << dev_name << ", pid=" << std::hex << (int) pid << std::endl;
+            get_mipi_device_info(dev_name, bus_info, card);
 
             static std::regex video_dev_index("\\d+$");
             std::smatch match;
@@ -940,6 +943,24 @@ namespace librealsense
                 throw linux_backend_exception("Unresolved Video4Linux device, device is skipped");
             }
 
+
+            // find device PID from depth video node
+	    static uint16_t device_pid = 0;
+            static std::regex video_dev_depth("video-rs-depth-\\d+$");
+            if (std::regex_search(name, match, video_dev_depth))
+            {
+                device_pid = get_mipi_device_pid(dev_name);
+//                std::cout << "depth video node name=" << name << ", device_pid=" << device_pid << std::endl;
+            }
+
+            // the following 2 lines need to be changed in order to enable multiple mipi devices support
+            // or maybe another field in the info structure - TBD
+            vid = 0x8086;
+            pid = device_pid;
+
+//            std::cout << "video_path:" << video_path << ", name:" << dev_name << ", pid=" << std::hex << (int) pid << std::endl;
+
+
             //  D457 exposes (assuming first_video_index = 0):
             // - video0 for Depth and video1 for Depth's md.
             // - video2 for RGB and video3 for RGB's md.
@@ -948,10 +969,11 @@ namespace librealsense
             // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
             // further development is needed to permit use of several mipi devices
             static int  first_video_index = ind;
+
             // Use camera_video_nodes as number of /dev/video[%d] for each camera sensor subset
             const int camera_video_nodes = 6;
             int cam_id = ind / camera_video_nodes;
-            ind = (ind - first_video_index) % camera_video_nodes; // offset from first mipi video node and assume 5 nodes per mipi camera
+            ind = (ind - first_video_index) % camera_video_nodes; // offset from first mipi video node and assume 6 nodes per mipi camera
             if (ind == 0 || ind == 2 || ind == 4)
                 mi = 0; // video node indicator
             else if (ind == 1 | ind == 3)
