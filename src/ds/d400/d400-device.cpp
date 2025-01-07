@@ -501,7 +501,7 @@ namespace librealsense
 
         std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
         frame_timestamp_reader* timestamp_reader_from_metadata;
-        if (all_device_infos.front().pid != RS457_PID)
+        if (all_device_infos.front().pid != RS457_PID && all_device_infos.front().pid != RS430_GMSL_PID)
             timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata(std::move(timestamp_reader_backup));
         else
             timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata_mipi(std::move(timestamp_reader_backup));
@@ -550,7 +550,7 @@ namespace librealsense
         auto raw_sensor = get_raw_depth_sensor();
         _pid = group.uvc_devices.front().pid;
         // to be changed for D457
-        bool mipi_sensor = (RS457_PID == _pid);
+        bool mipi_sensor = (RS457_PID == _pid || RS430_GMSL_PID == _pid);
 
         _color_calib_table_raw = [this]()
         {
@@ -688,7 +688,7 @@ namespace librealsense
             //if hw_monitor was created by usb replace it with xu
             // D400_IMU will remain using USB interface due to HW limitations
             {
-                if (_pid == ds::RS457_PID)
+                if (_pid == ds::RS457_PID || _pid == ds::RS430_GMSL_PID)
                 {
                     depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                         std::make_shared<asic_temperature_option_mipi>(_hw_monitor,
