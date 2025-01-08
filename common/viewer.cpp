@@ -2815,11 +2815,11 @@ namespace rs2
                     }
 
                     ImGui::Separator();
-                    bool enable_dds = temp_cfg.get( configurations::dds::enable_dds );
-                    int domain_id = temp_cfg.get( configurations::dds::domain_id );
+                    bool enable_dds = temp_cfg.get_nested<bool>("context.dds.enabled");
+                    int domain_id = temp_cfg.get_nested<int>("context.dds.domain");
                     if( ImGui::Checkbox( "Enable DDS", &enable_dds ) )
                     {
-                        temp_cfg.set( configurations::dds::enable_dds, enable_dds );
+                        temp_cfg.set_nested("context.dds.enabled", enable_dds);
                     }
                     if( enable_dds )
                     {
@@ -2834,12 +2834,12 @@ namespace rs2
                                 domain_id = 0;
                             else if( domain_id > 232 )
                                 domain_id = 232;
-                            temp_cfg.set( configurations::dds::domain_id, domain_id );
+                            temp_cfg.set_nested("context.dds.domain", domain_id);
                         }
                     }
-                    ImGui::SameLine();
-                    ImGui::SetCursorPosX( w - 700 );
-                    ImGui::Text(u8"\uf071 Changes will take effect only after restarting the application ");
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 0.8f));
+                    ImGui::Text(u8"\uf071 DDS changes will take effect only after restarting the application ");
+                    ImGui::PopStyleColor();
 
                 }
 
