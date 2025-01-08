@@ -842,7 +842,7 @@ namespace rs2
         auto streaming_tooltip = [&]() {
             if ((!allow_change_resolution_while_streaming && streaming)
                 && ImGui::IsItemHovered())
-                ImGui::SetTooltip("Can't modify while streaming");
+                RsImGui::CustomTooltip("Can't modify while streaming");
         };
 
         auto col0 = ImGui::GetCursorPosX();

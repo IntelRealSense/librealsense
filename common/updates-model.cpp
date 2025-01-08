@@ -7,6 +7,7 @@
 #include "ux-window.h"
 #include "os.h"
 #include <stb_image.h>
+#include <realsense_imgui.h>
 #include "sw-update/http-downloader.h"
 #include <rsutils/easylogging/easyloggingpp.h>
 
@@ -182,11 +183,8 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::PushStyleColor(ImGuiCol_Text, white);
-                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
-                ImGui::SetTooltip("To close this window you must install all essential update\n"
+                RsImGui::CustomTooltip("To close this window you must install all essential update\n"
                     "or agree to the warning of closing without it");
-                ImGui::PopStyleColor(2);
             }
             ImGui::PopStyleColor(2);
         }
@@ -444,11 +442,9 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
 
             if (ImGui::IsItemHovered())
             {
-                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                 std::string tooltip = "This will redirect you to download the selected software from:\n" + selected_software_update.download_link;
-                ImGui::SetTooltip("%s", tooltip.c_str());
+                RsImGui::CustomTooltip("%s", tooltip.c_str());
                 window.link_hovered();
-                ImGui::PopStyleColor();
             }
 
             ImGui::PopStyleColor(3);
@@ -737,7 +733,7 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("This will download selected firmware and install it to the device");
+            RsImGui::CustomTooltip("This will download selected firmware and install it to the device");
             window.link_hovered();
         }
         ImGui::PopStyleColor(2);

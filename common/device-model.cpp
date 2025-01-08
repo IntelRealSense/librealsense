@@ -582,7 +582,7 @@ namespace rs2
         if (ImGui::IsItemHovered())
         {
             std::string tooltip = rsutils::string::from() << "Step Backwards" << (supports_playback_step ? "" : "(Not available)");
-            ImGui::SetTooltip("%s", tooltip.c_str());
+            RsImGui::CustomTooltip("%s", tooltip.c_str());
         }
         ImGui::SameLine();
         //////////////////// Step Backwards Button ////////////////////
@@ -602,7 +602,7 @@ namespace rs2
         if (ImGui::IsItemHovered())
         {
             std::string tooltip = rsutils::string::from() << "Stop Playback";
-            ImGui::SetTooltip("%s", tooltip.c_str());
+            RsImGui::CustomTooltip("%s", tooltip.c_str());
         }
         ImGui::SameLine();
         //////////////////// Stop Button ////////////////////
@@ -636,7 +636,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip(current_playback_status == RS2_PLAYBACK_STATUS_PAUSED ? "Resume Playback" : "Start Playback");
+                RsImGui::CustomTooltip(current_playback_status == RS2_PLAYBACK_STATUS_PAUSED ? "Resume Playback" : "Start Playback");
             }
         }
         else
@@ -654,7 +654,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Pause Playback");
+                RsImGui::CustomTooltip("Pause Playback");
             }
         }
 
@@ -683,7 +683,7 @@ namespace rs2
         if (ImGui::IsItemHovered())
         {
             std::string tooltip = rsutils::string::from() << "Step Forward" << (supports_playback_step ? "" : "(Not available)");
-            ImGui::SetTooltip("%s", tooltip.c_str());
+            RsImGui::CustomTooltip("%s", tooltip.c_str());
         }
         ImGui::SameLine();
         //////////////////// Step Forward Button ////////////////////
@@ -711,7 +711,7 @@ namespace rs2
         if (ImGui::IsItemHovered())
         {
             std::string tooltip = rsutils::string::from() << (_playback_repeat ? "Disable " : "Enable ") << "Repeat ";
-            ImGui::SetTooltip("%s", tooltip.c_str());
+            RsImGui::CustomTooltip("%s", tooltip.c_str());
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
@@ -745,7 +745,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Change playback speed rate");
+            RsImGui::CustomTooltip("Change playback speed rate");
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
@@ -893,7 +893,7 @@ namespace rs2
                     }
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
+                        RsImGui::CustomTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
                     }
                     if (show_yes_no_modal)
                     {
@@ -915,6 +915,8 @@ namespace rs2
 
     void device_model::draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size)
     {
+        ImGui::PopFont();
+        ImGui::PushFont(window.get_large_font());
         std::string info_button_name = rsutils::string::from() << textual_icons::info_circle << "##" << id;
         auto info_button_color = show_device_info ? light_blue : light_grey;
         ImGui::PushStyleColor(ImGuiCol_Text, info_button_color);
@@ -923,13 +925,12 @@ namespace rs2
         {
             show_device_info = !show_device_info;
         }
+        ImGui::PopFont();
+        ImGui::PushFont(window.get_font());
         if (ImGui::IsItemHovered())
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
-            ImGui::SetTooltip("%s", show_device_info ? "Hide Device Details" : "Show Device Details");
+            RsImGui::CustomTooltip("%s", show_device_info ? "Hide Device Details" : "Show Device Details");
             window.link_hovered();
-            ImGui::PopStyleColor(2);
         }
         ImGui::PopStyleColor(2);
     }
@@ -1260,14 +1261,13 @@ namespace rs2
                 if (path != "") start_recording(path, error_message);
             }
         }}, disable_record_button_logic(is_streaming, is_playback_device));
+        ImGui::PopFont();
+        ImGui::PushFont(window.get_font());
         if (ImGui::IsItemHovered())
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
             std::string record_button_hover_text = get_record_button_hover_text(is_streaming);
-            ImGui::SetTooltip("%s", record_button_hover_text.c_str());
+            RsImGui::CustomTooltip("%s", record_button_hover_text.c_str());
             if (is_streaming) window.link_hovered();
-            ImGui::PopStyleColor(2);
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
@@ -1279,6 +1279,8 @@ namespace rs2
         auto sync_button_color = is_sync_enabled ? light_blue : light_grey;
         ImGui::PushStyleColor(ImGuiCol_Text, sync_button_color);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, sync_button_color);
+        ImGui::PopFont();
+        ImGui::PushFont(window.get_large_font());
         RsImGui::RsImButton([&]() {
         if (ImGui::ButtonEx(sync_button_name.c_str(), device_panel_icons_size))
         {
@@ -1286,12 +1288,11 @@ namespace rs2
         }
         }, true);
         ImGui::PopStyleColor(2);
+        ImGui::PopFont();
+        ImGui::PushFont(window.get_font());
         if (ImGui::IsItemHovered())
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
-            ImGui::SetTooltip("%s", is_sync_enabled ? "Disable streams synchronization" : "Enable streams synchronization");
-            ImGui::PopStyleColor(2);
+            RsImGui::CustomTooltip("%s", is_sync_enabled ? "Disable streams synchronization" : "Enable streams synchronization");
         }
         ImGui::SameLine();
         ////////////////////////////////////////
@@ -1305,20 +1306,19 @@ namespace rs2
         ////////////////////////////////////////
         std::string label = rsutils::string::from() << "device_menu" << id;
         std::string bars_button_name = rsutils::string::from() << textual_icons::bars << "##" << id;
+        ImGui::PopFont();
+        ImGui::PushFont(window.get_large_font());
         if (ImGui::Button(bars_button_name.c_str(), device_panel_icons_size))
         {
             ImGui::OpenPopup(label.c_str());
         }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
-            ImGui::SetTooltip("%s", "Click for more");
-            window.link_hovered();
-            ImGui::PopStyleColor(2);
-        }
         ImGui::PopFont();
         ImGui::PushFont(window.get_font());
+        if (ImGui::IsItemHovered())
+        {
+            RsImGui::CustomTooltip("%s", "Click for more");
+            window.link_hovered();
+        }
         static bool keep_showing_advanced_mode_modal = false;
         bool open_calibration_ui = false;
         if (ImGui::BeginPopup(label.c_str()))
@@ -1371,13 +1371,10 @@ namespace rs2
                     }
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::PushStyleColor(ImGuiCol_Text, white);
-                        ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                         std::string tooltip = rsutils::string::from()
                                            << "Install official signed firmware from file to the device"
                                            << ( is_streaming ? " (Disabled while streaming)" : "" );
-                        ImGui::SetTooltip("%s", tooltip.c_str());
-                        ImGui::PopStyleColor(2);
+                        RsImGui::CustomTooltip("%s", tooltip.c_str());
                     }
 
 
@@ -1400,11 +1397,8 @@ namespace rs2
 
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::PushStyleColor(ImGuiCol_Text, white);
-                        ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                         std::string tooltip = rsutils::string::from() << "Check for SW / FW updates";
-                        ImGui::SetTooltip("%s", tooltip.c_str());
-                        ImGui::PopStyleColor(2);
+                        RsImGui::CustomTooltip("%s", tooltip.c_str());
                     }
                 }
 
@@ -1425,13 +1419,10 @@ namespace rs2
                         }
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::PushStyleColor(ImGuiCol_Text, white);
-                            ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                             std::string tooltip = rsutils::string::from()
                                                << "Install non official unsigned firmware from file to the device"
                                                << ( is_streaming ? " (Disabled while streaming)" : "" );
-                            ImGui::SetTooltip("%s", tooltip.c_str());
-                            ImGui::PopStyleColor(2);
+                            RsImGui::CustomTooltip("%s", tooltip.c_str());
                         }
                     }
                 }
@@ -1959,10 +1950,7 @@ namespace rs2
                         ImGui::Text("Preset: ");
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
-                            ImGui::PushStyleColor(ImGuiCol_Text, white);
-                            ImGui::SetTooltip("Select a preset configuration (or use the load button)");
-                            ImGui::PopStyleColor(2);
+                            RsImGui::CustomTooltip("Select a preset configuration (or use the load button)");
                         }
 
                         ImGui::SameLine();
@@ -2123,13 +2111,10 @@ namespace rs2
         }}, load_button_disabled);
         if (ImGui::IsItemHovered())
         {
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
             std::string tooltip = rsutils::string::from()
                                << "Load pre-configured device settings"
                                << ( is_streaming && ! load_json_if_streaming ? " (Disabled while streaming)" : "" );
-            ImGui::SetTooltip("%s", tooltip.c_str());
-            ImGui::PopStyleColor(2);
+            RsImGui::CustomTooltip("%s", tooltip.c_str());
         }
 
         ImGui::SameLine();
@@ -2158,10 +2143,7 @@ namespace rs2
         }}, buttons_disable);
         if (ImGui::IsItemHovered())
         {
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, black);
-            ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::SetTooltip("Save current device settings to file");
-            ImGui::PopStyleColor(2);
+            RsImGui::CustomTooltip("Save current device settings to file");
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
@@ -2310,11 +2292,8 @@ namespace rs2
 
             if (ImGui::IsItemHovered())
             {
-                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
-                ImGui::PushStyleColor(ImGuiCol_Text, white);
-                ImGui::SetTooltip("Remove selected device from current view\n(can be restored by clicking Add Source)");
+                RsImGui::CustomTooltip("Remove selected device from current view\n(can be restored by clicking Add Source)");
                 window.link_hovered();
-                ImGui::PopStyleColor(2);
             }
         }
         ImGui::PopStyleColor(4);
@@ -2333,7 +2312,7 @@ namespace rs2
             std::string file_name_and_icon = rsutils::string::from() << " " << textual_icons::file_movie << " File: \"" << filename << "\"";
             ImGui::Text("%s", file_name_and_icon.c_str());
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", full_path.c_str());
+                RsImGui::CustomTooltip("%s", full_path.c_str());
             ImGui::PopFont();
         }
         ImGui::SetCursorPos({ 0, pos.y + header_h });
@@ -2489,21 +2468,14 @@ namespace rs2
                                 {
                                     if (ImGui::IsItemHovered())
                                     {
-                                        ImGui::PushStyleColor(ImGuiCol_Text, white);
-                                        ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
-                                        // ImGui::SetTooltip("Selected configuration (FPS, Resolution) is not supported");
-                                        ImGui::SetTooltip("Selected value is not supported");
-                                        ImGui::PopStyleColor(2);
+                                        RsImGui::CustomTooltip("Selected value is not supported");
                                     }
                                 }
                                 else
                                 {
                                     if (ImGui::IsItemHovered())
                                     {
-                                        ImGui::PushStyleColor(ImGuiCol_Text, white);
-                                        ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
-                                        ImGui::SetTooltip("No stream selected");
-                                        ImGui::PopStyleColor(2);
+                                        RsImGui::CustomTooltip("No stream selected");
                                     }
                                 }
                             }
@@ -2545,11 +2517,8 @@ namespace rs2
                             }
                             if (ImGui::IsItemHovered())
                             {
-                                ImGui::PushStyleColor(ImGuiCol_Text, white);
-                                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                                 window.link_hovered();
-                                ImGui::SetTooltip("Start streaming data from this sensor");
-                                ImGui::PopStyleColor(2);
+                                RsImGui::CustomTooltip("Start streaming data from this sensor");
                             }
                         }
                     }
@@ -2583,11 +2552,8 @@ namespace rs2
                         }
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::PushStyleColor(ImGuiCol_Text, white);
-                            ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                             window.link_hovered();
-                            ImGui::SetTooltip("Stop streaming data from selected sub-device");
-                            ImGui::PopStyleColor(2);
+                            RsImGui::CustomTooltip("Stop streaming data from selected sub-device");
                         }
                     }
 
@@ -2770,11 +2736,8 @@ namespace rs2
                                 }
                                 if (ImGui::IsItemHovered())
                                 {
-                                    ImGui::PushStyleColor(ImGuiCol_Text, white);
-                                    ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
-                                    ImGui::SetTooltip("Enable post-processing filters");
+                                    RsImGui::CustomTooltip("Enable post-processing filters");
                                     window.link_hovered();
-                                    ImGui::PopStyleColor(2);
                                 }
                             }
                             else
@@ -2800,11 +2763,8 @@ namespace rs2
                                 }
                                 if (ImGui::IsItemHovered())
                                 {
-                                    ImGui::PushStyleColor(ImGuiCol_Text, white);
-                                    ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
-                                    ImGui::SetTooltip("Disable post-processing filters");
+                                    RsImGui::CustomTooltip("Disable post-processing filters");
                                     window.link_hovered();
-                                    ImGui::PopStyleColor(2);
                                 }
                             }
                             ImGui::PopStyleColor(5);
@@ -2885,12 +2845,9 @@ namespace rs2
                                             }
                                             if (ImGui::IsItemHovered())
                                             {
-                                                ImGui::PushStyleColor(ImGuiCol_Text, white);
-                                                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                                                 label = rsutils::string::from() << "Enable " << pb->get_name() << " post-processing filter";
-                                                ImGui::SetTooltip("%s", label.c_str());
+                                                RsImGui::CustomTooltip("%s", label.c_str());
                                                 window.link_hovered();
-                                                ImGui::PopStyleColor(2);
                                             }
                                         }
                                         else
@@ -2909,13 +2866,10 @@ namespace rs2
                                             }
                                             if (ImGui::IsItemHovered())
                                             {
-                                                ImGui::PushStyleColor(ImGuiCol_Text, white);
-                                                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                                                 label = rsutils::string::from()
                                                      << "Disable " << pb->get_name() << " post-processing filter";
-                                                ImGui::SetTooltip("%s", label.c_str());
+                                                RsImGui::CustomTooltip("%s", label.c_str());
                                                 window.link_hovered();
-                                                ImGui::PopStyleColor(2);
                                             }
                                         }
                                     }
@@ -3129,7 +3083,7 @@ namespace rs2
                     }
                 }
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("This will improve the depth noise.\n"
+                    RsImGui::CustomTooltip("This will improve the depth noise.\n"
                         "Point at a scene that normally would have > 50 %% valid depth pixels,\n"
                         "then press calibrate."
                         "The health-check will be calculated.\n"
@@ -3186,7 +3140,7 @@ namespace rs2
                     }
                 }
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Focal length calibration is used to adjust camera focal length with specific target.");
+                    RsImGui::CustomTooltip("Focal length calibration is used to adjust camera focal length with specific target.");
 
                 if (ImGui::Selectable("Tare Calibration"))
                 {
@@ -3219,7 +3173,7 @@ namespace rs2
                     }
                 }
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Tare calibration is used to adjust camera absolute distance to flat target.\n"
+                    RsImGui::CustomTooltip("Tare calibration is used to adjust camera absolute distance to flat target.\n"
                         "User needs either to enter the known ground truth or use the get button\n"
                         "with specific target to get the ground truth.");
 
@@ -3314,7 +3268,7 @@ namespace rs2
                         _calib_model.open();
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Access low level camera calibration parameters");
+                        RsImGui::CustomTooltip("Access low level camera calibration parameters");
                 }
 
                 if (auto fwlogger = dev.as<rs2::firmware_logger>())
@@ -3388,7 +3342,7 @@ namespace rs2
                         }
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Recovers last set of firmware logs prior to camera shutdown / disconnect");
+                        RsImGui::CustomTooltip("Recovers last set of firmware logs prior to camera shutdown / disconnect");
                 }
 
                 has_autocalib = true;
@@ -3467,7 +3421,7 @@ namespace rs2
                                   "with projector on";
                     else
                         tooltip = rsutils::string::from() << "On-Chip Calibration" << (streaming ? " (Disabled while streaming)" : "");
-                    ImGui::SetTooltip("%s", tooltip.c_str());
+                    RsImGui::CustomTooltip("%s", tooltip.c_str());
                 }
 
                 if( !is_d555 )
@@ -3502,7 +3456,7 @@ namespace rs2
                         std::string tooltip = rsutils::string::from()
                                            << "Dry Run On-Chip Calibration"
                                            << ( streaming ? " (Disabled while streaming)" : "" );
-                        ImGui::SetTooltip("%s", tooltip.c_str());
+                        RsImGui::CustomTooltip("%s", tooltip.c_str());
                     }
                 }
                 else
@@ -3544,7 +3498,7 @@ namespace rs2
                         }
                     }
                     if( ImGui::IsItemHovered() )
-                        ImGui::SetTooltip( "Focal length calibration is used to adjust camera focal length with specific target." );
+                        RsImGui::CustomTooltip( "Focal length calibration is used to adjust camera focal length with specific target." );
 
                     if( ImGui::Selectable( "Tare Calibration" ) )
                     {
@@ -3572,7 +3526,7 @@ namespace rs2
                         }
                     }
                     if( ImGui::IsItemHovered() )
-                        ImGui::SetTooltip( "Tare calibration is used to adjust camera absolute distance to flat target.\n"
+                        RsImGui::CustomTooltip( "Tare calibration is used to adjust camera absolute distance to flat target.\n"
                                            "User needs either to enter the known ground truth or use the get button\n"
                                            "with specific target to get the ground truth." );
                 }
