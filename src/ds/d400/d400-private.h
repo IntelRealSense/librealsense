@@ -30,7 +30,7 @@ namespace librealsense
         const uint16_t RS430_MM_RGB_PID = 0x0b01; // AWGCT
         const uint16_t RS460_PID = 0x0b03; // DS5U
         const uint16_t RS435_RGB_PID = 0x0b07; // AWGC
-        const uint16_t RS436I_PID = 0x1156; // D436i
+        const uint16_t RS436_PID = 0x1156; // D436
         const uint16_t RS405U_PID = 0x0b0c; // DS5U
         const uint16_t RS435I_PID = 0x0b3a; // D435i
         const uint16_t RS416_PID = 0x0b49; // F416
@@ -60,7 +60,7 @@ namespace librealsense
             ds::RS430_MM_RGB_PID,
             ds::RS460_PID,
             ds::RS435_RGB_PID,
-            ds::RS436I_PID,
+            ds::RS436_PID,
             ds::RS405U_PID,
             ds::RS435I_PID,
             ds::RS416_RGB_PID,
@@ -81,7 +81,7 @@ namespace librealsense
             ds::RS430_MM_PID,
             ds::RS430_MM_RGB_PID,
             ds::RS435_RGB_PID,
-            ds::RS436I_PID,
+            ds::RS436_PID,
             ds::RS435I_PID,
             ds::RS455_PID,
             ds::RS457_PID,
@@ -97,14 +97,14 @@ namespace librealsense
 
         static const std::set<std::uint16_t> d400_hid_sensors_pid = {
             ds::RS435I_PID,
-            ds::RS436I_PID,
+            ds::RS436_PID,
             ds::RS430I_PID,
             ds::RS455_PID
         };
 
         static const std::set<std::uint16_t> d400_hid_bmi_055_pid = {
             ds::RS435I_PID,
-            ds::RS436I_PID,
+            ds::RS436_PID,
             ds::RS430I_PID,
             ds::RS455_PID
         };
@@ -137,7 +137,7 @@ namespace librealsense
             { RS430_MM_RGB_PID,     "Intel RealSense D430 with Tracking and RGB Modules"},
             { RS460_PID,            "Intel RealSense D460" },
             { RS435_RGB_PID,        "Intel RealSense D435"},
-            { RS436I_PID,            "Intel RealSense D436I"},
+            { RS436_PID,            "Intel RealSense D436"},
             { RS405U_PID,           "Intel RealSense DS5U" },
             { RS435I_PID,           "Intel RealSense D435I" },
             { RS416_PID,            "Intel RealSense F416"},
@@ -171,7 +171,7 @@ namespace librealsense
             {RS435_RGB_PID, "5.8.15.0" },
             {RS405U_PID, "5.8.15.0" },
             {RS435I_PID, "5.12.7.100" },
-            {RS436I_PID, "5.16.3.100" },  // TODO - update final required FW version
+            {RS436_PID, "5.16.3.100" },  // TODO - update final required FW version
             {RS416_PID, "5.8.15.0" },
             {RS430I_PID, "5.8.15.0" },
             {RS416_RGB_PID, "5.8.15.0" },
