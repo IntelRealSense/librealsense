@@ -76,7 +76,7 @@ namespace rs2
             std::lock_guard<std::mutex> lock(_mtx);
             if (++_counter >= _skip_frames)
             {
-                if (std::abs(_last_timestamp) > std::numeric_limits<double>::epsilon() && frame_counter > _last_frame_counter)
+                if (_last_timestamp != 0 && frame_counter > _last_frame_counter)
                 {
                     _delta = timestamp - _last_timestamp;
                     _num_of_frames = frame_counter - _last_frame_counter;
