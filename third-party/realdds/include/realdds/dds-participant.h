@@ -21,6 +21,12 @@ class DomainParticipant;
 class DomainParticipantFactory;
 }  // namespace dds
 }  // namespace fastdds
+namespace fastrtps {
+namespace rtps {
+class WriterProxyData;
+class ReaderProxyData;
+}  // namespace rtps
+}  // namespace fastrtps
 }  // namespace eprosima
 #ifdef BUILD_EASYLOGGINGPP
 namespace el {
@@ -153,9 +159,9 @@ public:
     {
         friend class dds_participant;
 
-        std::function< void( dds_guid, char const* topic_name ) > _on_writer_added;
+        std::function< void( eprosima::fastrtps::rtps::WriterProxyData const & ) > _on_writer_added;
         std::function< void( dds_guid, char const* topic_name ) > _on_writer_removed;
-        std::function< void( dds_guid, char const* topic_name ) > _on_reader_added;
+        std::function< void( eprosima::fastrtps::rtps::ReaderProxyData const & ) > _on_reader_added;
         std::function< void( dds_guid, char const* topic_name ) > _on_reader_removed;
         std::function< void( dds_guid, char const* participant_name ) > _on_participant_added;
         std::function< void( dds_guid, char const* participant_name ) > _on_participant_removed;
@@ -164,7 +170,7 @@ public:
         listener() = default;
 
     public:
-        listener* on_writer_added( std::function< void( dds_guid guid, char const* topic_name ) > callback )
+        listener* on_writer_added( std::function< void( eprosima::fastrtps::rtps::WriterProxyData const & ) > callback )
         {
             _on_writer_added = std::move( callback );
             return this;
@@ -174,7 +180,7 @@ public:
             _on_writer_removed = std::move( callback );
             return this;
         }
-        listener* on_reader_added( std::function< void( dds_guid guid, char const* topic_name ) > callback )
+        listener* on_reader_added( std::function< void( eprosima::fastrtps::rtps::ReaderProxyData const & ) > callback )
         {
             _on_reader_added = std::move( callback );
             return this;
@@ -228,9 +234,9 @@ private:
     std::shared_ptr< listener_impl > _domain_listener;
     std::atomic< uint32_t > _next_entity_id{ 0 };  // for create_guid()
 
-    void on_writer_added( dds_guid, char const * topic_name );
+    void on_writer_added( eprosima::fastrtps::rtps::WriterProxyData const & );
     void on_writer_removed( dds_guid, char const * topic_name );
-    void on_reader_added( dds_guid, char const * topic_name );
+    void on_reader_added( eprosima::fastrtps::rtps::ReaderProxyData const & );
     void on_reader_removed( dds_guid, char const * topic_name );
     void on_participant_added( dds_guid, char const * participant_name );
     void on_participant_removed( dds_guid, char const * participant_name );
