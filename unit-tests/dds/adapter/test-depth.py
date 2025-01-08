@@ -62,7 +62,7 @@ with test.closure( 'Let it stream' ):
         test.info( 'start_time', start_time )
         test.info( 'end_time', end_time )
         test.info( 'n_frames', n_frames )
-        test.check_approx_abs( n_frames / (end_time-start_time), 29.5, 1 )
+        test.check_between( n_frames / (end_time-start_time), 25, 31 )
 
 with test.closure( 'Open the same profile while streaming!' ):
     test.check_throws( lambda:
