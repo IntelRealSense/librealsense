@@ -267,7 +267,8 @@ namespace rs2
 
             auto dev_name = get_device_name(dev);
 
-            if( ( dev.is<update_device>() || is_upgradeable( fw, recommended_fw_ver) ) )
+            // TODO - D436. Don't suggest to update FW as it doesn't support D436. Revert after next release with bundle supporting FW
+            if( ( dev.is<update_device>() || is_upgradeable( fw, recommended_fw_ver) ) && pid != "1156") //0x1156 is pid for D436
             {
                 std::stringstream msg;
 
