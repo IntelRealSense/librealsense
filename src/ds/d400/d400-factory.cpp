@@ -779,14 +779,14 @@ namespace librealsense
         bool compress_while_record() const override { return false; }
     };
 
-    class rs436i_device : public d400_active,
+    class rs436_device : public d400_active,
         public d400_color,
         public d400_motion,
         public ds_advanced_mode_base,
         public firmware_logger_device
     {
     public:
-        rs436i_device(std::shared_ptr< const d400_info > const& dev_info, bool register_device_notifications)
+        rs436_device(std::shared_ptr< const d400_info > const& dev_info, bool register_device_notifications)
             : device(dev_info, register_device_notifications)
             , backend_device(dev_info, register_device_notifications)
             , d400_device(dev_info)
@@ -1036,8 +1036,8 @@ namespace librealsense
             return std::make_shared< rs435_device >( dev_info, register_device_notifications );
         case RS435I_PID:
             return std::make_shared< rs435i_device >( dev_info, register_device_notifications );
-        case RS436I_PID:
-            return std::make_shared< rs436i_device >(dev_info, register_device_notifications);
+        case RS436_PID:
+            return std::make_shared< rs436_device >(dev_info, register_device_notifications);
         case RS_USB2_PID:
             return std::make_shared< rs410_device >( dev_info, register_device_notifications );
         case RS400_IMU_PID:
@@ -1233,7 +1233,7 @@ namespace librealsense
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
-    std::shared_ptr<matcher> rs436i_device::create_matcher(const frame_holder& frame) const
+    std::shared_ptr<matcher> rs436_device::create_matcher(const frame_holder& frame) const
     {
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
         // TODO - A proper matcher for High-FPS sensor is required
