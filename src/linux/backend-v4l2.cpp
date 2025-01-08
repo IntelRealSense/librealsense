@@ -833,6 +833,32 @@ namespace librealsense
             return info;
         }
 
+        bool v4l_uvc_device::is_format_supported_on_node(const std::string& dev_name, std::string v4l_4cc_fmt)
+        {
+            int fd = open(dev_name.c_str(), O_RDWR);
+            if (fd < 0)
+                throw linux_backend_exception("Mipi device capability could not be grabbed");
+
+            struct v4l2_fmtdesc fmtdesc;
+            memset(&fmtdesc,0,sizeof(fmtdesc));
+            fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+            uint32_t format;
+            memcpy(&format, v4l_4cc_fmt.c_str(), sizeof(format));
+
+            while (ioctl(fd,VIDIOC_ENUM_FMT,&fmtdesc) == 0)
+            {
+                if (fmtdesc.pixelformat == format)
+                {
+                    return true;
+                }
+
+                fmtdesc.index++;
+            }
+
+            return false;
+        }
+
         uint16_t v4l_uvc_device::get_mipi_device_pid(const std::string& dev_name)
         {
             uint16_t device_pid = 0;
@@ -930,6 +956,22 @@ namespace librealsense
 
             get_mipi_device_info(dev_name, bus_info, card);
 
+            // find device PID from depth video node
+	    static uint16_t device_pid = 0;
+            if (is_format_supported_on_node(dev_name, "Z16 "))
+            {
+                device_pid = get_mipi_device_pid(dev_name);
+//                std::cout << "depth video node name=" << name << ", device_pid=" << device_pid << std::endl;
+            }
+
+            // the following 2 lines need to be changed in order to enable multiple mipi devices support
+            // or maybe another field in the info structure - TBD
+            vid = 0x8086;
+            pid = device_pid;
+
+//            std::cout << "video_path:" << video_path << ", name:" << dev_name << ", pid=" << std::hex << (int) pid << std::endl;
+
+
             static std::regex video_dev_index("\\d+$");
             std::smatch match;
             uint8_t ind{};
@@ -942,23 +984,6 @@ namespace librealsense
                 LOG_WARNING("Unresolved Video4Linux device pattern: " << name << ", device is skipped");
                 throw linux_backend_exception("Unresolved Video4Linux device, device is skipped");
             }
-
-
-            // find device PID from depth video node
-	    static uint16_t device_pid = 0;
-            static std::regex video_dev_depth("video-rs-depth-\\d+$");
-            if (std::regex_search(name, match, video_dev_depth))
-            {
-                device_pid = get_mipi_device_pid(dev_name);
-//                std::cout << "depth video node name=" << name << ", device_pid=" << device_pid << std::endl;
-            }
-
-            // the following 2 lines need to be changed in order to enable multiple mipi devices support
-            // or maybe another field in the info structure - TBD
-            vid = 0x8086;
-            pid = device_pid;
-
-//            std::cout << "video_path:" << video_path << ", name:" << dev_name << ", pid=" << std::hex << (int) pid << std::endl;
 
 
             //  D457 exposes (assuming first_video_index = 0):
