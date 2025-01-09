@@ -58,6 +58,8 @@
 
 #include <sys/signalfd.h>
 #include <signal.h>
+#include "rsutils/rsutilgpu.h"
+
 #pragma GCC diagnostic ignored "-Woverflow"
 
 const size_t MAX_DEV_PARENT_DIR = 10;
@@ -755,9 +757,12 @@ namespace librealsense
             if (!is_usb_path_valid(video_path, dev_name, busnum, devnum, devpath))
             {
 #ifndef RS2_USE_CUDA
-               /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
-               Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
-               LOG_INFO("Failed to read busnum/devnum. Device Path: " << ("/sys/class/video4linux/" + name));
+                if (rsutils::rs2_is_gpu_available())
+                {
+                    /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
+                    Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
+                    LOG_INFO("Failed to read busnum/devnum. Device Path: " << ("/sys/class/video4linux/" + name));
+                }
 #endif
                throw linux_backend_exception("Failed to read busnum/devnum of usb device");
             }

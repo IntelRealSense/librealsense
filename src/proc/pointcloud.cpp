@@ -23,6 +23,7 @@
 #include "proc/sse/sse-pointcloud.h"
 #endif
 #include "proc/neon/neon-pointcloud.h"
+#include "rsutils/rsutilgpu.h"
 
 
 namespace librealsense
@@ -396,8 +397,12 @@ namespace librealsense
     std::shared_ptr<pointcloud> pointcloud::create()
     {
         #ifdef RS2_USE_CUDA
+        if (rsutils::rs2_is_gpu_available())
+        {
             return std::make_shared<librealsense::pointcloud_cuda>();
-        #elif defined(__SSSE3__)
+        }
+        #endif
+        #ifdef defined(__SSSE3__)
             return std::make_shared<librealsense::pointcloud_sse>();
         #elif defined(__ARM_NEON)  && ! defined ANDROID
             return std::make_shared<librealsense::pointcloud_neon>();

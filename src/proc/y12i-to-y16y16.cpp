@@ -5,18 +5,23 @@
 #include "stream.h"
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"
+#include "rsutils/rsutilgpu.h"
 #endif
 
 namespace librealsense
 {
     struct y12i_pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; int l() const { return lh << 4 | ll; } int r() const { return rh << 8 | rl; } };
 
-    void unpack_y16_y16_from_y12i_10( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
+    void unpack_y16_y16_from_y12i_10(uint8_t* const dest[], const uint8_t* source, int width, int height, int actual_size)
     {
         auto count = width * height;
 #ifdef RS2_USE_CUDA
-        rscuda::split_frame_y16_y16_from_y12i_cuda(dest, count, reinterpret_cast<const rscuda::y12i_pixel *>(source));
-#else
+        if (rsutils::rs2_is_gpu_available())
+        {
+            rscuda::split_frame_y16_y16_from_y12i_cuda(dest, count, reinterpret_cast<const rscuda::y12i_pixel*>(source));
+        }
+#endif
+#ifndef RS2_USE_CUDA
         split_frame(dest, count, reinterpret_cast<const y12i_pixel*>(source),
             [](const y12i_pixel & p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
             [](const y12i_pixel & p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
