@@ -3,6 +3,7 @@
 
 from rspy import test, log
 import time
+import pyrealsense2 as rs
 
 # global variable used to count on all the sensors simultaneously
 count_frames = False
@@ -74,11 +75,15 @@ def generate_callbacks(sensor_profiles_dict, profile_name_fps_dict):
     """
     def on_frame_received(frame):
         global count_frames
-        log.d(f"frame {frame.profile.stream_name()} #{profile_name_fps_dict[frame.profile.stream_name()] + 1} accepted") # todo remove these
+        frame_number = frame.get_frame_number()
+        frame_ts = frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
+        log.d(f"frame {frame.profile.stream_name()} #{profile_name_fps_dict[frame.profile.stream_name()] + 1} "
+              f"accepted with frame number {frame_number} and ts {frame_ts}")
         if count_frames:
             profile_name = frame.profile.stream_name()
             profile_name_fps_dict[profile_name] += 1
-        log.d(f"frame {frame.profile.stream_name()} #{profile_name_fps_dict[frame.profile.stream_name()] + 1} finished")
+        log.d(f"frame {frame.profile.stream_name()} #{profile_name_fps_dict[frame.profile.stream_name()]} "
+              f"callback finished")
 
     sensor_function_dict = {sensor_key: on_frame_received for sensor_key in sensor_profiles_dict}
     return sensor_function_dict
