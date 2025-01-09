@@ -2813,6 +2813,34 @@ namespace rs2
                             catch (...){}
                         }
                     }
+
+                    ImGui::Separator();
+                    bool enable_dds = temp_cfg.get_nested<bool>("context.dds.enabled");
+                    int domain_id = temp_cfg.get_nested<int>("context.dds.domain");
+                    if( ImGui::Checkbox( "Enable DDS", &enable_dds ) )
+                    {
+                        temp_cfg.set_nested("context.dds.enabled", enable_dds);
+                    }
+                    if( enable_dds )
+                    {
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosX( ImGui::GetCursorPosX() + 50 );
+                        ImGui::PushItemWidth( 150.0f );
+                        ImGui::Text( "Domain ID" );
+                        ImGui::SameLine();
+                        if( ImGui::InputInt( "##Domain ID", &domain_id ) )
+                        {
+                            if( domain_id < 0 )
+                                domain_id = 0;
+                            else if( domain_id > 232 )
+                                domain_id = 232;
+                            temp_cfg.set_nested("context.dds.domain", domain_id);
+                        }
+                    }
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 0.8f));
+                    ImGui::Text(u8"\uf071 DDS changes will take effect only after restarting the application ");
+                    ImGui::PopStyleColor();
+
                 }
 
                 if (tab == 3)

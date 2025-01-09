@@ -49,6 +49,8 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     ../../common/rs-config.cpp
     ../../common/os.h
     ../../common/os.cpp
+    ../../third-party/rsutils/include/rsutils/type/eth-config.h
+    ../../third-party/rsutils/include/rsutils/type/eth-config.cpp
 )
 
 SET(DELAYED

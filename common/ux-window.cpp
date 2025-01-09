@@ -102,6 +102,8 @@ namespace rs2
         config_file::instance().set_default(configurations::viewer::log_filename, path + "librealsense.log");
         config_file::instance().set_default(configurations::record::default_path, path);
 
+        config_file::instance().set_nested_default(configurations::dds::enable_dds, false);
+        config_file::instance().set_nested_default(configurations::dds::domain_id, 0);
 #ifdef __APPLE__
 
         config_file::instance().set_default(configurations::performance::font_oversample, 2);
