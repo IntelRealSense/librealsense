@@ -84,13 +84,17 @@ priority rs2::dds_model::classifyPriority( link_priority & pr )
 
 bool dds_model::check_DDS_support()
 {
-    auto dev = debug_protocol( _device );
-    auto cmd = dev.build_command( GET_ETH_CONFIG, ACTUAL_VALUES );
-    auto data = dev.send_and_receive_raw_data( cmd );
-    int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
-    if( code != GET_ETH_CONFIG )
-        return false;
-    return true;
+    if (_device.is<rs2::debug_protocol>())
+    {
+        auto dev = debug_protocol( _device );
+        auto cmd = dev.build_command( GET_ETH_CONFIG, ACTUAL_VALUES );
+        auto data = dev.send_and_receive_raw_data( cmd );
+        int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
+        if( code == GET_ETH_CONFIG )
+            return true;
+    }
+
+    return false;
 }
 
 void rs2::dds_model::ipInputText( std::string label, ip_address & ip )
