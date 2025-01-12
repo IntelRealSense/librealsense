@@ -63,6 +63,7 @@ private:
     std::map< std::string, streaming_impl > _streaming_by_name;
 
     formats_converter _formats_converter;
+    stream_profiles _target_profiles;
 
 public:
     dds_sensor_proxy( std::string const & sensor_name,
@@ -86,10 +87,13 @@ public:
     void add_processing_block( std::string const & filter_name );
 
     const std::map< sid_index, std::shared_ptr< realdds::dds_stream > > & streams() const { return _streams; }
+    void set_frames_callback( rs2_frame_callback_sptr callback ) override;
+    rs2_frame_callback_sptr get_frames_callback() const override;
 
     // sensor_interface
 public:
     rsutils::subscription register_options_changed_callback( options_watcher::callback && ) override;
+    stream_profiles get_active_streams() const override;
 
 protected:
     void register_basic_converters();
