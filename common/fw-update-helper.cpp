@@ -4,6 +4,7 @@
 #include "fw-update-helper.h"
 #include "model-views.h"
 #include "viewer.h"
+#include <realsense_imgui.h>
 #include "ux-window.h"
 
 #include <rsutils/os/special-folder.h>
@@ -509,7 +510,7 @@ namespace rs2
 
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "New firmware will be flashed to the device");
+                    RsImGui::CustomTooltip("%s", "New firmware will be flashed to the device");
                 }
             }
             else if (update_state == RS2_FWU_STATE_IN_PROGRESS)
@@ -557,7 +558,7 @@ namespace rs2
             if (ImGui::IsItemHovered())
             {
                 win.link_hovered();
-                ImGui::SetTooltip("%s", "Internet connection required");
+                RsImGui::CustomTooltip("%s", "Internet connection required");
             }
         }
     }

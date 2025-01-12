@@ -3,6 +3,7 @@
 #include <iomanip>
 #include "depth-quality-model.h"
 #include <librealsense2/rs_advanced_mode.hpp>
+#include <realsense_imgui.h>
 #include "model-views.h"
 #include "viewer.h"
 #include "os.h"
@@ -667,7 +668,7 @@ namespace rs2
 
                                 if (ImGui::IsItemHovered())
                                 {
-                                    ImGui::SetTooltip(
+                                    RsImGui::CustomTooltip(
                                         "%s",
                                         ds.get_option_description(
                                             RS2_OPTION_ENABLE_IR_REFLECTIVITY ) );
@@ -685,7 +686,7 @@ namespace rs2
                         ImGui::Text("Distance:");
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::SetTooltip("Estimated distance to an average within the ROI of the target (wall) in mm");
+                            RsImGui::CustomTooltip("Estimated distance to an average within the ROI of the target (wall) in mm");
                         }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
 
@@ -713,7 +714,7 @@ namespace rs2
                         }
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::SetTooltip("True measured distance to the wall in mm");
+                            RsImGui::CustomTooltip("True measured distance to the wall in mm");
                         }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                         if (_use_ground_truth)
@@ -739,7 +740,7 @@ namespace rs2
                         ImGui::Text("Angle:");
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::SetTooltip("Estimated angle to the wall in degrees");
+                            RsImGui::CustomTooltip("Estimated angle to the wall in degrees");
                         }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                         static float prev_metric_angle = 0;
@@ -789,7 +790,7 @@ namespace rs2
 
                             if (ImGui::IsItemHovered())
                             {
-                                ImGui::SetTooltip("Save Metrics snapshot. This will create:\nPNG image with the depth frame\nPLY 3D model with the point cloud\nJSON file with camera settings you can load later\nand a CSV with metrics recent values");
+                                RsImGui::CustomTooltip("Save Metrics snapshot. This will create:\nPNG image with the depth frame\nPLY 3D model with the point cloud\nJSON file with camera settings you can load later\nand a CSV with metrics recent values");
                             }
                         }
 
@@ -1170,7 +1171,7 @@ namespace rs2
                 ImGui::Text(u8"\uf102");
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("This metric shows positive trend");
+                    RsImGui::CustomTooltip("This metric shows positive trend");
                 }
                 ImGui::PopFont();
                 ImGui::SameLine(); ImGui::SetCursorPos(col0);
@@ -1186,7 +1187,7 @@ namespace rs2
                 ImGui::Text(u8"\uf103");
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("This metric shows negative trend");
+                    RsImGui::CustomTooltip("This metric shows negative trend");
                 }
                 ImGui::PopFont();
                 ImGui::SameLine(); ImGui::SetCursorPos(col0);
