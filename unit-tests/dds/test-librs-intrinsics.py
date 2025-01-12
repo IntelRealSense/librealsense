@@ -2,7 +2,7 @@
 # Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 from rspy import log, test
 
