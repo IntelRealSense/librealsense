@@ -402,7 +402,7 @@ namespace librealsense
             return std::make_shared<librealsense::pointcloud_cuda>();
         }
         #endif
-        #ifdef defined(__SSSE3__)
+        #ifdef __SSSE3__
             return std::make_shared<librealsense::pointcloud_sse>();
         #elif defined(__ARM_NEON)  && ! defined ANDROID
             return std::make_shared<librealsense::pointcloud_neon>();
