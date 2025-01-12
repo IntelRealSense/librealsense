@@ -55,7 +55,7 @@ jobs:
         cd ${{env.WIN_BUILD_DIR}}
         pwd
         ls        
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true -DBUILD_WITH_CUDA=true
 
     - name: Build
       # Build your program with the given configuration
