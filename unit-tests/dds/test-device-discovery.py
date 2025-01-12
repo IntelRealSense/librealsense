@@ -2,7 +2,7 @@
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 from rspy import log, test
 import pyrealdds as dds
