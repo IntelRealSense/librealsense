@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+
 #include "rsutils/rsutilgpu.h"
 
 #ifdef RS2_USE_CUDA
