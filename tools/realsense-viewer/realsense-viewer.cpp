@@ -205,7 +205,21 @@ bool refresh_devices(std::mutex& m,
                 if (device_models.size() == 0 &&
                     dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera" && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)).find("IP Device") == std::string::npos)
                 {
-                    device_models.emplace_back(new device_model(dev, error_message, viewer_model));
+                    try
+                    {
+                        device_models.emplace_back(new device_model(dev, error_message, viewer_model));
+                    }
+                    catch (const std::exception& e)
+                    {
+                        log(RS2_LOG_SEVERITY_ERROR, "Exception raised on device_model creation");
+                        auto dev_name_itr = std::find(begin(device_names), end(device_names), get_device_name(dev));
+                        if (dev_name_itr != end(device_names))
+                        {
+                            device_names.erase(dev_name_itr);
+                        }
+                        throw e;
+                    }
+
                     viewer_model.not_model->add_log(
                         rsutils::string::from() << ( *device_models.rbegin() )->dev.get_info( RS2_CAMERA_INFO_NAME )
                                                 << " was selected as a default device" );
