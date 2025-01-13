@@ -211,6 +211,7 @@ bool refresh_devices(std::mutex& m,
                     }
                     catch (const std::exception& e)
                     {
+                        log(RS2_LOG_SEVERITY_ERROR, "Exception raised on device_model creation");
                         auto dev_name_itr = std::find(begin(device_names), end(device_names), get_device_name(dev));
                         if (dev_name_itr != end(device_names))
                         {
