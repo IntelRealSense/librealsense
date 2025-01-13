@@ -16,7 +16,7 @@ namespace rsutils {
             bool retVal = false;
 #ifdef RS2_USE_CUDA
             static int gpuDeviceCount = -1;
-            
+
             if (gpuDeviceCount < 0)
             {
                 cudaGetDeviceCount(&gpuDeviceCount);
@@ -24,11 +24,11 @@ namespace rsutils {
                 if (retVal == false)
                 {
                     // before push, change to INFO
-                    LOG_ERROR("Avoid CUDA execution as no NVIDIA GPU found.");
+                    LOG_INFO("Avoid CUDA execution as no NVIDIA GPU found.");
                 }
                 else
                 {
-                    LOG_ERROR("Found " << gpuDeviceCount << " NVIDIA GPU.");
+                    LOG_INFO("Found " << gpuDeviceCount << " NVIDIA GPU.");
                 }
             }
 #endif

@@ -23,20 +23,20 @@ namespace librealsense
 #endif
 #ifndef RS2_USE_CUDA
         split_frame(dest, count, reinterpret_cast<const y12i_pixel*>(source),
-            [](const y12i_pixel & p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
-            [](const y12i_pixel & p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
+            [](const y12i_pixel& p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
+            [](const y12i_pixel& p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
 #endif
     }
 
     y12i_to_y16y16::y12i_to_y16y16(int left_idx, int right_idx)
         : y12i_to_y16y16("Y12I to Y16L Y16R Transform", left_idx, right_idx) {}
 
-    y12i_to_y16y16::y12i_to_y16y16(const char * name, int left_idx, int right_idx)
+    y12i_to_y16y16::y12i_to_y16y16(const char* name, int left_idx, int right_idx)
         : interleaved_functional_processing_block(name, RS2_FORMAT_Y12I, RS2_FORMAT_Y16, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME, 1,
-                                                                         RS2_FORMAT_Y16, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME, 2)
+            RS2_FORMAT_Y16, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME, 2)
     {}
 
-    void y12i_to_y16y16::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
+    void y12i_to_y16y16::process_function(uint8_t* const dest[], const uint8_t* source, int width, int height, int actual_size, int input_size)
     {
         unpack_y16_y16_from_y12i_10(dest, source, width, height, actual_size);
     }

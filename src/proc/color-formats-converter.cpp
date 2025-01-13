@@ -47,7 +47,7 @@ bool has_avx()
 
 #endif
 
-namespace librealsense 
+namespace librealsense
 {
     /////////////////////////////
     // YUY2 unpacking routines //

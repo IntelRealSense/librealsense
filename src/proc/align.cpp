@@ -26,19 +26,19 @@ namespace librealsense
 
     std::shared_ptr<align> align::create_align(rs2_stream align_to)
     {
-        #if defined(RS2_USE_CUDA)
+#if defined(RS2_USE_CUDA)
         if (rsutils::rs2_is_gpu_available())
         {
             return std::make_shared<librealsense::align_cuda>(align_to);
         }
-        #endif
-        #if defined(__SSSE3__)
-            return std::make_shared<librealsense::align_sse>(align_to);
-        #elif defined(__ARM_NEON) && ! defined(ANDROID)
-            return std::make_shared<librealsense::align_neon>(align_to);
-        #else
-            return std::make_shared<librealsense::align>(align_to);
-        #endif
+#endif
+#if defined(__SSSE3__)
+        return std::make_shared<librealsense::align_sse>(align_to);
+#elif defined(__ARM_NEON) && ! defined(ANDROID)
+        return std::make_shared<librealsense::align_neon>(align_to);
+#else
+        return std::make_shared<librealsense::align>(align_to);
+#endif
     }
 
     template<class GET_DEPTH, class TRANSFER_PIXEL>

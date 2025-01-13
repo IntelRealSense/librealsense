@@ -9,7 +9,7 @@ extern "C" {
 
     namespace rsutils {
 
-    bool rs2_is_gpu_available();
+        bool rs2_is_gpu_available();
 
     }  // namespace rsutils
 

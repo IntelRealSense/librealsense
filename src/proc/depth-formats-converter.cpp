@@ -27,7 +27,7 @@ namespace librealsense
 #ifndef RS2_USE_CUDA
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ >> 2;
 #endif
-        std::memcpy( dest[0], in, count * 2 );
+        std::memcpy(dest[0], in, count * 2);
     }
 
     void unpack_z16_y16_from_sr300_inzi(uint8_t* const dest[], const uint8_t* source, int width, int height, int actual_size)
@@ -45,7 +45,7 @@ namespace librealsense
 #ifndef RS2_USE_CUDA
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ << 6;
 #endif
-        std::memcpy( dest[0], in, count * 2 );
+        std::memcpy(dest[0], in, count * 2);
     }
 
     void unpack_inzi(rs2_format dst_ir_format, uint8_t * const d[], const uint8_t * s, int width, int height, int actual_size)
