@@ -397,14 +397,16 @@ namespace librealsense
     std::shared_ptr<pointcloud> pointcloud::create()
     {
         #ifdef RS2_USE_CUDA
-        std::cout << "RS2_USE_CUDA" << std::endl;
         if (rsutils::rs2_is_gpu_available())
         {
+            // remove before push
+            LOG_ERROR("RS2_USE_CUDA.");
             return std::make_shared<librealsense::pointcloud_cuda>();
         }
         #endif
         #ifdef __SSSE3__
-            std::cout << "__SSSE3__" << std::endl;
+        // remove before push
+            LOG_ERROR("__SSSE3__.");
             return std::make_shared<librealsense::pointcloud_sse>();
         #elif defined(__ARM_NEON)  && ! defined ANDROID
             return std::make_shared<librealsense::pointcloud_neon>();

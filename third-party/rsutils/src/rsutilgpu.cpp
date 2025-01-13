@@ -13,19 +13,26 @@ namespace rsutils {
     class GPUChecker {
     public:
         static bool is_gpu_available() {
+            bool retVal = false;
 #ifdef RS2_USE_CUDA
             static int gpuDeviceCount = -1;
-            if (gpuDeviceCount < 0) cudaGetDeviceCount(&gpuDeviceCount);
-            bool retVal = gpuDeviceCount > 0;
-            if (retVal == false)
+            
+            if (gpuDeviceCount < 0)
             {
-                // before push, change to INFO
-                LOG_ERROR("Avoid CUDA execution as no NVIDIA GPU found.");
+                cudaGetDeviceCount(&gpuDeviceCount);
+                retVal = gpuDeviceCount > 0;
+                if (retVal == false)
+                {
+                    // before push, change to INFO
+                    LOG_ERROR("Avoid CUDA execution as no NVIDIA GPU found.");
+                }
+                else
+                {
+                    LOG_ERROR("Found " << gpuDeviceCount << " NVIDIA GPU.");
+                }
             }
-            return (gpuDeviceCount > 0);
-#else
-            return false;
 #endif
+            return retVal;
         }
     };
 
