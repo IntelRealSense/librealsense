@@ -47,7 +47,7 @@ list_parameters_request_msg::take_next( dds_topic_reader & reader, list_paramete
 
         return true;
     }
-    if ( status == ReturnCode_t::RETCODE_NO_DATA )
+    if( status == ReturnCode_t::RETCODE_NO_DATA )
     {
         // This is an expected return code and is not an error
         return false;
