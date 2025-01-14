@@ -24,6 +24,7 @@
 #include <realdds/topics/ros2/list-parameters-msg.h>
 #include <realdds/topics/ros2/describe-parameters-msg.h>
 #include <realdds/topics/ros2/ParameterType.h>
+#include <realdds/topics/ros2/participant-entities-info-msg.h>
 
 #include <rsutils/number/crc32.h>
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -871,25 +872,36 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                 }
             } );
     }
+}
 
+
+void lrs_device_controller::initialize_ros2_node_entities( std::string const & node_name )
+{
     // Create ROS2 request & response channels
-    auto & topic_root = _dds_device_server->topic_root();
+    // Note that we need to use the node name and not necessarily the realsense topic-root (which could be different!)
+    assert( '/' == *topics::ros2::NAMESPACE );
+    std::string full_name = rsutils::string::from()
+        << ( topics::ros2::NAMESPACE + 1 )  // without the beginning /
+        << topics::SEPARATOR
+        << node_name;
+    auto const request_root = topics::ros2::SERVICE_REQUEST_ROOT + full_name;
+    auto const response_root = topics::ros2::SERVICE_RESPONSE_ROOT + full_name;
     auto participant = _dds_device_server->participant();
     auto subscriber = _dds_device_server->subscriber();
     auto publisher = _dds_device_server->publisher();
     if( auto topic = topics::ros2::get_parameters_request_msg::create_topic(
             participant,
-            topics::ROS2_SERVICE_REQUEST_ROOT + topic_root + topics::GET_PARAMETERS_NAME + topics::REQUEST_SUFFIX ) )
+            request_root + topics::ros2::GET_PARAMETERS_NAME + topics::ros2::REQUEST_SUFFIX ) )
     {
         _get_params_reader = std::make_shared< dds_topic_reader >( topic, subscriber );
-        _get_params_reader->on_data_available( [&]() { on_get_params_request(); } );
+        _get_params_reader->on_data_available( [&] { on_get_params_request(); } );
         dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
         rqos.override_from_json( participant->settings().nested( "device", "get-parameters-request" ) );
         _get_params_reader->run( rqos );
     }
     if( auto topic = topics::ros2::get_parameters_response_msg::create_topic(
             participant,
-            topics::ROS2_SERVICE_RESPONSE_ROOT + topic_root + topics::GET_PARAMETERS_NAME + topics::RESPONSE_SUFFIX ) )
+            response_root + topics::ros2::GET_PARAMETERS_NAME + topics::ros2::RESPONSE_SUFFIX ) )
     {
         _get_params_writer = std::make_shared< dds_topic_writer >( topic, publisher );
         dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
@@ -900,17 +912,17 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     }
     if( auto topic = topics::ros2::set_parameters_request_msg::create_topic(
             participant,
-            topics::ROS2_SERVICE_REQUEST_ROOT + topic_root + topics::SET_PARAMETERS_NAME + topics::REQUEST_SUFFIX ) )
+            request_root + topics::ros2::SET_PARAMETERS_NAME + topics::ros2::REQUEST_SUFFIX ) )
     {
         _set_params_reader = std::make_shared< dds_topic_reader >( topic, subscriber );
-        _set_params_reader->on_data_available( [&]() { on_set_params_request(); } );
+        _set_params_reader->on_data_available( [&] { on_set_params_request(); } );
         dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
         rqos.override_from_json( participant->settings().nested( "device", "set-parameters-request" ) );
         _set_params_reader->run( rqos );
     }
     if( auto topic = topics::ros2::set_parameters_response_msg::create_topic(
             participant,
-            topics::ROS2_SERVICE_RESPONSE_ROOT + topic_root + topics::SET_PARAMETERS_NAME + topics::RESPONSE_SUFFIX ) )
+            response_root + topics::ros2::SET_PARAMETERS_NAME + topics::ros2::RESPONSE_SUFFIX ) )
     {
         _set_params_writer = std::make_shared< dds_topic_writer >( topic, publisher );
         dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
@@ -921,17 +933,17 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     }
     if( auto topic = topics::ros2::list_parameters_request_msg::create_topic(
             participant,
-            topics::ROS2_SERVICE_REQUEST_ROOT + topic_root + topics::LIST_PARAMETERS_NAME + topics::REQUEST_SUFFIX ) )
+            request_root + topics::ros2::LIST_PARAMETERS_NAME + topics::ros2::REQUEST_SUFFIX ) )
     {
         _list_params_reader = std::make_shared< dds_topic_reader >( topic, subscriber );
-        _list_params_reader->on_data_available( [&]() { on_list_params_request(); } );
+        _list_params_reader->on_data_available( [&] { on_list_params_request(); } );
         dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
         rqos.override_from_json( participant->settings().nested( "device", "list-parameters-request" ) );
         _list_params_reader->run( rqos );
     }
     if( auto topic = topics::ros2::list_parameters_response_msg::create_topic(
             participant,
-            topics::ROS2_SERVICE_RESPONSE_ROOT + topic_root + topics::LIST_PARAMETERS_NAME + topics::RESPONSE_SUFFIX ) )
+            response_root + topics::ros2::LIST_PARAMETERS_NAME + topics::ros2::RESPONSE_SUFFIX ) )
     {
         _list_params_writer = std::make_shared< dds_topic_writer >( topic, publisher );
         dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
@@ -942,17 +954,17 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     }
     if( auto topic = topics::ros2::describe_parameters_request_msg::create_topic(
             participant,
-            topics::ROS2_SERVICE_REQUEST_ROOT + topic_root + topics::DESCRIBE_PARAMETERS_NAME + topics::REQUEST_SUFFIX ) )
+            request_root + topics::ros2::DESCRIBE_PARAMETERS_NAME + topics::ros2::REQUEST_SUFFIX ) )
     {
         _describe_params_reader = std::make_shared< dds_topic_reader >( topic, subscriber );
-        _describe_params_reader->on_data_available( [&]() { on_describe_params_request(); } );
+        _describe_params_reader->on_data_available( [&] { on_describe_params_request(); } );
         dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
         rqos.override_from_json( participant->settings().nested( "device", "describe-parameters-request" ) );
         _describe_params_reader->run( rqos );
     }
     if( auto topic = topics::ros2::describe_parameters_response_msg::create_topic(
             participant,
-            topics::ROS2_SERVICE_RESPONSE_ROOT + topic_root + topics::DESCRIBE_PARAMETERS_NAME + topics::RESPONSE_SUFFIX ) )
+            response_root + topics::ros2::DESCRIBE_PARAMETERS_NAME + topics::ros2::RESPONSE_SUFFIX ) )
     {
         _describe_params_writer = std::make_shared< dds_topic_writer >( topic, publisher );
         dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
@@ -974,6 +986,19 @@ bool lrs_device_controller::is_recovery() const
 {
     auto update_device = rs2::update_device( _rs_dev );
     return update_device;
+}
+
+
+void lrs_device_controller::fill_ros2_node_entities( realdds::topics::ros2::node_entities_info & node ) const
+{
+    node.add_writer( _get_params_writer->guid() );
+    node.add_writer( _set_params_writer->guid() );
+    node.add_writer( _list_params_writer->guid() );
+    node.add_writer( _describe_params_writer->guid() );
+    node.add_reader( _get_params_reader->guid() );
+    node.add_reader( _set_params_reader->guid() );
+    node.add_reader( _list_params_reader->guid() );
+    node.add_reader( _describe_params_reader->guid() );
 }
 
 

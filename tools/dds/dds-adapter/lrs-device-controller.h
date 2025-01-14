@@ -23,7 +23,21 @@ class dds_option;
 class dds_topic_reader;
 class dds_topic_writer;
 
+namespace topics {
+namespace ros2 {
+
+class node_entities_info;
+
+}  // namespace ros2
+}  // namespace topics
 } // namespace realdds
+
+
+namespace rmw_dds_common {
+namespace msg {
+class NodeEntitiesInfo;
+}  // namespace msg
+}  // namespace rmw_dds_common
 
 
 namespace tools {
@@ -39,6 +53,9 @@ public:
     rsutils::json query_option( const std::shared_ptr< realdds::dds_option > & option );
 
     bool is_recovery() const;
+
+    void initialize_ros2_node_entities( std::string const & node_name );
+    void fill_ros2_node_entities( realdds::topics::ros2::node_entities_info & ) const;
 
 private:
     std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams();
