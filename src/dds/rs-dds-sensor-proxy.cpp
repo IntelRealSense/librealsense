@@ -190,6 +190,10 @@ rsutils::subscription dds_sensor_proxy::register_options_changed_callback( optio
     return _options_watcher.subscribe( std::move( cb ) );
 }
 
+stream_profiles dds_sensor_proxy::get_active_streams() const 
+{
+    return _active_converted_profiles;
+}
 
 std::shared_ptr< realdds::dds_video_stream_profile >
 dds_sensor_proxy::find_profile( sid_index sidx, realdds::dds_video_stream_profile const & profile ) const
@@ -243,7 +247,7 @@ dds_sensor_proxy::find_profile( sid_index sidx, realdds::dds_motion_stream_profi
 void dds_sensor_proxy::open( const stream_profiles & profiles )
 {
     _formats_converter.prepare_to_convert( profiles );
-
+    _active_converted_profiles = profiles;
     const auto & source_profiles = _formats_converter.get_active_source_profiles();
     // TODO - register processing block options?
 
@@ -578,6 +582,13 @@ void dds_sensor_proxy::stop()
 }
 
 
+void dds_sensor_proxy::close()
+{
+    software_sensor::close();
+    _active_converted_profiles.clear();
+}
+
+
 class dds_option_roi_method : public region_of_interest_method
 {
     std::shared_ptr< rs_dds_option > _rs_option;
@@ -703,6 +714,20 @@ void dds_sensor_proxy::add_processing_block_settings( const std::string & filter
                 ppb->get_option( RS2_OPTION_STREAM_FILTER ).set( RS2_STREAM_DEPTH );
                 ppb->get_option( RS2_OPTION_STREAM_FORMAT_FILTER ).set( RS2_FORMAT_Z16 );
             }
+}
+
+
+void dds_sensor_proxy::set_frames_callback( rs2_frame_callback_sptr callback )
+{
+    // This callback is mutable, might be modified.
+    // For instance, record_sensor modifies this callback in order to hook it to record frames.
+    _formats_converter.set_frames_callback( callback );
+}
+
+
+rs2_frame_callback_sptr dds_sensor_proxy::get_frames_callback() const
+{
+    return _formats_converter.get_frames_callback();
 }
 
 
