@@ -7,7 +7,7 @@
 #include "types.h"
 
 #include <rsutils/string/from.h>
-#include "rsutils/rsutilgpu.h"
+#include "rsutils/accelerators/gpu.h"
 
 #include <thread>
 #include <chrono>
@@ -1249,11 +1249,10 @@ namespace librealsense
                         if (dev_name != std::string("ina3221x")) {
                             LOG_WARNING("Failed to read busnum/devnum. Device Path: " << elem);
                         }
+                        continue;
                     }
 #endif
-#ifndef RS2_USE_CUDA
                     LOG_INFO("Failed to read busnum/devnum. Device Path: " << elem);
-#endif
                     continue;
                 }
                 action(hid_dev_info);

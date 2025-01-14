@@ -18,13 +18,12 @@
 
 #ifdef RS2_USE_CUDA
 #include "proc/cuda/cuda-pointcloud.h"
+#include "rsutils/accelerators/gpu.h"
 #endif
 #ifdef __SSSE3__
 #include "proc/sse/sse-pointcloud.h"
 #endif
 #include "proc/neon/neon-pointcloud.h"
-#include "rsutils/rsutilgpu.h"
-
 
 namespace librealsense
 {
@@ -396,19 +395,19 @@ namespace librealsense
 
     std::shared_ptr<pointcloud> pointcloud::create()
     {
-#ifdef RS2_USE_CUDA
+        #ifdef RS2_USE_CUDA
         if (rsutils::rs2_is_gpu_available())
         {
             return std::make_shared<librealsense::pointcloud_cuda>();
         }
-#endif
-#ifdef __SSSE3__
-        return std::make_shared<librealsense::pointcloud_sse>();
-#elif defined(__ARM_NEON)  && ! defined ANDROID
-        return std::make_shared<librealsense::pointcloud_neon>();
-#else
-        return std::make_shared<librealsense::pointcloud>();
-#endif
+        #endif
+        #ifdef __SSSE3__
+            return std::make_shared<librealsense::pointcloud_sse>();
+        #elif defined(__ARM_NEON)  && ! defined ANDROID
+            return std::make_shared<librealsense::pointcloud_neon>();
+        #else
+            return std::make_shared<librealsense::pointcloud>();
+        #endif
     }
 
     bool pointcloud::run__occlusion_filter(const rs2_extrinsics& extr)

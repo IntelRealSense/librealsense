@@ -8,26 +8,25 @@
 
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"
-#include "rsutils/rsutilgpu.h"
+#include "rsutils/accelerators/gpu.h"
 #endif
 
 namespace librealsense
 {
     struct y8i_pixel { uint8_t l, r; };
-    void unpack_y8_y8_from_y8i(uint8_t* const dest[], const uint8_t* source, int width, int height, int actual_size)
+    void unpack_y8_y8_from_y8i( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto count = width * height;
 #ifdef RS2_USE_CUDA
         if (rsutils::rs2_is_gpu_available())
         {
             rscuda::split_frame_y8_y8_from_y8i_cuda(dest, count, reinterpret_cast<const y8i_pixel*>(source));
+            return;
         }
 #endif
-#ifndef RS2_USE_CUDA
         split_frame(dest, count, reinterpret_cast<const y8i_pixel*>(source),
             [](const y8i_pixel & p) -> uint8_t { return p.l; },
             [](const y8i_pixel & p) -> uint8_t { return p.r; });
-#endif
     }
 
     y8i_to_y8y8::y8i_to_y8y8(int left_idx, int right_idx) :

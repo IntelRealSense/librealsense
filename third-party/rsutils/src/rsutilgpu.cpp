@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 
-#include "rsutils/rsutilgpu.h"
+#include "rsutils/accelerators/gpu.h"
 #include <rsutils/easylogging/easyloggingpp.h>
 
 #ifdef RS2_USE_CUDA
@@ -19,11 +19,14 @@ namespace rsutils {
 
             if (gpuDeviceCount < 0)
             {
-                cudaGetDeviceCount(&gpuDeviceCount);
+                cudaError_t error = cudaGetDeviceCount(&gpuDeviceCount);
+                if (error != cudaSuccess) {
+                    LOG_ERROR("cudaGetDeviceCount failed: " << cudaGetErrorString(error));
+                    gpuDeviceCount = 0; // Set to 0 to avoid repeated error logging
+                }
                 retVal = gpuDeviceCount > 0;
                 if (retVal == false)
                 {
-                    // before push, change to INFO
                     LOG_INFO("Avoid CUDA execution as no NVIDIA GPU found.");
                 }
                 else

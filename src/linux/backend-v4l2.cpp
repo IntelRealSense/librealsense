@@ -58,7 +58,7 @@
 
 #include <sys/signalfd.h>
 #include <signal.h>
-#include "rsutils/rsutilgpu.h"
+#include "rsutils/accelerators/gpu.h"
 
 #pragma GCC diagnostic ignored "-Woverflow"
 

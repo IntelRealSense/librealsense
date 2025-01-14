@@ -7,30 +7,29 @@
 
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"
-#include "rsutils/rsutilgpu.h"
+#include "rsutils/accelerators/gpu.h"
 #endif
 
 namespace librealsense
 {
-    void unpack_z16_y8_from_sr300_inzi(uint8_t* const dest[], const uint8_t* source, int width, int height, int actual_size)
+    void unpack_z16_y8_from_sr300_inzi( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto count = width * height;
         auto in = reinterpret_cast<const uint16_t*>(source);
-        auto out_ir = reinterpret_cast<uint8_t*>(dest[1]);
+        auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
 #ifdef RS2_USE_CUDA
         if (rsutils::rs2_is_gpu_available())
         {
             rscuda::unpack_z16_y8_from_sr300_inzi_cuda(out_ir, in, count);
             in += count;
         }
+        else
 #endif
-#ifndef RS2_USE_CUDA
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ >> 2;
-#endif
-        std::memcpy(dest[0], in, count * 2);
+        std::memcpy( dest[0], in, count * 2 );
     }
 
-    void unpack_z16_y16_from_sr300_inzi(uint8_t* const dest[], const uint8_t* source, int width, int height, int actual_size)
+    void unpack_z16_y16_from_sr300_inzi( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto count = width * height;
         auto in = reinterpret_cast<const uint16_t*>(source);
@@ -41,11 +40,10 @@ namespace librealsense
             rscuda::unpack_z16_y16_from_sr300_inzi_cuda(out_ir, in, count);
             in += count;
         }
+        else
 #endif
-#ifndef RS2_USE_CUDA
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ << 6;
-#endif
-        std::memcpy(dest[0], in, count * 2);
+        std::memcpy( dest[0], in, count * 2 );
     }
 
     void unpack_inzi(rs2_format dst_ir_format, uint8_t * const d[], const uint8_t * s, int width, int height, int actual_size)

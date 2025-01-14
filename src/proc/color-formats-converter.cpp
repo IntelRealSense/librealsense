@@ -13,13 +13,12 @@
 
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"
-#include "rsutils/rsutilgpu.h"
+#include "rsutils/accelerators/gpu.h"
 #endif
 #ifdef __SSSE3__
 #include <tmmintrin.h> // For SSSE3 intrinsics
 #endif
 #include "neon/image-neon.h"
-
 
 #if defined (ANDROID) || (defined (__linux__) && !defined (__x86_64__)) || (defined (__APPLE__) && !defined (__x86_64__))
 
@@ -47,14 +46,14 @@ bool has_avx()
 
 #endif
 
-namespace librealsense
+namespace librealsense 
 {
     /////////////////////////////
     // YUY2 unpacking routines //
     /////////////////////////////
     // This templated function unpacks YUY2 into Y8/Y16/RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
     // It is expected that all branching outside of the loop control variable will be removed due to constant-folding.
-    template<rs2_format FORMAT> void unpack_yuy2(uint8_t* const d[], const uint8_t* s, int width, int height, int actual_size)
+    template<rs2_format FORMAT> void unpack_yuy2( uint8_t * const d[], const uint8_t * s, int width, int height, int actual_size)
     {
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
