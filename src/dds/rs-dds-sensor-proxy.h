@@ -63,7 +63,7 @@ private:
     std::map< std::string, streaming_impl > _streaming_by_name;
 
     formats_converter _formats_converter;
-    stream_profiles _target_profiles;
+    stream_profiles _active_converted_profiles;
 
 public:
     dds_sensor_proxy( std::string const & sensor_name,
@@ -81,6 +81,7 @@ public:
     void open( const stream_profiles & profiles ) override;
     void start( rs2_frame_callback_sptr callback ) override;
     void stop();
+    void close() override;
 
     void add_option( std::shared_ptr< realdds::dds_option > option );
 

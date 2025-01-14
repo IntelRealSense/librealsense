@@ -192,7 +192,7 @@ rsutils::subscription dds_sensor_proxy::register_options_changed_callback( optio
 
 stream_profiles dds_sensor_proxy::get_active_streams() const 
 {
-    return _target_profiles;
+    return _active_converted_profiles;
 }
 
 std::shared_ptr< realdds::dds_video_stream_profile >
@@ -247,7 +247,7 @@ dds_sensor_proxy::find_profile( sid_index sidx, realdds::dds_motion_stream_profi
 void dds_sensor_proxy::open( const stream_profiles & profiles )
 {
     _formats_converter.prepare_to_convert( profiles );
-    _target_profiles = profiles;
+    _active_converted_profiles = profiles;
     const auto & source_profiles = _formats_converter.get_active_source_profiles();
     // TODO - register processing block options?
 
@@ -579,6 +579,13 @@ void dds_sensor_proxy::stop()
     // and after software_sensor::stop cause to make sure _is_streaming is false
     // Removed here, same reason of killing on_frame_ready lambda instance. Moved to start()
     //_streaming_by_name.clear();
+}
+
+
+void dds_sensor_proxy::close()
+{
+    software_sensor::close();
+    _active_converted_profiles.clear();
 }
 
 
