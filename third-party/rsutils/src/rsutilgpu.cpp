@@ -41,6 +41,6 @@ namespace rsutils {
 
 } // namespace rsutils
 
-extern "C" bool rs2_is_gpu_available() {
+bool rs2_is_gpu_available() {
     return rsutils::GPUChecker::is_gpu_available();
 }
