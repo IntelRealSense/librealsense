@@ -27,12 +27,10 @@ namespace rsutils {
                 retVal = gpuDeviceCount > 0;
                 if (retVal == false)
                 {
-                    LOG_ERROR("cudaGetDeviceCount no devices ");
                     LOG_INFO("Avoid CUDA execution as no NVIDIA GPU found.");
                 }
                 else
                 {
-                    LOG_ERROR("cudaGetDeviceCount found devices ");
                     LOG_INFO("Found " << gpuDeviceCount << " NVIDIA GPU.");
                 }
             }

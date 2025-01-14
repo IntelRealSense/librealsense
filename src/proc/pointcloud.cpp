@@ -25,6 +25,7 @@
 #endif
 #include "proc/neon/neon-pointcloud.h"
 
+
 namespace librealsense
 {
     template<class MAP_DEPTH> void deproject_depth(float * points, const rs2_intrinsics & intrin, const uint16_t * depth, MAP_DEPTH map_depth)
