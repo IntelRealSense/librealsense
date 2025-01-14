@@ -2811,8 +2811,8 @@ namespace rs2
                     }
 
                     ImGui::Separator();
-                    bool enable_dds = temp_cfg.get_nested<bool>("context.dds.enabled");
-                    int domain_id = temp_cfg.get_nested<int>("context.dds.domain");
+                    bool enable_dds = temp_cfg.get_nested<bool>("context.dds.enabled" , false);
+                    int domain_id = temp_cfg.get_nested<int>("context.dds.domain" , 0);
                     if( ImGui::Checkbox( "Enable DDS", &enable_dds ) )
                     {
                         temp_cfg.set_nested("context.dds.enabled", enable_dds);

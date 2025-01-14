@@ -7,6 +7,9 @@
 #include <rsutils/json.h>
 #include <rsutils/json-config.h>
 #include <rsutils/os/special-folder.h>
+#include <rsutils/string/hexdump.h>
+#include <imgui.h>
+#include <realsense_imgui.h>
 
 #include <iostream>
 #include <fstream>
@@ -14,6 +17,12 @@
 using namespace rs2;
 using rsutils::json;
 using rsutils::type::ip_address;
+
+uint32_t const GET_ETH_CONFIG = 0xBB;
+uint32_t const SET_ETH_CONFIG = 0xBA;
+
+int const ACTUAL_VALUES = 0;
+int const DEFULT_VALUES = 1;
 
 dds_model::dds_model( rs2::device dev )
     : _device( dev )
@@ -24,16 +33,17 @@ dds_model::dds_model( rs2::device dev )
 {
     if( check_DDS_support() )
     {
-        _defult_config = get_eth_config( _device, DEFULT_VALUES );
-        _current_config = get_eth_config( _device, ACTUAL_VALUES );
+        _defult_config = get_eth_config( DEFULT_VALUES );
+        _current_config = get_eth_config( ACTUAL_VALUES );
         _changed_config = _current_config;
         _dds_supported = true;
     }
 }
 
-eth_config dds_model::get_eth_config( rs2::debug_protocol dev, bool defult_val )
+eth_config dds_model::get_eth_config(int curr_or_default)
 {
-    auto cmd = dev.build_command( GET_ETH_CONFIG, defult_val ? 0 : 1 );
+    rs2::debug_protocol dev(_device);
+    auto cmd = dev.build_command( GET_ETH_CONFIG, curr_or_default ? 0 : 1 );
     auto data = dev.send_and_receive_raw_data( cmd );
     int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
     data.erase( data.begin(), data.begin() + sizeof( code ) );
@@ -69,7 +79,7 @@ bool rs2::dds_model::supports_DDS()
     return _dds_supported;
 }
 
-priority rs2::dds_model::classifyPriority( link_priority & pr )
+rs2::dds_model::priority rs2::dds_model::classifyPriority( link_priority & pr )
 {
     if( pr == link_priority::usb_only || pr == link_priority::usb_first )
     {
@@ -114,6 +124,7 @@ void rs2::dds_model::ipInputText( std::string label, ip_address & ip )
         }
         else
         {
+            // Initialize the ImGui buffer with the current IP address in case of invalid input
             std::snprintf( buffer, sizeof( buffer ), "%s", ip.to_string().c_str() );
         }
     }
@@ -126,7 +137,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
     {
         try
         {
-            _current_config = get_eth_config( _device, ACTUAL_VALUES );
+            _current_config = get_eth_config( ACTUAL_VALUES );
             _changed_config = _current_config;
             ImGui::OpenPopup( window_name );
         }
@@ -210,7 +221,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
                 break;
             case DYNAMIC:
                 _changed_config.link.priority
-                    = _current_config.link.speed ? link_priority::dynamic_eth_first : link_priority::dynamic_usb_first;
+                    = _current_config.link.speed ? link_priority::dynamic_eth_first : link_priority::dynamic_usb_first; // If link speed is not 0 than we are connected by Ethernet
                 break;
             }
         }
@@ -258,7 +269,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         }
         ImGui::Checkbox( "No Reset after changes", &_no_reset );
 
-        if( ImGui::Checkbox( "Load to defult values", &_set_defult ) )
+        if( ImGui::Checkbox( "Load defult values", &_set_defult ) )
         {
             if( _set_defult )
                 _changed_config = _defult_config;
