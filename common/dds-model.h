@@ -4,25 +4,7 @@
 
 #include <librealsense2/rs.hpp>
 #include <imgui.h>
-#include <realsense_imgui.h>
-#include <set>
-#include <rsutils/type/ip-address.h>
-#include <rsutils/string/hexdump.h>
-#include <../third-party/rsutils/include/rsutils/type/eth-config.h>
-#include <rsutils/json.h>
-#include <rsutils/json-config.h>
-
-uint32_t const GET_ETH_CONFIG = 0xBB;
-uint32_t const SET_ETH_CONFIG = 0xBA;
-
-bool const ACTUAL_VALUES = 0;
-bool const DEFULT_VALUES = 1;
-
-enum priority {
-    ETH_FIRST,
-    USB_FIRST,
-    DYNAMIC
-};
+#include <rsutils/type/eth-config.h>
 
 namespace rs2
 {
@@ -40,7 +22,7 @@ namespace rs2
 
         void close_window() { ImGui::CloseCurrentPopup(); }
 
-        eth_config get_eth_config(rs2::debug_protocol dev, bool defult_val);
+        eth_config get_eth_config(int curr_or_default);
 
         void set_eth_config(eth_config &new_config , std::string& error_message);
 
@@ -48,6 +30,13 @@ namespace rs2
 
 
     private:
+
+        enum priority {
+            ETH_FIRST,
+            USB_FIRST,
+            DYNAMIC
+        };
+
         rs2::device _device;
 
         eth_config _defult_config;

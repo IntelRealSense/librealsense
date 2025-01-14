@@ -89,7 +89,7 @@ namespace rs2
 
         // Retrieves a value from a nested JSON structure using dot notation
         template< typename T >
-        T get_nested( const std::string & path ) const
+        T get_nested( const char* path, const T & def ) const
         {
             std::istringstream ss( path );
             std::string token;
@@ -99,16 +99,22 @@ namespace rs2
             {
                 if( ! current->contains( token ) )
                 {
-                    return config_value( "" );
+                    return def;
                 }
                 current = &( *current )[token];  // getting to the next level in the JSON structure
             }
-            return current->get< T >();
+
+            T ret_value;
+            if (!current->get_ex<T>(ret_value))
+            {
+                return def;
+            }
+            return ret_value;
         }
 
         // Sets a value in a nested JSON structure using dot notation
         template< typename T >
-        void set_nested( const std::string & path, const T & val )
+        void set_nested( const char* path, const T & val )
         {
             std::vector< std::string > keys;
             std::istringstream ss( path );
@@ -135,7 +141,7 @@ namespace rs2
 
         // Sets a default value to the config and default map
         template< typename T >
-        void set_nested_default( const std::string & path, const T & default_val )
+        void set_nested_default(const char* path , const T & default_val )
         {
             std::vector< std::string > keys;
             std::istringstream ss( path );
@@ -159,7 +165,7 @@ namespace rs2
                 current = &( *current )[key];
             }
 
-            // If it doesn't exist, set the default value in both JSON and defaults map
+            // If it doesn't exist, set the default value in JSON 
             if( ! exists )
             {
                 current = &_j;
@@ -172,17 +178,7 @@ namespace rs2
                     current = &( *current )[keys[i]];
                 }
                 ( *current )[keys.back()] = default_val;
-
-                std::stringstream val_ss;
-                val_ss << default_val;
-                _defaults[path] = val_ss.str();
                 save();
-            }
-            else
-            {
-                std::stringstream val_ss;
-                val_ss << ( *current );
-                _defaults[path] = val_ss.str();
             }
         }
 
