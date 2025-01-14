@@ -39,8 +39,9 @@ namespace rsutils {
         }
     };
 
+    bool rs2_is_gpu_available() {
+        return rsutils::GPUChecker::is_gpu_available();
+    }
+
 } // namespace rsutils
 
-bool rs2_is_gpu_available() {
-    return rsutils::GPUChecker::is_gpu_available();
-}
