@@ -38,13 +38,6 @@ void update_viewer_configuration(viewer_model& viewer_model)
     viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
 }
 
-bool add_remote_device(context& ctx, std::string address)
-{
-    // Return true if a network device exists at the given address; throw an error otherwise
-    // For now, this is unsupported!
-    return false;
-}
-
 void add_playback_device( context & ctx,
                           std::shared_ptr< device_models_list > device_models,
                           std::string & error_message,
@@ -312,8 +305,6 @@ int main(int argc, const char** argv) try
     std::string label;
 
     device_model* device_to_remove = nullptr;
-    bool is_ip_device_connected = false;
-    std::string ip_address;
 
 #ifdef BUILD_EASYLOGGINGPP
     bool const disable_log_to_console = cmd.debug_arg.getValue();
@@ -377,18 +368,6 @@ int main(int argc, const char** argv) try
             device_names, *device_models, viewer_model, error_message);
         return true;
     };
-
-    if (argc == 2)
-    {
-        try
-        {
-            is_ip_device_connected = add_remote_device(ctx, argv[1]);
-        }
-        catch (std::runtime_error e)
-        {
-            error_message = e.what();
-        }
-    }
 
     // Closing the window
     while (window)
@@ -466,7 +445,7 @@ int main(int argc, const char** argv) try
 
         float line_h = ImGui::GetTextLineHeightWithSpacing() + 2;
         float separator_h = new_devices_count > 1 ? ImGui::GetStyle().ItemSpacing.y : 0;
-        float popup_select_h = line_h * ( new_devices_count + multiline_devices_names ) + separator_h + ( is_ip_device_connected ? 0 : line_h );
+        float popup_select_h = line_h * ( new_devices_count + multiline_devices_names ) + separator_h ;
         ImVec2 popup_select_size = { viewer_model.panel_width, popup_select_h };
         ImGui::SetNextWindowSize( popup_select_size );
 
@@ -523,98 +502,6 @@ int main(int argc, const char** argv) try
             }
             ImGui::NextColumn();
 
-            bool close_ip_popup = false;
-
-            if (!is_ip_device_connected)
-            {
-                if (ImGui::Selectable("Add Network Device", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_DontClosePopups))
-                {
-                    error_message = "RealSense Network Devices are unsupported at this time";
-                }
-
-                float width = 300;
-                float height = 125;
-                float posx = window.width() * 0.5f - width * 0.5f;
-                float posy = window.height() * 0.5f - height * 0.5f;
-                ImGui::SetNextWindowPos({ posx, posy });
-                ImGui::SetNextWindowSize({ width, height });
-                ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-
-                if (ImGui::BeginPopupModal("Network Device", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))
-                {
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
-                    ImGui::SetCursorPosX(10);
-                    ImGui::Text("Connect to a Linux system running rs-server");
-
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-
-                    static char ip_input[255];
-                    std::copy(ip_address.begin(), ip_address.end(), ip_input);
-                    ip_input[ip_address.size()] = '\0';
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-                    ImGui::SetCursorPosX(10);
-                    ImGui::Text("Device IP: ");
-                    ImGui::SameLine();
-                    //ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 1);
-                    ImGui::PushItemWidth(width - ImGui::GetCursorPosX() - 10);
-                    if (ImGui::IsWindowFocused() && !ImGui::IsAnyItemActive())
-                    {
-                        ImGui::SetKeyboardFocusHere();
-                    }
-                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
-                    if (ImGui::InputText("##ip", ip_input, 255))
-                    {
-                        ip_address = ip_input;
-                    }
-                    ImGui::PopStyleColor();
-
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6);
-
-                    ImGui::PopItemWidth();
-                    ImGui::SetCursorPosX(width / 2 - 105);
-
-                    if (ImGui::ButtonEx("OK", { 100.f, 25.f }) || ImGui::GetIO().KeysDown[GLFW_KEY_ENTER] || ImGui::GetIO().KeysDown[GLFW_KEY_KP_ENTER])
-                    {
-                        try
-                        {
-                            is_ip_device_connected = add_remote_device(ctx, ip_address);
-                            refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
-                            auto dev = connected_devs[connected_devs.size() - 1];
-                            device_models->emplace_back(new device_model(dev, error_message, viewer_model));
-                            config_file::instance().set(configurations::viewer::last_ip, ip_address);
-                        }
-                        catch (std::runtime_error e)
-                        {
-                            error_message = e.what();
-                        }
-                        ip_address = "";
-                        close_ip_popup = true;
-                        ImGui::CloseCurrentPopup();
-                    }
-                    ImGui::SameLine();
-                    ImGui::SetCursorPosX(width / 2 + 5);
-                    if (ImGui::Button("Cancel", { 100.f, 25.f }) || ImGui::GetIO().KeysDown[GLFW_KEY_ESCAPE])
-                    {
-                        ip_address = "";
-                        close_ip_popup = true;
-                        ImGui::CloseCurrentPopup();
-                    }
-                    ImGui::EndPopup();
-                }
-                ImGui::PopStyleColor(3);
-                ImGui::PopStyleVar(1);
-            }
-
-            if (close_ip_popup)
-            {
-                ImGui::CloseCurrentPopup();
-                close_ip_popup = false;
-            }
             ImGui::PopStyleColor();
             ImGui::EndPopup();
             }
