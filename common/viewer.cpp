@@ -2474,6 +2474,9 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, white);
                 ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+                ImVec2 child_size = ImVec2(0, ImGui::GetContentRegionAvail().y-50);
+                if (ImGui::BeginChild("ScrollableRegion", child_size, true, ImGuiWindowFlags_AlwaysVerticalScrollbar))
+                {
                 if (tab == 0)
                 {
                     int recording_setting = temp_cfg.get(configurations::record::file_save_mode);
@@ -2896,6 +2899,8 @@ namespace rs2
                         }
                     }
 #endif
+                }
+                ImGui::EndChild();
                 }
 
                 ImGui::Separator();
