@@ -35,7 +35,7 @@ from rspy import repo
 pyrs_dir = repo.find_pyrs_dir()
 sys.path.insert( 1, pyrs_dir )
 
-MAX_ENUMERATION_TIME = 10  # [sec]
+MAX_ENUMERATION_TIME = 15  # [sec]
 
 # We need both pyrealsense2 and hub. We can work without hub, but
 # without pyrealsense2 no devices at all will be returned.
@@ -43,7 +43,7 @@ from rspy import device_hub
 try:
     import pyrealsense2 as rs
     log.d( rs )
-    hub = device_hub.create()
+    hub = device_hub.create() # if there's no hub, this will hold None
     sys.path = sys.path[:-1]  # remove what we added
 except ModuleNotFoundError:
     log.w( 'No pyrealsense2 library is available! Running as if no cameras available...' )
@@ -73,8 +73,13 @@ class Device:
         self._physical_port = dev.supports( rs.camera_info.physical_port ) and dev.get_info( rs.camera_info.physical_port ) or None
 
         self._usb_location = None
+        self._is_dds = False
         try:
-            self._usb_location = _get_usb_location(self._physical_port)
+            if self._physical_port.startswith('realsense/'):
+                self._is_dds = True
+                # not trying to _get_usb_location as dds devices don't have it
+            else:
+                self._usb_location = _get_usb_location(self._physical_port)
         except Exception as e:
             log.e('Failed to get usb location:', e)
         self._port = None
@@ -118,7 +123,11 @@ class Device:
 
     @property
     def enabled( self ):
-        return self._removed is False
+        return self._removed is False and self._dev is not None
+
+    @property
+    def is_dds(self):
+        return self._is_dds
 
 
 def wait_until_all_ports_disabled( timeout = 5 ):
@@ -267,6 +276,7 @@ def _device_change_callback( info ):
     global _device_by_sn
     for device in _device_by_sn.values():
         if device.enabled  and  info.was_removed( device.handle ):
+            device._dev = None
             log.d( 'device removed:', device.serial_number )
             device._removed = True
     for handle in info.get_new_devices():
@@ -274,6 +284,7 @@ def _device_change_callback( info ):
         log.d( 'device added:', sn, handle )
         if sn in _device_by_sn:
             device = _device_by_sn[sn]
+            device._dev = None  # in case we get handle between the next 2 lines, it might still be the old one
             device._removed = False
             device._dev = handle     # Because it has a new handle!
         else:
@@ -529,8 +540,7 @@ def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME
         else:
             #
             hub.enable_ports( ports, disable_other_ports = True )
-        #
-        _wait_for( serial_numbers, timeout = timeout )
+            #
         #
     elif recycle:
         #
@@ -538,6 +548,9 @@ def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME
         #
     else:
         log.d( 'no hub; ports left as-is' )
+
+    # doesn't matter what it did, enable_only should wait for the devices to be available again
+    _wait_for(serial_numbers, timeout=timeout)
 
 
 def enable_all():
@@ -618,16 +631,19 @@ def hw_reset( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     :param timeout: Maximum # of seconds to wait for the devices to come back online
     :return: True if all devices have come back online before timeout
     """
+    # for usb and dds devices, we can wait until they're removed
+    removable_devs_sns = {sn for sn in serial_numbers if
+                          _device_by_sn[sn].port is not None or _device_by_sn[sn].is_dds}
 
-    usb_serial_numbers = { sn for sn in serial_numbers if _device_by_sn[sn].port is not None }
-
+    _wait_for(serial_numbers, timeout=timeout) # make sure devices are added before doing hw reset
     for sn in serial_numbers:
         dev = get( sn ).handle
         dev.hardware_reset()
     #
 
-    if usb_serial_numbers:
-        _wait_until_removed( usb_serial_numbers )
+    if removable_devs_sns:
+        _wait_until_removed( removable_devs_sns )
+        # if relevant, we need to handle case where we have both removable and non-removable devices
     else:
         # normally we will get here with a mipi device,
         # we want to allow some time for the device to reinitialize as it was not disconnected

@@ -594,8 +594,8 @@ try:
                     try:
                         log.d( 'configuration:', configuration_str( configuration, repetition, sns=serial_numbers ) )
                         log.debug_indent()
-                        if not no_reset:
-                            devices.enable_only( serial_numbers, recycle=True )
+                        should_reset = not no_reset
+                        devices.enable_only( serial_numbers, recycle=should_reset )
                     except RuntimeError as e:
                         log.w( log.red + test.name + log.reset + ': ' + str( e ) )
                     else:

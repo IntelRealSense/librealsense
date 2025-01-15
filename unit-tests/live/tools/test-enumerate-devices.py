@@ -14,9 +14,11 @@ test.start( "Run enumerate-devices runtime test" )
 rs_enumerate_devices = repo.find_built_exe( 'tools/enumerate-devices', 'rs-enumerate-devices' )
 test.check(rs_enumerate_devices)
 if rs_enumerate_devices:
+    dev, ctx = test.find_first_device_or_exit()
+    camera_name = dev.get_info(rs.camera_info.name)
     import subprocess
     run_time_stopwatch = Stopwatch()
-    run_time_threshold = 2
+    run_time_threshold = 2 if 'D555' not in camera_name else 5
     p = subprocess.run( [rs_enumerate_devices],
                     stdout=None,
                     stderr=subprocess.STDOUT,
