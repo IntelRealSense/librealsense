@@ -417,9 +417,42 @@ PYBIND11_MODULE(NAME, m) {
     py::enum_< reliability >( m, "reliability" )
         .value( "reliable", eprosima::fastdds::dds::ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS )
         .value( "best_effort", eprosima::fastdds::dds::ReliabilityQosPolicyKind::BEST_EFFORT_RELIABILITY_QOS );
+    using history_kind = eprosima::fastdds::dds::HistoryQosPolicyKind;
+    py::enum_< history_kind >( m, "history_kind" )
+        .value( "keep_last", eprosima::fastdds::dds::HistoryQosPolicyKind::KEEP_LAST_HISTORY_QOS )
+        .value( "keep_all", eprosima::fastdds::dds::HistoryQosPolicyKind::KEEP_ALL_HISTORY_QOS );
+    using history_policy = eprosima::fastdds::dds::HistoryQosPolicy;
+    py::class_< history_policy >( m, "history_policy" )  //
+        .def_readwrite( "kind", &history_policy::kind )
+        .def_readwrite( "depth", &history_policy::depth )
+        .def( "__repr__",
+              []( history_policy const & self )
+              {
+                  std::ostringstream os;
+                  os << "[";
+                  switch( self.kind )
+                  {
+                  case history_kind::KEEP_ALL_HISTORY_QOS:
+                      os << "all";
+                      break;
+                  case history_kind::KEEP_LAST_HISTORY_QOS:
+                      os << "last";
+                      break;
+                  default:
+                      os << (int)self.kind;
+                      break;
+                  }
+                  os << ' ';
+                  os << self.depth;
+                  os << "]";
+                  return os.str();
+              } );
 
     using reader_qos = realdds::dds_topic_reader::qos;
     py::class_< reader_qos >( m, "reader_qos" )  //
+        .def_property( "history",
+            []( reader_qos & self ) -> history_policy & { return self.history(); },
+            []( reader_qos & self, eprosima::fastdds::dds::HistoryQosPolicy const & policy ) { self.history( policy ); } )
         .def( "__repr__", []( reader_qos const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".reader_qos";
