@@ -354,7 +354,7 @@ with test.closure( 'Two threads, slow callback -> different callbacks intervined
 
     def frame_callback( image, metadata ):
         on_frame_ready( image, metadata )  # for reporting
-        sleep( 0.1 )
+        sleep( 0.2 )
         log.d( f'<{image_id(image):->4} {dds.now()} [{threading.get_native_id()}]' )
 
     syncer = new_syncer( on_frame_ready=frame_callback )
@@ -366,11 +366,11 @@ with test.closure( 'Two threads, slow callback -> different callbacks intervined
             idstr = f'i{image_id(image)}'
             log.d( f'{idstr:>5} {dds.now()} [{threadid}] enqueue {image}' )
             syncer.enqueue_frame( i, image )
-            sleep( 0.05 )
+            sleep( 0.1 )
 
     threadA = threading.Thread( target=frame_thread )
     threadA.start()
-    sleep( 0.12 ) # Between 2nd and 3rd enqueue_frame
+    sleep( 0.22 ) # Between 2nd and 3rd enqueue_frame
     md = new_metadata( 1, time_stamp( 1 ) )
     syncer.enqueue_metadata( 1, md )
     threadA.join()
