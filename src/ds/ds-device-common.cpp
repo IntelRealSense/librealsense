@@ -181,7 +181,7 @@ namespace librealsense
         return flash;
     }
 
-    void update_flash_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, uint32_t offset, uint32_t size, rs2_update_progress_callback_sptr callback, float continue_from, float ratio)
+    void update_flash_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, uint32_t offset, uint32_t size, rs2_update_progress_callback_sptr callback, float continue_from, float ratio, bool is_d457)
     {
         size_t sector_count = size / ds::FLASH_SECTOR_SIZE;
         size_t first_sector = offset / ds::FLASH_SECTOR_SIZE;
@@ -202,12 +202,20 @@ namespace librealsense
             cmdFES.param2 = 1;
             auto res = hwm->send(cmdFES);
 
+            int max_transfer_size_per_packet = (int)HW_MONITOR_COMMAND_SIZE;
+
+            // This is a WORKAROUND to support MIPI camera D457.
+            // If the packet size is more than 128 bytes, FLASH_WRITE is not working as expected.
+            // Remove this line after fixing the issue.
+            if (is_d457) max_transfer_size_per_packet = 128;
+
             for (int i = 0; i < ds::FLASH_SECTOR_SIZE; )
             {
                 auto index = sector_index * ds::FLASH_SECTOR_SIZE + i;
                 if (index >= offset + size)
                     break;
-                int packet_size = std::min((int)(HW_MONITOR_COMMAND_SIZE - (i % HW_MONITOR_COMMAND_SIZE)), (int)(ds::FLASH_SECTOR_SIZE - i));
+                int packet_size = std::min((int)(max_transfer_size_per_packet - (i % max_transfer_size_per_packet)), (int)(ds::FLASH_SECTOR_SIZE - i));
+
                 command cmdFWB(ds::FWB);
                 cmdFWB.require_response = true;
                 cmdFWB.param1 = (int)index;
@@ -223,7 +231,7 @@ namespace librealsense
     }
 
     void update_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& merged_image, flash_section fs, uint32_t tables_size,
-        rs2_update_progress_callback_sptr callback, float continue_from, float ratio)
+        rs2_update_progress_callback_sptr callback, float continue_from, float ratio, bool is_d457)
     {
         auto first_table_offset = fs.tables.front().offset;
         float total_size = float(fs.app_size + tables_size);
@@ -231,11 +239,11 @@ namespace librealsense
         float app_ratio = fs.app_size / total_size * ratio;
         float tables_ratio = tables_size / total_size * ratio;
 
-        update_flash_section(hwm, merged_image, fs.offset, fs.app_size, callback, continue_from, app_ratio);
-        update_flash_section(hwm, merged_image, first_table_offset, tables_size, callback, app_ratio, tables_ratio);
+        update_flash_section(hwm, merged_image, fs.offset, fs.app_size, callback, continue_from, app_ratio, is_d457);
+        update_flash_section(hwm, merged_image, first_table_offset, tables_size, callback, app_ratio, tables_ratio, is_d457);
     }
 
-    void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup, rs2_update_progress_callback_sptr callback, int update_mode)
+    void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup, rs2_update_progress_callback_sptr callback, int update_mode, bool is_d457)
     {
         auto flash_image_info = ds::get_flash_info(image);
         auto flash_backup_info = ds::get_flash_info(flash_backup);
@@ -244,14 +252,14 @@ namespace librealsense
         // update read-write section
         auto first_table_offset = flash_image_info.read_write_section.tables.front().offset;
         auto tables_size = flash_image_info.header.read_write_start_address + flash_image_info.header.read_write_size - first_table_offset;
-        update_section(hwm, merged_image, flash_image_info.read_write_section, tables_size, callback, 0, update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY ? 0.5f : 1.0f);
+        update_section(hwm, merged_image, flash_image_info.read_write_section, tables_size, callback, 0, update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY ? 0.5f : 1.0f, is_d457);
 
         if (update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY)
         {
             // update read-only section
             auto first_table_offset = flash_image_info.read_only_section.tables.front().offset;
             auto tables_size = flash_image_info.header.read_only_start_address + flash_image_info.header.read_only_size - first_table_offset;
-            update_section(hwm, merged_image, flash_image_info.read_only_section, tables_size, callback, 0.5, 0.5);
+            update_section(hwm, merged_image, flash_image_info.read_only_section, tables_size, callback, 0.5, 0.5, is_d457);
         }
     }
 
@@ -279,13 +287,13 @@ namespace librealsense
                 switch (update_mode)
                 {
                 case RS2_UNSIGNED_UPDATE_MODE_FULL:
-                    update_flash_section(_hw_monitor, image, 0, ds::FLASH_SIZE, callback, 0, 1.0);
+                    update_flash_section(_hw_monitor, image, 0, ds::FLASH_SIZE, callback, 0, 1.0, _is_d457);
                     break;
                 case RS2_UNSIGNED_UPDATE_MODE_UPDATE:
                 case RS2_UNSIGNED_UPDATE_MODE_READ_ONLY:
                 {
                     auto flash_backup = backup_flash(nullptr);
-                    update_flash_internal(_hw_monitor, image, flash_backup, callback, update_mode);
+                    update_flash_internal(_hw_monitor, image, flash_backup, callback, update_mode, _is_d457);
                     break;
                 }
                 default:
