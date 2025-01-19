@@ -341,20 +341,40 @@ with test.closure( 'Two threads, fast callback -> no drops, no parallel callback
         test.check_equal( md_id( last_metadata() ), 9 )
     test.check_equal( len(dropped_metadata), 0 )
 
-with test.closure( 'Two threads, slow callback -> different callbacks intervined' ):
+with test.closure( 'Two threads, slow callback -> different callbacks interleaved' ):
     """
-    Test correct handling of this scenario: (incorrect handling can trigger an exception)
-    Thread A enqueues frame0
-    Thread A enqueues frame1
-    Thread B enqueues metadata1
-        hadndle_frame_without_metadata( frame0 ) calls user callback in thread B context
-    while the callback is handled thread A enqueues frame2
-        handle_match( frame1, metadata1 ) calls user callback in thread A context
+    Test correct handling of interleaved callbacks (incorrect handling can trigger an exception)
+    Based on machine and scheduler several scenarios that test this can happen:
+    Scenario 1:
+        Thread A enqueues frame0
+        Thread A enqueues frame1
+        Thread B enqueues metadata1
+            handle_frame_without_metadata( frame0 ) calls user callback in thread B context
+        while the callback is handled thread A enqueues frame2
+            handle_match( frame1, metadata1 ) calls user callback in thread A context
+    Scenario 2:
+        Thread A enqueues frame0
+        Thread B enqueues metadata1
+            handle_frame_without_metadata( frame0 ) calls user callback in thread B context
+        while the callback is handled thread A enqueues frame1
+            handle_match( frame1, metadata1 ) calls user callback in thread A context
+        Thread A enqueues frame2
+    Scenario 3:
+        Thread A enqueues frame0
+        Thread A enqueues frame1
+        Thread A enqueues frame2
+            handle_frame_without_metadata( frame0 ) calls user callback in thread A context
+        while the callback is handled thread B enqueues metadata1
+            handle_match( frame1, metadata1 ) calls user callback in thread B context
+            
+    There is a small chance that frame1 will be appended to received_frames before frame0 so remove checks that depend on order.
     """
 
     def frame_callback( image, metadata ):
-        on_frame_ready( image, metadata )  # for reporting
-        sleep( 0.2 )
+        # Not using on_frame_ready function to avoid last_image < image_id check defined there.
+        log.d( f'{image_id(image):-<4}> {dds.now()} [{threading.get_native_id()}] frame ready: {image=} {metadata=}' )
+        received_frames.append( frame( image, metadata ))
+        sleep( 0.1 )
         log.d( f'<{image_id(image):->4} {dds.now()} [{threading.get_native_id()}]' )
 
     syncer = new_syncer( on_frame_ready=frame_callback )
@@ -366,18 +386,16 @@ with test.closure( 'Two threads, slow callback -> different callbacks intervined
             idstr = f'i{image_id(image)}'
             log.d( f'{idstr:>5} {dds.now()} [{threadid}] enqueue {image}' )
             syncer.enqueue_frame( i, image )
-            sleep( 0.1 )
+            sleep( 0.05 )
 
     threadA = threading.Thread( target=frame_thread )
     threadA.start()
-    sleep( 0.22 ) # Between 2nd and 3rd enqueue_frame
+    sleep( 0.12 ) # Between 2nd and 3rd enqueue_frame
     md = new_metadata( 1, time_stamp( 1 ) )
     syncer.enqueue_metadata( 1, md )
     threadA.join()
 
-    if test.check( len(received_frames), 2 ):
-        test.check_equal( image_id( last_image() ), 1 )
-        test.check_equal( md_id( last_metadata() ), 1 )
+    test.check_equal( len(received_frames), 2 )
     test.check_equal( len(dropped_metadata), 0 )
 
 
