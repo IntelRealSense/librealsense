@@ -73,13 +73,12 @@ class Device:
         self._physical_port = dev.supports( rs.camera_info.physical_port ) and dev.get_info( rs.camera_info.physical_port ) or None
 
         self._usb_location = None
-        self._is_dds = False
         try:
-            if self._physical_port.startswith('realsense/'):
-                self._is_dds = True
-                # not trying to _get_usb_location as dds devices don't have it
-            else:
-                self._usb_location = _get_usb_location(self._physical_port)
+            if dev.supports(rs.camera_info.connection_type):
+                self._connection_type = dev.get_info(rs.camera_info.connection_type)
+                self._is_dds = self._connection_type == "DDS"
+                if self._connection_type == "USB":
+                    self._usb_location = _get_usb_location(self._physical_port)
         except Exception as e:
             log.e('Failed to get usb location:', e)
         self._port = None
@@ -540,7 +539,8 @@ def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME
         else:
             #
             hub.enable_ports( ports, disable_other_ports = True )
-            #
+        #
+        _wait_for( serial_numbers, timeout = timeout )
         #
     elif recycle:
         #
@@ -548,9 +548,8 @@ def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME
         #
     else:
         log.d( 'no hub; ports left as-is' )
-
-    # doesn't matter what it did, enable_only should wait for the devices to be available again
-    _wait_for(serial_numbers, timeout=timeout)
+        # even without reset, enable_only should wait for the devices to be available again
+        _wait_for(serial_numbers, timeout=timeout)
 
 
 def enable_all():

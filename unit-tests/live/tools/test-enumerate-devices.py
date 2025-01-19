@@ -15,10 +15,10 @@ rs_enumerate_devices = repo.find_built_exe( 'tools/enumerate-devices', 'rs-enume
 test.check(rs_enumerate_devices)
 if rs_enumerate_devices:
     dev, ctx = test.find_first_device_or_exit()
-    camera_name = dev.get_info(rs.camera_info.name)
+    is_dds = dev.get_info(rs.camera_info.connection_type) and dev.get_info(rs.camera_info.connection_type) == "DDS"
     import subprocess
     run_time_stopwatch = Stopwatch()
-    run_time_threshold = 2 if 'D555' not in camera_name else 5
+    run_time_threshold = 2 if is_dds else 5  # currently, DDS devices take longer time to complete rs_enumerate_devices
     p = subprocess.run( [rs_enumerate_devices],
                     stdout=None,
                     stderr=subprocess.STDOUT,
