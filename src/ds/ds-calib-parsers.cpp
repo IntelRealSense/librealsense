@@ -158,11 +158,17 @@ namespace librealsense
             _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 }, { -0.00552f, 0.0051f, 0.01174f} };
             _imu_2_depth_rot = { {-1,0,0},{0,1,0},{0,0,-1} };
         }
-        else if (_pid == ds::RS455_PID || _pid == ds::RS457_PID)
+        else if (_pid == ds::RS455_PID)
         {
             // D455 specific - Bosch BMI055
             _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.03022f, 0.0074f, 0.01602f } };
             _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
+        }
+        else if( _pid == ds::RS457_PID )
+        {
+            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.09530f, -0.00056f, 0.01740f } };
+            _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
+        
         }
         else // unmapped configurations
         {
