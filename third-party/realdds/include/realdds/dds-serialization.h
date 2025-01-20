@@ -63,6 +63,23 @@ namespace realdds {
 class dds_participant;
 
 
+struct print_writer_info
+{
+    eprosima::fastrtps::rtps::WriterProxyData const & info;
+    print_writer_info( eprosima::fastrtps::rtps::WriterProxyData const & info ) : info( info ) {}
+};
+std::ostream & operator<<( std::ostream & os, print_writer_info const & );
+
+
+struct print_reader_info
+{
+    eprosima::fastrtps::rtps::ReaderProxyData const & info;
+    print_reader_info( eprosima::fastrtps::rtps::ReaderProxyData const & info ) : info( info ) {}
+};
+std::ostream & operator<<( std::ostream & os, print_reader_info const & );
+
+
+
 eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability_kind_from_string( std::string const & );
 eprosima::fastdds::dds::DurabilityQosPolicyKind durability_kind_from_string( std::string const & );
 eprosima::fastdds::dds::HistoryQosPolicyKind history_kind_from_string( std::string const & );

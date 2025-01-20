@@ -126,7 +126,7 @@ bool option_model::draw( std::string & error_message,
             ImGui::PopStyleColor();
 
             if( ImGui::IsItemHovered() )
-                ImGui::SetTooltip( "Select custom region of interest for the auto-exposure "
+                RsImGui::CustomTooltip( "Select custom region of interest for the auto-exposure "
                                    "algorithm\nClick the button, then draw a rect on the frame" );
         }
     }
@@ -250,7 +250,7 @@ bool option_model::draw_combobox( notifications_model & model,
     ImGui::Text( "%s", txt.c_str() );
     if( ImGui::IsItemHovered() && description )
     {
-        ImGui::SetTooltip( "%s", description );
+        RsImGui::CustomTooltip( "%s", description );
     }
 
     ImGui::SameLine();
@@ -348,7 +348,7 @@ bool option_model::draw_slider( notifications_model & model,
     ImGui::PopStyleColor( 5 );
     if( ImGui::IsItemHovered() && description )
     {
-        ImGui::SetTooltip( "%s", description );
+        RsImGui::CustomTooltip( "%s", description );
     }
 
     if( ! read_only )
@@ -369,7 +369,7 @@ bool option_model::draw_slider( notifications_model & model,
             }
             if( ImGui::IsItemHovered() )
             {
-                ImGui::SetTooltip( "Enter text-edit mode" );
+                RsImGui::CustomTooltip( "Enter text-edit mode" );
             }
             ImGui::PopStyleColor( 4 );
         }
@@ -386,7 +386,7 @@ bool option_model::draw_slider( notifications_model & model,
             }
             if( ImGui::IsItemHovered() )
             {
-                ImGui::SetTooltip( "Exit text-edit mode" );
+                RsImGui::CustomTooltip( "Exit text-edit mode" );
             }
             ImGui::PopStyleColor( 4 );
         }
@@ -610,7 +610,7 @@ bool option_model::draw_checkbox( notifications_model & model,
     }
     if( ImGui::IsItemHovered() && description )
     {
-        ImGui::SetTooltip( "%s", description );
+        RsImGui::CustomTooltip( "%s", description );
     }
     return checkbox_was_clicked;
 }

@@ -2,10 +2,10 @@
 # Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 from rspy import log, test
-import librs as rs
+from rspy import librs as rs
 
 if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )

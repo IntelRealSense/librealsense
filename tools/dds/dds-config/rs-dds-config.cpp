@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include "eth-config.h"
+#include <rsutils/type/eth-config.h>
 
 #include <common/cli.h>
 
@@ -106,6 +106,27 @@ eth_config get_eth_config( rs2::debug_protocol hwm, bool golden )
 }
 
 
+struct describe_device
+{
+    rs2::device const & device;
+    describe_device( rs2::device const & d ) : device( d ) {}
+};
+
+std::ostream & operator<<( std::ostream & os, describe_device const & dd )
+{
+    os << dd.device.get_description();
+    if( dd.device.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
+        os << ", FW version " << dd.device.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
+    return os;
+}
+
+
+void list_device( rs2::device const & device )
+{
+    INFO( describe_device( device ) );
+}
+
+
 bool find_device( rs2::context const & ctx,
                   rs2::device & device,
                   eth_config & config,
@@ -115,6 +136,7 @@ bool find_device( rs2::context const & ctx,
 {
     auto device_list = ctx.query_devices();
     auto const n_devices = device_list.size();
+    bool more_than_one_device = false;
     for( uint32_t i = 0; i < n_devices; ++i )
     {
         auto possible_device = device_list[i];
@@ -125,21 +147,19 @@ bool find_device( rs2::context const & ctx,
                 continue;
             if( ! devices_looked_at.insert( sn ).second )
                 continue;  // insert failed: device was already looked at
-            if( possible_device.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
-                LOG_DEBUG( "trying " << possible_device.get_description() << ", FW version "
-                           << possible_device.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
-            else
-                LOG_DEBUG( "trying " << possible_device.get_description() );
+            LOG_DEBUG( "trying " << describe_device( possible_device ) );
             config = get_eth_config( possible_device, golden );
             if( device )
-                throw std::runtime_error( "More than one device is available; please use --serial-number" );
-            device = possible_device;
+                more_than_one_device = true;
+            list_device( device = possible_device );
         }
         catch( std::exception const & e )
         {
             LOG_DEBUG( "failed! " << e.what() );
         }
     }
+    if( more_than_one_device )
+        throw std::runtime_error( "More than one device is available; please use --serial-number" );
     return device;
 }
 
@@ -225,11 +245,6 @@ try
 
         throw std::runtime_error( "No device found supporting Eth" );
     }
-    if( device.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
-        INFO( "Device: " << device.get_description() << ", FW version "
-                         << device.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
-    else
-        INFO( "Device: " << device.get_description() );
 
     eth_config requested( current );
     if( golden || factory_reset_arg.isSet() || reset_arg.isSet() )

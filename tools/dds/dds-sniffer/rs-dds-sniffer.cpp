@@ -13,6 +13,8 @@
 #include <fastdds/dds/log/Log.hpp>
 #include <fastrtps/types/DynamicDataHelper.hpp>
 #include <fastrtps/types/DynamicDataFactory.h>
+#include <fastdds/rtps/builtin/data/WriterProxyData.h>
+#include <fastdds/rtps/builtin/data/ReaderProxyData.h>
 
 #include <tclap/CmdLine.h>
 #include <tclap/ValueArg.h>
@@ -21,12 +23,15 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
 #include <realdds/dds-log-consumer.h>
+#include <realdds/dds-serialization.h>
 
 #include <rsutils/os/special-folder.h>
 #include <rsutils/os/executable-name.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
 #include <rsutils/json-config.h>
+#include <rsutils/ios/field.h>
+#include <rsutils/string/from.h>
 
 using namespace TCLAP;
 using namespace eprosima::fastdds::dds;
@@ -51,6 +56,7 @@ int main( int argc, char ** argv ) try
     SwitchArg topic_samples_arg( "t", "topic-samples", "register to topics that send TypeObject and print their samples" );
     SwitchArg debug_arg( "", "debug", "Enable debug logging", false );
     SwitchArg participants_arg( "", "participants", "Show participants and quit; implies --snapshot", false );
+    SwitchArg topics_arg( "", "topics", "Show topics and quit; implies --snapshot", false );
     ValueArg< realdds::dds_domain_id > domain_arg( "d", "domain", "select domain ID to listen on", false, 0, "0-232" );
     ValueArg< std::string > root_arg( "r", "root", "filter anything not inside this root path", false, "", "" );
     cmd.add( snapshot_arg );
@@ -59,13 +65,15 @@ int main( int argc, char ** argv ) try
     cmd.add( domain_arg );
     cmd.add( debug_arg );
     cmd.add( participants_arg );
+    cmd.add( topics_arg );
     cmd.add( root_arg );
     cmd.parse( argc, argv );
 
     bool participants = participants_arg.isSet();
+    bool topics = topics_arg.isSet();
     bool machine_readable = machine_readable_arg.isSet();
     bool topic_samples = topic_samples_arg.isSet();
-    bool snapshot = snapshot_arg.isSet() || participants;
+    bool snapshot = snapshot_arg.isSet() || participants || topics;
 
     // Intercept DDS messages and redirect them to our own logging mechanism
     rsutils::configure_elpp_logger( debug_arg.isSet() );
@@ -74,7 +82,7 @@ int main( int argc, char ** argv ) try
 
     if( snapshot )
     {
-        seconds = participants ? 1 : 3;  // don't need as much time to detect participants
+        seconds = ( participants && ! topics ) ? 1 : 3;  // don't need as much time to detect participants
     }
 
     if( domain_arg.isSet() )
@@ -90,7 +98,6 @@ int main( int argc, char ** argv ) try
     dds_sniffer sniffer;
 
     sniffer.print_discoveries( ! snapshot );
-    sniffer.print_by_topics( snapshot && ! participants );
     sniffer.print_machine_readable( machine_readable );
     sniffer.print_topic_samples( topic_samples && ! snapshot );
 
@@ -125,7 +132,11 @@ int main( int argc, char ** argv ) try
 
     if( participants )
     {
-        sniffer.print_participants();
+        sniffer.print_participants( topics, true );
+    }
+    else if( topics )
+    {
+        sniffer.print_topics_for( realdds::dds_guid_prefix() );
     }
     else if( snapshot )
     {
@@ -206,14 +217,14 @@ bool dds_sniffer::init( realdds::dds_domain_id domain )
 {
     // Set callbacks before calling _participant.init(), or some events, specifically on_participant_added, might get lost
     _participant.create_listener( &_listener )
-        ->on_writer_added( [this]( realdds::dds_guid guid, char const * topic_name ) {
-            on_writer_added( guid, topic_name );
+        ->on_writer_added( [this]( eprosima::fastrtps::rtps::WriterProxyData const & data ) {
+            on_writer_added( data );
         } )
         ->on_writer_removed( [this]( realdds::dds_guid guid, char const * topic_name ) {
             on_writer_removed( guid, topic_name );
         } )
-        ->on_reader_added( [this]( realdds::dds_guid guid, char const * topic_name ) {
-            on_reader_added( guid, topic_name );
+        ->on_reader_added( [this]( eprosima::fastrtps::rtps::ReaderProxyData const & data ) {
+            on_reader_added( data );
         } )
         ->on_reader_removed( [this]( realdds::dds_guid guid, char const * topic_name ) {
             on_reader_removed( guid, topic_name );
@@ -249,14 +260,14 @@ static bool filter_topic( std::string const & topic, std::string const & root )
 }
 
 
-void dds_sniffer::on_writer_added( realdds::dds_guid guid, const char * topic_name )
+void dds_sniffer::on_writer_added( eprosima::fastrtps::rtps::WriterProxyData const & data )
 {
     if( _print_discoveries )
     {
-        print_writer_discovered( guid, topic_name, true );
+        print_writer_discovered( data.guid(), data.topicName().c_str(), true );
     }
 
-    save_topic_writer( guid, topic_name );
+    save_topic_writer( data );
 }
 
 void dds_sniffer::on_writer_removed( realdds::dds_guid guid, const char * topic_name )
@@ -269,13 +280,13 @@ void dds_sniffer::on_writer_removed( realdds::dds_guid guid, const char * topic_
     remove_topic_writer( guid, topic_name );
 }
 
-void dds_sniffer::on_reader_added( realdds::dds_guid guid, const char * topic_name )
+void dds_sniffer::on_reader_added( eprosima::fastrtps::rtps::ReaderProxyData const & data )
 {
     if( _print_discoveries )
     {
-        print_reader_discovered( guid, topic_name, true );
+        print_reader_discovered( data.guid(), data.topicName().c_str(), true );
     }
-    save_topic_reader( guid, topic_name );
+    save_topic_reader( data );
 }
 
 void dds_sniffer::on_reader_removed( realdds::dds_guid guid, const char * topic_name )
@@ -314,53 +325,51 @@ void dds_sniffer::on_participant_removed( realdds::dds_guid guid, const char * p
 
 void dds_sniffer::on_type_discovery( char const * topic_name, DynamicType_ptr dyn_type )
 {
-    if( ! _print_by_topics )
-    {
-        // Register type with participant
-        TypeSupport type_support( DDS_API_CALL( new DynamicPubSubType( dyn_type ) ) );
-        DDS_API_CALL( type_support.register_type( _participant.get() ) );
+    // Register type with participant
+    TypeSupport type_support( DDS_API_CALL( new DynamicPubSubType( dyn_type ) ) );
+    DDS_API_CALL( type_support.register_type( _participant.get() ) );
+    if( _print_discoveries )
         std::cout << "+Topic '" << topic_name << "' of type '" << type_support->getName() << "'" << std::endl;
 
-        if( _print_topic_samples )
+    if( _print_topic_samples )
+    {
+        // Create subscriber, topic and reader to receive instances of this topic
+        if( _discovered_types_subscriber == nullptr )
         {
-            // Create subscriber, topic and reader to receive instances of this topic
+            _discovered_types_subscriber = DDS_API_CALL( _participant.get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT,
+                                                                                                nullptr ) );
             if( _discovered_types_subscriber == nullptr )
             {
-                _discovered_types_subscriber = DDS_API_CALL( _participant.get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT,
-                                                                                                    nullptr ) );
-                if( _discovered_types_subscriber == nullptr )
-                {
-                    LOG_ERROR( "Cannot create subscriber for discovered type '" << topic_name );
-                    return;
-                }
-            }
-
-            Topic * topic = DDS_API_CALL( _participant.get()->create_topic( topic_name, type_support->getName(),
-                                                                            TOPIC_QOS_DEFAULT ) );
-            if( topic == nullptr )
-            {
-                LOG_ERROR( "Cannot create topic for discovered type '" << topic_name );
+                LOG_ERROR( "Cannot create subscriber for discovered type '" << topic_name );
                 return;
             }
-
-            StatusMask sub_mask = StatusMask::subscription_matched() << StatusMask::data_available();
-            DataReaderQos rqos = DATAREADER_QOS_DEFAULT;
-            rqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
-            DataReader * reader = DDS_API_CALL( _discovered_types_subscriber->create_datareader( topic,
-                                                                                                 rqos,
-                                                                                                 &_reader_listener,
-                                                                                                 sub_mask ) );
-            if( reader == nullptr )
-            {
-                LOG_ERROR( "Cannot create reader for discovered type '" << topic_name );
-                DDS_API_CALL( _participant.get()->delete_topic( topic ) );
-                return;
-            }
-            _discovered_types_readers[reader] = topic;
-
-            DynamicData_ptr data( DDS_API_CALL( DynamicDataFactory::get_instance()->create_data( dyn_type ) ) );
-            _discovered_types_datas[reader] = data;
         }
+
+        Topic * topic = DDS_API_CALL( _participant.get()->create_topic( topic_name, type_support->getName(),
+                                                                        TOPIC_QOS_DEFAULT ) );
+        if( topic == nullptr )
+        {
+            LOG_ERROR( "Cannot create topic for discovered type '" << topic_name );
+            return;
+        }
+
+        StatusMask sub_mask = StatusMask::subscription_matched() << StatusMask::data_available();
+        DataReaderQos rqos = DATAREADER_QOS_DEFAULT;
+        rqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
+        DataReader * reader = DDS_API_CALL( _discovered_types_subscriber->create_datareader( topic,
+                                                                                                rqos,
+                                                                                                &_reader_listener,
+                                                                                                sub_mask ) );
+        if( reader == nullptr )
+        {
+            LOG_ERROR( "Cannot create reader for discovered type '" << topic_name );
+            DDS_API_CALL( _participant.get()->delete_topic( topic ) );
+            return;
+        }
+        _discovered_types_readers[reader] = topic;
+
+        DynamicData_ptr data( DDS_API_CALL( DynamicDataFactory::get_instance()->create_data( dyn_type ) ) );
+        _discovered_types_datas[reader] = data;
     }
 }
 
@@ -407,11 +416,14 @@ void dds_sniffer::dds_reader_listener::on_subscription_matched( DataReader * rea
     }
 }
 
-void dds_sniffer::save_topic_writer( realdds::dds_guid guid, const char * topic_name )
+void dds_sniffer::save_topic_writer( eprosima::fastrtps::rtps::WriterProxyData const & data )
 {
     std::lock_guard< std::mutex > lock( _dds_entities_lock );
 
-    _topics_info_by_name[topic_name].writers.insert( guid );
+    auto & info = _topics_info_by_name[data.topicName().c_str()];
+    if( data.typeName().size() )
+        info.type_info = rsutils::string::from( realdds::print_writer_info( data ) );
+    info.writers.insert( data.guid() );
 }
 
 void dds_sniffer::remove_topic_writer( realdds::dds_guid guid, const char * topic_name )
@@ -429,11 +441,14 @@ void dds_sniffer::remove_topic_writer( realdds::dds_guid guid, const char * topi
     }
 }
 
-void dds_sniffer::save_topic_reader( realdds::dds_guid guid, const char * topic_name )
+void dds_sniffer::save_topic_reader( eprosima::fastrtps::rtps::ReaderProxyData const & data )
 {
     std::lock_guard< std::mutex > lock( _dds_entities_lock );
 
-    _topics_info_by_name[topic_name].readers.insert( guid );
+    auto & info = _topics_info_by_name[data.topicName().c_str()];
+    if( data.typeName().size() )
+        info.type_info = rsutils::string::from( realdds::print_reader_info( data ) );
+    info.readers.insert( data.guid() );
 }
 
 void dds_sniffer::remove_topic_reader( realdds::dds_guid guid, const char * topic_name )
@@ -451,24 +466,25 @@ void dds_sniffer::remove_topic_reader( realdds::dds_guid guid, const char * topi
     }
 }
 
-uint32_t dds_sniffer::calc_max_indentation() const
+dds_sniffer::topic_display_stats dds_sniffer::calc_topic_display_stats() const
 {
-    uint32_t indentation = 0;
-    uint32_t max_indentation = 0;
+    topic_display_stats stats{ 0 };
 
     for( auto & topic : _topics_info_by_name )  //_dds_entities_lock locked by print_topics()
     {
         if( filter_topic( topic.first, _root ) )
             continue;
         // Use / as delimiter for nested topic names
-        indentation = static_cast< uint32_t >( std::count( topic.first.begin(), topic.first.end(), '/' ) );
-        if( indentation >= max_indentation )
+        size_t indentation = std::count( topic.first.begin(), topic.first.end(), '/' );
+        if( indentation >= stats.max_indent )
         {
-            max_indentation = indentation + 1;  //+1 for Reader/Writer indentation
+            stats.max_indent = indentation + 1;  //+1 for Reader/Writer indentation
         }
+        if( topic.first.length() > stats.max_len )
+            stats.max_len = topic.first.length();
     }
 
-    return max_indentation;
+    return stats;
 }
 
 void dds_sniffer::print_writer_discovered( realdds::dds_guid guid,
@@ -546,6 +562,21 @@ void dds_sniffer::print_topics_machine_readable() const
     }
 }
 
+void dds_sniffer::print_topic_info( bool const is_leaf,
+                                    size_t const indentation,
+                                    std::string const & name,
+                                    topic_info const & info,
+                                    topic_display_stats const & stats,
+                                    char const * prefix ) const
+{
+    ident( indentation, prefix );
+    if( is_leaf && ! info.type_info.empty() )
+        std::cout << std::setw( stats.max_indent * 4 + stats.max_len + 5 - indentation * 4 ) << std::left;
+    std::cout << name;
+    if( is_leaf && ! info.type_info.empty() )
+        std::cout << "    " << rsutils::ios::field::group() << info.type_info;
+}
+
 void dds_sniffer::print_topics() const
 {
     std::istringstream last_topic( "" );
@@ -553,13 +584,12 @@ void dds_sniffer::print_topics() const
 
     std::lock_guard< std::mutex > lock( _dds_entities_lock );
 
-    uint32_t max_indentation( calc_max_indentation() );
+    auto stats = calc_topic_display_stats();
 
     for( auto & topic : _topics_info_by_name )
     {
         if( filter_topic( topic.first, _root ) )
             continue;
-        std::cout << std::endl;
 
         std::istringstream current_topic( topic.first );  // Get topic name
         std::string current_topic_nested;
@@ -576,8 +606,8 @@ void dds_sniffer::print_topics() const
                 }
                 else
                 {
-                    ident( indentation );
-                    std::cout << current_topic_nested << std::endl;
+                    print_topic_info( current_topic.eof(), indentation, current_topic_nested, topic.second, stats );
+                    std::cout << std::endl;
                     ++indentation;
                     break;
                 }
@@ -587,18 +617,18 @@ void dds_sniffer::print_topics() const
         // Print remainder of string
         while( std::getline( current_topic, current_topic_nested, '/' ) )
         {
-            ident( indentation );
-            std::cout << current_topic_nested << std::endl;
+            print_topic_info( current_topic.eof(), indentation, current_topic_nested, topic.second, stats );
+            std::cout << std::endl;
             ++indentation;
         }
 
         for( auto & writer : topic.second.writers )
         {
-            print_topic_writer( writer, max_indentation );
+            print_topic_writer( writer, stats.max_indent );
         }
         for( auto & reader : topic.second.readers )
         {
-            print_topic_reader( reader, max_indentation );
+            print_topic_reader( reader, stats.max_indent );
         }
 
         last_topic.clear();
@@ -607,28 +637,69 @@ void dds_sniffer::print_topics() const
     }
 }
 
-void dds_sniffer::print_participants( bool with_guids ) const
+void dds_sniffer::print_participants( bool with_topics, bool with_guids ) const
 {
     for( auto & guid2name : _discovered_participants )
     {
-        std::cout << guid2name.second;
         if( with_guids )
-            std::cout << ' ' << realdds::print_raw_guid( guid2name.first );
+            std::cout << realdds::print_raw_guid_prefix( guid2name.first.guidPrefix ) << "  ";
+        std::cout << guid2name.second;
         std::cout << std::endl;
+        if( with_topics )
+            print_topics_for( guid2name.first.guidPrefix, 1 );
     }
 }
 
-void dds_sniffer::ident( uint32_t indentation ) const
+
+void dds_sniffer::print_topics_for( realdds::dds_guid_prefix guid_prefix, size_t indentation ) const
+{
+    auto stats = calc_topic_display_stats();
+    stats.max_indent = indentation;  // we don't go past this
+
+    char const * prefixes[] = { "   ", "R  ", " W ", "RW " };
+
+    for( auto & topic : _topics_info_by_name )
+    {
+        if( filter_topic( topic.first, _root ) )
+            continue;
+
+        bool have_writers = false;
+        for( auto & writer : topic.second.writers )
+        {
+            if( guid_prefix != guid_prefix.unknown() && writer.guidPrefix != guid_prefix )
+                continue;
+            have_writers = true;
+            break;
+        }
+        bool have_readers = false;
+        for( auto & reader : topic.second.readers )
+        {
+            if( guid_prefix != guid_prefix.unknown() && reader.guidPrefix != guid_prefix )
+                continue;
+            have_readers = true;
+            break;
+        }
+        if( have_readers || have_writers )
+        {
+            char const * prefix = prefixes[have_readers + 2 * have_writers];
+            print_topic_info( true, indentation, topic.first, topic.second, stats, prefix );
+            std::cout << std::endl;
+        }
+    }
+}
+
+
+void dds_sniffer::ident( size_t indentation, char const * prefix ) const
 {
     while( indentation > 0 )
     {
         std::cout << "    ";
         --indentation;
     }
-    std::cout << "- ";
+    std::cout << prefix;
 }
 
-void dds_sniffer::print_topic_writer( realdds::dds_guid guid, uint32_t indentation ) const
+void dds_sniffer::print_topic_writer( realdds::dds_guid guid, size_t indentation ) const
 {
     auto iter = _discovered_participants.begin();
     for( ; iter != _discovered_participants.end(); ++iter )  //_dds_entities_lock locked by caller
@@ -655,7 +726,7 @@ void dds_sniffer::print_topic_writer( realdds::dds_guid guid, uint32_t indentati
 }
 
 
-void dds_sniffer::print_topic_reader( realdds::dds_guid guid, uint32_t indentation ) const
+void dds_sniffer::print_topic_reader( realdds::dds_guid guid, size_t indentation ) const
 {
     auto iter = _discovered_participants.begin();
     for( ; iter != _discovered_participants.end(); ++iter )  //_dds_entities_lock locked by caller

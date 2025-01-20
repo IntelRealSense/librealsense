@@ -35,6 +35,7 @@ typedef enum rs2_camera_info {
     RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID             , /**< Firmware update ID */
     RS2_CAMERA_INFO_IP_ADDRESS                     , /**< IP address for remote camera. */
     RS2_CAMERA_INFO_DFU_DEVICE_PATH                , /**< DFU Device node path */
+    RS2_CAMERA_INFO_CONNECTION_TYPE                , /**< Connection type, for example USB, GMSL, DDS */
     RS2_CAMERA_INFO_SMCU_FW_VERSION                , /**< Safety MCU FW Version */
     RS2_CAMERA_INFO_COUNT                            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_camera_info;

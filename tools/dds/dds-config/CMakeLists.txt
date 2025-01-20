@@ -9,6 +9,7 @@ file( GLOB_RECURSE RS_DDS_CONFIG_SOURCE_FILES
     LIST_DIRECTORIES false
     RELATIVE ${PROJECT_SOURCE_DIR}
     "${CMAKE_CURRENT_LIST_DIR}/*"
+    "${CMAKE_SOURCE_DIR}/third-party/rsutils/include/rsutils/type/*"
     )
 target_sources( ${PROJECT_NAME} PRIVATE ${RS_DDS_CONFIG_SOURCE_FILES} )
 

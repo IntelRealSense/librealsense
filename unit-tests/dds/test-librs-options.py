@@ -2,7 +2,7 @@
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 from rspy import log, test
 with test.remote.fork( nested_indent=None ) as remote:
@@ -47,7 +47,7 @@ with test.remote.fork( nested_indent=None ) as remote:
     ###############################################################################################################
     # The client is LibRS
     #
-    import librs as rs
+    from rspy import librs as rs
     if log.is_debug_on():
         rs.log_to_console( rs.log_severity.debug )
 

@@ -82,9 +82,15 @@ void data_collector::parse_and_configure(cli::value<string>& config_file)
     configure_sensors();
 
     // Report results
+    std::string connection_type = _dev->supports(RS2_CAMERA_INFO_CONNECTION_TYPE) ? 
+        std::string(_dev->get_info(RS2_CAMERA_INFO_CONNECTION_TYPE)) : std::string(" ");
+    if (connection_type == "USB" && _dev->supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+    {
+        connection_type += " Type: ";
+        connection_type += _dev->get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+    }
     std::cout << "\nDevice selected: \n\t" << _dev->get_info(RS2_CAMERA_INFO_NAME)
-        << (_dev->supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) ?
-            std::string((stringify() << ". USB Type: " << _dev->get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))) : "")
+        << ". " << connection_type << " "
         << "\n\tS.N: " << (_dev->supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? _dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "")
         << "\n\tFW Ver: " << _dev->get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
         << "\n\nUser streams requested: " << user_requests.size()

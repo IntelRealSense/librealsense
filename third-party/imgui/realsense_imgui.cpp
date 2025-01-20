@@ -368,3 +368,18 @@ void RsImGui::RsImButton(const std::function<void()>& f, bool disable_button)
     if (disable_button)
         ImGui::EndDisabled();
 }
+
+void RsImGui::CustomTooltip( const char * fmt, const char * label )
+{
+    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.90f, 0.90f, 0.90f, 1.00f ) );
+    ImGui::PushStyleColor( ImGuiCol_PopupBg, ImVec4( 0.05f, 0.05f, 0.10f, 0.90f ) );
+    ImGui::PushStyleVar( ImGuiStyleVar_WindowPadding, ImVec2( 8, 8 ) );
+    ImGui::SetTooltip( fmt, label );
+    ImGui::PopStyleColor( 2 );
+    ImGui::PopStyleVar();
+}
+
+void RsImGui::CustomTooltip( const char * label )
+{
+    RsImGui::CustomTooltip( "%s", label );
+}

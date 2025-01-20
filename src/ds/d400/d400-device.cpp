@@ -487,12 +487,17 @@ namespace librealsense
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
         auto depth_devs_info = filter_by_mi( all_device_infos, 0 );
 
-        if ( depth_devs_info.empty() )
+        for (auto&& info : depth_devs_info) // Filter just mi=0, DEPTH
+        {
+            auto depth_uvc_device = get_backend()->create_uvc_device(info);
+            if (depth_uvc_device)
+                depth_devices.push_back(depth_uvc_device);
+        }
+
+        if (depth_devs_info.empty() || depth_devices.empty())
         {
             throw backend_exception("cannot access depth sensor", RS2_EXCEPTION_TYPE_BACKEND);
         }
-        for (auto&& info : depth_devs_info) // Filter just mi=0, DEPTH
-            depth_devices.push_back( get_backend()->create_uvc_device( info ) );
 
         std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
         frame_timestamp_reader* timestamp_reader_from_metadata;
@@ -569,7 +574,7 @@ namespace librealsense
         }
         set_hw_monitor_for_auto_calib(_hw_monitor);
 
-        _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor);
+        _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor, (_pid == ds::RS457_PID)? true : false);
 
         // Define Left-to-Right extrinsics calculation (lazy)
         // Reference CS - Right-handed; positive [X,Y,Z] point to [Left,Up,Forward] accordingly.
@@ -964,7 +969,12 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DFU_DEVICE_PATH, group.uvc_devices.front().dfu_device_path);
 
         if (usb_modality)
+        {
+            register_info(RS2_CAMERA_INFO_CONNECTION_TYPE, "USB");
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+        }
+        else
+            register_info(RS2_CAMERA_INFO_CONNECTION_TYPE, "GMSL");
 
         std::string curr_version= _fw_version;
 
@@ -1101,8 +1111,8 @@ namespace librealsense
         // attributes of md_mipi_depth_control structure
         auto md_prop_offset = offsetof(metadata_mipi_depth_raw, depth_mode);
 
-        // timestamp metadata field alignment with FW was implemented on FW version 5.17.0.0
-        if ( _fw_version >= firmware_version( "5.17.0.0" ) ) 
+        // timestamp metadata field alignment with FW was implemented on FW version 5.16.3.3
+        if ( _fw_version >= firmware_version( "5.16.3.3" ) ) 
         {
             // optical_timestamp contains value of exposure/2
             depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,

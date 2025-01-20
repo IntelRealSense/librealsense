@@ -21,7 +21,6 @@ public:
     ~dds_sniffer();
 
     void print_discoveries( bool enable ) { _print_discoveries = enable; }
-    void print_by_topics( bool enable ) { _print_by_topics = enable; }
     void print_machine_readable( bool enable ) { _print_machine_readable = enable; }
     void print_topic_samples( bool enable ) { _print_topic_samples = enable; }
 
@@ -31,8 +30,9 @@ public:
 
     realdds::dds_participant const & get_participant() const { return _participant; }
 
-    void print_participants( bool with_guids = false ) const;
+    void print_participants( bool with_topics = false, bool with_guids = false ) const;
     void print_topics() const;
+    void print_topics_for( realdds::dds_guid_prefix, size_t indentation = 0 ) const;
     void print_topics_machine_readable() const;
 
 private:
@@ -43,13 +43,13 @@ private:
     std::map< realdds::dds_guid, std::string > _discovered_participants;
     struct topic_info
     {
+        std::string type_info;
         std::set< realdds::dds_guid > readers;
         std::set< realdds::dds_guid > writers;
     };
     std::map< std::string, topic_info > _topics_info_by_name;
 
     bool _print_discoveries = false;
-    bool _print_by_topics = false;
     bool _print_machine_readable = false;
     bool _print_topic_samples = false;
 
@@ -80,20 +80,26 @@ private:
     dds_reader_listener _reader_listener;  // define only after _discovered_types_datas (creation order matters)
 
     // Callbacks for dds-participant
-    void on_writer_added( realdds::dds_guid guid, const char * topic_name );
+    void on_writer_added( eprosima::fastrtps::rtps::WriterProxyData const & );
     void on_writer_removed( realdds::dds_guid guid, const char * topic_name );
-    void on_reader_added( realdds::dds_guid guid, const char * topic_name );
+    void on_reader_added( eprosima::fastrtps::rtps::ReaderProxyData const & );
     void on_reader_removed( realdds::dds_guid guid, const char * topic_name );
     void on_participant_added( realdds::dds_guid guid, const char * topic_name );
     void on_participant_removed( realdds::dds_guid guid, const char * topic_name );
     void on_type_discovery( char const * topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type );
 
     // Topics data-base functions
-    void save_topic_writer( realdds::dds_guid guid, const char * topic_name );
+    void save_topic_writer( eprosima::fastrtps::rtps::WriterProxyData const & );
     void remove_topic_writer( realdds::dds_guid guid, const char * topic_name );
-    void save_topic_reader( realdds::dds_guid guid, const char * topic_name );
+    void save_topic_reader( eprosima::fastrtps::rtps::ReaderProxyData const & );
     void remove_topic_reader( realdds::dds_guid guid, const char * topic_name );
-    uint32_t calc_max_indentation() const;
+
+    struct topic_display_stats
+    {
+        size_t max_indent;
+        size_t max_len;
+    };
+    topic_display_stats calc_topic_display_stats() const;
 
     // Helper print functions
     void print_writer_discovered( realdds::dds_guid guid, const char * topic_name, bool discovered ) const;
@@ -101,7 +107,13 @@ private:
     void print_participant_discovered( realdds::dds_guid guid,
                                        const char * participant_name,
                                        bool discovered ) const;
-    void ident( uint32_t indentation ) const;
-    void print_topic_writer( realdds::dds_guid writer, uint32_t indentation = 0 ) const;
-    void print_topic_reader( realdds::dds_guid reader, uint32_t indentation = 0 ) const;
+    void ident( size_t indentation, char const * prefix = "- " ) const;
+    void print_topic_writer( realdds::dds_guid writer, size_t indentation = 0 ) const;
+    void print_topic_reader( realdds::dds_guid reader, size_t indentation = 0 ) const;
+    void print_topic_info( bool is_leaf,
+                           size_t indentation,
+                           std::string const & name,
+                           topic_info const &,
+                           topic_display_stats const &,
+                           char const * prefix = "- " ) const;
 };

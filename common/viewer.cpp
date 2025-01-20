@@ -139,7 +139,7 @@ namespace rs2
                 {
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("Enable meshing to allow vertex normals calculation");
+                        RsImGui::CustomTooltip("Enable meshing to allow vertex normals calculation");
                     }
                     ImGui::PopStyleColor(2);
                     ImGui::PopStyleVar();
@@ -228,7 +228,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", "Save settings and export file");
+                RsImGui::CustomTooltip("%s", "Save settings and export file");
             }
             ImGui::SameLine();
             if( ImGui::Button( "Cancel", ImVec2( font_size * 8.f, 0 ) ) )
@@ -237,7 +237,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", "Close window without saving any changes to the settings");
+                RsImGui::CustomTooltip("%s", "Close window without saving any changes to the settings");
             }
 
             ImGui::PopStyleColor(3);
@@ -306,14 +306,11 @@ namespace rs2
         ImGui::PopFont();
         hovered = hovered || ImGui::IsItemHovered();
 
-        ImGui::PushStyleColor(ImGuiCol_Text,white);
-        ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
         if (hovered)
         {
             win.link_hovered();
-            ImGui::SetTooltip("%s", description);
+            RsImGui::CustomTooltip("%s", description);
         }
-        ImGui::PopStyleColor(2);
 
         if (clicked && !disabled)
         {
@@ -1192,7 +1189,7 @@ namespace rs2
         ImGui::Text("%s", text);
         ImGui::PopStyleColor();
         if (ImGui::IsItemHovered() && tooltip != "")
-            ImGui::SetTooltip("%s", tooltip.c_str());
+            RsImGui::CustomTooltip("%s", tooltip.c_str());
 
     }
     void viewer_model::show_paused_icon(ImFont* font_18, int x, int y, int id)
@@ -1616,7 +1613,7 @@ namespace rs2
             auto relative_mouse_y = ImGui::GetMousePos().y - top_y_ruler;
             auto y = (bottom_y_ruler - top_y_ruler) - relative_mouse_y;
             ss << std::fixed << std::setprecision(2) << (y / ratio) << ruler_units;
-            ImGui::SetTooltip("%s", ss.str().c_str());
+            RsImGui::CustomTooltip("%s", ss.str().c_str());
             colored_ruler_opac = 1.f;
             numbered_ruler_background_opac = hovered_numbered_ruler_opac;
         }
@@ -2431,10 +2428,10 @@ namespace rs2
         {
             ImGui::OpenPopup("More Options");
         }
-
+        ImGui::PopFont();
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("%s", "More Options...");
+            RsImGui::CustomTooltip("%s", "More Options...");
         }
 
         if (window.is_fullscreen())
@@ -2451,13 +2448,12 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Exit the App");
+                RsImGui::CustomTooltip("Exit the App");
                 window.link_hovered();
             }
             ImGui::PopStyleColor(3);
         }
 
-        ImGui::PopFont();
 
         ImGui::PushStyleColor(ImGuiCol_Text, black);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
@@ -2607,6 +2603,9 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, white);
                 ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+                ImVec2 child_size = ImVec2(0, ImGui::GetContentRegionAvail().y-50);
+                if (ImGui::BeginChild("ScrollableRegion", child_size, true, ImGuiWindowFlags_AlwaysVerticalScrollbar))
+                {
                 if (tab == 0)
                 {
                     int recording_setting = temp_cfg.get(configurations::record::file_save_mode);
@@ -2661,7 +2660,7 @@ namespace rs2
                     int font_samples = temp_cfg.get(configurations::performance::font_oversample);
                     ImGui::Text("Font Samples: ");
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Increased font samples produce nicer text, but require more GPU memory, sometimes resulting in boxes instead of font characters");
+                        RsImGui::CustomTooltip("Increased font samples produce nicer text, but require more GPU memory, sometimes resulting in boxes instead of font characters");
 
                     ImGui::SameLine();
                     ImGui::PushItemWidth(80);
@@ -2678,7 +2677,7 @@ namespace rs2
                     int font_size = temp_cfg.get( configurations::window::font_size );
                     ImGui::Text( "Font Size: " );
                     if( ImGui::IsItemHovered() )
-                        ImGui::SetTooltip( "Viewer Font Size" );
+                        RsImGui::CustomTooltip( "Viewer Font Size" );
                     
                     ImGui::SameLine();
                     ImGui::PushItemWidth( 80 );
@@ -2699,7 +2698,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::glsl_for_rendering, gpu_rendering);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Using OpenGL 3 shaders is a widely supported way to boost rendering speeds on modern GPUs.");
+                        RsImGui::CustomTooltip("Using OpenGL 3 shaders is a widely supported way to boost rendering speeds on modern GPUs.");
 
                     bool gpu_processing = temp_cfg.get(configurations::performance::glsl_for_processing);
                     if (ImGui::Checkbox("Use GLSL for Processing", &gpu_processing))
@@ -2708,7 +2707,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::glsl_for_processing, gpu_processing);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Using OpenGL 3 shaders for depth data processing can reduce CPU utilisation.");
+                        RsImGui::CustomTooltip("Using OpenGL 3 shaders for depth data processing can reduce CPU utilisation.");
 
                     if (gpu_processing && !gpu_rendering)
                     {
@@ -2724,7 +2723,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::enable_msaa, msaa);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("MSAA will improve the rendering quality of edges at expense of greater GPU memory utilisation.");
+                        RsImGui::CustomTooltip("MSAA will improve the rendering quality of edges at expense of greater GPU memory utilisation.");
 
                     if (msaa)
                     {
@@ -2746,7 +2745,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::show_fps, show_fps);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Show application refresh rate in window title\nThis rate is unrelated to camera FPS and measures application responsivness");
+                        RsImGui::CustomTooltip("Show application refresh rate in window title\nThis rate is unrelated to camera FPS and measures application responsivness");
 
 
                     bool vsync = temp_cfg.get(configurations::performance::vsync);
@@ -2756,7 +2755,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::vsync, vsync);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Vertical sync will try to synchronize application framerate to the monitor refresh-rate (usually limiting the framerate to 60)");
+                        RsImGui::CustomTooltip("Vertical sync will try to synchronize application framerate to the monitor refresh-rate (usually limiting the framerate to 60)");
 
                     bool fullscreen = temp_cfg.get(configurations::window::is_fullscreen);
                     if (ImGui::Checkbox("Fullscreen (F8)", &fullscreen))
@@ -2771,7 +2770,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::show_skybox, show_skybox);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("When enabled, this option provides background to the 3D view, instead of leaving it blank.\nThis is purely cosmetic");
+                        RsImGui::CustomTooltip("When enabled, this option provides background to the 3D view, instead of leaving it blank.\nThis is purely cosmetic");
 
                     bool enable_occlusion_invalidation = temp_cfg.get(configurations::performance::occlusion_invalidation);
                     if (ImGui::Checkbox("Perform Occlusion Invalidation", &enable_occlusion_invalidation))
@@ -2779,7 +2778,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::occlusion_invalidation, enable_occlusion_invalidation);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Occlusions are a natural side-effect of having multiple sensors\nWhen this option is enabled, the SDK will filter out occluded pixels");
+                        RsImGui::CustomTooltip("Occlusions are a natural side-effect of having multiple sensors\nWhen this option is enabled, the SDK will filter out occluded pixels");
                 }
 
                 if( tab == 2 )
@@ -2814,7 +2813,7 @@ namespace rs2
                         ImGui::PopStyleVar();
                         if( ImGui::IsItemHovered() )
                         {
-                            ImGui::SetTooltip( "%s", "--debug was specified; this cannot be applied without a restart" );
+                            RsImGui::CustomTooltip( "%s", "--debug was specified; this cannot be applied without a restart" );
                         }
                     }
                     bool log_to_file = temp_cfg.get(configurations::viewer::log_to_file);
@@ -2942,6 +2941,34 @@ namespace rs2
                             catch (...){}
                         }
                     }
+
+                    ImGui::Separator();
+                    bool enable_dds = temp_cfg.get_nested<bool>("context.dds.enabled" , false);
+                    int domain_id = temp_cfg.get_nested<int>("context.dds.domain" , 0);
+                    if( ImGui::Checkbox( "Enable DDS", &enable_dds ) )
+                    {
+                        temp_cfg.set_nested("context.dds.enabled", enable_dds);
+                    }
+                    if( enable_dds )
+                    {
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosX( ImGui::GetCursorPosX() + 50 );
+                        ImGui::PushItemWidth( 150.0f );
+                        ImGui::Text( "Domain ID" );
+                        ImGui::SameLine();
+                        if( ImGui::InputInt( "##Domain ID", &domain_id ) )
+                        {
+                            if( domain_id < 0 )
+                                domain_id = 0;
+                            else if( domain_id > 232 )
+                                domain_id = 232;
+                            temp_cfg.set_nested("context.dds.domain", domain_id);
+                        }
+                    }
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 0.8f));
+                    ImGui::Text(u8"\uf071 DDS changes will take effect only after restarting the application ");
+                    ImGui::PopStyleColor();
+
                 }
 
                 if (tab == 3)
@@ -2954,7 +2981,7 @@ namespace rs2
                     }
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "When firmware of the device is below the version bundled with this software release\nsuggest firmware update");
+                        RsImGui::CustomTooltip("%s", "When firmware of the device is below the version bundled with this software release\nsuggest firmware update");
                     }
 #ifdef CHECK_FOR_UPDATES
                     ImGui::Separator();
@@ -2962,7 +2989,7 @@ namespace rs2
                     ImGui::Text("%s", "SW/FW Updates From Server:");
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Select the server URL of the SW/FW updates information");
+                        RsImGui::CustomTooltip("%s", "Select the server URL of the SW/FW updates information");
                     }
                     ImGui::SameLine();
 
@@ -2989,7 +3016,7 @@ namespace rs2
                     }
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Add file:// prefix to use a local DB file ");
+                        RsImGui::CustomTooltip("%s", "Add file:// prefix to use a local DB file ");
                     }
 
                     if (!official_url)
@@ -3001,6 +3028,8 @@ namespace rs2
                         }
                     }
 #endif
+                }
+                ImGui::EndChild();
                 }
 
                 ImGui::Separator();
@@ -3037,7 +3066,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "Save settings and close");
+                    RsImGui::CustomTooltip("%s", "Save settings and close");
                 }
                 ImGui::SameLine();
 
@@ -3051,7 +3080,7 @@ namespace rs2
                 ImGui::PopStyleColor(2);
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "Save settings");
+                    RsImGui::CustomTooltip("%s", "Save settings");
                 }
                 ImGui::SameLine();
                 if (ImGui::Button("Cancel", ImVec2(120, 0)))
@@ -3060,7 +3089,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "Close window without saving any changes to the settings");
+                    RsImGui::CustomTooltip("%s", "Close window without saving any changes to the settings");
                 }
                 ImGui::PopStyleColor(2);
                 ImGui::PopStyleVar();
