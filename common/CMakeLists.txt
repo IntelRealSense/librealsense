@@ -61,6 +61,8 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_LIST_DIR}/labeled-point-cloud-utilities.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/smcu-update-helper.h"
     "${CMAKE_CURRENT_LIST_DIR}/smcu-update-helper.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-model.h"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-model.cpp"
     )
 
 set(SW_UPDATE_FILES

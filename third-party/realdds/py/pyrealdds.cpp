@@ -46,6 +46,8 @@
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastrtps/types/DynamicType.h>
+#include <fastdds/rtps/builtin/data/WriterProxyData.h>
+#include <fastdds/rtps/builtin/data/ReaderProxyData.h>
 
 #include <rsutils/py/pybind11.h>
 
@@ -248,8 +250,8 @@ PYBIND11_MODULE(NAME, m) {
         .def( FN_FWD( dds_participant::listener,
                       on_writer_added,
                       ( dds_guid guid, char const * topic_name ),
-                      ( dds_guid guid, char const * topic_name ),
-                      callback( guid, topic_name ); ) )
+                      ( eprosima::fastrtps::rtps::WriterProxyData const & data ),
+                      callback( data.guid(), data.topicName().c_str() ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_writer_removed,
                       ( dds_guid guid, char const * topic_name ),
@@ -258,8 +260,8 @@ PYBIND11_MODULE(NAME, m) {
         .def( FN_FWD( dds_participant::listener,
                       on_reader_added,
                       ( dds_guid guid, char const * topic_name ),
-                      ( dds_guid guid, char const * topic_name ),
-                      callback( guid, topic_name ); ) )
+                      ( eprosima::fastrtps::rtps::ReaderProxyData const & data ),
+                      callback( data.guid(), data.topicName().c_str() ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_reader_removed,
                       ( dds_guid guid, char const * topic_name ),
@@ -1211,6 +1213,12 @@ PYBIND11_MODULE(NAME, m) {
         dds_metadata_syncer()
         {
             on_frame_release( frame_releaser );
+            start();
+        }
+
+        ~dds_metadata_syncer()
+        {
+            stop();
         }
 
         void enqueue_frame( key_type key, frame_type const & img )

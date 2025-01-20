@@ -97,6 +97,7 @@ platform_camera::platform_camera( std::shared_ptr< const device_info > const & d
     if( usb_spec_names.count( usb_mode ) && ( usb_undefined != usb_mode ) )
         usb_type_str = usb_spec_names.at( usb_mode );
 
+    register_info(RS2_CAMERA_INFO_CONNECTION_TYPE, "USB");
     register_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str );
     register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, uvc_infos.front().unique_id );
     register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, uvc_infos.front().device_path );

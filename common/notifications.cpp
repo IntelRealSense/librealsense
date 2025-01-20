@@ -9,6 +9,7 @@
 
 #include "notifications.h"
 #include <imgui_internal.h>
+#include <realsense_imgui.h>
 #include "model-views.h"
 #include "os.h"
 #include "viewer.h"
@@ -148,7 +149,7 @@ namespace rs2
             if (pbar.contains(mouse.cursor))
             {
                 std::string progress_str = rsutils::string::from() << progress << "%";
-                ImGui::SetTooltip("%s", progress_str.c_str());
+                RsImGui::CustomTooltip("%s", progress_str.c_str());
             }
         }
 
@@ -640,7 +641,7 @@ namespace rs2
                             glfwSetClipboardString(win, clip.c_str());
                         }
                         if (ImGui::IsItemActive())
-                            ImGui::SetTooltip("Paste the copied commands to a terminal and enter your password to run");
+                            RsImGui::CustomTooltip("Paste the copied commands to a terminal and enter your password to run");
                     }
                 }
 
@@ -718,7 +719,7 @@ namespace rs2
         if (ImGui::IsItemHovered())
         {
             win.link_hovered();
-            ImGui::SetTooltip("Open the Release Notes. Internet connection is required");
+            RsImGui::CustomTooltip("Open the Release Notes. Internet connection is required");
         }
         ImGui::SameLine();
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 5);
@@ -1003,7 +1004,7 @@ namespace rs2
 
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("%s", "Enables metadata on connected devices (you may be prompted for administrator privileges)");
+            RsImGui::CustomTooltip("%s", "Enables metadata on connected devices (you may be prompted for administrator privileges)");
         }
     }
 
@@ -1108,7 +1109,7 @@ namespace rs2
         if (ImGui::IsItemHovered())
         {
             win.link_hovered();
-            ImGui::SetTooltip("Internet connection required");
+            RsImGui::CustomTooltip("Internet connection required");
         }
         ImGui::PopStyleColor(2);
     }

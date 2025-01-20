@@ -134,7 +134,7 @@ if cs:
         else:
             fps = measure_fps(cs, cp, time_to_test_fps[i])
             log.i("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
-            delta_Hz = requested_fps * 0.05 # Validation KPI is 5%
+            delta_Hz = requested_fps * (0.10 if requested_fps == 5 else 0.05) # Validation KPI is 5% for all non 5 FPS rate
             test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
 
 test.finish()

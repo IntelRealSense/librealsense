@@ -25,6 +25,7 @@
 
 #include <src/proc/color-formats-converter.h>
 
+#include <rsutils/string/nocase.h>
 #include <rsutils/json.h>
 using rsutils::json;
 
@@ -189,6 +190,10 @@ rsutils::subscription dds_sensor_proxy::register_options_changed_callback( optio
     return _options_watcher.subscribe( std::move( cb ) );
 }
 
+stream_profiles dds_sensor_proxy::get_active_streams() const 
+{
+    return _active_converted_profiles;
+}
 
 std::shared_ptr< realdds::dds_video_stream_profile >
 dds_sensor_proxy::find_profile( sid_index sidx, realdds::dds_video_stream_profile const & profile ) const
@@ -242,7 +247,7 @@ dds_sensor_proxy::find_profile( sid_index sidx, realdds::dds_motion_stream_profi
 void dds_sensor_proxy::open( const stream_profiles & profiles )
 {
     _formats_converter.prepare_to_convert( profiles );
-
+    _active_converted_profiles = profiles;
     const auto & source_profiles = _formats_converter.get_active_source_profiles();
     // TODO - register processing block options?
 
@@ -472,6 +477,9 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f,
 
 void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
 {
+    // Remove leftovers from previous starts.
+    _streaming_by_name.clear();
+
     for( auto & profile : sensor_base::get_active_streams() )
     {
         auto streamit = _streams.find( sid_index( profile->get_unique_id(), profile->get_stream_index() ) );
@@ -497,6 +505,7 @@ void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
                     invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
                 }
             } );
+        streaming.syncer.start();
 
         if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
         {
@@ -546,7 +555,10 @@ void dds_sensor_proxy::stop()
         dds_stream->stop_streaming();
         dds_stream->close();
 
-        _streaming_by_name[dds_stream->name()].syncer.on_frame_ready( nullptr );
+        // Nullifing the lambda is commented out because we don't want to nullify in middle of user callback (that might
+        // be long) instead we use start/stop.
+        //_streaming_by_name[dds_stream->name()].syncer.on_frame_ready( nullptr );
+        _streaming_by_name[dds_stream->name()].syncer.stop();
 
         if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
         {
@@ -565,7 +577,15 @@ void dds_sensor_proxy::stop()
 
     // Must be done after dds_stream->stop_streaming or we will need to add validity checks to on_data_available,
     // and after software_sensor::stop cause to make sure _is_streaming is false
-    _streaming_by_name.clear();
+    // Removed here, same reason of killing on_frame_ready lambda instance. Moved to start()
+    //_streaming_by_name.clear();
+}
+
+
+void dds_sensor_proxy::close()
+{
+    software_sensor::close();
+    _active_converted_profiles.clear();
 }
 
 
@@ -664,13 +684,50 @@ void dds_sensor_proxy::add_processing_block( std::string const & filter_name )
         if( ! ppb )
             LOG_WARNING( "Unsupported processing block '" + filter_name + "' received" );
         else
+        {
+            // Currently processing block factory does not support block settings, add here if needed.
+            add_processing_block_settings( filter_name, ppb );
             super::add_processing_block( ppb );
+        }
     }
     catch( std::exception const & e )
     {
         // Bad settings, error in configuration, etc.
         LOG_ERROR( "Failed to create processing block '" << filter_name << "': " << e.what() );
     }
+}
+
+void dds_sensor_proxy::add_processing_block_settings( const std::string & filter_name,
+                                                      std::shared_ptr< librealsense::processing_block_interface > & ppb ) const
+{
+    if( rsutils::string::nocase_equal( filter_name, "Decimation Filter" ) )
+        if( !ppb->supports_option( RS2_OPTION_STREAM_FILTER ) )
+            LOG_ERROR( "Decimation Filter does not support stream filter option" );
+        else
+            if( rsutils::string::nocase_equal( get_name(), "RGB Camera" ) )
+            {
+                ppb->get_option( RS2_OPTION_STREAM_FILTER ).set( RS2_STREAM_COLOR );
+                ppb->get_option( RS2_OPTION_STREAM_FORMAT_FILTER ).set( RS2_FORMAT_ANY );
+            }
+            else
+            {
+                ppb->get_option( RS2_OPTION_STREAM_FILTER ).set( RS2_STREAM_DEPTH );
+                ppb->get_option( RS2_OPTION_STREAM_FORMAT_FILTER ).set( RS2_FORMAT_Z16 );
+            }
+}
+
+
+void dds_sensor_proxy::set_frames_callback( rs2_frame_callback_sptr callback )
+{
+    // This callback is mutable, might be modified.
+    // For instance, record_sensor modifies this callback in order to hook it to record frames.
+    _formats_converter.set_frames_callback( callback );
+}
+
+
+rs2_frame_callback_sptr dds_sensor_proxy::get_frames_callback() const
+{
+    return _formats_converter.get_frames_callback();
 }
 
 
