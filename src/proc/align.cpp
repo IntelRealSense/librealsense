@@ -13,7 +13,9 @@
 
 #if defined(RS2_USE_CUDA)
 #include "proc/cuda/cuda-align.h"
-#elif defined(__SSSE3__)
+#include "rsutils/accelerators/gpu.h"
+#endif
+#if defined(__SSSE3__)
 #include "proc/sse/sse-align.h"
 #endif
 #include "proc/neon/neon-align.h"
@@ -25,8 +27,12 @@ namespace librealsense
     std::shared_ptr<align> align::create_align(rs2_stream align_to)
     {
         #if defined(RS2_USE_CUDA)
+        if (rsutils::rs2_is_gpu_available())
+        {
             return std::make_shared<librealsense::align_cuda>(align_to);
-        #elif defined(__SSSE3__)
+        }
+        #endif
+        #if defined(__SSSE3__)
             return std::make_shared<librealsense::align_sse>(align_to);
         #elif defined(__ARM_NEON) && ! defined(ANDROID)
             return std::make_shared<librealsense::align_neon>(align_to);
