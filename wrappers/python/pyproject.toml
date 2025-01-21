@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyrealsense2"
+dynamic = ["version"]
+description = "Python Wrapper for Intel Realsense SDK 2.0."
+readme = "README.rst"
+authors = [
+    { name = "Intel(R) RealSense(TM)", email = "realsense@intel.com" },
+]
+license = {text = "Apache License, Version 2.0"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Human Machine Interfaces",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries :: Application Frameworks"
+]
+requires-python = ">=3.9"
+
+[project.urls]
+homepage = "https://github.com/IntelRealSense/librealsense"
+
+[tool.setuptools]
+packages = {find = {exclude = ["third_party", "docs", "examples"]}}
+
+[project.scripts]
+align-depth2color = "examples.align_depth2color:main"
+export_ply_example = "examples.export_ply:main"
+opencv_viewer_example = "examples.opencv_viewer:main"
+python-rs400-advanced-mode-example = "examples.rs400_advanced_mode:main"
+python-tutorial-1-depth = "examples.tutorial_1_depth:main"
+
+#specifies non-Python files to include in the pyrealsense2 package
+[tool.setuptools.package-data]
+pyrealsense2 = ["*.so", "*.pyd", "*.dll"]
