@@ -9,7 +9,6 @@
 #include <realdds/topics/imu-msg.h>
 #include <realdds/topics/blob-msg.h>
 #include <realdds/topics/dds-topic-names.h>
-#include <realdds/topics/ros2/ros2vector3.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-server.h>

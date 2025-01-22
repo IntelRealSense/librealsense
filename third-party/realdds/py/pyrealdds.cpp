@@ -10,8 +10,8 @@
 #include <realdds/topics/imu-msg.h>
 #include <realdds/topics/blob-msg.h>
 #include <realdds/topics/blob/blobPubSubTypes.h>
-#include <realdds/topics/ros2/ros2imagePubSubTypes.h>
-#include <realdds/topics/ros2/ros2imuPubSubTypes.h>
+#include <realdds/topics/ros2/sensor_msgs/msg/ImagePubSubTypes.h>
+#include <realdds/topics/ros2/sensor_msgs/msg/ImuPubSubTypes.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
