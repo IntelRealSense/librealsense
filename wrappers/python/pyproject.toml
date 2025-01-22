@@ -1,16 +1,17 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyrealsense2"
-dynamic = ["version"]
-description = "Python Wrapper for Intel Realsense SDK 2.0."
-readme = "README.rst"
 authors = [
     { name = "Intel(R) RealSense(TM)", email = "realsense@intel.com" },
 ]
+dynamic = ["version"]
+description = "Python Wrapper for Intel Realsense SDK 2.0."
+readme = {file = "README.rst", content-type = "text/x-rst", charset = "utf-8"}
 license = {text = "Apache License, Version 2.0"}
+
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -41,6 +42,8 @@ homepage = "https://github.com/IntelRealSense/librealsense"
 
 [tool.setuptools]
 packages = {find = {exclude = ["third_party", "docs", "examples"]}}
+py-modules = []
+include-package-data = true
 
 [project.scripts]
 align-depth2color = "examples.align_depth2color:main"
@@ -52,3 +55,6 @@ python-tutorial-1-depth = "examples.tutorial_1_depth:main"
 #specifies non-Python files to include in the pyrealsense2 package
 [tool.setuptools.package-data]
 pyrealsense2 = ["*.so", "*.pyd", "*.dll"]
+
+[tool.setuptools.dynamic]
+version = {attr = "pyrealsense2._version.__version__"}
