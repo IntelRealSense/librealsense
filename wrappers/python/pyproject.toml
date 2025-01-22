@@ -1,17 +1,17 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "pyrealsense2"
-authors = [
-    { name = "Intel(R) RealSense(TM)", email = "realsense@intel.com" },
-]
 dynamic = ["version"]
 description = "Python Wrapper for Intel Realsense SDK 2.0."
 readme = {file = "README.rst", content-type = "text/x-rst", charset = "utf-8"}
+authors = [
+    { name = "Intel(R) RealSense(TM)", email = "realsense@intel.com" },
+]
 license = {text = "Apache License, Version 2.0"}
-
+requires-python = ">=3.9"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -28,6 +28,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+	"Programming Language :: Python :: 3.13",
     "Topic :: Multimedia :: Video",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Human Machine Interfaces",
@@ -35,15 +36,12 @@ classifiers = [
     "Topic :: Software Development",
     "Topic :: Software Development :: Libraries :: Application Frameworks"
 ]
-requires-python = ">=3.9"
+
+[tool.hatch.version]
+path = "pyrealsense2/_version.py"
 
 [project.urls]
 homepage = "https://github.com/IntelRealSense/librealsense"
-
-[tool.setuptools]
-packages = {find = {exclude = ["third_party", "docs", "examples"]}}
-py-modules = []
-include-package-data = true
 
 [project.scripts]
 align-depth2color = "examples.align_depth2color:main"
@@ -52,9 +50,19 @@ opencv_viewer_example = "examples.opencv_viewer:main"
 python-rs400-advanced-mode-example = "examples.rs400_advanced_mode:main"
 python-tutorial-1-depth = "examples.tutorial_1_depth:main"
 
-#specifies non-Python files to include in the pyrealsense2 package
-[tool.setuptools.package-data]
-pyrealsense2 = ["*.so", "*.pyd", "*.dll"]
+[tool.hatch.build]
+artifacts = [
+    "pyrealsense2/*.so",
+    "pyrealsense2/*.pyd",
+    "pyrealsense2/*.dll"
+]
+packages = ["pyrealsense2", "examples"]
+include = ["examples/align_depth2color.py",
+           "examples/export_ply.py", 
+           "examples/opencv_viewer.py",
+           "examples/rs400_advanced_mode.py",
+           "examples/tutorial_1_depth.py",
+]
 
-[tool.setuptools.dynamic]
-version = {attr = "pyrealsense2._version.__version__"}
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_build.py"
