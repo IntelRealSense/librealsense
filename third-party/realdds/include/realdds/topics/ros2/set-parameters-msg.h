@@ -1,12 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <realdds/dds-defines.h>
 
-#include <realdds/topics/ros2/SetParameters.h>
-#include <realdds/topics/ros2/Parameter.h>
-#include <realdds/topics/ros2/SetParametersResult.h>
+#include <realdds/topics/ros2/rcl_interfaces/srv/SetParameters.h>
+#include <realdds/topics/ros2/rcl_interfaces/msg/Parameter.h>
+#include <realdds/topics/ros2/rcl_interfaces/msg/SetParametersResult.h>
 
 #include <string>
 #include <memory>

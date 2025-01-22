@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024-5 Intel Corporation. All Rights Reserved.
 
 #include "lrs-device-controller.h"
 
@@ -23,7 +23,7 @@
 #include <realdds/topics/ros2/set-parameters-msg.h>
 #include <realdds/topics/ros2/list-parameters-msg.h>
 #include <realdds/topics/ros2/describe-parameters-msg.h>
-#include <realdds/topics/ros2/ParameterType.h>
+#include <realdds/topics/ros2/rcl_interfaces/msg/ParameterType.h>
 #include <realdds/topics/ros2/participant-entities-info-msg.h>
 
 #include <rsutils/number/crc32.h>

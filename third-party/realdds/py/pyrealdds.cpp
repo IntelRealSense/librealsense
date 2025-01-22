@@ -13,7 +13,7 @@
 #include <realdds/topics/blob/blobPubSubTypes.h>
 #include <realdds/topics/ros2/sensor_msgs/msg/ImagePubSubTypes.h>
 #include <realdds/topics/ros2/sensor_msgs/msg/ImuPubSubTypes.h>
-#include <realdds/topics/ros2/ParticipantEntitiesInfoPubSubTypes.h>
+#include <realdds/topics/ros2/rmw_dds_common/msg/ParticipantEntitiesInfoPubSubTypes.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>

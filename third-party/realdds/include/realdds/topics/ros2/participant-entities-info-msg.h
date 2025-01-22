@@ -4,7 +4,7 @@
 
 #include <realdds/dds-defines.h>
 
-#include <realdds/topics/ros2/ParticipantEntitiesInfo.h>
+#include <realdds/topics/ros2/rmw_dds_common/msg/ParticipantEntitiesInfo.h>
 
 #include <string>
 #include <memory>
@@ -15,7 +15,7 @@ namespace rmw_dds_common {
 namespace msg {
 class ParticipantEntitiesInfoPubSubType;
 }  // namespace srv
-}  // namespace rcl_interfaces
+}  // namespace rmw_dds_common
 
 
 namespace realdds {
