@@ -6,6 +6,7 @@
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <type_traits>
 #include <rsutils/string/string-utilities.h>
+#include <realsense_imgui.h>
 
 #define TEXT_BUFF_SIZE 1024
 
@@ -31,7 +32,7 @@ bool* draw_edit_button(const char* id, T val, std::string*& val_str)
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Enter text-edit mode");
+            RsImGui::CustomTooltip("Enter text-edit mode");
         }
         ImGui::PopStyleColor(4);
     }
@@ -48,7 +49,7 @@ bool* draw_edit_button(const char* id, T val, std::string*& val_str)
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Exit text-edit mode");
+            RsImGui::CustomTooltip("Exit text-edit mode");
         }
         ImGui::PopStyleColor(4);
     }

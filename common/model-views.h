@@ -13,6 +13,7 @@
 #include <GLFW/glfw3.h>
 #include "opengl3.h"
 #include <imgui.h>
+#include <realsense_imgui.h>
 #include <imgui_impl_glfw.h>
 #include <map>
 #include <set>

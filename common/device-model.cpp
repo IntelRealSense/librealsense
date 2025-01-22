@@ -1439,7 +1439,7 @@ namespace rs2
                         std::string tooltip = rsutils::string::from()
                                            << "Change the configuration of Ethernet based devices"
                                            << ( is_streaming ? " (Disabled while streaming)" : "" );
-                        ImGui::SetTooltip( "%s", tooltip.c_str() );
+                        RsImGui::CustomTooltip( "%s", tooltip.c_str() );
                     }
                 }
             }
@@ -2266,7 +2266,7 @@ namespace rs2
                     ImGui::PushFont(window.get_font());
                     ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip(" %s", ss.str().c_str());
+                        RsImGui::CustomTooltip(" %s", ss.str().c_str());
                     ImGui::PopStyleColor();
                     ImGui::PopFont();
                 }
@@ -3227,7 +3227,7 @@ namespace rs2
                             }
 
                             if (ImGui::IsItemHovered())
-                                ImGui::SetTooltip("UV-Mapping calibration is used to improve UV-Mapping with specific target.");
+                                RsImGui::CustomTooltip("UV-Mapping calibration is used to improve UV-Mapping with specific target.");
                         }
                     }
                 }
@@ -3279,7 +3279,7 @@ namespace rs2
                 //    }
                 //}
                 //if (ImGui::IsItemHovered())
-                //    ImGui::SetTooltip("Focal length plus calibration is used to adjust camera focal length and principal points with specific target.");
+                //    RsImGui::CustomTooltip("Focal length plus calibration is used to adjust camera focal length and principal points with specific target.");
 
                 if (_calib_model.supports())
                 {

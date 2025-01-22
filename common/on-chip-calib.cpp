@@ -2165,7 +2165,7 @@ namespace rs2
                     if (ImGui::Checkbox("Adjust both sides focal length", &restore))
                         get_manager().adjust_both_sides = (restore ? 1 : 0);
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
+                        RsImGui::CustomTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
                 }*/
 
                 // Deprecase OCC-Extended
@@ -2176,13 +2176,13 @@ namespace rs2
                 //if (ImGui::RadioButton("OCC", (int*)&(get_manager().action), 1))
                 //    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB;
                 //if (ImGui::IsItemHovered())
-                //    ImGui::SetTooltip("%s", "On-chip calibration");
+                //    RsImGui::CustomTooltip("%s", "On-chip calibration");
 
                 //ImGui::SetCursorScreenPos({ float(x + 135),  tmp_y });
                 //if (ImGui::RadioButton("OCC Extended", (int *)&(get_manager().action), 0))
                 //    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
                 //if (ImGui::IsItemHovered())
-                //    ImGui::SetTooltip("%s", "On-Chip Calibration Extended");
+                //    RsImGui::CustomTooltip("%s", "On-Chip Calibration Extended");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 31) });
                 get_manager().host_assistance = (get_manager().device_name_string ==  std::string("Intel RealSense D457") ); // To be used for MIPI SKU only

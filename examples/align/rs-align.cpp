@@ -157,7 +157,7 @@ void render_slider(rect location, float* alpha, direction* dir)
     ImGui::SliderFloat("##Slider", alpha, 0.f, 1.f);
     ImGui::PopItemWidth();
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Texture Transparancy: %.3f", *alpha);
+        RsImGui::CustomTooltip("Texture Transparancy: %.3f", *alpha);
 
     // Render direction checkboxes:
     bool to_depth = (*dir == direction::to_depth);

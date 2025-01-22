@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 
 #include "imgui.h"
+#include <realsense_imgui.h>
 #include <string>
 #include <functional>
 #include <thread>
