@@ -24,6 +24,7 @@
 #include <src/context.h>
 
 #include <src/proc/color-formats-converter.h>
+#include <src/proc/y16-10msb-to-y16.h>
 
 #include <rsutils/string/nocase.h>
 #include <rsutils/json.h>
@@ -171,11 +172,22 @@ void dds_sensor_proxy::register_basic_converters()
                               { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1 },
                               { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2 } },
                             []() { return std::make_shared< identity_processing_block >(); } } );
+    std::string product_line = get_device().get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
+    bool d400 = product_line.find("D400") != std::string::npos;
     _formats_converter.register_converter(
                           { { { RS2_FORMAT_Y16, RS2_STREAM_INFRARED } },
                             { { RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1 },
                               { RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2 } },
-                            []() { return std::make_shared< identity_processing_block >(); } } );
+                            [d400]() -> std::shared_ptr< stream_filter_processing_block >
+                            {
+                                // Y16 is calibration format, sent with 10bit data that needs conversion to 16bit.
+                                // D400 products don't have DDS so we use rs-dds-adapter that already converts.
+                                // Calibration with other products that use rs-dds-adapter is currently not supported.
+                                if( d400 )
+                                    return std::make_shared< identity_processing_block >();
+
+                                return std::make_shared< y16_10msb_to_y16 >();
+                            } } );
 
     // Motion
     _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_COMBINED_MOTION, RS2_STREAM_MOTION ) );

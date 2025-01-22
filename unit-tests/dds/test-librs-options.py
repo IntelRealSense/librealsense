@@ -15,9 +15,11 @@ with test.remote.fork( nested_indent=None ) as remote:
             participant.init( 123, 'server' )
 
         with test.closure( 'Create the server' ):
-            device_info = dds.message.device_info()
-            device_info.name = 'Options device'
-            device_info.topic_root = 'librs-options/device'
+            device_info = dds.message.device_info.from_json({
+                "name": "Options device",
+                "topic-root": "librs-options/device",
+                "product-line": "D400"
+            })
             s1p1 = dds.video_stream_profile( 9, dds.video_encoding.rgb, 10, 10 )
             s1profiles = [s1p1]
             s1 = dds.color_stream_server( 's1', 'sensor' )
