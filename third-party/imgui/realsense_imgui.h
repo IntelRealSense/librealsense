@@ -38,6 +38,7 @@ namespace RsImGui
     void          RsImButton(const std::function<void()> &f, bool disable_button = false);
     void          CustomTooltip( const char * fmt, const char * label );
     void          CustomTooltip( const char * label );
+    void          CustomTooltip(const char* fmt, float value);
     }
 
 // Macros to create unique function names using the current line number (__LINE__)
