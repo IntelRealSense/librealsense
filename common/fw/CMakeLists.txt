@@ -17,6 +17,12 @@ set(D4XX_FW_VERSION ${CMAKE_MATCH_1})
 set(D4XX_FW_SHA1 51e37fd01132c500bb4e4af408a41f42391289a5)
 set(D4XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/RS4xx/FW")
 
+string(REGEX MATCH "D555_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
+set(D555_FW_VERSION ${CMAKE_MATCH_1})
+#message(STATUS "D555_FW_VERSION: ${D555_FW_VERSION}")
+set(D555_FW_SHA1 5c5e6cb3c61756fa556c067b9166ba8d92320188)
+set(D555_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/RS555/FW")
+
 add_library(${PROJECT_NAME} STATIC empty.c)
 
 # disable link time optimization for fw by adding -fno-lto to disable -flto flag
@@ -66,6 +72,7 @@ function(target_binary url version sha1 symbol ext)
 endfunction()
 
 target_binary( "${D4XX_FW_URL}"  "${D4XX_FW_VERSION}"  "${D4XX_FW_SHA1}" D4XX_FW_Image .bin)
+target_binary( "${D555_FW_URL}"  "${D555_FW_VERSION}"  "${D555_FW_SHA1}" D555_FW_Image .img)
 
 
 install(TARGETS ${PROJECT_NAME} EXPORT realsense2Targets
