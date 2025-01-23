@@ -200,7 +200,7 @@ def map_unknown_ports():
         log.debug_unindent()
 
 
-def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
+def query( monitor_changes=True, hub_reset=False, recycle_ports=True, disable_dds=True ):
     """
     Start a new LRS context, and collect all devices
     :param monitor_changes: If True, devices will update dynamically as they are removed/added
@@ -223,7 +223,10 @@ def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
-    _context = rs.context( { 'dds': False } )
+    settings = {}
+    if disable_dds:
+        settings['dds'] = { 'enabled': False }
+    _context = rs.context( settings )
     _device_by_sn = dict()
     try:
         log.debug_indent()
@@ -646,6 +649,8 @@ if 'windows' in platform.system().lower():
         #   \\?\usb#vid_8086&pid_0b07&mi_00#6&8bfcab3&0&0000#{e5323777-f976-4f5b-9b55-b94699c46e44}\global
         #
         re_result = re.match( r'.*\\(.*)#vid_(.*)&pid_(.*)(?:&mi_(.*))?#(.*)#', physical_port, flags = re.IGNORECASE )
+        if not re_result:
+            return None
         dev_type = re_result.group(1)
         vid = re_result.group(2)
         pid = re_result.group(3)
@@ -750,7 +755,8 @@ if __name__ == '__main__':
                 usage()
         #
         if action == 'list':
-            query( monitor_changes=False, recycle_ports=False, hub_reset=False )
+            query( monitor_changes=False, recycle_ports=False, hub_reset=False, disable_dds=False )
+            map_unknown_ports()
             for sn in all():
                 device = get( sn )
                 print( '{port} {name:30} {sn:20} {handle}'.format(
