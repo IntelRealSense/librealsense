@@ -10,6 +10,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <iosfwd>
 
 
 namespace rcl_interfaces {
@@ -73,10 +74,10 @@ public:
     //
     //Note - copies the data.
     //TODO - add an API for a function that loans the data and enables the user to free it later.
-    static bool take_next( dds_topic_reader &,
-                           list_parameters_request_msg * output,
-                           dds_sample * optional_sample = nullptr );
+    bool take_next( dds_topic_reader &, dds_sample * optional_sample = nullptr );
 };
+
+std::ostream & operator<<( std::ostream &, list_parameters_request_msg const & );
 
 
 class list_parameters_response_msg
@@ -91,6 +92,9 @@ public:
     bool is_valid() const { return true; }
     void clear() { _raw.result().names().clear(); }
 
+    void add( std::string const & name ) { _raw.result().names().push_back( name ); }
+    void add_prefix( std::string const & prefix ) { _raw.result().prefixes().push_back( prefix ); }
+
 
     static std::shared_ptr< dds_topic > create_topic( std::shared_ptr< dds_participant > const & participant,
                                                       char const * topic_name );
@@ -100,8 +104,10 @@ public:
         return create_topic( participant, topic_name.c_str() );
     }
 
-    // Returns some unique (to the writer) identifier for the sample that was sent, or 0 if unsuccessful
-    dds_sequence_number write_to( dds_topic_writer & );
+    // Sends out the response to the given writer
+    // The request sample is needed for ROS2 request-response mechanism to connect the two
+    // Returns a unique (to the writer) identifier for the sample that was sent, or 0 if unsuccessful
+    dds_sequence_number respond_to( dds_sample const & request_sample, dds_topic_writer & ) const;
 
     // This helper method will take the next sample from a reader. 
     // 

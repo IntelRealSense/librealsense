@@ -12,6 +12,9 @@
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
 
+#include <rsutils/ios/field.h>
+using field = rsutils::ios::field;
+
 
 namespace realdds {
 namespace topics {
@@ -27,23 +30,19 @@ list_parameters_request_msg::create_topic( std::shared_ptr< dds_participant > co
 }
 
 
-/*static*/ bool
-list_parameters_request_msg::take_next( dds_topic_reader & reader, list_parameters_request_msg * output, dds_sample * sample )
+bool list_parameters_request_msg::take_next( dds_topic_reader & reader, dds_sample * sample )
 {
-    list_parameters_request_msg output_;
-    if( ! output )
-        output = &output_;  // use the local copy if the user hasn't provided their own
     dds_sample sample_;
     if( ! sample )
         sample = &sample_;  // use the local copy if the user hasn't provided their own
-    auto status = reader->take_next_sample( &output->_raw, sample );
+    auto status = reader->take_next_sample( &_raw, sample );
     if( status == ReturnCode_t::RETCODE_OK )
     {
         // Only samples for which valid_data is true should be accessed
         // valid_data indicates that the instance is still ALIVE and the `take` return an
         // updated sample
         if( ! sample->valid_data )
-            output->invalidate();
+            invalidate();
 
         return true;
     }
@@ -54,6 +53,16 @@ list_parameters_request_msg::take_next( dds_topic_reader & reader, list_paramete
     }
     DDS_API_CALL_THROW( "list_parameters_request_msg::take_next", status );
 }
+
+
+std::ostream & operator<<( std::ostream & os, list_parameters_request_msg const & msg )
+{
+    os << field::separator << "depth" << field::value << msg.depth();
+    for( auto & p : msg.prefixes() )
+        os << field::separator << p;
+    return os;
+}
+
 
 }  // namespace ros2
 }  // namespace topics

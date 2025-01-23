@@ -33,6 +33,7 @@
 #include <rsutils/string/hexdump.h>
 #include <rsutils/time/timer.h>
 #include <rsutils/string/from.h>
+#include <rsutils/ios/field.h>
 
 #include <algorithm>
 #include <iostream>
@@ -41,6 +42,7 @@ using rsutils::string::hexarray;
 using rsutils::json;
 using namespace realdds;
 using tools::lrs_device_controller;
+using field = rsutils::ios::field;
 
 
 #define CREATE_SERVER_IF_NEEDED( X )                                                                                   \
@@ -1806,7 +1808,7 @@ void lrs_device_controller::on_get_params_request()
 {
     topics::ros2::get_parameters_request_msg control;
     dds_sample sample;
-    while( control.take_next( *_get_params_reader, &control, &sample ) )
+    while( control.take_next( *_get_params_reader, &sample ) )
     {
         if( ! control.is_valid() )
             continue;
@@ -1823,22 +1825,26 @@ void lrs_device_controller::on_get_params_request()
             topics::ros2::get_parameters_response_msg::value_type value;  // NOT_SET
             try
             {
-                auto sep = name.find( '/' );
-                if( sep == std::string::npos )
-                    throw std::runtime_error( "invalid option name" );
-                auto const stream_name = name.substr( 0, sep );
-                auto const option_name = name.substr( sep + 1 );
-                if( option_name == "profile" )
+                auto const sep = name.find( '/' );
+                std::string stream_name;  // empty, i.e. device option
+                std::string option_name = name;
+                if( sep != std::string::npos )
                 {
-                    // return the current profile as a JSON array string
+                    stream_name = name.substr( 0, sep );
                     auto stream_it = _stream_name_to_server.find( stream_name );
                     if( stream_it == _stream_name_to_server.end() )
                         throw std::runtime_error( "invalid stream name" );
-                    auto profile = _bridge.get_profile( stream_it->second );
-                    value.string_value( profile->to_json() );
-                    value.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_BOOL );
+
+                    option_name = name.substr( sep + 1 );
+                    if( option_name == "profile" )
+                    {
+                        // return the current profile as a JSON array string
+                        auto profile = _bridge.get_profile( stream_it->second );
+                        value.string_value( profile->to_json().dump() );
+                        value.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                    }
                 }
-                else
+                if( value.type() == rcl_interfaces::msg::ParameterType_Constants::PARAMETER_NOT_SET )
                 {
                     auto option = _dds_device_server->find_option( option_name, stream_name );
                     if( ! option )
@@ -1867,7 +1873,7 @@ void lrs_device_controller::on_get_params_request()
                             break;
                         default:
                             // Everything else, we'll communicate but as a JSON string...
-                            value.string_value( j );
+                            value.string_value( j.dump() );
                             value.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
                             break;
                         }
@@ -1884,7 +1890,7 @@ void lrs_device_controller::on_get_params_request()
         // Now send the response back
         try
         {
-            response.write_to( *_get_params_writer );
+            response.respond_to( sample, *_get_params_writer );
         }
         catch( std::exception const & e )
         {
@@ -1898,7 +1904,7 @@ void lrs_device_controller::on_set_params_request()
 {
     topics::ros2::set_parameters_request_msg control;
     dds_sample sample;
-    while( control.take_next( *_set_params_reader, &control, &sample ) )
+    while( control.take_next( *_set_params_reader, &sample ) )
     {
         if( ! control.is_valid() )
             continue;
@@ -1916,61 +1922,67 @@ void lrs_device_controller::on_set_params_request()
             topics::ros2::set_parameters_response_msg::result_type result;  // failed; no reason
             try
             {
-                auto sep = name.find( '/' );
-                if( sep == std::string::npos )
-                    throw std::runtime_error( "invalid option name" );
-                auto const stream_name = name.substr( 0, sep );
-                auto const option_name = name.substr( sep + 1 );
-                if( option_name == "profile"
-                    && value.type() == rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING )
+                auto const sep = name.find( '/' );
+                std::string stream_name;  // empty, i.e. device option
+                std::string option_name = name;
+                if( sep != std::string::npos )
                 {
-                    // return the current profile as a JSON array string
+                    stream_name = name.substr( 0, sep );
                     auto stream_it = _stream_name_to_server.find( stream_name );
                     if( stream_it == _stream_name_to_server.end() )
                         throw std::runtime_error( "invalid stream name" );
-                    auto server = stream_it->second;
 
-                    auto requested_profile
-                        = create_dds_stream_profile( server->type_string(), json::parse( value.string_value() ) );
-                    auto profile = find_profile( server, requested_profile );
-                    if( ! profile )
-                        throw std::runtime_error( "invalid profile " + requested_profile->to_string() );
-
-                    _bridge.open( profile );
-                }
-                else
-                {
-                    auto option = _dds_device_server->find_option( option_name, stream_name );
-                    if( ! option )
-                        throw std::runtime_error( "option not found" );
-                    json jvalue;
-                    switch( value.type() )
+                    option_name = name.substr( sep + 1 );
+                    if( option_name == "profile" )
                     {
-                    case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING:
-                        try
-                        {
-                            jvalue = json::parse( value.string_value() );
-                        }
-                        catch( ... )
-                        {
-                            jvalue = value.string_value();
-                        }
-                        break;
-                    case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_BOOL:
-                        jvalue = value.bool_value();
-                        break;
-                    case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_INTEGER:
-                        jvalue = value.integer_value();
-                        break;
-                    case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_DOUBLE:
-                        jvalue = value.double_value();
-                        break;
-                    default:
-                        // Everything else, we don't yet support
-                        throw std::runtime_error( "unsupported value type " + std::to_string( int( value.type() ) ) );
+                        if( value.type() != rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING )
+                            throw std::runtime_error( "invalid profile type" );
+
+                        auto server = stream_it->second;
+                        auto requested_profile
+                            = create_dds_stream_profile( server->type_string(), json::parse( value.string_value() ) );
+                        auto profile = find_profile( server, requested_profile );
+                        if( ! profile )
+                            throw std::runtime_error( "invalid profile '" + requested_profile->to_string() + "'" );
+
+                        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "][" << name << "] = " << value.string_value() );
+                        _bridge.open( profile );
+                        result.successful( true );
+                        response.add( result );
+                        continue;
                     }
-                    option->set_value( jvalue );
                 }
+                auto option = _dds_device_server->find_option( option_name, stream_name );
+                if( ! option )
+                    throw std::runtime_error( "option not found" );
+                json jvalue;
+                switch( value.type() )
+                {
+                case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING:
+                    try
+                    {
+                        jvalue = json::parse( value.string_value() );
+                    }
+                    catch( ... )
+                    {
+                        jvalue = value.string_value();
+                    }
+                    break;
+                case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_BOOL:
+                    jvalue = value.bool_value();
+                    break;
+                case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_INTEGER:
+                    jvalue = value.integer_value();
+                    break;
+                case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_DOUBLE:
+                    jvalue = value.double_value();
+                    break;
+                default:
+                    // Everything else, we don't yet support
+                    throw std::runtime_error( "unsupported value type " + std::to_string( int( value.type() ) ) );
+                }
+                LOG_DEBUG( "[" << _dds_device_server->debug_name() << "][" << name << "] = " << jvalue );
+                set_option( option, jvalue );
                 result.successful( true );
                 response.add( result );
             }
@@ -1984,7 +1996,7 @@ void lrs_device_controller::on_set_params_request()
         // Now send the response back
         try
         {
-            response.write_to( *_set_params_writer );
+            response.respond_to( sample, *_set_params_writer );
         }
         catch( std::exception const & e )
         {
@@ -1998,7 +2010,7 @@ void lrs_device_controller::on_list_params_request()
 {
     topics::ros2::list_parameters_request_msg control;
     dds_sample sample;
-    while( control.take_next( *_list_params_reader, &control, &sample ) )
+    while( control.take_next( *_list_params_reader, &sample ) )
     {
         if( ! control.is_valid() )
             continue;
@@ -2007,86 +2019,30 @@ void lrs_device_controller::on_list_params_request()
             rsutils::string::from( realdds::print_raw_guid( sample.sample_identity.writer_guid() ) ),
             sample.sample_identity.sequence_number().to64long(),
         } );
-        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] <----- list_parameters" );
+        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] <----- list_parameters" << field::group() << control );
         topics::ros2::list_parameters_response_msg response;
-#if 0
-                for( auto & parameter : control.prefixes() )
-                {
-                    auto & name = parameter.name();
-                    auto & value = parameter.value();
-                    topics::ros2::set_parameters_response_msg::result_type result;  // failed; no reason
-                    try
-                    {
-                        auto sep = name.find( '/' );
-                        if( sep == std::string::npos )
-                            throw std::runtime_error( "invalid option name" );
-                        auto const stream_name = name.substr( 0, sep );
-                        auto const option_name = name.substr( sep + 1 );
-                        if( option_name == "profile"
-                            && value.type() == rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING )
-                        {
-                            // return the current profile as a JSON array string
-                            auto stream_it = _stream_name_to_server.find( stream_name );
-                            if( stream_it == _stream_name_to_server.end() )
-                                throw std::runtime_error( "invalid stream name" );
-                            auto server = stream_it->second;
-
-                            auto requested_profile
-                                = create_dds_stream_profile( server->type_string(), json::parse( value.string_value() ) );
-                            auto profile = find_profile( server, requested_profile );
-                            if( !profile )
-                                throw std::runtime_error( "invalid profile " + requested_profile->to_string() );
-
-                            _bridge.open( profile );
-                        }
-                        else
-                        {
-                            auto option = _dds_device_server->find_option( option_name, stream_name );
-                            if( !option )
-                                throw std::runtime_error( "option not found" );
-                            json jvalue;
-                            switch( value.type() )
-                            {
-                            case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING:
-                                try
-                                {
-                                    jvalue = json::parse( value.string_value() );
-                                }
-                                catch( ... )
-                                {
-                                    jvalue = value.string_value();
-                                }
-                                break;
-                            case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_BOOL:
-                                jvalue = value.bool_value();
-                                break;
-                            case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_INTEGER:
-                                jvalue = value.integer_value();
-                                break;
-                            case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_DOUBLE:
-                                jvalue = value.double_value();
-                                break;
-                            default:
-                                // Everything else, we don't yet support
-                                throw std::runtime_error( "unsupported value type " + std::to_string( int( value.type() ) ) );
-                            }
-                            option->set_value( jvalue );
-                        }
-                        result.successful( true );
-                        response.add( result );
-                    }
-                    catch( std::exception const & e )
-                    {
-                        LOG_ERROR( "[" << _dds_device_server->debug_name() << "][" << name << "] " << e.what() );
-                        result.reason( e.what() );
-                        response.add( result );
-                    }
-                }
-#endif
+        if( control.prefixes().empty() || control.prefixes().size() == 1 && control.prefixes().front() == "" )
+        {
+            // Include device options (with empty prefix)
+            for( auto & option : _dds_device_server->options() )
+                response.add( option->get_name() );
+        }
+        for( auto & stream_server : _dds_device_server->streams() )
+        {
+            // Stream options use the stream name as the prefix
+            response.add( stream_server.first + "/profile" );
+            if( control.prefixes().empty()
+                || std::find( control.prefixes().begin(), control.prefixes().end(), stream_server.first )
+                       != control.prefixes().end() )
+            {
+                for( auto & option : stream_server.second->options() )
+                    response.add( stream_server.first + '/' + option->get_name() );
+            }
+        }
         // Now send the response back
         try
         {
-            response.write_to( *_list_params_writer );
+            response.respond_to( sample, *_list_params_writer );
         }
         catch( std::exception const & e )
         {
@@ -2100,7 +2056,7 @@ void lrs_device_controller::on_describe_params_request()
 {
     topics::ros2::describe_parameters_request_msg control;
     dds_sample sample;
-    while( control.take_next( *_describe_params_reader, &control, &sample ) )
+    while( control.take_next( *_describe_params_reader, &sample ) )
     {
         if( ! control.is_valid() )
             continue;
@@ -2111,84 +2067,73 @@ void lrs_device_controller::on_describe_params_request()
         } );
         LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] <----- describe_parameters" );
         topics::ros2::describe_parameters_response_msg response;
-#if 0
-                for( auto & parameter : control.prefixes() )
+        for( auto & name : control.names() )
+        {
+            topics::ros2::describe_parameters_response_msg::descriptor_type desc;  // NOT_SET
+            desc.name( name );
+            try
+            {
+                auto const sep = name.find( '/' );
+                std::string stream_name;  // empty, i.e. device option
+                std::string option_name = name;
+                if( sep != std::string::npos )
                 {
-                    auto & name = parameter.name();
-                    auto & value = parameter.value();
-                    topics::ros2::set_parameters_response_msg::result_type result;  // failed; no reason
-                    try
-                    {
-                        auto sep = name.find( '/' );
-                        if( sep == std::string::npos )
-                            throw std::runtime_error( "invalid option name" );
-                        auto const stream_name = name.substr( 0, sep );
-                        auto const option_name = name.substr( sep + 1 );
-                        if( option_name == "profile"
-                            && value.type() == rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING )
-                        {
-                            // return the current profile as a JSON array string
-                            auto stream_it = _stream_name_to_server.find( stream_name );
-                            if( stream_it == _stream_name_to_server.end() )
-                                throw std::runtime_error( "invalid stream name" );
-                            auto server = stream_it->second;
+                    stream_name = name.substr( 0, sep );
+                    auto stream_it = _stream_name_to_server.find( stream_name );
+                    if( stream_it == _stream_name_to_server.end() )
+                        throw std::runtime_error( "invalid stream name" );
 
-                            auto requested_profile
-                                = create_dds_stream_profile( server->type_string(), json::parse( value.string_value() ) );
-                            auto profile = find_profile( server, requested_profile );
-                            if( !profile )
-                                throw std::runtime_error( "invalid profile " + requested_profile->to_string() );
-
-                            _bridge.open( profile );
-                        }
-                        else
-                        {
-                            auto option = _dds_device_server->find_option( option_name, stream_name );
-                            if( !option )
-                                throw std::runtime_error( "option not found" );
-                            json jvalue;
-                            switch( value.type() )
-                            {
-                            case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING:
-                                try
-                                {
-                                    jvalue = json::parse( value.string_value() );
-                                }
-                                catch( ... )
-                                {
-                                    jvalue = value.string_value();
-                                }
-                                break;
-                            case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_BOOL:
-                                jvalue = value.bool_value();
-                                break;
-                            case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_INTEGER:
-                                jvalue = value.integer_value();
-                                break;
-                            case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_DOUBLE:
-                                jvalue = value.double_value();
-                                break;
-                            default:
-                                // Everything else, we don't yet support
-                                throw std::runtime_error( "unsupported value type " + std::to_string( int( value.type() ) ) );
-                            }
-                            option->set_value( jvalue );
-                        }
-                        result.successful( true );
-                        response.add( result );
-                    }
-                    catch( std::exception const & e )
+                    option_name = name.substr( sep + 1 );
+                    if( option_name == "profile" )
                     {
-                        LOG_ERROR( "[" << _dds_device_server->debug_name() << "][" << name << "] " << e.what() );
-                        result.reason( e.what() );
-                        response.add( result );
+                        desc.description( "the current stream profile" );
+                        desc.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
                     }
                 }
-#endif
+                if( desc.type() == rcl_interfaces::msg::ParameterType_Constants::PARAMETER_NOT_SET )
+                {
+                    auto option = _dds_device_server->find_option( option_name, stream_name );
+                    if( ! option )
+                        throw std::runtime_error( "option not found" );
+                    desc.description( option->get_description() );
+                    desc.read_only( option->is_read_only() );
+                    if( option->is_valid() )  // Otherwise leave the type as unset
+                    {
+                        auto & j = option->get_value();
+                        switch( j.type() )
+                        {
+                        case json::value_t::string:
+                            desc.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                            break;
+                        case json::value_t::number_float:
+                            desc.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_DOUBLE );
+                            break;
+                        case json::value_t::number_integer:
+                        case json::value_t::number_unsigned:
+                            desc.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_INTEGER );
+                            break;
+                        case json::value_t::boolean:
+                            desc.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_BOOL );
+                            break;
+                        default:
+                            // Everything else, we'll communicate but as a JSON string...
+                            desc.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                            break;
+                        }
+                    }
+                }
+                response.add( desc );
+            }
+            catch( std::exception const & e )
+            {
+                LOG_ERROR( "[" << _dds_device_server->debug_name() << "][" << name << "] " << e.what() );
+                //response.add( desc );
+            }
+        }
         // Now send the response back
         try
         {
-            response.write_to( *_describe_params_writer );
+            response.respond_to( sample, *_describe_params_writer );
         }
         catch( std::exception const & e )
         {

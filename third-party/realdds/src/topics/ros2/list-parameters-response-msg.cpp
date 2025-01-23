@@ -58,13 +58,20 @@ list_parameters_response_msg::take_next( dds_topic_reader & reader, list_paramet
 }
 
 
-dds_sequence_number list_parameters_response_msg::write_to( dds_topic_writer & writer )
+dds_sequence_number list_parameters_response_msg::respond_to( dds_sample const & request_sample,
+                                                              dds_topic_writer & writer ) const
 {
     eprosima::fastrtps::rtps::WriteParams params;
-    bool success = DDS_API_CALL( writer.get()->write( &_raw, params ) );
-    if( !success )
+    params.related_sample_identity( request_sample.sample_identity );
+    const dds_guid & reader_guid = request_sample.related_sample_identity.writer_guid();
+    if( reader_guid != dds_guid::unknown() )
+        params.related_sample_identity().writer_guid() = reader_guid;
+
+    void const * pcv_data = &_raw;
+    bool success = DDS_API_CALL( writer.get()->write( const_cast< void * >( pcv_data ), params ) );
+    if( ! success )
     {
-        LOG_ERROR( "Error writing message" );
+        LOG_ERROR( "Error writing response message" );
         return 0;
     }
     // The params will contain, after the write, the sequence number (incremented automatically) for the sample that was

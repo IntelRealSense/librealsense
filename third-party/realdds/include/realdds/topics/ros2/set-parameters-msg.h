@@ -67,9 +67,7 @@ public:
     //
     //Note - copies the data.
     //TODO - add an API for a function that loans the data and enables the user to free it later.
-    static bool take_next( dds_topic_reader &,
-                           set_parameters_request_msg * output,
-                           dds_sample * optional_sample = nullptr );
+    bool take_next( dds_topic_reader &, dds_sample * optional_sample = nullptr );
 };
 
 
@@ -96,8 +94,10 @@ public:
         return create_topic( participant, topic_name.c_str() );
     }
 
-    // Returns some unique (to the writer) identifier for the sample that was sent, or 0 if unsuccessful
-    dds_sequence_number write_to( dds_topic_writer & );
+    // Sends out the response to the given writer
+    // The request sample is needed for ROS2 request-response mechanism to connect the two
+    // Returns a unique (to the writer) identifier for the sample that was sent, or 0 if unsuccessful
+    dds_sequence_number respond_to( dds_sample const & request_sample, dds_topic_writer & ) const;
 
     // This helper method will take the next sample from a reader. 
     // 
@@ -107,9 +107,7 @@ public:
     //
     //Note - copies the data.
     //TODO - add an API for a function that loans the data and enables the user to free it later.
-    static bool take_next( dds_topic_reader &,
-                           set_parameters_response_msg * output,
-                           dds_sample * optional_sample = nullptr );
+    bool take_next( dds_topic_reader &, dds_sample * optional_sample = nullptr );
 };
 
 

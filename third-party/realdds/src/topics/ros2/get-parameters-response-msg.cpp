@@ -29,23 +29,19 @@ get_parameters_response_msg::create_topic( std::shared_ptr< dds_participant > co
 }
 
 
-/*static*/ bool
-get_parameters_response_msg::take_next( dds_topic_reader & reader, get_parameters_response_msg * output, dds_sample * sample )
+bool get_parameters_response_msg::take_next( dds_topic_reader & reader, dds_sample * sample )
 {
-    get_parameters_response_msg output_;
-    if( ! output )
-        output = &output_;  // use the local copy if the user hasn't provided their own
     dds_sample sample_;
     if( ! sample )
         sample = &sample_;  // use the local copy if the user hasn't provided their own
-    auto status = reader->take_next_sample( &output->_raw, sample );
+    auto status = reader->take_next_sample( &_raw, sample );
     if( status == ReturnCode_t::RETCODE_OK )
     {
         // Only samples for which valid_data is true should be accessed
         // valid_data indicates that the instance is still ALIVE and the `take` return an
         // updated sample
         if( ! sample->valid_data )
-            output->invalidate();
+            invalidate();
 
         return true;
     }
@@ -58,10 +54,17 @@ get_parameters_response_msg::take_next( dds_topic_reader & reader, get_parameter
 }
 
 
-dds_sequence_number get_parameters_response_msg::write_to( dds_topic_writer & writer )
+dds_sequence_number get_parameters_response_msg::respond_to( dds_sample const & request_sample,
+                                                             dds_topic_writer & writer ) const
 {
     eprosima::fastrtps::rtps::WriteParams params;
-    bool success = DDS_API_CALL( writer.get()->write( &_raw, params ) );
+    params.related_sample_identity( request_sample.sample_identity );
+    const dds_guid & reader_guid = request_sample.related_sample_identity.writer_guid();
+    if( reader_guid != dds_guid::unknown() )
+        params.related_sample_identity().writer_guid() = reader_guid;
+
+    void const * pcv_data = &_raw;
+    bool success = DDS_API_CALL( writer.get()->write( const_cast< void * >( pcv_data ), params ) );
     if( ! success )
     {
         LOG_ERROR( "Error writing message" );
