@@ -44,6 +44,7 @@ constexpr char const * REQUEST_SUFFIX = "Request";
 constexpr char const * RESPONSE_SUFFIX = "Reply";
 
 constexpr char const * DISCOVERY_INFO = "ros_discovery_info";
+constexpr char const * PARAMETER_EVENTS_NAME = "parameter_events";
 
 }  // namespace ros2
 

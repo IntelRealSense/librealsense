@@ -9,6 +9,7 @@
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/ros2/participant-entities-info-msg.h>
+#include <realdds/topics/ros2/parameter-events-msg.h>
 #include <realdds/dds-publisher.h>
 #include <realdds/dds-topic-writer.h>
 
@@ -24,6 +25,7 @@
 #include <rsutils/json-config.h>
 #include <rsutils/concurrency/control-c-handler.h>
 #include <rsutils/concurrency/delayed.h>
+#include <rsutils/string/from.h>
 
 #include <string>
 #include <iostream>
@@ -221,9 +223,27 @@ try
             msg.write_to( *discovery_info_writer );
         } );
 
+    // And a writer for the ROS2 /parameter_events topics
+    std::shared_ptr< realdds::dds_topic_writer > parameter_events_writer;
+    std::string const
+        parameters_events_topic_name = rsutils::string::from()
+                                    << topics::ros2::ROOT
+                                    << topics::ros2::PARAMETER_EVENTS_NAME;
+    if( auto topic = realdds::topics::ros2::parameter_events_msg::create_topic(
+        participant,
+        parameters_events_topic_name.c_str() ) )
+    {
+        // The parameter_events topic is where we'll publish any new/changed/deleted events
+        parameter_events_writer = std::make_shared< dds_topic_writer >( topic, publisher );
+        dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        parameter_events_writer->override_qos_from_json( wqos,
+            participant->settings().nested( "device", "ros-parameter-events" ) );
+        parameter_events_writer->run( wqos );
+    }
+
     // Run the LRS device watcher
-    auto dev_watcher = std::make_shared< tools::lrs_device_watcher >( ctx );
-    dev_watcher->run(
+    tools::lrs_device_watcher dev_watcher( ctx );
+    dev_watcher.run(
         // Handle a device connection
         [&]( rs2::device dev ) {
 
@@ -238,7 +258,8 @@ try
 
             if( ! dev_info.serial_number().empty() )
                 lrs_device_controller->initialize_ros2_node_entities(
-                    build_node_name( dev_info.name(), dev_info.serial_number() ) );
+                    build_node_name( dev_info.name(), dev_info.serial_number() ),
+                    parameter_events_writer );
 
             // Finally, we're ready to broadcast it
             dds_device_server->broadcast( dev_info );

@@ -54,7 +54,8 @@ public:
 
     bool is_recovery() const;
 
-    void initialize_ros2_node_entities( std::string const & node_name );
+    void initialize_ros2_node_entities( std::string const & node_name,
+                                        std::shared_ptr< realdds::dds_topic_writer > parameter_events_writer );
     void fill_ros2_node_entities( realdds::topics::ros2::node_entities_info & ) const;
 
 private:
@@ -103,6 +104,7 @@ private:
 
     dispatcher _control_dispatcher;
 
+    std::string _ros2_node_name;
     std::shared_ptr< realdds::dds_topic_reader > _get_params_reader;
     std::shared_ptr< realdds::dds_topic_writer > _get_params_writer;
     std::shared_ptr< realdds::dds_topic_reader > _set_params_reader;
@@ -111,6 +113,7 @@ private:
     std::shared_ptr< realdds::dds_topic_writer > _list_params_writer;
     std::shared_ptr< realdds::dds_topic_reader > _describe_params_reader;
     std::shared_ptr< realdds::dds_topic_writer > _describe_params_writer;
+    std::shared_ptr< realdds::dds_topic_writer > _parameter_events_writer;
 };  // class lrs_device_controller
 
 }  // namespace tools

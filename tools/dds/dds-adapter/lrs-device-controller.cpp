@@ -25,6 +25,7 @@
 #include <realdds/topics/ros2/describe-parameters-msg.h>
 #include <realdds/topics/ros2/rcl_interfaces/msg/ParameterType.h>
 #include <realdds/topics/ros2/participant-entities-info-msg.h>
+#include <realdds/topics/ros2/parameter-events-msg.h>
 
 #include <rsutils/number/crc32.h>
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -789,6 +790,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                 {
                     rs2::sensor sensor( strong_sensor );
                     json option_values = json::object();
+                    topics::ros2::parameter_events_msg msg;
                     for( auto changed_option : options )
                     {
                         std::string const option_name = sensor.get_option_name( changed_option->id );
@@ -807,24 +809,39 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             continue;
                         }
                         json value;
+                        topics::ros2::parameter_events_msg::param_type p;
                         if( changed_option->is_valid )
                         {
                             switch( changed_option->type )
                             {
                             case RS2_OPTION_TYPE_FLOAT:
                                 if( auto e = std::dynamic_pointer_cast< realdds::dds_enum_option >( dds_option ) )
+                                {
                                     value = e->get_choices().at( int( changed_option->as_float ) );
+                                    p.value().type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                                    p.value().string_value( value );
+                                }
                                 else
+                                {
                                     value = changed_option->as_float;
+                                    p.value().type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_DOUBLE );
+                                    p.value().double_value( value );
+                                }
                                 break;
                             case RS2_OPTION_TYPE_STRING:
                                 value = changed_option->as_string;
+                                p.value().type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                                p.value().string_value( value );
                                 break;
                             case RS2_OPTION_TYPE_INTEGER:
                                 value = changed_option->as_integer;
+                                p.value().type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_INTEGER );
+                                p.value().integer_value( value );
                                 break;
                             case RS2_OPTION_TYPE_BOOLEAN:
                                 value = (bool)changed_option->as_integer;
+                                p.value().type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_BOOL );
+                                p.value().bool_value( value );
                                 break;
                             default:
                                 LOG_ERROR( "Unknown option '" << option_name << "' type: "
@@ -839,6 +856,8 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                         }
                         dds_option->set_value( std::move( value ) );
                         option_values[stream_name][option_name] = dds_option->get_value();
+                        p.name( stream_name + '/' + option_name );
+                        msg.add_changed_param( std::move( p ) );
                     }
                     if( option_values.size() )
                     {
@@ -848,6 +867,13 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                         } );
                         LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] options changed: " << std::setw( 4 ) << j );
                         _dds_device_server->publish_notification( std::move( j ) );
+                        if( _parameter_events_writer )
+                        {
+                            // Also publish on the ROS2 topic
+                            msg.set_node_name( _ros2_node_name );
+                            msg.set_timestamp( realdds::now() );
+                            msg.write_to( *_parameter_events_writer );
+                        }
                     }
                 }
             } );
@@ -877,15 +903,17 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
 }
 
 
-void lrs_device_controller::initialize_ros2_node_entities( std::string const & node_name )
+void lrs_device_controller::initialize_ros2_node_entities( std::string const & node_name,
+                                                           std::shared_ptr< realdds::dds_topic_writer > parameter_events_writer )
 {
-    // Create ROS2 request & response channels
     // Note that we need to use the node name and not necessarily the realsense topic-root (which could be different!)
     assert( '/' == *topics::ros2::NAMESPACE );
-    std::string full_name = rsutils::string::from()
-        << ( topics::ros2::NAMESPACE + 1 )  // without the beginning /
+    _ros2_node_name = rsutils::string::from()  // E.g., "/realsense/D455_12345678"
+        << topics::ros2::NAMESPACE
         << topics::SEPARATOR
         << node_name;
+    // Create ROS2 request & response channels
+    std::string const full_name = _ros2_node_name.substr( 1 );  // without the beginning /
     auto const request_root = topics::ros2::SERVICE_REQUEST_ROOT + full_name;
     auto const response_root = topics::ros2::SERVICE_RESPONSE_ROOT + full_name;
     auto participant = _dds_device_server->participant();
@@ -975,6 +1003,7 @@ void lrs_device_controller::initialize_ros2_node_entities( std::string const & n
             participant->settings().nested( "device", "describe-parameters-response" ) );
         _describe_params_writer->run( wqos );
     }
+    _parameter_events_writer = parameter_events_writer;
 }
 
 
@@ -1949,6 +1978,17 @@ void lrs_device_controller::on_set_params_request()
                         _bridge.open( profile );
                         result.successful( true );
                         response.add( result );
+                        if( _parameter_events_writer )
+                        {
+                            topics::ros2::parameter_events_msg msg;
+                            msg.set_node_name( _ros2_node_name );
+                            msg.set_timestamp( realdds::now() );
+                            topics::ros2::parameter_events_msg::param_type p;
+                            p.name( name );
+                            p.value() = value;
+                            msg.add_changed_param( std::move( p ) );
+                            msg.write_to( *_parameter_events_writer );
+                        }
                         continue;
                     }
                 }
