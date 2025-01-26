@@ -1,9 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-5 Intel Corporation. All Rights Reserved.
 
-#include <realdds/topics/ros2/ros2image.h>
 #include <realdds/topics/image-msg.h>
-#include <realdds/topics/ros2/ros2imagePubSubTypes.h>
+#include <realdds/topics/ros2/sensor_msgs/msg/ImagePubSubTypes.h>
 
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
