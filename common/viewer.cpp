@@ -3618,7 +3618,7 @@ namespace rs2
                 s.second.profile.stream_type() == RS2_STREAM_LABELED_POINT_CLOUD)
             {
                 auto stream_origin_iter = streams_origin.find(s.second.profile.unique_id());
-                if (selected_labeled_points_source_uid == -1)
+                if (selected_labeled_points_source_uid != stream_origin_iter->second)
                 {
                     if (stream_origin_iter != streams_origin.end() &&
                         streams.find(stream_origin_iter->second) != streams.end())
