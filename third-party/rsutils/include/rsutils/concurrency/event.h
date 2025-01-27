@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <chrono>
@@ -20,8 +20,8 @@ class event
     bool _is_set;
 
 public:
-    event()
-        : _is_set( false )
+    event( bool is_set = false )
+        : _is_set( is_set )
     {
     }
 
@@ -47,10 +47,13 @@ public:
 
     // Untrigger the event
     // Does not affect any threads
-    void clear()
+    // Returns the previous state
+    bool clear()
     {
         std::unique_lock< std::mutex > lock( _m );
+        bool was_set = _is_set;
         _is_set = false;
+        return was_set;
     }
 
     // Block until the event is set()
@@ -78,9 +81,7 @@ public:
     bool wait( std::chrono::duration< Rep, Period > const & timeout ) const
     {
         std::unique_lock< std::mutex > lock( _m );
-        if( ! _is_set )
-            _is_set = ( std::cv_status::timeout != _cv.wait( lock, timeout ) );
-        return _is_set;
+        return _is_set || std::cv_status::timeout != _cv.wait_for( lock, timeout );
     }
 
     // Clear and block until the event is set() again or timeout occurs
@@ -90,8 +91,7 @@ public:
     {
         std::unique_lock< std::mutex > lock( _m );
         _is_set = false;
-        _is_set = ( std::cv_status::timeout != _cv.wait( lock, timeout ) );
-        return _is_set;
+        return std::cv_status::timeout != _cv.wait_for( lock, timeout );
     }
 };
 
