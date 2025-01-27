@@ -11,6 +11,7 @@ Console app for converting ROS-bag files to various formats (currently supported
 |`-i <ros-bag-file>`|ROS-bag filename||
 |`-p <png-path>`|convert to PNG, set output path to png-path||
 |`-v <csv-path>`|convert to CSV, set output path to csv-path, supported formats: depth, color, imu, pose||
+|`-V <csv-path>`|convert to 3D CSV, set output path to csv-path, supported formats: depth||
 |`-r <raw-path>`|convert to RAW, set output path to raw-path||
 |`-l <ply-path>`|convert to PLY, set output path to ply-path||
 |`-b <bin-path>`|convert to BIN (depth matrix), set output path to bin-path||

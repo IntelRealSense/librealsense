@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 
 
 #include "converter-csv.hpp"
@@ -58,7 +58,7 @@ void converter_csv::convert_depth(rs2::depth_frame& depthframe)
     }
 
     start_worker(
-        [this, &depthframe] {
+        [this, depthframe] {
 
             std::stringstream filename;
             filename << _filePath
