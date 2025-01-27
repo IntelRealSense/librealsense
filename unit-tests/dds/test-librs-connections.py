@@ -72,13 +72,14 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Close the third", on_fail=test.ABORT ):
         remote.run( 'close_server( instance3 )' )
-        remote.run( 'instance2 = None', timeout=1 )
+        remote.run( 'instance3 = None', timeout=1 )
         rs.wait_for_devices( context, n=1. )
     #
     #############################################################################################
     #
     with test.closure( "Close the last", on_fail=test.ABORT ):
         remote.run( 'close_server( instance4 )' )
+        remote.run( 'instance4 = None', timeout=1 )
         rs.wait_for_devices( context, n=0. )
     #
     #############################################################################################
