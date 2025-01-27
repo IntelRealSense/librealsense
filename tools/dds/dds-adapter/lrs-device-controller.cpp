@@ -774,6 +774,24 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
             _dds_device_server->publish_notification( std::move( j ) );
         } );
     _bridge.init( supported_streams );
+    _bridge.on_stream_profile_change(
+        [this]( std::shared_ptr< realdds::dds_stream_server > const & server,
+                std::shared_ptr< realdds::dds_stream_profile > const & profile )
+        {
+            // Update that this profile has changed
+            if( _parameter_events_writer )
+            {
+                topics::ros2::parameter_events_msg msg;
+                msg.set_node_name( _ros2_node_name );
+                msg.set_timestamp( realdds::now() );
+                topics::ros2::parameter_events_msg::param_type p;
+                p.name( server->name() + "/profile" );
+                p.value().type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                p.value().string_value( profile->to_json().dump() );
+                msg.add_changed_param( std::move( p ) );
+                msg.write_to( *_parameter_events_writer );
+            }
+        } );
 
     extrinsics = get_extrinsics_map( dev );
 
@@ -1967,28 +1985,31 @@ void lrs_device_controller::on_set_params_request()
                         if( value.type() != rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING )
                             throw std::runtime_error( "invalid profile type" );
 
-                        auto server = stream_it->second;
-                        auto requested_profile
-                            = create_dds_stream_profile( server->type_string(), json::parse( value.string_value() ) );
-                        auto profile = find_profile( server, requested_profile );
-                        if( ! profile )
-                            throw std::runtime_error( "invalid profile '" + requested_profile->to_string() + "'" );
+                        if( value.string_value().empty() )
+                        {
+                            // We need to provide a way to reset the profile, back to an implicit state
+                            // Providing an empty profile will do this
+                            // NOTE that it will do this for ALL streams!
+                            // NOTE this will call the on_stream_profile_change() callback and send out notifications
+                            _bridge.reset();
+                        }
+                        else
+                        {
+                            auto server = stream_it->second;
+                            auto requested_profile = create_dds_stream_profile( server->type_string(),
+                                                                                json::parse( value.string_value() ) );
+                            auto profile = find_profile( server, requested_profile );
+                            if( ! profile )
+                                throw std::runtime_error( "invalid profile '" + requested_profile->to_string() + "'" );
 
-                        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "][" << name << "] = " << value.string_value() );
-                        _bridge.open( profile );
+                            LOG_DEBUG( "[" << _dds_device_server->debug_name() << "][" << name
+                                           << "] = " << value.string_value() );
+
+                            // NOTE this will call the on_stream_profile_change() callback and send out notifications
+                            _bridge.open( profile );
+                        }
                         result.successful( true );
                         response.add( result );
-                        if( _parameter_events_writer )
-                        {
-                            topics::ros2::parameter_events_msg msg;
-                            msg.set_node_name( _ros2_node_name );
-                            msg.set_timestamp( realdds::now() );
-                            topics::ros2::parameter_events_msg::param_type p;
-                            p.name( name );
-                            p.value() = value;
-                            msg.add_changed_param( std::move( p ) );
-                            msg.write_to( *_parameter_events_writer );
-                        }
                         continue;
                     }
                 }
