@@ -57,7 +57,9 @@ void converter_base::wait_sub_workers()
 
 void converter_base::wait()
 {
-    _worker.join();
+    if (_worker.joinable()) {
+        _worker.join();
+    }
 }
 
 std::string converter_base::get_statistics()
