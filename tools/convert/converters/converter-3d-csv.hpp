@@ -1,8 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 
-#ifndef __RS_CONVERTER_CONVERTER_3D_CSV_H
-#define __RS_CONVERTER_CONVERTER_3D_CSV_H
+#pragma once
 
 
 #include <fstream>
@@ -39,7 +38,3 @@ namespace rs2 {
         } // namespace converter
     } // namespace tools
 } // namespace rs2
-
-
-
-#endif
