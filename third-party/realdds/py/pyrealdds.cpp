@@ -10,8 +10,8 @@
 #include <realdds/topics/imu-msg.h>
 #include <realdds/topics/blob-msg.h>
 #include <realdds/topics/blob/blobPubSubTypes.h>
-#include <realdds/topics/ros2/ros2imagePubSubTypes.h>
-#include <realdds/topics/ros2/ros2imuPubSubTypes.h>
+#include <realdds/topics/ros2/sensor_msgs/msg/ImagePubSubTypes.h>
+#include <realdds/topics/ros2/sensor_msgs/msg/ImuPubSubTypes.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
@@ -829,7 +829,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "__repr__", []( dds_video_encoding const & self ) { return self.to_string(); } );
     video_encoding.attr( "z16" ) = dds_video_encoding( "16UC1" );
     video_encoding.attr( "y8" ) = dds_video_encoding( "mono8" );
-    video_encoding.attr( "y16" ) = dds_video_encoding( "Y16" );  // todo should be mono16
+    video_encoding.attr( "y16" ) = dds_video_encoding( "mono16" );
     video_encoding.attr( "byr2" ) = dds_video_encoding( "BYR2" );
     video_encoding.attr( "yuyv" ) = dds_video_encoding( "yuv422_yuy2" );
     video_encoding.attr( "uyvy" ) = dds_video_encoding( "uyvy" );

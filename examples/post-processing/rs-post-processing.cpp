@@ -324,7 +324,7 @@ bool filter_slider_ui::render(const float3& location, bool enabled)
     ImGui::SetCursorPos({ location.x, location.y + 3 });
     ImGui::TextUnformatted(label.c_str());
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("%s", description.c_str());
+        RsImGui::CustomTooltip("%s", description.c_str());
 
     ImGui::SetCursorPos({ location.x + 170, location.y });
 

@@ -473,7 +473,7 @@ namespace rs2
         ImGui::PushTextWrapPos(stream_rect.x + stream_rect.w - 32 * num_of_buttons - 5);
         ImGui::Text("%s", label.c_str());
         if (tooltip != label && ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", tooltip.c_str());
+            RsImGui::CustomTooltip("%s", tooltip.c_str());
         ImGui::PopTextWrapPos();
 
         ImGui::SetCursorScreenPos({ stream_rect.x + stream_rect.w - 32 * num_of_buttons, stream_rect.y - top_bar_height });
@@ -490,7 +490,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Hide frame metadata");
+                RsImGui::CustomTooltip("Hide frame metadata");
             }
             ImGui::PopStyleColor(2);
         }
@@ -502,7 +502,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Show frame metadata");
+                RsImGui::CustomTooltip("Show frame metadata");
             }
         }
         ImGui::SameLine();
@@ -521,7 +521,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Hide color map ruler");
+                    RsImGui::CustomTooltip("Hide color map ruler");
                 }
                 ImGui::PopStyleColor(2);
             }
@@ -534,7 +534,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Show color map ruler");
+                    RsImGui::CustomTooltip("Show color map ruler");
                 }
             }
             ImGui::SameLine();
@@ -589,7 +589,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Resume sensor");
+                RsImGui::CustomTooltip("Resume sensor");
             }
             ImGui::PopStyleColor(2);
         }
@@ -607,7 +607,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Pause sensor");
+                RsImGui::CustomTooltip("Pause sensor");
             }
         }
         ImGui::SameLine();
@@ -624,7 +624,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Save snapshot");
+            RsImGui::CustomTooltip("Save snapshot");
         }
         ImGui::SameLine();
 
@@ -643,7 +643,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Hide stream info overlay");
+                RsImGui::CustomTooltip("Hide stream info overlay");
             }
 
             ImGui::PopStyleColor(2);
@@ -659,7 +659,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Show stream info overlay");
+                RsImGui::CustomTooltip("Show stream info overlay");
             }
         }
         ImGui::SameLine();
@@ -677,7 +677,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Maximize stream to full-screen");
+                    RsImGui::CustomTooltip("Maximize stream to full-screen");
                 }
 
                 ImGui::SameLine();
@@ -695,7 +695,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Restore tile view");
+                    RsImGui::CustomTooltip("Restore tile view");
                 }
 
                 ImGui::PopStyleColor(2);
@@ -716,7 +716,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Stop this sensor");
+                RsImGui::CustomTooltip("Stop this sensor");
             }
         }
 
@@ -783,11 +783,11 @@ namespace rs2
                         }
                         else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
                         {
-                            ImGui::SetTooltip("Timestamp: Global Time");
+                            RsImGui::CustomTooltip("Timestamp: Global Time");
                         }
                         else
                         {
-                            ImGui::SetTooltip("Timestamp: Hardware Clock");
+                            RsImGui::CustomTooltip("Timestamp: Hardware Clock");
                         }
                     }
 
@@ -817,7 +817,7 @@ namespace rs2
                         ImGui::Text("%s", label.c_str());
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Stream Resolution, Format");
+                        RsImGui::CustomTooltip("%s", "Stream Resolution, Format");
                     }
 
                     ImGui::SameLine();
@@ -832,7 +832,7 @@ namespace rs2
                         ImGui::Text("%s", label.c_str());
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
+                        RsImGui::CustomTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
                     }
                 }
 
@@ -1058,7 +1058,7 @@ namespace rs2
                 {
                     if( ImGui::IsItemHovered() )
                     {
-                        ImGui::SetTooltip( "%s", at.description.c_str() );
+                        RsImGui::CustomTooltip( "%s", at.description.c_str() );
                     }
                 }
 
@@ -1598,7 +1598,7 @@ namespace rs2
                 ImGui::Text("%s:", motion.name.c_str());
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", motion.toolTip.c_str());
+                    RsImGui::CustomTooltip("%s", motion.toolTip.c_str());
                 }
                 ImGui::PopStyleColor(1);
 
@@ -1699,7 +1699,7 @@ namespace rs2
             ImGui::Text("%s:", pose.name.c_str());
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", pose.toolTip.c_str());
+                RsImGui::CustomTooltip("%s", pose.toolTip.c_str());
             }
 
             if (pose.fixedColor == false)

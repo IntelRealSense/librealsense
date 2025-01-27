@@ -22,6 +22,7 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <realsense_imgui.h>
 
 using namespace std;
 using namespace rs_pointcloud_stitching;
@@ -966,7 +967,7 @@ void CPointcloudStitcher::RecordButton(const ImVec2& window_size)
     if (ImGui::IsItemHovered())
     {
         std::string record_button_hover_text = (_is_recording ? "Stop Recording" : "Start Recording");
-        ImGui::SetTooltip("%s", record_button_hover_text.c_str());
+        RsImGui::CustomTooltip("%s", record_button_hover_text.c_str());
     }
 
     ImGui::End();
@@ -995,7 +996,7 @@ void CPointcloudStitcher::SaveFramesButton(const std::map<std::string, rs2::fram
     if (ImGui::IsItemHovered())
     {
         std::string button_hover_text = "Save original images";
-        ImGui::SetTooltip("%s", button_hover_text.c_str());
+        RsImGui::CustomTooltip("%s", button_hover_text.c_str());
     }
 
     ImGui::End();
@@ -1113,7 +1114,7 @@ void CPointcloudStitcher::Run(window& app)
             app.show(_frames_map);
 
             // Display titles and buttons:
-            ImGui_ImplGlfw_NewFrame(1);
+            RsImGui::PushNewFrame();
             
             RecordButton({ app.width(), app.height() });
             SaveFramesButton(frames_sets, { app.width(), app.height() });
@@ -1121,8 +1122,10 @@ void CPointcloudStitcher::Run(window& app)
             DrawTitles(fps, value_str, { app.width(), app.height() });
 
             ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }
     }
+    RsImGui::PopNewFrame();
 }
 
 void PrintHelp()
@@ -1211,7 +1214,9 @@ int main(int argc, char* argv[]) try
     unsigned int window_width, window_height;
     get_screen_resolution(window_width, window_height);
     window app(window_width, static_cast<unsigned int>(window_height*0.9), "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
-    ImGui_ImplGlfw_Init(app, false);
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(app, false);
+    ImGui_ImplOpenGL3_Init();
 
     pc_stitcher.Run(app);
     pc_stitcher.StopSensors();

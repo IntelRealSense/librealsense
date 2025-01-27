@@ -189,7 +189,7 @@ bool output_model::round_indicator(ux_window& win, std::string icon,
     {
         highlighted = true;
         win.link_hovered();
-        ImGui::SetTooltip("%s", tooltip.c_str());
+        RsImGui::CustomTooltip("%s", tooltip.c_str());
     }
     else highlighted = false;
 
@@ -242,7 +242,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         if (ImGui::IsItemHovered())
         {
             win.link_hovered();
-            ImGui::SetTooltip("%s", "Open Debug Console Window");
+            RsImGui::CustomTooltip("%s", "Open Debug Console Window");
         }
 
         if (default_log_h.value() != 36)
@@ -261,7 +261,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         if (ImGui::IsItemHovered())
         {
             win.link_hovered();
-            ImGui::SetTooltip("%s", "Collapse Debug Console Window");
+            RsImGui::CustomTooltip("%s", "Collapse Debug Console Window");
         }
 
         int h_val = (int)((win.height() - 100) / 2);
@@ -315,7 +315,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     if (ImGui::IsItemHovered())
     {
         win.link_hovered();
-        ImGui::SetTooltip("%s", "Search through logs");
+        RsImGui::CustomTooltip("%s", "Search through logs");
     }
     ImGui::SameLine();
 
@@ -327,7 +327,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     }
     if( ImGui::IsItemHovered() )
     {
-        ImGui::SetTooltip( "%s", "Set maximum number of log entries kept" );
+        RsImGui::CustomTooltip( "%s", "Set maximum number of log entries kept" );
     }
     ImGui::PopStyleColor(1);
     ImGui::SameLine();
@@ -421,8 +421,8 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     if (ImGui::IsItemHovered())
     {
         win.link_hovered();
-        if (enable_firmware_logs) ImGui::SetTooltip("%s", "Disable Firmware Logs");
-        else ImGui::SetTooltip("%s", "Enable Firmware Logs");
+        if (enable_firmware_logs) RsImGui::CustomTooltip("%s", "Disable Firmware Logs");
+        else RsImGui::CustomTooltip("%s", "Enable Firmware Logs");
     }
     ImGui::SameLine();
 
@@ -703,7 +703,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             }
             if( ImGui::IsItemHovered() )
             {
-                ImGui::SetTooltip( "Collapse dashboard" );
+                RsImGui::CustomTooltip( "Collapse dashboard" );
             }
 
             // Animation of opening dashboard panel
@@ -723,7 +723,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             }
             if( ImGui::IsItemHovered() )
             {
-                ImGui::SetTooltip( "Open dashboard" );
+                RsImGui::CustomTooltip( "Open dashboard" );
             }
             ImGui::SetCursorPosX( cursor_pos_x );
 
@@ -772,7 +772,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
 
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Add one of the available stream dashboards to view");
+                RsImGui::CustomTooltip("Add one of the available stream dashboards to view");
                 win.link_hovered();
             }
 
@@ -1125,7 +1125,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     }
     if (ImGui::IsItemHovered())
     {
-        ImGui::SetTooltip("Remove Dashboard from View");
+        RsImGui::CustomTooltip("Remove Dashboard from View");
         win.link_hovered();
     }
     ImGui::PopStyleColor();

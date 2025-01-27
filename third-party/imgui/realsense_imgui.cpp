@@ -383,3 +383,13 @@ void RsImGui::CustomTooltip( const char * label )
 {
     RsImGui::CustomTooltip( "%s", label );
 }
+
+void RsImGui::CustomTooltip(const char* fmt, float value)
+{
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.90f, 0.90f, 0.90f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.05f, 0.05f, 0.10f, 0.90f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
+    ImGui::SetTooltip(fmt, value);
+    ImGui::PopStyleColor(2);
+    ImGui::PopStyleVar();
+}
