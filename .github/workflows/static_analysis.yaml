@@ -64,7 +64,7 @@ jobs:
             &&  echo "No diffs found in cppcheck_run.parsed.log"
 
       - name: Upload logs
-        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 #v3
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with: 
           name: cppcheck_log
           path: |
