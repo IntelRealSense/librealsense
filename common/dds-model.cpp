@@ -303,7 +303,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         if( ImGui::IsItemHovered() )
         {
             window.link_hovered();
-            ImGui::SetTooltip( "%s", "Close without saving any changes" );
+            RsImGui::CustomTooltip( "%s", "Close without saving any changes" );
         }
         ImGui::SameLine();
         if( ImGui::Button( "Factory Reset", ImVec2( button_width, 25 ) ) )
@@ -314,7 +314,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         if( ImGui::IsItemHovered() )
         {
             window.link_hovered();
-            ImGui::SetTooltip( "%s", "Reset settings back to defult values" );
+            RsImGui::CustomTooltip( "%s", "Reset settings back to defult values" );
         }
         ImGui::SameLine();
         RsImGui::RsImButton(
@@ -329,7 +329,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         if( ImGui::IsItemHovered() )
         {
             window.link_hovered();
-            ImGui::SetTooltip( "%s", "Revert to current configuration values" );
+            RsImGui::CustomTooltip( "%s", "Revert to current configuration values" );
         }
         ImGui::SameLine();
         RsImGui::RsImButton(
@@ -345,7 +345,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         if( ImGui::IsItemHovered() )
         {
             window.link_hovered();
-            ImGui::SetTooltip( "%s", "Apply changes" );
+            RsImGui::CustomTooltip( "%s", "Apply changes" );
         }
         if( ImGui::BeginPopupModal( "No Changes Needed", NULL, ImGuiWindowFlags_AlwaysAutoResize ) )
         {

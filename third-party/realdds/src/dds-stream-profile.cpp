@@ -80,7 +80,7 @@ int dds_video_encoding::to_rs2() const
         { "mono8", RS2_FORMAT_Y8 },  // Used by IR streams; ROS2-compatible
         { "Y8I",  RS2_FORMAT_Y8I },
         { "W10",  RS2_FORMAT_W10 },
-        { "Y16",  RS2_FORMAT_Y16 },
+        { "mono16",  RS2_FORMAT_Y16 }, // Used by IR streams; ROS2-compatible
         { "Y12I", RS2_FORMAT_Y12I },
 //      { "Y16I", RS2_FORMAT_Y16I },
         { "16UC1", RS2_FORMAT_Z16 },  // Used by depth streams; ROS2-compatible
@@ -113,7 +113,7 @@ dds_video_encoding dds_video_encoding::from_rs2( int rs2_format )
     case RS2_FORMAT_Y8: encoding = "mono8"; break;
     case RS2_FORMAT_Y8I: encoding = "Y8I"; break;
     case RS2_FORMAT_W10: encoding = "W10"; break;
-    case RS2_FORMAT_Y16: encoding = "Y16"; break;
+    case RS2_FORMAT_Y16: encoding = "mono16"; break;
     case RS2_FORMAT_Y12I: encoding = "Y12I"; break;
 //  case RS2_FORMAT_Y16I: encoding = "Y16I"; break;
     case RS2_FORMAT_Z16: encoding = "16UC1"; break;

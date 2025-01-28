@@ -22,7 +22,7 @@
 
 #include "proc/depth-formats-converter.h"
 #include "proc/y8i-to-y8y8.h"
-#include "proc/y16i-to-y10msby10msb.h"
+#include "proc/y16i-10msb-to-y16y16.h"
 
 #include <rsutils/type/fourcc.h>
 using rs_fourcc = rsutils::type::fourcc;
@@ -563,7 +563,7 @@ namespace librealsense
             depth_sensor.register_processing_block(
                 { RS2_FORMAT_Y16I },
                 { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                []() {return std::make_shared<y16i_to_y10msby10msb>(); }
+                []() {return std::make_shared<y16i_10msb_to_y16y16>(); }
             );
                 
             pid_hex_str = rsutils::string::from() << std::uppercase << rsutils::string::hexdump( _pid );

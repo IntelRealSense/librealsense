@@ -308,7 +308,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Abort Calibration Process");
+            RsImGui::CustomTooltip("Abort Calibration Process");
         }
     }
 

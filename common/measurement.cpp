@@ -672,7 +672,7 @@ void measurement::show_tooltip(ux_window& win)
         {
             std::string tt = rsutils::string::from() << std::fixed << std::setprecision(3)
                 << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
-            ImGui::SetTooltip("%s", tt.c_str());
+            RsImGui::CustomTooltip("%s", tt.c_str());
         }
     }
 }

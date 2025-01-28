@@ -5,6 +5,7 @@
 #include "stream.h"
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"
+#include "rsutils/accelerators/gpu.h"
 #endif
 
 namespace librealsense
@@ -16,12 +17,15 @@ namespace librealsense
     {
         auto count = width * height;
 #ifdef RS2_USE_CUDA
-        rscuda::split_frame_y16_y16_from_y12i_cuda(dest, count, reinterpret_cast<const rscuda::y12i_pixel_mipi *>(source));
-#else
+        if (rsutils::rs2_is_gpu_available())
+        {
+            rscuda::split_frame_y16_y16_from_y12i_cuda(dest, count, reinterpret_cast<const rscuda::y12i_pixel_mipi*>(source));
+            return;
+        }
+#endif
         split_frame(dest, count, reinterpret_cast<const y12i_pixel_mipi*>(source),
             [](const y12i_pixel_mipi& p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
             [](const y12i_pixel_mipi& p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
-#endif
     }
 
     y12i_to_y16y16_mipi::y12i_to_y16y16_mipi(int left_idx, int right_idx)

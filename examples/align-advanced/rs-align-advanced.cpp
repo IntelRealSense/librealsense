@@ -174,7 +174,7 @@ void render_slider(rect location, float& clipping_dist)
     auto slider_size = ImVec2(slider_window_width / 2, location.h - (pixels_to_buttom_of_stream_text * 2) - 20);
     RsImGui::VSliderFloat("##vslider", slider_size, &clipping_dist, 0.0f, 6.0f, "", 1.0f, true);
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Depth Clipping Distance: %.3f", clipping_dist);
+        RsImGui::CustomTooltip("Depth Clipping Distance: %.3f", clipping_dist);
     ImGui::PopStyleColor(3);
 
     //Display bars next to slider
