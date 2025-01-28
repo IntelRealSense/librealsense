@@ -34,7 +34,7 @@ namespace librealsense
         auto pid = this->_pid;
         auto& depth_ep = get_depth_sensor();
 
-        if( pid == ds::RS457_PID )
+        if( pid == ds::RS457_PID || pid == ds::RS430_GMSL_PID)
         {
             depth_ep.register_option( RS2_OPTION_PROJECTOR_TEMPERATURE,
                                       std::make_shared< projector_temperature_option_mipi >(
