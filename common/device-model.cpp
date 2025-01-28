@@ -1440,7 +1440,7 @@ namespace rs2
                             std::string tooltip = rsutils::string::from()
                                 << "Install safety MCU file to the device"
                                 << (is_streaming ? " (Disabled while streaming)" : "");
-                            ImGui::SetTooltip("%s", tooltip.c_str());
+                            RsImGui::CustomTooltip("%s", tooltip.c_str());
                         }
                     }
 

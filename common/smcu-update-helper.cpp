@@ -330,7 +330,7 @@ namespace rs2
 
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "New Safety MCU will be flashed to the device");
+                    RsImGui::CustomTooltip("%s", "New Safety MCU will be flashed to the device");
                 }
             }
             else if (update_state == RS2_SMCU_STATE_IN_PROGRESS)
@@ -378,7 +378,7 @@ namespace rs2
             if (ImGui::IsItemHovered())
             {
                 win.link_hovered();
-                ImGui::SetTooltip("%s", "Internet connection required");
+                RsImGui::CustomTooltip("%s", "Internet connection required");
             }
         }
     }
