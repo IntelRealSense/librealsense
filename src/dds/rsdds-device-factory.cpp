@@ -143,7 +143,7 @@ rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & c
                       .default_value( 5 );
             domain.query_devices_min
                 = dds_settings.nested( std::string( "query-devices-min", 17 ), &json::is_number_integer )
-                      .default_value( 3 );
+                      .default_value( 0 );
         }
         else if( participant_name_j.exists() && participant_name != _participant->name() )
         {
@@ -234,7 +234,7 @@ std::vector< std::shared_ptr< device_info > > rsdds_device_factory::query_device
 
                 while( true )
                 {
-                    std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+                    std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
                     if( --timeout <= 0 )
                         break;  // max time exceeded - can't wait any more
                     if( --seconds_left <= 0 )
