@@ -9,9 +9,11 @@
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
 #include <realdds/topics/blob-msg.h>
+#include <realdds/topics/ros2/participant-entities-info-msg.h>
 #include <realdds/topics/blob/blobPubSubTypes.h>
 #include <realdds/topics/ros2/sensor_msgs/msg/ImagePubSubTypes.h>
 #include <realdds/topics/ros2/sensor_msgs/msg/ImuPubSubTypes.h>
+#include <realdds/topics/ros2/rmw_dds_common/msg/ParticipantEntitiesInfoPubSubTypes.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
@@ -337,6 +339,9 @@ PYBIND11_MODULE(NAME, m) {
     topics.attr( "device_metadata" ) = realdds::topics::METADATA_TOPIC_NAME;
     topics.attr( "device_dfu" ) = realdds::topics::DFU_TOPIC_NAME;
 
+    auto ros2_topics = topics.def_submodule( "ros2", "all the ROS2 topics" );
+    ros2_topics.attr( "discovery_info" ) = realdds::topics::ros2::DISCOVERY_INFO;
+
     using realdds::distortion_model;
     py::enum_< distortion_model >( m, "distortion_model" )
         .value( "none", distortion_model::none )
@@ -412,9 +417,42 @@ PYBIND11_MODULE(NAME, m) {
     py::enum_< reliability >( m, "reliability" )
         .value( "reliable", eprosima::fastdds::dds::ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS )
         .value( "best_effort", eprosima::fastdds::dds::ReliabilityQosPolicyKind::BEST_EFFORT_RELIABILITY_QOS );
+    using history_kind = eprosima::fastdds::dds::HistoryQosPolicyKind;
+    py::enum_< history_kind >( m, "history_kind" )
+        .value( "keep_last", eprosima::fastdds::dds::HistoryQosPolicyKind::KEEP_LAST_HISTORY_QOS )
+        .value( "keep_all", eprosima::fastdds::dds::HistoryQosPolicyKind::KEEP_ALL_HISTORY_QOS );
+    using history_policy = eprosima::fastdds::dds::HistoryQosPolicy;
+    py::class_< history_policy >( m, "history_policy" )  //
+        .def_readwrite( "kind", &history_policy::kind )
+        .def_readwrite( "depth", &history_policy::depth )
+        .def( "__repr__",
+              []( history_policy const & self )
+              {
+                  std::ostringstream os;
+                  os << "[";
+                  switch( self.kind )
+                  {
+                  case history_kind::KEEP_ALL_HISTORY_QOS:
+                      os << "all";
+                      break;
+                  case history_kind::KEEP_LAST_HISTORY_QOS:
+                      os << "last";
+                      break;
+                  default:
+                      os << (int)self.kind;
+                      break;
+                  }
+                  os << ' ';
+                  os << self.depth;
+                  os << "]";
+                  return os.str();
+              } );
 
     using reader_qos = realdds::dds_topic_reader::qos;
     py::class_< reader_qos >( m, "reader_qos" )  //
+        .def_property( "history",
+            []( reader_qos & self ) -> history_policy & { return self.history(); },
+            []( reader_qos & self, eprosima::fastdds::dds::HistoryQosPolicy const & policy ) { self.history( policy ); } )
         .def( "__repr__", []( reader_qos const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".reader_qos";
@@ -565,7 +603,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "__repr__",
               []( flexible_msg const & self ) {
                   std::ostringstream os;
-                  os << "<" SNAME ".flexible_msg ";
+                  os << "<" SNAME ".message.flexible ";
                   switch( self._data_format )
                   {
                   case flexible_msg::data_format::JSON:
@@ -641,7 +679,7 @@ PYBIND11_MODULE(NAME, m) {
               []( image_msg const & self )
               {
                   std::ostringstream os;
-                  os << "<" SNAME ".image_msg";
+                  os << "<" SNAME ".message.image";
                   if( self.is_valid() )
                   {
                       if( ! self.frame_id().empty() )
@@ -680,6 +718,58 @@ PYBIND11_MODULE(NAME, m) {
             py::arg( "sample" ) = nullptr,
             py::call_guard< py::gil_scoped_release >() )
         /*.def("write_to", &image_msg::write_to, py::call_guard< py::gil_scoped_release >())*/;
+
+
+    using participant_entities_info_msg = realdds::topics::ros2::participant_entities_info_msg;
+    py::class_< participant_entities_info_msg, std::shared_ptr< participant_entities_info_msg > >( message, "participant_entities_info" )
+        .def( py::init<>() )
+        .def_static( "create_topic", &participant_entities_info_msg::create_topic )
+        .def_property( "gid", &participant_entities_info_msg::gid, &participant_entities_info_msg::set_gid )
+        .def( "__bool__", &participant_entities_info_msg::is_valid )
+        .def( "__repr__",
+              []( participant_entities_info_msg const & self )
+              {
+                  std::ostringstream os;
+                  os << "<" SNAME ".message.participant_entities_info";
+                  if( self.is_valid() )
+                  {
+                      os << " " << realdds::print_guid( self.gid() );
+                      if( ! self.nodes().empty() )
+                          os << " ";
+                      for( auto & node : self.nodes() )
+                      {
+                          os << "[";
+                          if( auto len = node.node_namespace().size() )
+                          {
+                              os << node.node_namespace();
+                              if( node.node_namespace().c_str()[len-1] != realdds::topics::SEPARATOR )
+                                  os << realdds::topics::SEPARATOR;
+                          }
+                          os << node.node_name();
+                          os << " R " << node.reader_gid_seq().size();
+                          os << " W " << node.writer_gid_seq().size();
+                          os << "]";
+                      }
+                  }
+                  os << ">";
+                  return os.str();
+              } )
+        .def_static(
+            "take_next",
+            []( dds_topic_reader & reader, dds_sample * sample )
+            {
+                auto actual_type = reader.topic()->get()->get_type_name();
+                if( actual_type != participant_entities_info_msg::type().getName() )
+                    throw std::runtime_error( "can't initialize raw::image from " + actual_type );
+                participant_entities_info_msg data;
+                if( !participant_entities_info_msg::take_next( reader, &data, sample ) )
+                    assert( ! data.is_valid() );
+                return data;
+            },
+            py::arg( "reader" ),
+            py::arg( "sample" ) = nullptr,
+            py::call_guard< py::gil_scoped_release >() )
+        /*.def("write_to", &participant_entities_info_msg::write_to, py::call_guard< py::gil_scoped_release >())*/;
 
 
     using blob_msg = realdds::topics::blob_msg;
