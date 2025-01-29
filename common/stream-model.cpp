@@ -554,7 +554,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Hide safety polygons");
+                    RsImGui::CustomTooltip("Hide safety polygons");
                 }
                 ImGui::PopStyleColor(2);
             }
@@ -567,7 +567,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Show safety polygons");
+                    RsImGui::CustomTooltip("Show safety polygons");
                 }
             }
             ImGui::SameLine();
