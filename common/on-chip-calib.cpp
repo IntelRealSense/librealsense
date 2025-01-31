@@ -31,6 +31,9 @@ namespace rs2
             device_name_string = _dev.get_info( RS2_CAMERA_INFO_NAME );
             if( val_in_range( device_name_string, { std::string( "Intel RealSense D415" ) } ) )
                 speed = 4;
+
+            if ( strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD") || strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCE"))
+                is_mipi_sku = true;
         }
         if (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
         {
@@ -2088,7 +2091,7 @@ namespace rs2
                     ImGui::SetTooltip("%s", "Calculate ground truth for the specific target");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 30) });
-                get_manager().host_assistance = (get_manager().device_name_string ==  std::string("Intel RealSense D457") ); // To be used for MIPI SKU only
+                get_manager().host_assistance = get_manager().is_mipi_sku; // To be used for MIPI SKU only
                 bool assistance = (get_manager().host_assistance != 0);
                 if (ImGui::Checkbox("Host Assistance", &assistance))
                     get_manager().host_assistance = (assistance ? 1 : 0);
@@ -2184,7 +2187,7 @@ namespace rs2
                 //    ImGui::SetTooltip("%s", "On-Chip Calibration Extended");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 31) });
-                get_manager().host_assistance = (get_manager().device_name_string ==  std::string("Intel RealSense D457") ); // To be used for MIPI SKU only
+                get_manager().host_assistance = get_manager().is_mipi_sku; // To be used for MIPI SKU only
                 bool assistance = (get_manager().host_assistance != 0);
                 ImGui::Checkbox("Host Assistance", &assistance);
                 if (ImGui::IsItemHovered())
