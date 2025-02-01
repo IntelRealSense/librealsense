@@ -549,34 +549,6 @@ namespace librealsense
                     throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " xioctl(VIDIOC_QUERYCAP) failed");
             }
 
-
-/*
-        uint8_t gvd[276];
-        struct v4l2_ext_control ctrl;
-
-        memset(gvd,0,276);
-
-        ctrl.id = RS_CAMERA_CID_GVD;
-        ctrl.size = sizeof(gvd);
-        ctrl.p_u8 = gvd;
-
-        struct v4l2_ext_controls ext;
-
-        ext.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
-        ext.controls = &ctrl;
-        ext.count = 1;
-
-        if (ioctl(*fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
-	{
-//        memcpy(buffer, gvd + DS5_CMD_OPCODE_SIZE, 0x110);
-
-	    for (int i = 0; i < 16; i++)
-	    {
-	        std::cout << std::hex << (int) gvd[i] << std::endl;
-	    }
-	}
-*/
-
             return cap;
         }
 
@@ -837,7 +809,7 @@ namespace librealsense
         {
             int fd = open(dev_name.c_str(), O_RDWR);
             if (fd < 0)
-                throw linux_backend_exception("Mipi device capability could not be grabbed");
+                throw linux_backend_exception("Mipi device format could not be grabbed");
 
             struct v4l2_fmtdesc fmtdesc;
             memset(&fmtdesc,0,sizeof(fmtdesc));
@@ -856,59 +828,67 @@ namespace librealsense
                 fmtdesc.index++;
             }
 
+            ::close(fd);
+
             return false;
         }
 
         uint16_t v4l_uvc_device::get_mipi_device_pid(const std::string& dev_name)
         {
-            uint16_t device_pid = 0;
+            // GVD product ID
+            const uint8_t GVD_PID_OFFSET    = 4;
 
-            struct v4l2_capability vcap;
+            const uint8_t GVD_PID_D430_GMSL = 0x0F;
+            const uint8_t GVD_PID_D457      = 0x12;
+
+            // device PID
+	    uint16_t device_pid = 0;
+
             int fd = open(dev_name.c_str(), O_RDWR);
             if (fd < 0)
-                throw linux_backend_exception("Mipi device capability could not be grabbed");
+                throw linux_backend_exception("Mipi device PID could not be found");
 
-        uint8_t gvd[276];
-        struct v4l2_ext_control ctrl;
+            uint8_t gvd[276];
+            struct v4l2_ext_control ctrl;
 
-        memset(gvd,0,276);
+            memset(gvd,0,276);
 
-        ctrl.id = RS_CAMERA_CID_GVD;
-        ctrl.size = sizeof(gvd);
-        ctrl.p_u8 = gvd;
+            ctrl.id = RS_CAMERA_CID_GVD;
+            ctrl.size = sizeof(gvd);
+            ctrl.p_u8 = gvd;
 
-        struct v4l2_ext_controls ext;
+            struct v4l2_ext_controls ext;
 
-        ext.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
-        ext.controls = &ctrl;
-        ext.count = 1;
+            ext.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
+            ext.controls = &ctrl;
+            ext.count = 1;
 
-        if (ioctl(fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
-	{
-//            for (int i = 0; i < 16; i++)
-//            {
-//                std::cout << std::hex << (int) gvd[i] << std::endl;
-//            }
+            if (ioctl(fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
+            {
+                uint8_t product_pid = 0;
 
-	    uint8_t product_pid = 0;
+                product_pid = gvd[4 + GVD_PID_OFFSET];
 
-	    product_pid = gvd[4 + 4];
-//            std::cout << "product_id:" << (int) product_pid << std::endl;
+                switch(product_pid)
+                {
+                    case(GVD_PID_D457):
+                        device_pid = 0xABCD;
+                        break;
 
-	    switch(product_pid)
-	    {
-	      case(0x0F):
-		    device_pid = 0xABCE;
-		    break;
-	      default:
-	            device_pid = 0xABCD;
-		    break;
-	    }
-	}
+                    case(GVD_PID_D430_GMSL):
+                        device_pid = 0xABCE;
+                        break;
+
+                    default:
+                        LOG_WARNING("Unidentified MIPI device product id: 0x" << std::hex << (int) product_pid);
+                        device_pid = 0x0000;
+                        break;
+                }
+            }
 
             ::close(fd);
 	    
-	    return device_pid;
+            return device_pid;
         }
 
         void v4l_uvc_device::get_mipi_device_info(const std::string& dev_name,
@@ -958,19 +938,23 @@ namespace librealsense
 
             // find device PID from depth video node
 	    static uint16_t device_pid = 0;
-            if (is_format_supported_on_node(dev_name, "Z16 "))
+	    try
             {
-                device_pid = get_mipi_device_pid(dev_name);
-//                std::cout << "depth video node name=" << name << ", device_pid=" << device_pid << std::endl;
+                if (is_format_supported_on_node(dev_name, "Z16 "))
+                {
+                    device_pid = get_mipi_device_pid(dev_name);
+                }
+	    }
+            catch(const std::exception & e)
+            {
+                LOG_WARNING("MIPI device product id detection issue, device will be skipped: " << e.what());
+                device_pid = 0;
             }
 
-            // the following 2 lines need to be changed in order to enable multiple mipi devices support
-            // or maybe another field in the info structure - TBD
             vid = 0x8086;
             pid = device_pid;
 
-//            std::cout << "video_path:" << video_path << ", name:" << dev_name << ", pid=" << std::hex << (int) pid << std::endl;
-
+//          std::cout << "video_path:" << video_path << ", name:" << dev_name << ", pid=" << std::hex << (int) pid << std::endl;
 
             static std::regex video_dev_index("\\d+$");
             std::smatch match;

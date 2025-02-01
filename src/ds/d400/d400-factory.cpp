@@ -499,7 +499,6 @@ namespace librealsense
             , firmware_logger_device(
                   dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
-		std::cout << "rs430i_device ..." << std::endl;
         }
 
         std::vector<tagged_profile> get_profiles_tags() const override
@@ -1192,25 +1191,6 @@ namespace librealsense
         bool const register_device_notifications = true;
 
         auto pid = _group.uvc_devices.front().pid;
-        auto mi  = _group.uvc_devices.front().mi;
-        std::string unique_id = _group.uvc_devices.front().unique_id;
-        std::string device_path = _group.uvc_devices.front().device_path;
-        std::string serial = _group.uvc_devices.front().serial;
-
-        uint32_t uvc_capabilities = _group.uvc_devices.front().uvc_capabilities;
-        bool has_metadata_node = _group.uvc_devices.front().has_metadata_node;
-        std::string metadata_node_id = _group.uvc_devices.front().metadata_node_id;;
-
-/*
-	std::cout << "d400_info::create_device: " << std::endl;
-	std::cout << std::hex << pid << std::endl;
-	std::cout << std::dec << mi << std::endl;
-	std::cout << unique_id << std::endl;
-	std::cout << device_path << std::endl;
-	std::cout << serial << std::endl;
-	std::cout << std::hex << uvc_capabilities << std::endl;
-	std::cout << metadata_node_id << std::endl;
-*/
 
         switch(pid)
         {
@@ -1461,10 +1441,6 @@ namespace librealsense
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get() };
         std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get()};
         streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
-//        if( frame.frame->find_metadata( RS2_FRAME_METADATA_FRAME_COUNTER, nullptr ) )
-//        {
-//            return matcher_factory::create(RS2_MATCHER_DLR_C, streams);
-//        }
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
