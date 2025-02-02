@@ -480,8 +480,8 @@ try:
         if pyrs:
             sys.path.insert( 1, pyrs_path )  # Make sure we pick up the right pyrealsense2!
         from rspy import devices
-
-        devices.query( hub_reset = hub_reset ) #resets the device
+        disable_dds = "dds" not in context
+        devices.query( hub_reset = hub_reset, disable_dds=disable_dds ) #resets the device
         devices.map_unknown_ports()
         #
         # Under a development environment (i.e., without a hub), we may only have one device connected
@@ -594,8 +594,8 @@ try:
                     try:
                         log.d( 'configuration:', configuration_str( configuration, repetition, sns=serial_numbers ) )
                         log.debug_indent()
-                        if not no_reset:
-                            devices.enable_only( serial_numbers, recycle=True )
+                        should_reset = not no_reset
+                        devices.enable_only( serial_numbers, recycle=should_reset )
                     except RuntimeError as e:
                         log.w( log.red + test.name + log.reset + ': ' + str( e ) )
                     else:
