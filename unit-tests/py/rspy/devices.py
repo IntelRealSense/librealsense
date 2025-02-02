@@ -72,15 +72,16 @@ class Device:
             self._product_line = dev.get_info( rs.camera_info.product_line )
         self._physical_port = dev.supports( rs.camera_info.physical_port ) and dev.get_info( rs.camera_info.physical_port ) or None
 
+        if dev.supports(rs.camera_info.connection_type):
+            self._connection_type = dev.get_info(rs.camera_info.connection_type)
+            self._is_dds = self._connection_type == "DDS"
+        else:
+            log.w("connection_type is not supported! Assuming not a dds device")
+            self._is_dds = False
+
         self._usb_location = None
         try:
             self._usb_location = _get_usb_location(self._physical_port)
-            if dev.supports(rs.camera_info.connection_type):
-                self._connection_type = dev.get_info(rs.camera_info.connection_type)
-                self._is_dds = self._connection_type == "DDS"
-            else:
-                log.w("connection_type is not supported! Assuming not a dds device")
-                self._is_dds = False
         except Exception as e:
             log.e('Failed to get usb location:', e)
         self._port = None
