@@ -480,8 +480,8 @@ try:
         if pyrs:
             sys.path.insert( 1, pyrs_path )  # Make sure we pick up the right pyrealsense2!
         from rspy import devices
-
-        devices.query( hub_reset = hub_reset ) #resets the device
+        disable_dds = "dds" not in context
+        devices.query( hub_reset = hub_reset, disable_dds=disable_dds ) #resets the device
         devices.map_unknown_ports()
         #
         # Under a development environment (i.e., without a hub), we may only have one device connected

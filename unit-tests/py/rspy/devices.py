@@ -74,11 +74,10 @@ class Device:
 
         self._usb_location = None
         try:
+            self._usb_location = _get_usb_location(self._physical_port)
             if dev.supports(rs.camera_info.connection_type):
                 self._connection_type = dev.get_info(rs.camera_info.connection_type)
                 self._is_dds = self._connection_type == "DDS"
-                if self._connection_type == "USB":
-                    self._usb_location = _get_usb_location(self._physical_port)
         except Exception as e:
             log.e('Failed to get usb location:', e)
         self._port = None
@@ -122,7 +121,7 @@ class Device:
 
     @property
     def enabled( self ):
-        return self._removed is False and self._dev is not None
+        return self._removed is False
 
     @property
     def is_dds(self):
@@ -215,6 +214,7 @@ def query( monitor_changes=True, hub_reset=False, recycle_ports=True, disable_dd
     :param recycle_ports: True to recycle all ports before querying devices; False to leave as-is
     :param hub_reset: Whether we want to reset the hub - this might be a better way to
         recycle the ports in certain cases that leave the ports in a bad state
+    :param disable_dds: Whether we want to see dds devices or not
     """
     global rs
     if not rs:
@@ -275,17 +275,16 @@ def _device_change_callback( info ):
     global _device_by_sn
     for device in _device_by_sn.values():
         if device.enabled  and  info.was_removed( device.handle ):
+            device._removed = True
             device._dev = None
             log.d( 'device removed:', device.serial_number )
-            device._removed = True
     for handle in info.get_new_devices():
         sn = handle.get_info( rs.camera_info.firmware_update_id )
         log.d( 'device added:', sn, handle )
         if sn in _device_by_sn:
             device = _device_by_sn[sn]
-            device._dev = None  # in case we get handle between the next 2 lines, it might still be the old one
-            device._removed = False
             device._dev = handle     # Because it has a new handle!
+            device._removed = False
         else:
             # shouldn't see new devices...
             log.d( 'new device detected!?' )
@@ -630,7 +629,7 @@ def hw_reset( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     :param timeout: Maximum # of seconds to wait for the devices to come back online
     :return: True if all devices have come back online before timeout
     """
-    # for usb and dds devices, we can wait until they're removed
+    # we can wait for usb and dds devices to be removed, but not for mipi devices
     removable_devs_sns = {sn for sn in serial_numbers if
                           _device_by_sn[sn].port is not None or _device_by_sn[sn].is_dds}
 
