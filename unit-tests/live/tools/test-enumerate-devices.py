@@ -18,7 +18,7 @@ if rs_enumerate_devices:
     is_dds = dev.supports(rs.camera_info.connection_type) and dev.get_info(rs.camera_info.connection_type) == "DDS"
     import subprocess
     run_time_stopwatch = Stopwatch()
-    run_time_threshold = 2 if is_dds else 5  # currently, DDS devices take longer time to complete rs_enumerate_devices
+    run_time_threshold = 5 if is_dds else 2  # currently, DDS devices take longer time to complete rs_enumerate_devices
     p = subprocess.run( [rs_enumerate_devices],
                     stdout=None,
                     stderr=subprocess.STDOUT,
