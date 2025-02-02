@@ -78,6 +78,9 @@ class Device:
             if dev.supports(rs.camera_info.connection_type):
                 self._connection_type = dev.get_info(rs.camera_info.connection_type)
                 self._is_dds = self._connection_type == "DDS"
+            else:
+                log.w("connection_type is not supported! Assuming not a dds device")
+                self._is_dds = False
         except Exception as e:
             log.e('Failed to get usb location:', e)
         self._port = None
