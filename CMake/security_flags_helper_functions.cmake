@@ -18,3 +18,27 @@ macro(unset_security_flags_for_executable) # replace flag fPIE (Position-Indepen
     string(REPLACE "-fPIE" "-fPIC" CMAKE_C_FLAGS  "${CMAKE_C_FLAGS}")
 endmacro()
 
+macro(disable_third_party_warnings target)
+    if (TARGET ${target})  # Ensure the target exists
+        get_target_property(target_type ${target} TYPE)
+        
+        if (target_type STREQUAL "INTERFACE_LIBRARY")
+            if (WIN32)
+                target_compile_options(${target} INTERFACE /W0)
+            else()
+                target_compile_options(${target} INTERFACE -w)
+            endif()
+        else()
+            if (WIN32)
+                target_compile_options(${target} PRIVATE /W0)
+            else()
+                target_compile_options(${target} PRIVATE -w)
+            endif()
+        endif()
+    else()
+        message(WARNING "Target '${target}' does not exist.")
+    endif()
+endmacro()
+
+
+
