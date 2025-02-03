@@ -26,7 +26,9 @@ namespace rs2
               _skew_down(std::chrono::seconds(1)),
               _angle_alert(std::chrono::seconds(4)),
               _min_dist(300.f), _max_dist(2000.f), _max_angle(10.f),
-              _metrics_model(_viewer_model)
+              _metrics_model(_viewer_model),
+              _limit_capture(1),
+              _use_limit_capture(false)
         {
             _viewer_model.is_3d_view = true;
             _viewer_model.allow_3d_source_change = false;
@@ -737,6 +739,36 @@ namespace rs2
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                        std::string limit_captures("Limit Captures");
+                        if (_use_limit_capture) limit_captures += ":";
+                        ImGui::Checkbox(limit_captures.c_str(), &_use_limit_capture);
+                        if (ImGui::IsItemHovered())
+                        {
+                            RsImGui::CustomTooltip("Capture will be limited to this number of times");
+                        }
+                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+                        if (_use_limit_capture)
+                        {
+                            ImGui::PushItemWidth(120);
+                            if (ImGui::InputInt("##GT", &_limit_capture, 1))
+                            {
+                                // Ensure the value is positive
+                                if (_limit_capture <= 0)
+                                {
+                                    _limit_capture = 1; // Set to a default positive value
+                                }
+                            }
+                            ImGui::PopItemWidth();
+                        }
+                        else
+                        {
+                            ImGui::Dummy({ 1,1 });
+                        }
+                        ImGui::PopStyleColor();
+
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
                         ImGui::Text("Angle:");
                         if (ImGui::IsItemHovered())
                         {
@@ -785,7 +817,14 @@ namespace rs2
                         {
                             if (ImGui::Button(u8"\uf0c7 Start_record", { 140, 25 }))
                             {
-                                _metrics_model.start_record();
+                                if (_use_limit_capture)
+                                {
+                                    _metrics_model.start_record(_limit_capture);
+                                }
+                                else
+                                {
+                                    _metrics_model.start_record();
+                                }
                             }
 
                             if (ImGui::IsItemHovered())
@@ -1008,7 +1047,9 @@ namespace rs2
             _plane_fit(false),
             _roi_percentage(0.4f),
             _active(true),
-            _recorder(viewer_model)
+            _recorder(viewer_model),
+            _limit_captures(0),
+            _is_capture_limited(false)
         {
             _worker_thread = std::thread([this]() {
                 while (_active)
@@ -1060,7 +1101,25 @@ namespace rs2
                         }
                     }
                     if (_recorder.is_recording())
-                        _recorder.add_sample(frames, std::move(sample));
+                    {
+                        if (_is_capture_limited)
+                        { 
+                            if (_limit_captures > 0)
+                            {
+                                --_limit_captures;
+                                _recorder.add_sample(frames, std::move(sample));
+                            }
+                            else
+                            {
+                                _recorder.stop_record(nullptr);
+                            }
+                        }
+                        else
+                        {
+                            _recorder.add_sample(frames, std::move(sample));
+                        }
+                    }
+                        
 
                     // Artificially slow down the calculation, so even on small ROIs / resolutions
                     // the output is updated within reasonable interval (keeping it human readable)
