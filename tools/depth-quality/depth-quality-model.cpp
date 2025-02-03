@@ -745,11 +745,11 @@ namespace rs2
                         ImGui::Checkbox(limit_captures.c_str(), &_use_limit_capture);
                         if (ImGui::IsItemHovered())
                         {
-                            RsImGui::CustomTooltip("Capture will be limited to this number of times");
+                            RsImGui::CustomTooltip("Capture will be limited to this number of records");
                         }
-                        ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                         if (_use_limit_capture)
                         {
+                            ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                             ImGui::PushItemWidth(120);
                             if (ImGui::InputInt("##GT", &_limit_capture, 1))
                             {
@@ -760,10 +760,6 @@ namespace rs2
                                 }
                             }
                             ImGui::PopItemWidth();
-                        }
-                        else
-                        {
-                            ImGui::Dummy({ 1,1 });
                         }
                         ImGui::PopStyleColor();
 
