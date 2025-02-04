@@ -549,34 +549,6 @@ namespace librealsense
                     throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " xioctl(VIDIOC_QUERYCAP) failed");
             }
 
-
-/*
-        uint8_t gvd[276];
-        struct v4l2_ext_control ctrl;
-
-        memset(gvd,0,276);
-
-        ctrl.id = RS_CAMERA_CID_GVD;
-        ctrl.size = sizeof(gvd);
-        ctrl.p_u8 = gvd;
-
-        struct v4l2_ext_controls ext;
-
-        ext.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
-        ext.controls = &ctrl;
-        ext.count = 1;
-
-        if (ioctl(*fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
-	{
-//        memcpy(buffer, gvd + DS5_CMD_OPCODE_SIZE, 0x110);
-
-	    for (int i = 0; i < 16; i++)
-	    {
-	        std::cout << std::hex << (int) gvd[i] << std::endl;
-	    }
-	}
-*/
-
             return cap;
         }
 
@@ -870,7 +842,6 @@ namespace librealsense
             // device PID
 	    uint16_t device_pid = 0;
 
-            struct v4l2_capability vcap;
             int fd = open(dev_name.c_str(), O_RDWR);
             if (fd < 0)
                 throw linux_backend_exception("Mipi device PID could not be found");
@@ -907,6 +878,7 @@ namespace librealsense
                         break;
 
                     default:
+                        LOG_WARNING("Unidentified MIPI device product id: 0x" << std::hex << (int) product_pid);
                         device_pid = 0x0000;
                         break;
                 }
@@ -977,8 +949,6 @@ namespace librealsense
                 device_pid = 0;
             }
 
-            // the following 2 lines need to be changed in order to enable multiple mipi devices support
-            // or maybe another field in the info structure - TBD
             vid = 0x8086;
             pid = device_pid;
 

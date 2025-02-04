@@ -39,7 +39,7 @@ namespace librealsense
         const uint16_t RS455_PID = 0x0B5C; // D455
         const uint16_t RS457_PID = 0xabcd; // D457
         const uint16_t RS457_RECOVERY_PID = 0xbbcd; // D457 DFU Recovery
-        const uint16_t RS430_GMSL_PID = 0xabce; // D450 GMSL
+        const uint16_t RS430_GMSL_PID = 0xabce; // D430 GMSL
 
         // d400 Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
@@ -167,7 +167,7 @@ namespace librealsense
             {RS455_PID, "5.13.0.50" },
             {RS457_PID, "5.13.1.1" },
             {RS457_RECOVERY_PID, "5.13.1.1" },
-            {RS430_GMSL_PID, "5.16.1.111" },
+            {RS430_GMSL_PID, "5.16.1.111" },  // TBD - update once formal firmware is available
         };
 
         std::vector<platform::uvc_device_info> filter_d400_device_by_capability(
