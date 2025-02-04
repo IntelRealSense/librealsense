@@ -751,7 +751,7 @@ namespace rs2
                         {
                             ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                             ImGui::PushItemWidth(120);
-                            if (ImGui::InputInt("##GT", &_limit_capture, 1))
+                            if (ImGui::InputInt("##LC", &_limit_capture, 1))
                             {
                                 // Ensure the value is positive
                                 if (_limit_capture <= 0)
