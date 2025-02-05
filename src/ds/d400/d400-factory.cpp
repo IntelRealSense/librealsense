@@ -1191,14 +1191,6 @@ namespace librealsense
         bool const register_device_notifications = true;
 
         auto pid = _group.uvc_devices.front().pid;
-        auto mi  = _group.uvc_devices.front().mi;
-        std::string unique_id = _group.uvc_devices.front().unique_id;
-        std::string device_path = _group.uvc_devices.front().device_path;
-        std::string serial = _group.uvc_devices.front().serial;
-
-        uint32_t uvc_capabilities = _group.uvc_devices.front().uvc_capabilities;
-        bool has_metadata_node = _group.uvc_devices.front().has_metadata_node;
-        std::string metadata_node_id = _group.uvc_devices.front().metadata_node_id;;
 
         switch(pid)
         {

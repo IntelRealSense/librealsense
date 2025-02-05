@@ -828,6 +828,8 @@ namespace librealsense
                 fmtdesc.index++;
             }
 
+            ::close(fd);
+
             return false;
         }
 
