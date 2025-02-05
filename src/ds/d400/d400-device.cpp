@@ -64,7 +64,6 @@ namespace librealsense
         {fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
         {fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
         {fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
-        {fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
         {fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
         {fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
         {fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
@@ -636,11 +635,6 @@ namespace librealsense
                     usb_type_str = usb_spec_names.at(_usb_mode);
                 else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
                     usb_modality = false;
-            }
-
-            if (_fw_version >= firmware_version("5.12.1.1"))
-            {
-                depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
             }
 
             depth_sensor.register_processing_block(

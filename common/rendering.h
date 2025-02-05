@@ -511,7 +511,7 @@ namespace rs2
                 case RS2_FORMAT_ANY:
                     throw std::runtime_error("not a valid format");
                 case RS2_FORMAT_Z16H:
-                    throw std::runtime_error("unexpected format: Z16H. Check decoder processing block");
+                    throw std::runtime_error("unexpected format: Z16H is deprecated! Check decoder processing block");
                 case RS2_FORMAT_Z16:
                 case RS2_FORMAT_DISPARITY16:
                 case RS2_FORMAT_DISPARITY32:
