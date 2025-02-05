@@ -142,7 +142,7 @@ namespace librealsense
             composite.foreach_rs([&](const rs2::frame& frame)
             {
                 auto format = frame.get_profile().format();
-                if (depth_result_frame &&  val_in_range(format, { RS2_FORMAT_DISPARITY32, RS2_FORMAT_DISPARITY16, RS2_FORMAT_Z16H }))
+                if (depth_result_frame &&  val_in_range(format, { RS2_FORMAT_DISPARITY32, RS2_FORMAT_DISPARITY16 }))
                     return;
                 if (disparity_result_frame && format == RS2_FORMAT_Z16)
                     return;
