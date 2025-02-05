@@ -133,6 +133,7 @@ typedef enum rs2_log_severity {
 const char* rs2_log_severity_to_string(rs2_log_severity info);
 
 /** \brief Specifies advanced interfaces (capabilities) objects may implement. */
+// To add a new extension, append it at the end of this enum to preserve ordering.
 typedef enum rs2_extension
 {
     RS2_EXTENSION_UNKNOWN,
@@ -161,7 +162,6 @@ typedef enum rs2_extension
     RS2_EXTENSION_SOFTWARE_DEVICE,
     RS2_EXTENSION_SOFTWARE_SENSOR,
     RS2_EXTENSION_DECIMATION_FILTER,
-    RS2_EXTENSION_ROTATION_FILTER,
     RS2_EXTENSION_THRESHOLD_FILTER,
     RS2_EXTENSION_DISPARITY_FILTER,
     RS2_EXTENSION_SPATIAL_FILTER,
@@ -192,6 +192,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR,
     RS2_EXTENSION_DEBUG_STREAM_SENSOR,
     RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE,
+    RS2_EXTENSION_ROTATION_FILTER,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
