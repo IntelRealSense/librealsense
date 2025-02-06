@@ -14,14 +14,11 @@ namespace librealsense
     {
     public:
         rotation_filter();
-
         rotation_filter( std::vector< rs2_stream > streams_to_rotate );
 
     protected:
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source, rs2_extension tgt_type);
-
-        template< size_t SIZE >
-        void rotate_frame( uint8_t * const out, const uint8_t * source, int width, int height );
+        void rotate_frame( uint8_t * const out, const uint8_t * source, int width, int height, int bpp );
         void rotate_YUYV_frame( uint8_t * const out, const uint8_t * source, int width, int height );
 
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
