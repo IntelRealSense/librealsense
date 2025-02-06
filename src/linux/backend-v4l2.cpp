@@ -60,6 +60,7 @@
 #include <signal.h>
 #include "rsutils/accelerators/gpu.h"
 
+
 #pragma GCC diagnostic ignored "-Woverflow"
 
 const size_t MAX_DEV_PARENT_DIR = 10;
@@ -833,6 +834,30 @@ namespace librealsense
             return false;
         }
 
+        bool v4l_uvc_device::is_device_depth_node(const std::string& dev_name)
+        {
+            bool is_depth = false;
+
+            // first search video node links, for example, video-rs-depth-0
+            std::smatch match;
+            static std::regex video_dev_rs("video-rs-");
+            static std::regex video_dev_depth("video-rs-depth-\\d+$");
+            if(std::regex_search(dev_name, match, video_dev_rs))
+            {
+                if (std::regex_search(dev_name, match, video_dev_depth))
+                    is_depth = true;
+                else
+                    is_depth = false;
+            }
+            // then search video nodes to find the depth node
+            else if (is_format_supported_on_node(dev_name, "Z16 "))
+                is_depth = true;
+            else
+                is_depth = false;
+
+            return is_depth;
+        }
+
         uint16_t v4l_uvc_device::get_mipi_device_pid(const std::string& dev_name)
         {
             // GVD product ID
@@ -940,7 +965,7 @@ namespace librealsense
 	    static uint16_t device_pid = 0;
 	    try
             {
-                if (is_format_supported_on_node(dev_name, "Z16 "))
+                if (is_device_depth_node(dev_name))
                 {
                     device_pid = get_mipi_device_pid(dev_name);
                 }
@@ -966,7 +991,6 @@ namespace librealsense
                 LOG_WARNING("Unresolved Video4Linux device pattern: " << name << ", device is skipped");
                 throw linux_backend_exception("Unresolved Video4Linux device, device is skipped");
             }
-
 
             //  D457 exposes (assuming first_video_index = 0):
             // - video0 for Depth and video1 for Depth's md.

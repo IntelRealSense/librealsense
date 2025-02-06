@@ -330,6 +330,7 @@ namespace librealsense
             static uvc_device_info get_info_from_mipi_device_path(const std::string& video_path, const std::string& name);
 
             static bool is_format_supported_on_node(const std::string& dev_name, std::string v4l_4cc_fmt);
+            static bool is_device_depth_node(const std::string& dev_name);
             static uint16_t get_mipi_device_pid(const std::string& dev_name);
             static void get_mipi_device_info(const std::string& dev_name,
                                              std::string& bus_info, std::string& card);
