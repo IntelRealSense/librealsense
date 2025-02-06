@@ -60,7 +60,6 @@
 #include <signal.h>
 #include "rsutils/accelerators/gpu.h"
 
-
 #pragma GCC diagnostic ignored "-Woverflow"
 
 const size_t MAX_DEV_PARENT_DIR = 10;
@@ -867,7 +866,7 @@ namespace librealsense
             const uint8_t GVD_PID_D457      = 0x12;
 
             // device PID
-	    uint16_t device_pid = 0;
+            uint16_t device_pid = 0;
 
             int fd = open(dev_name.c_str(), O_RDWR);
             if (fd < 0)
@@ -912,7 +911,7 @@ namespace librealsense
             }
 
             ::close(fd);
-	    
+
             return device_pid;
         }
 
@@ -962,14 +961,14 @@ namespace librealsense
             get_mipi_device_info(dev_name, bus_info, card);
 
             // find device PID from depth video node
-	    static uint16_t device_pid = 0;
-	    try
+            static uint16_t device_pid = 0;
+            try
             {
                 if (is_device_depth_node(dev_name))
                 {
                     device_pid = get_mipi_device_pid(dev_name);
                 }
-	    }
+            }
             catch(const std::exception & e)
             {
                 LOG_WARNING("MIPI device product id detection issue, device will be skipped: " << e.what());
