@@ -98,7 +98,7 @@ namespace librealsense
                     continue;
                 switch (info.pid)
                 {
-                case ds::RS457_RECOVERY_PID:
+                case ds::RS400_MIPI_RECOVERY_PID:
                     return std::make_shared< ds_d400_update_device >(shared_from_this(), mipi);
                 default:
                     // Do nothing
