@@ -38,7 +38,7 @@ namespace librealsense
         const uint16_t RS405_PID = 0x0B5B; // D405
         const uint16_t RS455_PID = 0x0B5C; // D455
         const uint16_t RS457_PID = 0xabcd; // D457
-        const uint16_t RS457_RECOVERY_PID = 0xbbcd; // D457 DFU Recovery
+        const uint16_t RS400_MIPI_RECOVERY_PID = 0xbbcd; // D4XX MIPI DFU Recovery
         const uint16_t RS430_GMSL_PID = 0xabce; // D430 GMSL
 
         // d400 Devices supported by the current version
@@ -136,7 +136,7 @@ namespace librealsense
             { RS405_PID,            "Intel RealSense D405" },
             { RS455_PID,            "Intel RealSense D455" },
             { RS457_PID,            "Intel RealSense D457" },
-            { RS457_RECOVERY_PID,   "Intel RealSense D457 Recovery"},
+            { RS400_MIPI_RECOVERY_PID,   "Intel RealSense D4XX MIPI Recovery"},
             { RS430_GMSL_PID,       "Intel RealSense D430" },
         };
 
@@ -166,7 +166,7 @@ namespace librealsense
             {RS405_PID, "5.12.11.8" },
             {RS455_PID, "5.13.0.50" },
             {RS457_PID, "5.13.1.1" },
-            {RS457_RECOVERY_PID, "5.13.1.1" },
+            {RS400_MIPI_RECOVERY_PID, "5.13.1.1" },
             {RS430_GMSL_PID, "5.16.1.111" },  // TBD - update once formal firmware is available
         };
 
