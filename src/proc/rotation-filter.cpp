@@ -62,23 +62,26 @@ namespace librealsense {
         if( _value == rotation_default_val || _streams_to_rotate.empty() )
             return f;
 
+        // Copying to a local variable to avoid locking.
+        float local_value = _value;
+
         auto src = f.as< rs2::video_frame >();
         rs2::stream_profile profile = f.get_profile();
         auto format = profile.format();
         _target_stream_profile = profile;
 
-        if( _value == 90 || _value == -90 )
+        if( local_value == 90 || local_value == -90 )
         {
             _rotated_width = src.get_height();
             _rotated_height = src.get_width();
         }
-        else if( _value == 180 )
+        else if( local_value == 180 )
         {
             _rotated_width = src.get_width();
             _rotated_height = src.get_height();
         }
         auto bpp = src.get_bytes_per_pixel();
-        update_output_profile( f );
+        update_output_profile( f, local_value );
         rs2_stream type = profile.stream_type();
         rs2_extension tgt_type;
         if( type == RS2_STREAM_COLOR || type == RS2_STREAM_INFRARED )
@@ -107,14 +110,15 @@ namespace librealsense {
                               static_cast< const uint8_t * >( src.get_data() ),
                               src.get_width(),
                               src.get_height(),
-                              bpp );
+                              bpp,
+                              local_value );
             }
             return tgt;
         }
         return f;
     }
 
-    void  rotation_filter::update_output_profile(const rs2::frame& f)
+    void  rotation_filter::update_output_profile(const rs2::frame& f, float & value)
     {
         _source_stream_profile = f.get_profile();
         
@@ -135,7 +139,7 @@ namespace librealsense {
         rs2_intrinsics tgt_intrin = tgt_vspi->get_intrinsics();
 
         // Adjust width and height based on the rotation angle 
-        if( _value == 90 || _value == -90 )  // 90 or -90 degrees rotation
+        if( value == 90 || value == -90 )  // 90 or -90 degrees rotation
         {
             _rotated_width = src_intrin.height;
             _rotated_height = src_intrin.width;
@@ -144,7 +148,7 @@ namespace librealsense {
             tgt_intrin.ppx = src_intrin.ppy;
             tgt_intrin.ppy = src_intrin.ppx;
         }
-        else if( _value == 180 )  // 180 degrees rotation
+        else if( value == 180 )  // 180 degrees rotation
         {
             _rotated_width = src_intrin.width;
             _rotated_height = src_intrin.height;
@@ -172,9 +176,9 @@ namespace librealsense {
         return ret;
     }
 
-    void rotation_filter::rotate_frame( uint8_t * const out, const uint8_t * source, int width, int height, int bpp )
+    void rotation_filter::rotate_frame( uint8_t * const out, const uint8_t * source, int width, int height, int bpp, float & value )
     {
-        if( _value != 90 && _value != -90 && _value != 180 )
+        if( value != 90 && value != -90 && value != 180 )
         {
             throw std::invalid_argument( "Invalid rotation angle. Only 90, -90, and 180 degrees are supported." );
         }

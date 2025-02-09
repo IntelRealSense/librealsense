@@ -18,14 +18,14 @@ namespace librealsense
 
     protected:
         rs2::frame prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source, rs2_extension tgt_type);
-        void rotate_frame( uint8_t * const out, const uint8_t * source, int width, int height, int bpp );
+        void rotate_frame( uint8_t * const out, const uint8_t * source, int width, int height, int bpp, float & value );
         void rotate_YUYV_frame( uint8_t * const out, const uint8_t * source, int width, int height );
 
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
         bool should_process( const rs2::frame & frame ) override;
 
     private:
-        void    update_output_profile(const rs2::frame& f);
+        void update_output_profile( const rs2::frame & f, float & value );
 
         std::vector< rs2_stream > _streams_to_rotate;
         int                       _control_val;

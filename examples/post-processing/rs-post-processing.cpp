@@ -79,7 +79,7 @@ int main(int argc, char * argv[]) try
 
     // Declare filters
     rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
-    rs2::rotation_filter rot_filter;    // Rotation - rotates frames
+    rs2::rotation_filter rot_filter;    // Rotation - rotates frames. By default, the constructor rotates depth frames.
     rs2::threshold_filter thr_filter;   // Threshold  - removes values outside recommended range
     rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
     rs2::temporal_filter temp_filter;   // Temporal   - reduces temporal noise
