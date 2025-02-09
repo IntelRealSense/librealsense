@@ -812,7 +812,7 @@ namespace rs2
             const plane p,
             const rs2::region_of_interest roi,
             const float baseline_mm,
-            const float focal_length_pixels,
+            const rs2_intrinsics* intrin,
             const int ground_thruth_mm,
             const bool plane_fit,
             const float plane_fit_to_ground_truth_mm,

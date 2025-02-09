@@ -7,6 +7,7 @@
 
 #include <librealsense2/rs.hpp>
 #include <numeric>
+#include <rs-config.h>
 
 int main(int argc, const char * argv[]) try
 {
@@ -74,6 +75,20 @@ int main(int argc, const char * argv[]) try
                  "RMS = SQRT((SUM(Di-Dpi)^2)/n)\n"
                  "             i=1    ");
 
+    metric temporal_noise = model.make_metric(
+        "Temporal Noise", 0.f, 100.f, true, "mm",
+        "Temporal Noise .\n"
+        "This metric provides the depth temporal noise\n"
+        "and is calculated as follows:\n"
+        "Input - N images of Depth_Image\n"
+        "Loop over the N images and create Depth_Tensor\n"
+        "Depth_Tensor = (Depth_Image, N)\n"
+        "Remove all zeros from Depth_Tensor\n"
+        "COMPUTE STD_Matrix = STD of Depth_Tensor(x, y, all)\n"
+        "COMPUTE Median_STD = 50% percentile value of STD_Matrix\n"
+        "Temporal Noise = Median_STD\n");
+
+
     // ===============================
     //       Metrics Calculation
     // ===============================
@@ -83,7 +98,7 @@ int main(int argc, const char * argv[]) try
         const rs2::plane p,
         const rs2::region_of_interest roi,
         const float baseline_mm,
-        const float focal_length_pixels,
+        const rs2_intrinsics* intrin,
         const int ground_truth_mm,
         const bool plane_fit,
         const float plane_fit_to_ground_truth_mm,
@@ -102,9 +117,17 @@ int main(int argc, const char * argv[]) try
 
         if (!plane_fit) return;
 
-        const float bf_factor = baseline_mm * focal_length_pixels * TO_METERS; // also convert point units from mm to meter
+        const float bf_factor = baseline_mm * intrin->fx * TO_METERS; // also convert point units from mm to meter
 
-        std::vector<rs2::float3> points_set = points;
+        std::vector<rs2::float3> points_set;
+        for (auto point : points)
+        {
+            float pixel[2] = { point.x, point.y };
+            float pt[3];
+            rs2_deproject_pixel_to_point(pt, intrin, pixel, point.z);
+            points_set.push_back({ pt[0], pt[1], pt[2] });
+        }
+        
         std::vector<float> distances;
         std::vector<float> disparities;
         std::vector<float> gt_errors;
@@ -171,6 +194,83 @@ int main(int argc, const char * argv[]) try
             samples.push_back({ plane_fit_rms_error->get_name() + " mm",  rms_error_val });
         }
 
+        // Calculate Temporal Noise
+        // Temporal Noise is calculated as the median of the standard deviation of the depth values
+        // across a set of N frames.
+        // The standard deviation is calculated for each pixel across the N frames.
+        // The median of the standard deviations is the Temporal Noise.
+        // The Temporal Noise is calculated in mm.
+        int num_images = 10;
+        if (rs2::config_file::instance().contains(rs2::configurations::DQT::temporal_noise_num_images))
+        {
+            num_images = rs2::config_file::instance().get(rs2::configurations::DQT::temporal_noise_num_images);
+        }
+        else
+        {
+            rs2::config_file::instance().set(rs2::configurations::DQT::temporal_noise_num_images, num_images);
+        }
+        
+        static std::deque<std::vector<rs2::float3>> depth_images; // FIFO buffer for depth images
+
+        // Add the current depth image to the FIFO buffer
+        depth_images.push_back(points);
+        if (depth_images.size() > num_images) {
+            depth_images.pop_front();
+        }
+
+        // Create Depth_Tensor
+        std::vector<std::vector<std::vector<float>>> depth_tensor(roi.max_x, std::vector<std::vector<float>>(roi.max_y, std::vector<float>(depth_images.size(), 0.0f)));
+
+        // Fill Depth_Tensor with depth images
+        for (size_t n = 0; n < depth_images.size(); ++n) {
+            for (const auto& point : depth_images[n]) {
+                int x = static_cast<int>(point.x);
+                int y = static_cast<int>(point.y);
+                if (x >= roi.min_x && x < roi.max_x && y >= roi.min_y && y < roi.max_y) {
+                    depth_tensor[x - roi.min_x][y - roi.min_y][n] = point.z * TO_MM;
+                }
+            }
+        }
+
+        // Remove all zeros from Depth_Tensor
+        for (int y = 0; y < roi.max_y; ++y) {
+            for (int x = 0; x < roi.max_x; ++x) {
+                depth_tensor[x][y].erase(std::remove(depth_tensor[x][y].begin(), depth_tensor[x][y].end(), 0.0f), depth_tensor[x][y].end());
+            }
+        }
+
+        // Compute STD_Matrix
+        std::vector<std::vector<float>> std_matrix(roi.max_x - roi.min_x, std::vector<float>(roi.max_y - roi.min_y, 0.0f));
+        for (int y = 0; y < roi.max_y - roi.min_y; ++y) {
+            for (int x = 0; x < roi.max_x - roi.min_x; ++x) {
+                if (!depth_tensor[x][y].empty()) {
+                    float mean = std::accumulate(depth_tensor[x][y].begin(), depth_tensor[x][y].end(), 0.0f) / depth_tensor[x][y].size();
+                    float variance = 0.0f;
+                    for (float value : depth_tensor[x][y]) {
+                        variance += (value - mean) * (value - mean);
+                    }
+                    variance /= depth_tensor[x][y].size();
+                    std_matrix[x][y] = std::sqrt(variance);
+                }
+            }
+        }
+
+        // Compute Median_STD
+        std::vector<float> std_values;
+        for (int y = 0; y < roi.max_y - roi.min_y; ++y) {
+            for (int x = 0; x < roi.max_x - roi.min_x; ++x) {
+                std_values.push_back(std_matrix[x][y]);
+            }
+        }
+
+        std::sort(std_values.begin(), std_values.end());
+        float median_std = std_values[std_values.size() / 2];
+
+        temporal_noise->add_value(median_std);
+
+        if (record) {
+            samples.push_back({ temporal_noise->get_name(), median_std});
+        }
     });
 
     // ===============================

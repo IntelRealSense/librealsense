@@ -54,7 +54,7 @@ namespace rs2
             const plane p,
             const rs2::region_of_interest roi,
             const float baseline_mm,
-            const float focal_length_pixels,
+            const rs2_intrinsics* intrin,
             const int ground_thruth_mm,
             const bool plane_fit,
             const float plane_fit_to_ground_truth_mm,
@@ -175,13 +175,10 @@ namespace rs2
                     {
                         // units is float
                         float pixel[2] = { float(x), float(y) };
-                        float point[3];
                         auto distance = depth_raw * units;
 
-                        rs2_deproject_pixel_to_point(point, intrin, pixel, distance);
-
                         std::lock_guard<std::mutex> lock(m);
-                        roi_pixels.push_back({ point[0], point[1], point[2] });
+                        roi_pixels.push_back({ pixel[0], pixel[1], distance });
                     }
                 }
 
@@ -212,7 +209,7 @@ namespace rs2
             // Angle can be calculated from param C
             result.angle = static_cast<float>(std::acos(std::abs(p.c)) / M_PI * 180.);
 
-            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_truth_mm, plane_fit_present,
+            callback(roi_pixels, p, roi, baseline_mm, intrin, ground_truth_mm, plane_fit_present,
                 plane_fit_to_gt_offset_mm, result.distance, record, samples);
 
             // Calculate normal
