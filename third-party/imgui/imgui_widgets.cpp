@@ -3521,22 +3521,6 @@ void ImGui::SetNextItemRefVal(ImGuiDataType data_type, void* p_data)
     memcpy(&g.NextItemData.RefVal, p_data, DataTypeGetInfo(data_type)->Size);
 }
 
-bool ImGui::handleTextCentering(const char* buf, ImGuiStyle& style)
-{
-    bool pushed_style_var = false;
-    float text_width = CalcTextSize(buf).x;
-    float input_box_width = CalcItemWidth();
-
-    float padding = (input_box_width - text_width) / 2.0f;
-    if (padding > 0)
-    {
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(padding, style.FramePadding.y));
-        pushed_style_var = true;
-    }
-
-    return pushed_style_var;
-}
-
 // Note: p_data, p_step, p_step_fast are _pointers_ to a memory address holding the data. For an Input widget, p_step and p_step_fast are optional.
 // Read code of e.g. InputFloat(), InputInt() etc. or examples in 'Demo->Widgets->Data Types' to understand how to use this function directly.
 bool ImGui::InputScalar(const char* label, ImGuiDataType data_type, void* p_data, const void* p_step, const void* p_step_fast, const char* format, ImGuiInputTextFlags flags)
@@ -3563,21 +3547,10 @@ bool ImGui::InputScalar(const char* label, ImGuiDataType data_type, void* p_data
     flags |= (ImGuiInputTextFlags)ImGuiInputTextFlags_LocalizeDecimalPoint;
 
     bool value_changed = false;
-    bool pushed_style_var = false;
-
     if (p_step == NULL)
     {
-        if (flags & ImGuiInputTextFlags_CenterText)
-        {
-            pushed_style_var = handleTextCentering(buf, style);
-        }
         if (InputText(label, buf, IM_ARRAYSIZE(buf), flags))
             value_changed = DataTypeApplyFromText(buf, data_type, p_data, format, (flags & ImGuiInputTextFlags_ParseEmptyRefVal) ? p_data_default : NULL);
-
-        if (pushed_style_var)
-        {
-            ImGui::PopStyleVar();
-        }
     }
     else
     {
@@ -3586,20 +3559,8 @@ bool ImGui::InputScalar(const char* label, ImGuiDataType data_type, void* p_data
         BeginGroup(); // The only purpose of the group here is to allow the caller to query item data e.g. IsItemActive()
         PushID(label);
         SetNextItemWidth(ImMax(1.0f, CalcItemWidth() - (button_size + style.ItemInnerSpacing.x) * 2));
-
-        if (flags & ImGuiInputTextFlags_CenterText)
-        {
-            pushed_style_var = handleTextCentering(buf, style);
-        }
-
         if (InputText("", buf, IM_ARRAYSIZE(buf), flags)) // PushId(label) + "" gives us the expected ID from outside point of view
             value_changed = DataTypeApplyFromText(buf, data_type, p_data, format, (flags & ImGuiInputTextFlags_ParseEmptyRefVal) ? p_data_default : NULL);
-
-        if (pushed_style_var)
-        {
-            ImGui::PopStyleVar();
-        }
-
         IMGUI_TEST_ENGINE_ITEM_INFO(g.LastItemData.ID, label, g.LastItemData.StatusFlags | ImGuiItemStatusFlags_Inputable);
 
         // Step buttons

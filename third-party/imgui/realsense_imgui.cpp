@@ -51,6 +51,124 @@ float RsImGui::RoundScalar(float value, int decimal_precision)
     return negative ? -value : value;
 }
 
+bool handleTextCentering(const char* buf, ImGuiStyle& style)
+{
+    bool pushed_style_var = false;
+    float text_width = ImGui::CalcTextSize(buf).x;
+    float input_box_width = ImGui::CalcItemWidth();
+
+    float padding = (input_box_width - text_width) / 2.0f;
+    if (padding > 0)
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(padding, style.FramePadding.y));
+        pushed_style_var = true;
+    }
+
+    return pushed_style_var;
+}
+
+bool RsImGui::InputIntCentered(const char* label, int* v, int step, int step_fast, ImGuiInputTextFlags flags)
+{
+    // Hexadecimal input provided as a convenience but the flag name is awkward. Typically you'd use InputText() to parse your own data, if you want to handle prefixes.
+    const char* format = (flags & ImGuiInputTextFlags_CharsHexadecimal) ? "%08X" : "%d";
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    const void* p_step = (const void*)(step ? &step : NULL);
+    const void* p_step_fast = (const void*)(step_fast ? &step_fast : NULL);
+    if (window->SkipItems)
+        return false;
+
+    ImGuiDataType data_type = ImGuiDataType_S32;
+
+    ImGuiContext& g = *GImGui;
+    ImGuiStyle& style = g.Style;
+
+    if (format == NULL)
+        format = ImGui::DataTypeGetInfo(data_type)->PrintFmt;
+
+    void* p_data_default = (g.NextItemData.Flags & ImGuiNextItemDataFlags_HasRefVal) ? &g.NextItemData.RefVal : &g.DataTypeZeroValue;
+
+    char buf[64];
+    if ((flags & ImGuiInputTextFlags_DisplayEmptyRefVal) && ImGui::DataTypeCompare(data_type, v, p_data_default) == 0)
+        buf[0] = 0;
+    else
+        ImGui::DataTypeFormatString(buf, IM_ARRAYSIZE(buf), data_type, v, format);
+
+    flags |= ImGuiInputTextFlags_AutoSelectAll | (ImGuiInputTextFlags)ImGuiInputTextFlags_NoMarkEdited; // We call MarkItemEdited() ourselves by comparing the actual data rather than the string.
+    flags |= (ImGuiInputTextFlags)ImGuiInputTextFlags_LocalizeDecimalPoint;
+
+    bool value_changed = false;
+    bool pushed_style_var = false;
+
+    if (p_step == NULL)
+    {
+        pushed_style_var = handleTextCentering(buf, style);
+        
+        if (ImGui::InputText(label, buf, IM_ARRAYSIZE(buf), flags))
+            value_changed = ImGui::DataTypeApplyFromText(buf, data_type, v, format, (flags & ImGuiInputTextFlags_ParseEmptyRefVal) ? p_data_default : NULL);
+
+        if (pushed_style_var)
+        {
+            ImGui::PopStyleVar();
+        }
+    }
+    else
+    {
+        const float button_size = ImGui::GetFrameHeight();
+
+        ImGui::BeginGroup(); // The only purpose of the group here is to allow the caller to query item data e.g. IsItemActive()
+        ImGui::PushID(label);
+        ImGui::SetNextItemWidth(ImMax(1.0f, ImGui::CalcItemWidth() - (button_size + style.ItemInnerSpacing.x) * 2));
+
+        pushed_style_var = handleTextCentering(buf, style);
+
+        if (ImGui::InputText("", buf, IM_ARRAYSIZE(buf), flags)) // PushId(label) + "" gives us the expected ID from outside point of view
+            value_changed = ImGui::DataTypeApplyFromText(buf, data_type, v, format, (flags & ImGuiInputTextFlags_ParseEmptyRefVal) ? p_data_default : NULL);
+
+        if (pushed_style_var)
+        {
+            ImGui::PopStyleVar();
+        }
+
+        IMGUI_TEST_ENGINE_ITEM_INFO(g.LastItemData.ID, label, g.LastItemData.StatusFlags | ImGuiItemStatusFlags_Inputable);
+
+        // Step buttons
+        const ImVec2 backup_frame_padding = style.FramePadding;
+        style.FramePadding.x = style.FramePadding.y;
+        ImGuiButtonFlags button_flags = ImGuiButtonFlags_Repeat | ImGuiButtonFlags_DontClosePopups;
+        if (flags & ImGuiInputTextFlags_ReadOnly)
+            ImGui::BeginDisabled();
+        ImGui::SameLine(0, style.ItemInnerSpacing.x);
+        if (ImGui::ButtonEx("-", ImVec2(button_size, button_size), button_flags))
+        {
+            ImGui::DataTypeApplyOp(data_type, '-', v, v, g.IO.KeyCtrl && p_step_fast ? p_step_fast : p_step);
+            value_changed = true;
+        }
+        ImGui::SameLine(0, style.ItemInnerSpacing.x);
+        if (ImGui::ButtonEx("+", ImVec2(button_size, button_size), button_flags))
+        {
+            ImGui::DataTypeApplyOp(data_type, '+', v, v, g.IO.KeyCtrl && p_step_fast ? p_step_fast : p_step);
+            value_changed = true;
+        }
+        if (flags & ImGuiInputTextFlags_ReadOnly)
+            ImGui::EndDisabled();
+
+        const char* label_end = ImGui::FindRenderedTextEnd(label);
+        if (label != label_end)
+        {
+            ImGui::SameLine(0, style.ItemInnerSpacing.x);
+            ImGui::TextEx(label, label_end);
+        }
+        style.FramePadding = backup_frame_padding;
+
+        ImGui::PopID();
+        ImGui::EndGroup();
+    }
+    if (value_changed)
+        ImGui::MarkItemEdited(g.LastItemData.ID);
+
+    return value_changed;
+}
+
 bool RsImGui::CustomComboBox(const char* label, int* current_item, const char* const items[], int items_count)
 {
     bool value_changed = false;
