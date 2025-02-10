@@ -200,7 +200,7 @@ int main(int argc, const char * argv[]) try
         // The standard deviation is calculated for each pixel across the N frames.
         // The median of the standard deviations is the Temporal Noise.
         // The Temporal Noise is calculated in mm.
-        int num_images = 10;
+        int num_images = 40;
         if (rs2::config_file::instance().contains(rs2::configurations::DQT::temporal_noise_num_images))
         {
             num_images = rs2::config_file::instance().get(rs2::configurations::DQT::temporal_noise_num_images);
@@ -215,62 +215,66 @@ int main(int argc, const char * argv[]) try
         // Add the current depth image to the FIFO buffer
         depth_images.push_back(points);
         if (depth_images.size() > num_images) {
+
+            //start calculate only once we accumulate 'num_images'
             depth_images.pop_front();
-        }
 
-        // Create Depth_Tensor
-        std::vector<std::vector<std::vector<float>>> depth_tensor(roi.max_x, std::vector<std::vector<float>>(roi.max_y, std::vector<float>(depth_images.size(), 0.0f)));
+            // Create Depth_Tensor
+            std::vector<std::vector<std::vector<float>>> depth_tensor(roi.max_x, std::vector<std::vector<float>>(roi.max_y, std::vector<float>(depth_images.size(), 0.0f)));
 
-        // Fill Depth_Tensor with depth images
-        for (size_t n = 0; n < depth_images.size(); ++n) {
-            for (const auto& point : depth_images[n]) {
-                int x = static_cast<int>(point.x);
-                int y = static_cast<int>(point.y);
-                if (x >= roi.min_x && x < roi.max_x && y >= roi.min_y && y < roi.max_y) {
-                    depth_tensor[x - roi.min_x][y - roi.min_y][n] = point.z * TO_MM;
-                }
-            }
-        }
-
-        // Remove all zeros from Depth_Tensor
-        for (int y = 0; y < roi.max_y; ++y) {
-            for (int x = 0; x < roi.max_x; ++x) {
-                depth_tensor[x][y].erase(std::remove(depth_tensor[x][y].begin(), depth_tensor[x][y].end(), 0.0f), depth_tensor[x][y].end());
-            }
-        }
-
-        // Compute STD_Matrix
-        std::vector<std::vector<float>> std_matrix(roi.max_x - roi.min_x, std::vector<float>(roi.max_y - roi.min_y, 0.0f));
-        for (int y = 0; y < roi.max_y - roi.min_y; ++y) {
-            for (int x = 0; x < roi.max_x - roi.min_x; ++x) {
-                if (!depth_tensor[x][y].empty()) {
-                    float mean = std::accumulate(depth_tensor[x][y].begin(), depth_tensor[x][y].end(), 0.0f) / depth_tensor[x][y].size();
-                    float variance = 0.0f;
-                    for (float value : depth_tensor[x][y]) {
-                        variance += (value - mean) * (value - mean);
+            // Fill Depth_Tensor with depth images
+            for (size_t n = 0; n < depth_images.size(); ++n) {
+                for (const auto& point : depth_images[n]) {
+                    int x = static_cast<int>(point.x);
+                    int y = static_cast<int>(point.y);
+                    if (x >= roi.min_x && x < roi.max_x && y >= roi.min_y && y < roi.max_y) {
+                        depth_tensor[x - roi.min_x][y - roi.min_y][n] = point.z * TO_MM;
                     }
-                    variance /= depth_tensor[x][y].size();
-                    std_matrix[x][y] = std::sqrt(variance);
                 }
             }
-        }
 
-        // Compute Median_STD
-        std::vector<float> std_values;
-        for (int y = 0; y < roi.max_y - roi.min_y; ++y) {
-            for (int x = 0; x < roi.max_x - roi.min_x; ++x) {
-                std_values.push_back(std_matrix[x][y]);
+            // Remove all zeros from Depth_Tensor
+            for (int y = 0; y < roi.max_y; ++y) {
+                for (int x = 0; x < roi.max_x; ++x) {
+                    depth_tensor[x][y].erase(std::remove(depth_tensor[x][y].begin(), depth_tensor[x][y].end(), 0.0f), depth_tensor[x][y].end());
+                }
+            }
+
+            // Compute STD_Matrix
+            std::vector<std::vector<float>> std_matrix(roi.max_x - roi.min_x, std::vector<float>(roi.max_y - roi.min_y, 0.0f));
+            for (int y = 0; y < roi.max_y - roi.min_y; ++y) {
+                for (int x = 0; x < roi.max_x - roi.min_x; ++x) {
+                    if (!depth_tensor[x][y].empty()) {
+                        float mean = std::accumulate(depth_tensor[x][y].begin(), depth_tensor[x][y].end(), 0.0f) / depth_tensor[x][y].size();
+                        float variance = 0.0f;
+                        for (float value : depth_tensor[x][y]) {
+                            variance += (value - mean) * (value - mean);
+                        }
+                        variance /= depth_tensor[x][y].size();
+                        std_matrix[x][y] = std::sqrt(variance);
+                    }
+                }
+            }
+
+            // Compute Median_STD
+            std::vector<float> std_values;
+            for (int y = 0; y < roi.max_y - roi.min_y; ++y) {
+                for (int x = 0; x < roi.max_x - roi.min_x; ++x) {
+                    std_values.push_back(std_matrix[x][y]);
+                }
+            }
+
+            std::sort(std_values.begin(), std_values.end());
+            float median_std = std_values[std_values.size() / 2];
+
+            temporal_noise->add_value(median_std);
+
+            if (record) {
+                samples.push_back({ temporal_noise->get_name(), median_std });
             }
         }
 
-        std::sort(std_values.begin(), std_values.end());
-        float median_std = std_values[std_values.size() / 2];
-
-        temporal_noise->add_value(median_std);
-
-        if (record) {
-            samples.push_back({ temporal_noise->get_name(), median_std});
-        }
+        
     });
 
     // ===============================
