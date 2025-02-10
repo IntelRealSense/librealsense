@@ -6,6 +6,7 @@
 #include "stream.h"
 #include "core/video.h"
 #include "proc/rotation-filter.h"
+#include <rsutils/easylogging/easyloggingpp.h>
 
 namespace librealsense {
 
@@ -16,8 +17,13 @@ namespace librealsense {
 
 
     rotation_filter::rotation_filter()
+        : rotation_filter( std::vector< rs2_stream >{ RS2_STREAM_DEPTH } )
+    {
+    }
+
+    rotation_filter::rotation_filter( std::vector< rs2_stream > streams_to_rotate )
         : stream_filter_processing_block( "Rotation Filter" )
-        , _streams_to_rotate()
+        , _streams_to_rotate( streams_to_rotate )
         , _control_val( rotation_default_val )
         , _real_width( 0 )
         , _real_height( 0 )
@@ -40,8 +46,6 @@ namespace librealsense {
                 if( ! strong_rotation_control )
                     return;
 
-                std::lock_guard< std::mutex > lock( _mutex );
-
                 if( ! strong_rotation_control->is_valid( val ) )
                     throw invalid_value_exception( rsutils::string::from()
                                                    << "Unsupported rotation scale " << val << " is out of range." );
@@ -49,80 +53,71 @@ namespace librealsense {
                 _value = val;
             } );
 
-        register_option( RS2_OPTION_ROTATION, rotation_control ); 
+        register_option( RS2_OPTION_ROTATION, rotation_control );
     }
 
     rs2::frame rotation_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
-        if( _value == rotation_default_val )
+        if( _value == rotation_default_val || _streams_to_rotate.empty() )
             return f;
 
-        rs2::stream_profile profile = f.get_profile();
-        rs2_stream type = profile.stream_type();
-        rs2_extension tgt_type;
-        if( type == RS2_STREAM_INFRARED )
-        {
-            tgt_type = RS2_EXTENSION_VIDEO_FRAME;
-        }
-        else if( f.is< rs2::disparity_frame >() )
-        {
-            tgt_type = RS2_EXTENSION_DISPARITY_FRAME;
-        }
-        else if( f.is< rs2::depth_frame >() )
-        {
-            tgt_type = RS2_EXTENSION_DEPTH_FRAME;
-        }
-        else
-        {
-            return f;
-        }
+        // Copying to a local variable to avoid locking.
+        float local_value = _value;
 
         auto src = f.as< rs2::video_frame >();
+        rs2::stream_profile profile = f.get_profile();
+        auto format = profile.format();
         _target_stream_profile = profile;
 
-        if( _value == 90 || _value == -90 )
+        if( local_value == 90 || local_value == -90 )
         {
             _rotated_width = src.get_height();
             _rotated_height = src.get_width();
         }
-        else if( _value == 180 )
+        else if( local_value == 180 )
         {
             _rotated_width = src.get_width();
             _rotated_height = src.get_height();
         }
         auto bpp = src.get_bytes_per_pixel();
-        update_output_profile( f );
+        update_output_profile( f, local_value );
+        rs2_stream type = profile.stream_type();
+        rs2_extension tgt_type;
+        if( type == RS2_STREAM_COLOR || type == RS2_STREAM_INFRARED )
+            tgt_type = RS2_EXTENSION_VIDEO_FRAME;
+        else
+            tgt_type = f.is< rs2::disparity_frame >() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
 
         if (auto tgt = prepare_target_frame(f, source, tgt_type))
         {
-            switch( bpp )
+            if( format == RS2_FORMAT_YUYV && ( local_value == 90 || local_value == -90 ) )
             {
-            case 1: {
-                rotate_frame< 1 >( static_cast< uint8_t * >( const_cast< void * >( tgt.get_data() ) ),
+                LOG_ERROR( "Rotating YUYV format is disabled for 90 or -90 degrees" );
+                return f;
+            }
+
+            if( format == RS2_FORMAT_YUYV )
+            {
+                rotate_YUYV_frame( static_cast< uint8_t * >( const_cast< void * >( tgt.get_data() ) ),
                                    static_cast< const uint8_t * >( src.get_data() ),
                                    src.get_width(),
                                    src.get_height() );
-                break;
             }
-
-            case 2: {
-                rotate_frame< 2 >( static_cast< uint8_t * >( const_cast< void * >( tgt.get_data() ) ),
-                                   static_cast< const uint8_t * >( src.get_data() ) ,
-                                   src.get_width(),
-                                   src.get_height());
-                break;
-            }
-
-            default:
-                LOG_ERROR( "Rotation transform does not support format: "
-                           + std::string( rs2_format_to_string( tgt.get_profile().format() ) ) );
+            else
+            {
+                rotate_frame( static_cast< uint8_t * >( const_cast< void * >( tgt.get_data() ) ),
+                              static_cast< const uint8_t * >( src.get_data() ),
+                              src.get_width(),
+                              src.get_height(),
+                              bpp,
+                              local_value );
             }
             return tgt;
         }
         return f;
     }
 
-    void  rotation_filter::update_output_profile(const rs2::frame& f)
+    void  rotation_filter::update_output_profile(const rs2::frame& f, float & value)
     {
         _source_stream_profile = f.get_profile();
         
@@ -143,7 +138,7 @@ namespace librealsense {
         rs2_intrinsics tgt_intrin = tgt_vspi->get_intrinsics();
 
         // Adjust width and height based on the rotation angle 
-        if( _value == 90 || _value == -90 )  // 90 or -90 degrees rotation
+        if( value == 90 || value == -90 )  // 90 or -90 degrees rotation
         {
             _rotated_width = src_intrin.height;
             _rotated_height = src_intrin.width;
@@ -152,7 +147,7 @@ namespace librealsense {
             tgt_intrin.ppx = src_intrin.ppy;
             tgt_intrin.ppy = src_intrin.ppx;
         }
-        else if( _value == 180 )  // 180 degrees rotation
+        else if( value == 180 )  // 180 degrees rotation
         {
             _rotated_width = src_intrin.width;
             _rotated_height = src_intrin.height;
@@ -180,45 +175,75 @@ namespace librealsense {
         return ret;
     }
 
-    template< size_t SIZE >
-    void rotation_filter::rotate_frame( uint8_t * const out, const uint8_t * source, int width, int height )
+    void rotation_filter::rotate_frame( uint8_t * const out, const uint8_t * source, int width, int height, int bpp, float & value )
     {
-        if( _value != 90 && _value != -90 && _value != 180 )
+        if( value != 90 && value != -90 && value != 180 )
         {
             throw std::invalid_argument( "Invalid rotation angle. Only 90, -90, and 180 degrees are supported." );
         }
 
         // Define output dimensions
-        int width_out = ( _value == 90 || _value == -90 ) ? height : width;  // rotate by 180 will keep the values as is
-        int height_out = ( _value == 90 || _value == -90 ) ? width : height;  // rotate by 180 will keep the values as is
+        int width_out = ( value == 90 || value == -90 ) ? height : width;    // rotate by 180 will keep the values as is
+        int height_out = ( value == 90 || value == -90 ) ? width : height;  // rotate by 180 will keep the values as is
 
         // Perform rotation
-        for( int i = 0; i < height; ++i ) 
+        for( int i = 0; i < height; ++i )
         {
             for( int j = 0; j < width; ++j )
             {
                 // Calculate source index
-                size_t src_index = ( i * width + j ) * SIZE;
+                size_t src_index = ( i * width + j ) * bpp;
 
                 // Determine output index based on rotation angle
                 size_t out_index;
-                if( _value == 90 )
+                if( value == 90 )
                 {
-                    out_index = ( j * height + ( height - i - 1 ) ) * SIZE;
+                    out_index = ( j * height + ( height - i - 1 ) ) * bpp;
                 }
-                else if( _value == -90 )
+                else if( value == -90 )
                 {
-                    out_index = ( ( width - j - 1 ) * height + i ) * SIZE;
+                    out_index = ( ( width - j - 1 ) * height + i ) * bpp;
                 }
                 else  // 180 degrees
                 {
-                    out_index = ( ( height - i - 1 ) * width + ( width - j - 1 ) ) * SIZE;
+                    out_index = ( ( height - i - 1 ) * width + ( width - j - 1 ) ) * bpp;
                 }
 
                 // Copy pixel data from source to destination
-                std::memcpy( &out[out_index], &source[src_index], SIZE );
+                std::memcpy( &out[out_index], &source[src_index], bpp );
             }
         }
+    }
+
+
+    void rotation_filter::rotate_YUYV_frame( uint8_t * const out, const uint8_t * source, int width, int height ) 
+    {
+        int frame_size = width * height * 2;  // YUYV has 2 bytes per pixel
+        for( int i = 0; i < frame_size; i += 4 )
+        {
+            // Find the corresponding flipped position in the output
+            int flipped_index = frame_size - 4 - i;
+
+            // Copy YUYV pixels in reverse order to rotate 180 degrees
+            out[flipped_index] = source[i];          // Y1
+            out[flipped_index + 1] = source[i + 1];  // U
+            out[flipped_index + 2] = source[i + 2];  // Y2
+            out[flipped_index + 3] = source[i + 3];  // V
+        }
+    }
+
+
+    bool rotation_filter::should_process( const rs2::frame & frame )
+    {
+        if( ! frame || frame.is< rs2::frameset >() )
+            return false;
+        auto type = frame.get_profile().stream_type();
+
+        for( auto & stream_type : _streams_to_rotate ){
+            if( stream_type == type )
+                return true;
+        }
+        return false;
     }
        
 }

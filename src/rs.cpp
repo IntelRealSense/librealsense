@@ -2784,9 +2784,9 @@ rs2_processing_block* rs2_create_decimation_filter_block(rs2_error** error) BEGI
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-rs2_processing_block * rs2_create_rotation_filter_block( rs2_error ** error ) BEGIN_API_CALL
+rs2_processing_block* rs2_create_rotation_filter_block( rs2_streams_list streams_to_rotate, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto block = std::make_shared< librealsense::rotation_filter >();
+    auto block = std::make_shared< librealsense::rotation_filter >( streams_to_rotate.list );
 
     return new rs2_processing_block{ block };
 }
