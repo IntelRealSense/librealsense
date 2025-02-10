@@ -91,7 +91,7 @@ namespace librealsense {
 
         if (auto tgt = prepare_target_frame(f, source, tgt_type))
         {
-            if( format == RS2_FORMAT_YUYV && ( _value == 90 || _value == -90 ) )
+            if( format == RS2_FORMAT_YUYV && ( local_value == 90 || local_value == -90 ) )
             {
                 LOG_ERROR( "Rotating YUYV format is disabled for 90 or -90 degrees" );
                 return f;
@@ -184,8 +184,8 @@ namespace librealsense {
         }
 
         // Define output dimensions
-        int width_out = ( _value == 90 || _value == -90 ) ? height : width;  // rotate by 180 will keep the values as is
-        int height_out = ( _value == 90 || _value == -90 ) ? width : height;  // rotate by 180 will keep the values as is
+        int width_out = ( value == 90 || value == -90 ) ? height : width;    // rotate by 180 will keep the values as is
+        int height_out = ( value == 90 || value == -90 ) ? width : height;  // rotate by 180 will keep the values as is
 
         // Perform rotation
         for( int i = 0; i < height; ++i )
@@ -197,11 +197,11 @@ namespace librealsense {
 
                 // Determine output index based on rotation angle
                 size_t out_index;
-                if( _value == 90 )
+                if( value == 90 )
                 {
                     out_index = ( j * height + ( height - i - 1 ) ) * bpp;
                 }
-                else if( _value == -90 )
+                else if( value == -90 )
                 {
                     out_index = ( ( width - j - 1 ) * height + i ) * bpp;
                 }
