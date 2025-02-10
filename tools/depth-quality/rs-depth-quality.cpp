@@ -76,7 +76,7 @@ int main(int argc, const char * argv[]) try
                  "             i=1    ");
 
     metric temporal_noise = model.make_metric(
-        "Temporal Noise", 0.f, 100.f, true, "mm",
+        "Temporal Noise", 0.f, 100.f, true, "%",
         "Temporal Noise .\n"
         "This metric provides the depth temporal noise\n"
         "and is calculated as follows:\n"
@@ -85,8 +85,10 @@ int main(int argc, const char * argv[]) try
         "Depth_Tensor = (Depth_Image, N)\n"
         "Remove all zeros from Depth_Tensor\n"
         "COMPUTE STD_Matrix = STD of Depth_Tensor(x, y, all)\n"
-        "COMPUTE Median_STD = 50% percentile value of STD_Matrix\n"
-        "Temporal Noise = Median_STD\n");
+        "COMPUTE Median_Matrix = Median of Depth_Tensor(x, y, all)\n"
+        "COMPUTE Devision_Matrix = STD_Matrix /Median_Matrix\n"
+        "COMPUTE Median_Devision_Matrix = 50% percentile value of Devision_Matrix\n"
+        "Temporal Noise = Median_Devision_Matrix\n");
 
 
     // ===============================
@@ -240,37 +242,71 @@ int main(int argc, const char * argv[]) try
                 }
             }
 
-            // Compute STD_Matrix
+            
             std::vector<std::vector<float>> std_matrix(roi.max_x - roi.min_x, std::vector<float>(roi.max_y - roi.min_y, 0.0f));
+            std::vector<std::vector<float>> median_matrix(roi.max_x - roi.min_x, std::vector<float>(roi.max_y - roi.min_y, 0.0f));
+            std::vector<std::vector<float>> division_matrix(roi.max_x - roi.min_x, std::vector<float>(roi.max_y - roi.min_y, 0.0f));
+
             for (int y = 0; y < roi.max_y - roi.min_y; ++y) {
                 for (int x = 0; x < roi.max_x - roi.min_x; ++x) {
                     if (!depth_tensor[x][y].empty()) {
                         float mean = std::accumulate(depth_tensor[x][y].begin(), depth_tensor[x][y].end(), 0.0f) / depth_tensor[x][y].size();
                         float variance = 0.0f;
+                        
+                        // Compute STD_Matrix
                         for (float value : depth_tensor[x][y]) {
                             variance += (value - mean) * (value - mean);
                         }
                         variance /= depth_tensor[x][y].size();
                         std_matrix[x][y] = std::sqrt(variance);
+
+                        // Compute median //!!
+                        std::vector<float> sorted_values = depth_tensor[x][y];
+                        std::sort(sorted_values.begin(), sorted_values.end());
+                        size_t size = sorted_values.size();
+                        if (size % 2 == 0) {
+                            median_matrix[x][y] = (sorted_values[size / 2 - 1] + sorted_values[size / 2]) / 2.0f;
+                        }
+                        else {
+                            median_matrix[x][y] = sorted_values[size / 2];
+                        }
+
+                        // Compute division of std_matrix by median_matrix
+                        if (median_matrix[x][y] != 0) { // Avoid division by zero
+                            division_matrix[x][y] = std_matrix[x][y] / median_matrix[x][y];
+                        }
+                        else {
+                            division_matrix[x][y] = 0.0f; // Handle division by zero case
+                        }
                     }
                 }
             }
 
-            // Compute Median_STD
-            std::vector<float> std_values;
-            for (int y = 0; y < roi.max_y - roi.min_y; ++y) {
-                for (int x = 0; x < roi.max_x - roi.min_x; ++x) {
-                    std_values.push_back(std_matrix[x][y]);
+            // Flatten the division_matrix into a single vector
+            std::vector<float> flattened_division_matrix;
+            for (const auto& row : division_matrix) {
+                for (float value : row) {
+                    flattened_division_matrix.push_back(value);
                 }
             }
 
-            std::sort(std_values.begin(), std_values.end());
-            float median_std = std_values[std_values.size() / 2];
+            // Sort the flattened vector
+            std::sort(flattened_division_matrix.begin(), flattened_division_matrix.end());
 
-            temporal_noise->add_value(median_std);
+            // Find the median of the flattened vector
+            float division_median;
+            size_t flattened_size = flattened_division_matrix.size();
+            if (flattened_size % 2 == 0) {
+                division_median = (flattened_division_matrix[flattened_size / 2 - 1] + flattened_division_matrix[flattened_size / 2]) / 2.0f;
+            }
+            else {
+                division_median = flattened_division_matrix[flattened_size / 2];
+            }
+
+            temporal_noise->add_value(division_median * 100);
 
             if (record) {
-                samples.push_back({ temporal_noise->get_name(), median_std });
+                samples.push_back({ temporal_noise->get_name(), division_median * 100 });
             }
         }
 
