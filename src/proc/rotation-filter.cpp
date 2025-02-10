@@ -50,7 +50,6 @@ namespace librealsense {
                     throw invalid_value_exception( rsutils::string::from()
                                                    << "Unsupported rotation scale " << val << " is out of range." );
 
-                std::lock_guard< std::mutex > lock( _mutex );
                 _value = val;
             } );
 
