@@ -67,10 +67,12 @@ bool handleTextCentering(const char* buf, ImGuiStyle& style)
     return pushed_style_var;
 }
 
-bool RsImGui::InputIntCentered(const char* label, int* v, int step, int step_fast, ImGuiInputTextFlags flags)
+bool RsImGui::InputIntCentered(const char* label, int* v, int step, int step_fast)
 {
     // Hexadecimal input provided as a convenience but the flag name is awkward. Typically you'd use InputText() to parse your own data, if you want to handle prefixes.
-    const char* format = (flags & ImGuiInputTextFlags_CharsHexadecimal) ? "%08X" : "%d";
+    //const char* format = (flags & ImGuiInputTextFlags_CharsHexadecimal) ? "%08X" : "%d";
+
+    const char* format = "%d";
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     const void* p_step = (const void*)(step ? &step : NULL);
     const void* p_step_fast = (const void*)(step_fast ? &step_fast : NULL);
@@ -82,24 +84,21 @@ bool RsImGui::InputIntCentered(const char* label, int* v, int step, int step_fas
     ImGuiContext& g = *GImGui;
     ImGuiStyle& style = g.Style;
 
-    if (format == NULL)
-        format = ImGui::DataTypeGetInfo(data_type)->PrintFmt;
+    /*if (format == NULL)
+        format = ImGui::DataTypeGetInfo(data_type)->PrintFmt;*/
 
     void* p_data_default = (g.NextItemData.Flags & ImGuiNextItemDataFlags_HasRefVal) ? &g.NextItemData.RefVal : &g.DataTypeZeroValue;
 
     char buf[64];
-    if ((flags & ImGuiInputTextFlags_DisplayEmptyRefVal) && ImGui::DataTypeCompare(data_type, v, p_data_default) == 0)
-        buf[0] = 0;
-    else
-        ImGui::DataTypeFormatString(buf, IM_ARRAYSIZE(buf), data_type, v, format);
+    ImGui::DataTypeFormatString(buf, IM_ARRAYSIZE(buf), data_type, v, format);
 
-    flags |= ImGuiInputTextFlags_AutoSelectAll | (ImGuiInputTextFlags)ImGuiInputTextFlags_NoMarkEdited; // We call MarkItemEdited() ourselves by comparing the actual data rather than the string.
+    ImGuiInputTextFlags flags = ImGuiInputTextFlags_AutoSelectAll | (ImGuiInputTextFlags)ImGuiInputTextFlags_NoMarkEdited; // We call MarkItemEdited() ourselves by comparing the actual data rather than the string.
     flags |= (ImGuiInputTextFlags)ImGuiInputTextFlags_LocalizeDecimalPoint;
 
     bool value_changed = false;
     bool pushed_style_var = false;
 
-    if (p_step == NULL)
+    /*if (p_step == NULL)
     {
         pushed_style_var = handleTextCentering(buf, style);
         
@@ -111,7 +110,7 @@ bool RsImGui::InputIntCentered(const char* label, int* v, int step, int step_fas
             ImGui::PopStyleVar();
         }
     }
-    else
+    else*/
     {
         const float button_size = ImGui::GetFrameHeight();
 
@@ -129,14 +128,14 @@ bool RsImGui::InputIntCentered(const char* label, int* v, int step, int step_fas
             ImGui::PopStyleVar();
         }
 
-        IMGUI_TEST_ENGINE_ITEM_INFO(g.LastItemData.ID, label, g.LastItemData.StatusFlags | ImGuiItemStatusFlags_Inputable);
+        //IMGUI_TEST_ENGINE_ITEM_INFO(g.LastItemData.ID, label, g.LastItemData.StatusFlags | ImGuiItemStatusFlags_Inputable);
 
         // Step buttons
         const ImVec2 backup_frame_padding = style.FramePadding;
         style.FramePadding.x = style.FramePadding.y;
         ImGuiButtonFlags button_flags = ImGuiButtonFlags_Repeat | ImGuiButtonFlags_DontClosePopups;
-        if (flags & ImGuiInputTextFlags_ReadOnly)
-            ImGui::BeginDisabled();
+        /*if (flags & ImGuiInputTextFlags_ReadOnly)
+            ImGui::BeginDisabled();*/
         ImGui::SameLine(0, style.ItemInnerSpacing.x);
         if (ImGui::ButtonEx("-", ImVec2(button_size, button_size), button_flags))
         {
@@ -149,8 +148,8 @@ bool RsImGui::InputIntCentered(const char* label, int* v, int step, int step_fas
             ImGui::DataTypeApplyOp(data_type, '+', v, v, g.IO.KeyCtrl && p_step_fast ? p_step_fast : p_step);
             value_changed = true;
         }
-        if (flags & ImGuiInputTextFlags_ReadOnly)
-            ImGui::EndDisabled();
+        /*if (flags & ImGuiInputTextFlags_ReadOnly)
+            ImGui::EndDisabled();*/
 
         const char* label_end = ImGui::FindRenderedTextEnd(label);
         if (label != label_end)
