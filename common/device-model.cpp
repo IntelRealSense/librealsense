@@ -3110,7 +3110,8 @@ namespace rs2
                         "If >0.25 we recommend applying the new calibration.\n"
                         "\"White wall\" mode should only be used when pointing at a flat white wall with projector on");
 
-                if (ImGui::Selectable("Focal Length Calibration"))
+                std::string pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+                if (pid != "1155" && ImGui::Selectable("Focal Length Calibration"))
                 {
                     try
                     {
