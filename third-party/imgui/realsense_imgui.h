@@ -29,7 +29,7 @@ namespace RsImGui
     };
     bool          SliderIntWithSteps(const char* label, int* v, int v_min, int v_max, int v_step = 1);
     float         RoundScalar(float value, int decimal_precision);
-    bool          InputIntCentered(const char* label, int* v);
+    bool          InputIntCentered(const char* label, int* v, int step = 1);
     bool          CustomComboBox(const char* label, int* current_item, const char* const items[], int items_count);
     bool          SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_min, float v_max, float power, int decimal_precision, ImGuiSliderFlags flags, bool render_bg);
     bool          VSliderFloat(const char* label, const ImVec2& size, float* v, float v_min, float v_max, const char* display_format, float power, bool render_bg);

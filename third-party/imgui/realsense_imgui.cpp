@@ -67,45 +67,80 @@ bool handleTextCentering(const char* buf, ImGuiStyle& style)
     return pushed_style_var;
 }
 
-bool RsImGui::InputIntCentered(const char* label, int* v)
-{
+bool RsImGui::InputIntCentered(const char* label, int* v, int step)
+{ 
+    const char* format = "%d";
+    int step_fast = 100;
     ImGuiWindow* window = ImGui::GetCurrentWindow();
+    const void* p_step = (const void*)(step ? &step : NULL);
+    const void* p_step_fast = &step_fast;
     if (window->SkipItems)
         return false;
+
+    ImGuiDataType data_type = ImGuiDataType_S32;
 
     ImGuiContext& g = *GImGui;
     ImGuiStyle& style = g.Style;
 
-    char buf[64];
-    const char* format = "%d";
-    ImGui::DataTypeFormatString(buf, IM_ARRAYSIZE(buf), ImGuiDataType_S32, v, format);
+    void* p_data_default = (g.NextItemData.Flags & ImGuiNextItemDataFlags_HasRefVal) ? &g.NextItemData.RefVal : &g.DataTypeZeroValue;
 
-    ImGuiInputTextFlags flags = ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_NoMarkEdited | ImGuiInputTextFlags_LocalizeDecimalPoint;
+    char buf[64];
+    ImGui::DataTypeFormatString(buf, IM_ARRAYSIZE(buf), data_type, v, format);
+
+    ImGuiInputTextFlags flags = ImGuiInputTextFlags_AutoSelectAll | (ImGuiInputTextFlags)ImGuiInputTextFlags_NoMarkEdited; // We call MarkItemEdited() ourselves by comparing the actual data rather than the string.
+    flags |= (ImGuiInputTextFlags)ImGuiInputTextFlags_LocalizeDecimalPoint;
 
     bool value_changed = false;
     bool pushed_style_var = false;
 
-    // Calculate the width of the text inside the input box
-    float text_width = ImGui::CalcTextSize(buf).x;
-    float input_box_width = ImGui::CalcItemWidth();
+    
+    const float button_size = ImGui::GetFrameHeight();
 
-    // Calculate the padding to center the text
-    float padding = (input_box_width - text_width) / 2.0f;
-    if (padding > 0)
-    {
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(padding, style.FramePadding.y));
-        pushed_style_var = true;
-    }
+    ImGui::BeginGroup(); // The only purpose of the group here is to allow the caller to query item data e.g. IsItemActive()
+    ImGui::PushID(label);
+    ImGui::SetNextItemWidth(ImMax(1.0f, ImGui::CalcItemWidth() - (button_size + style.ItemInnerSpacing.x) * 2));
 
-    if (ImGui::InputText(label, buf, IM_ARRAYSIZE(buf), flags))
-    {
-        value_changed = ImGui::DataTypeApplyFromText(buf, ImGuiDataType_S32, v, format, NULL);
-    }
+    pushed_style_var = handleTextCentering(buf, style);
+
+    if (ImGui::InputText("", buf, IM_ARRAYSIZE(buf), flags)) // PushId(label) + "" gives us the expected ID from outside point of view
+        value_changed = ImGui::DataTypeApplyFromText(buf, data_type, v, format, (flags & ImGuiInputTextFlags_ParseEmptyRefVal) ? p_data_default : NULL);
 
     if (pushed_style_var)
     {
         ImGui::PopStyleVar();
     }
+
+    // Step buttons
+    const ImVec2 backup_frame_padding = style.FramePadding;
+    style.FramePadding.x = style.FramePadding.y;
+    ImGuiButtonFlags button_flags = ImGuiButtonFlags_Repeat | ImGuiButtonFlags_DontClosePopups;
+    
+    ImGui::SameLine(0, style.ItemInnerSpacing.x);
+    if (ImGui::ButtonEx("-", ImVec2(button_size, button_size), button_flags))
+    {
+        ImGui::DataTypeApplyOp(data_type, '-', v, v, g.IO.KeyCtrl && p_step_fast ? p_step_fast : p_step);
+        value_changed = true;
+    }
+    ImGui::SameLine(0, style.ItemInnerSpacing.x);
+    if (ImGui::ButtonEx("+", ImVec2(button_size, button_size), button_flags))
+    {
+        ImGui::DataTypeApplyOp(data_type, '+', v, v, g.IO.KeyCtrl && p_step_fast ? p_step_fast : p_step);
+        value_changed = true;
+    }
+
+    const char* label_end = ImGui::FindRenderedTextEnd(label);
+    if (label != label_end)
+    {
+        ImGui::SameLine(0, style.ItemInnerSpacing.x);
+        ImGui::TextEx(label, label_end);
+    }
+    style.FramePadding = backup_frame_padding;
+
+    ImGui::PopID();
+    ImGui::EndGroup();
+    
+    if (value_changed)
+        ImGui::MarkItemEdited(g.LastItemData.ID);
 
     return value_changed;
 }

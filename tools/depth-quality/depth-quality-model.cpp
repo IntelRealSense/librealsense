@@ -722,7 +722,7 @@ namespace rs2
                         if (_use_ground_truth)
                         {
                             ImGui::PushItemWidth(120);
-                            if (RsImGui::InputIntCentered("##GT", &_ground_truth))
+                            if (RsImGui::InputIntCentered("##GT", &_ground_truth, 1))
                             {
                                 _metrics_model.set_ground_truth(_ground_truth);
                             }
@@ -751,7 +751,7 @@ namespace rs2
                         {
                             ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                             ImGui::PushItemWidth(120);
-                            if (RsImGui::InputIntCentered("##LC", &_limit_capture))
+                            if (RsImGui::InputIntCentered("##LC", &_limit_capture, 1))
                             {
                                 // Ensure the value is positive
                                 if (_limit_capture <= 0)
