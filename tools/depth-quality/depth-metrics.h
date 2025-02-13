@@ -164,6 +164,7 @@ namespace rs2
             std::mutex m;
 
             std::vector<rs2::float3> roi_pixels;
+            std::vector<rs2::float3> roi_deprojected_points;
 
 //#pragma omp parallel for - TODO optimization envisaged
             for (int y = roi.min_y; y < roi.max_y; ++y)
@@ -175,18 +176,21 @@ namespace rs2
                     {
                         // units is float
                         float pixel[2] = { float(x), float(y) };
+                        float point[3];
                         auto distance = depth_raw * units;
+                        rs2_deproject_pixel_to_point(point, intrin, pixel, distance);
 
                         std::lock_guard<std::mutex> lock(m);
                         roi_pixels.push_back({ pixel[0], pixel[1], distance });
+                        roi_deprojected_points.push_back({ point[0], point[1], point[2] });
                     }
                 }
 
-            if (roi_pixels.size() < 3) { // Not enough pixels in RoI to fit a plane
+            if (roi_deprojected_points.size() < 3) { // Not enough pixels in RoI to fit a plane
                 return result;
             }
 
-            plane p = plane_from_points(roi_pixels);
+            plane p = plane_from_points(roi_deprojected_points);
 
             if (p == plane{ 0, 0, 0, 0 }) { // The points in RoI don't span a valid plane
                 return result;

@@ -91,10 +91,6 @@ namespace rs2
 
     namespace configurations
     {
-        namespace DQT
-        {
-            static const char* temporal_noise_num_images{ "DQT.temporal_noise_num_images" };
-        }
         namespace record
         {
             static const char* file_save_mode{ "record.file_save_mode" };

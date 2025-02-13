@@ -197,32 +197,19 @@ int main(int argc, const char * argv[]) try
         }
 
         // Calculate Temporal Noise
-        // Temporal Noise is calculated as the median of the standard deviation of the depth values
-        // across a set of N frames.
-        // The standard deviation is calculated for each pixel across the N frames.
-        // The median of the standard deviations is the Temporal Noise.
-        // The Temporal Noise is calculated in mm.
-        int num_images = 40;
-        if (rs2::config_file::instance().contains(rs2::configurations::DQT::temporal_noise_num_images))
-        {
-            num_images = rs2::config_file::instance().get(rs2::configurations::DQT::temporal_noise_num_images);
-        }
-        else
-        {
-            rs2::config_file::instance().set(rs2::configurations::DQT::temporal_noise_num_images, num_images);
-        }
+        const int num_images = 40;
         
         static std::deque<std::vector<rs2::float3>> depth_images; // FIFO buffer for depth images
 
         // Add the current depth image to the FIFO buffer
         depth_images.push_back(points);
-        if (depth_images.size() > num_images) {
+        if (depth_images.size() >= num_images) {
 
             //start calculate only once we accumulate 'num_images'
             depth_images.pop_front();
 
             // Create Depth_Tensor
-            std::vector<std::vector<std::vector<float>>> depth_tensor(roi.max_x, std::vector<std::vector<float>>(roi.max_y, std::vector<float>(depth_images.size(), 0.0f)));
+            std::vector<std::vector<std::vector<float>>> depth_tensor(roi.max_x - roi.min_x, std::vector<std::vector<float>>(roi.max_y - roi.min_y, std::vector<float>(depth_images.size(), 0.0f)));
 
             // Fill Depth_Tensor with depth images
             for (size_t n = 0; n < depth_images.size(); ++n) {
@@ -236,8 +223,8 @@ int main(int argc, const char * argv[]) try
             }
 
             // Remove all zeros from Depth_Tensor
-            for (int y = 0; y < roi.max_y; ++y) {
-                for (int x = 0; x < roi.max_x; ++x) {
+            for (int y = 0; y < roi.max_y - roi.min_y; ++y) {
+                for (int x = 0; x < roi.max_x - roi.min_x; ++x) {
                     depth_tensor[x][y].erase(std::remove(depth_tensor[x][y].begin(), depth_tensor[x][y].end(), 0.0f), depth_tensor[x][y].end());
                 }
             }
