@@ -197,15 +197,15 @@ int main(int argc, const char * argv[]) try
         }
 
         // Calculate Temporal Noise
-        const int num_images = 40;
+        const int NUM_IMAGES = 40;
         
         static std::deque<std::vector<rs2::float3>> depth_images; // FIFO buffer for depth images
 
         // Add the current depth image to the FIFO buffer
         depth_images.push_back(points);
-        if (depth_images.size() >= num_images) {
+        if (depth_images.size() >= NUM_IMAGES) {
 
-            //start calculate only once we accumulate 'num_images'
+            //start calculate only once we accumulate 'NUM_IMAGES'
             depth_images.pop_front();
 
             // Create Depth_Tensor
