@@ -207,6 +207,7 @@ namespace librealsense
             CAP_INTERCAM_HW_SYNC = (1u << 8),
             CAP_IP65 = (1u << 9),
             CAP_IR_FILTER = (1u << 10),
+            CAP_BMI_088 = (1u << 11),
             CAP_MAX
         };
 
@@ -221,7 +222,8 @@ namespace librealsense
             { ds_caps::CAP_BMI_055,          "IMU BMI_055"       },
             { ds_caps::CAP_BMI_085,          "IMU BMI_085"       },
             { ds_caps::CAP_IP65,             "IP65 Sealed device"},
-            { ds_caps::CAP_IR_FILTER,        "IR filter"         }
+            { ds_caps::CAP_IR_FILTER,        "IR filter"         },
+            { ds_caps::CAP_BMI_088,          "IMU BMI_088"       }
         };
 
         inline ds_caps operator &(const ds_caps lhs, const ds_caps rhs)
@@ -552,6 +554,7 @@ namespace librealsense
 
         const uint8_t I2C_IMU_BMI055_ID_ACC = 0xfa;
         const uint8_t I2C_IMU_BMI085_ID_ACC = 0x1f;
+        const uint8_t I2C_IMU_BMI088_ID_ACC = 0x1e;
 
         enum gvd_fields_size
         {

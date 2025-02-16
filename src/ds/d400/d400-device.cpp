@@ -455,6 +455,8 @@ namespace librealsense
                 val |= ds_caps::CAP_BMI_055;
             else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
                 val |= ds_caps::CAP_BMI_085;
+            else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI088_ID_ACC)
+                val |= ds_caps::CAP_BMI_088;
             else if (d400_hid_bmi_055_pid.end() != d400_hid_bmi_055_pid.find(_pid))
                 val |= ds_caps::CAP_BMI_055;
             else if (d400_hid_bmi_085_pid.end() != d400_hid_bmi_085_pid.find(_pid))
