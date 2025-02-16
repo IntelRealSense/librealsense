@@ -86,9 +86,9 @@ int main(int argc, const char * argv[]) try
         "Remove all zeros from Depth_Tensor\n"
         "COMPUTE STD_Matrix = STD of Depth_Tensor(x, y, all)\n"
         "COMPUTE Median_Matrix = Median of Depth_Tensor(x, y, all)\n"
-        "COMPUTE Devision_Matrix = STD_Matrix /Median_Matrix\n"
+        "COMPUTE Division_Matrix = STD_Matrix /Median_Matrix\n"
         "COMPUTE Median_Devision_Matrix = 50% percentile value of Devision_Matrix\n"
-        "Temporal Noise = Median_Devision_Matrix\n");
+        "Temporal Noise = Median_Devision_Matrix multiply by 100 to get percentage\n");
 
 
     // ===============================
