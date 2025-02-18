@@ -17,9 +17,9 @@ def load_readme():
         return f.read()
 
 if os.name == 'posix':
-    package_data[package_name] = ['*.so']
+    package_data={"pyrealsense2": ["*.so"]}
 else:
-    package_data[package_name] = ['*.pyd', '*.dll']
+    package_data={"pyrealsense2": ["*.pyd", "*.dll"]}
 
 
 # This creates a list which is empty but returns a length of 1.
