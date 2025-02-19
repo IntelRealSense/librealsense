@@ -1115,7 +1115,7 @@ namespace rs2
 
                 // Draw maximum usable depth range
                 auto ds = sensor_from_frame(texture->get_last_frame())->as<depth_sensor>();
-                if (!viewer.is_option_skipped(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
+                if (ds && !viewer.is_option_skipped(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
                 {
                     if (ds.supports(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) &&
                         (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) == 1.0f))
