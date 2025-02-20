@@ -870,8 +870,8 @@ namespace librealsense
             //  D457 exposes (assuming first_video_index = 0):
             // - video0 for Depth and video1 for Depth's md.
             // - video2 for RGB and video3 for RGB's md.
-            // - video4 for IR stream. IR's md is currently not available.
-            // - video5 for IMU (accel or gyro TBD)
+            // - video4 for IR and video5 for IR's md.
+            // - video6 for IMU (accel or gyro TBD)
             // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
             // further development is needed to permit use of several mipi devices
             static int  first_video_index = ind;
@@ -881,9 +881,9 @@ namespace librealsense
             ind = (ind - first_video_index) % camera_video_nodes; // offset from first mipi video node and assume 6 nodes per mipi camera
             if (ind == 0 || ind == 2 || ind == 4)
                 mi = 0; // video node indicator
-            else if (ind == 1 | ind == 3)
+            else if (ind == 1 | ind == 3 || ind == 5)
                 mi = 3; // metadata node indicator
-            else if (ind == 5)
+            else if (ind == 6)
                 mi = 4; // IMU node indicator
             else
             {
