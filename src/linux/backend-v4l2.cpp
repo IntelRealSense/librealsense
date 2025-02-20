@@ -887,27 +887,41 @@ namespace librealsense
             ext.controls = &ctrl;
             ext.count = 1;
 
-            if (ioctl(fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
+            int retries = 5;
+            bool opcode_ok = false;
+            while (!opcode_ok && --retries)
             {
-                uint8_t product_pid = 0;
-
-                product_pid = gvd[4 + GVD_PID_OFFSET];
-
-                switch(product_pid)
+                if (xioctl(fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
                 {
-                    case(GVD_PID_D457):
-                        device_pid = 0xABCD;
-                        break;
+                    auto opcode = gvd[0];
+                    if (opcode != 0x10)
+                    {
+                        LOG_WARNING("Wrong opcode when pulling GVD: gvd[0] returned as: " << opcode);
+                        continue;
+                    }
+                    else {
+                        opcode_ok = true;
+                    }
 
-                    case(GVD_PID_D430_GMSL):
-                        device_pid = 0xABCE;
-                        break;
+                    uint8_t product_pid = gvd[4 + GVD_PID_OFFSET];
 
-                    default:
-                        LOG_WARNING("Unidentified MIPI device product id: 0x" << std::hex << (int) product_pid);
-                        device_pid = 0x0000;
-                        break;
+                    switch(product_pid)
+                    {
+                        case(GVD_PID_D457):
+                            device_pid = 0xABCD;
+                            break;
+
+                        case(GVD_PID_D430_GMSL):
+                            device_pid = 0xABCE;
+                            break;
+
+                        default:
+                            LOG_WARNING("Unidentified MIPI device product id: 0x" << std::hex << (int) product_pid << "remaining retries = " << retries);
+                            device_pid = 0x0000;
+                            break;
+                    }
                 }
+                std::this_thread::sleep_for( std::chrono::milliseconds(100));
             }
 
             ::close(fd);
