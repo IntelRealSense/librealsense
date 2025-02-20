@@ -178,7 +178,7 @@ namespace rs2
                         float pixel[2] = { float(x), float(y) };
                         float point[3];
                         auto distance = depth_raw * units;
-                        rs2_deproject_pixel_to_point(point, intrin, pixel, distance);
+                        rs2_deproject_pixel_to_point(point, intrin, pixel, distance);// transform from pixels to metric units (meters) according to intrinsics.
 
                         std::lock_guard<std::mutex> lock(m);
                         roi_pixels.push_back({ pixel[0], pixel[1], distance });

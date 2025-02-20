@@ -75,8 +75,8 @@ _GT_ - Ground Truth distance to the wall (mm)
 ### Temporal Noise
 _STD<sub>n</sub>_ - Matrix of Standard deviation calculated per pixel over N images (N is set to 40 images).  
 _Median<sub>n</sub>_ - Matrix of Median calculated per pixel over N images.  
-Diviation - Matrix consist of Diviation of _STD<sub>n</sub>_ by _Median<sub>n</sub>_ per pixel.  
-Temporal Noise (%)  is calculated as the median of the Diviation matrix, multiply by 100 to get the percentage.
+Division - Matrix consist of Division of _STD<sub>n</sub>_ by _Median<sub>n</sub>_ per pixel.  
+Temporal Noise (%)  is calculated as the median of the Division matrix, multiplied by 100 to get the percentage.
 
 
 <!---
