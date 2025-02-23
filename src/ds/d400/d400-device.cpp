@@ -452,15 +452,30 @@ namespace librealsense
         {
             val |= ds_caps::CAP_IMU_SENSOR;
             if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI055_ID_ACC)
+            {
                 val |= ds_caps::CAP_BMI_055;
+                LOG_DEBUG("The IMU sensor is for PID " << std::hex << _pid << " has been identified as BMI055" << std::dec);
+            }
             else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
+            {
                 val |= ds_caps::CAP_BMI_085;
+                LOG_DEBUG("The IMU sensor is for PID " << std::hex << _pid << " has been identified as BMI085" << std::dec);
+            }
             else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI088_ID_ACC)
+            {
                 val |= ds_caps::CAP_BMI_088;
+                LOG_DEBUG("The IMU sensor is for PID " << std::hex << _pid << " has been identified as BMI088" << std::dec);
+            }
             else if (d400_hid_bmi_055_pid.end() != d400_hid_bmi_055_pid.find(_pid))
+            {
                 val |= ds_caps::CAP_BMI_055;
+                LOG_DEBUG("The IMU sensor is for PID " << std::hex << _pid << " has been identified as BMI055" << std::dec);
+            }
             else if (d400_hid_bmi_085_pid.end() != d400_hid_bmi_085_pid.find(_pid))
+            {
                 val |= ds_caps::CAP_BMI_085;
+                LOG_DEBUG("The IMU sensor is for PID " << std::hex << _pid << " has been identified as BMI085" << std::dec);
+            }
             else
                 LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << _pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);
         }
