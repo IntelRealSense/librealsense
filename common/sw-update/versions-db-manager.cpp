@@ -46,6 +46,7 @@ namespace rs2
             {
                 auto version_str = (*res)["version"];
                 out_version = version(version_str);
+                out_version = out_version.without_build();
                 return VERSION_FOUND;
             }
 
