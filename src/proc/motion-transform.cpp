@@ -166,10 +166,19 @@ namespace librealsense
                                                 bool high_accuracy )
         : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ANY, mm_calib, mm_correct_opt)
     {
+        static constexpr float gravity = 9.80665f;  // Standard Gravitation Acceleration
+        static constexpr double accelerator_scale_factor = 0.001 * gravity;
+
         if( high_accuracy )
+        {
             _converter = std::make_unique< converter_32_bit_mipi >( deg2rad( gyro_scale_factor ) );
+            _accel_converter = std::make_unique< converter_32_bit_mipi >( accelerator_scale_factor );
+        }
         else
+        {
             _converter = std::make_unique< converter_16_bit_mipi >( deg2rad( gyro_scale_factor ) );
+            _accel_converter = std::make_unique< converter_32_bit_mipi >( accelerator_scale_factor );
+        }
         configure_processing_callback();
     }
 
@@ -230,17 +239,18 @@ namespace librealsense
         if (source[0] == 1)
         {
             _target_stream = RS2_STREAM_ACCEL;
+            _accel_converter->convert( dest, source );
         }
         else if (source[0] == 2)
         {
             _target_stream = RS2_STREAM_GYRO;
+            _converter->convert( dest, source );
         }
         else
         {
             throw("motion_to_accel_gyro::process_function - stream type not discovered");
         }
 
-        _converter->convert( dest, source );
     }
 
     acceleration_transform::acceleration_transform( std::shared_ptr< mm_calib_handler > mm_calib,
