@@ -889,7 +889,7 @@ namespace librealsense
 
             int retries = 5;
             bool opcode_ok = false;
-            while (!opcode_ok && --retries)
+            while (!opcode_ok && retries--)
             {
                 if (xioctl(fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
                 {

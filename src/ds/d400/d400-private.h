@@ -167,7 +167,7 @@ namespace librealsense
             {RS455_PID, "5.13.0.50" },
             {RS457_PID, "5.13.1.1" },
             {RS400_MIPI_RECOVERY_PID, "5.13.1.1" },
-            {RS430_GMSL_PID, "5.16.1.111" },  // TBD - update once formal firmware is available
+            {RS430_GMSL_PID, "5.16.5.1" }
         };
 
         std::vector<platform::uvc_device_info> filter_d400_device_by_capability(
