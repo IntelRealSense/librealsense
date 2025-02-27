@@ -805,6 +805,130 @@ namespace librealsense
             return info;
         }
 
+        bool v4l_uvc_device::is_format_supported_on_node(const std::string& dev_name, std::string v4l_4cc_fmt)
+        {
+            int fd = open(dev_name.c_str(), O_RDWR);
+            if (fd < 0)
+                throw linux_backend_exception("Mipi device format could not be grabbed");
+
+            struct v4l2_fmtdesc fmtdesc;
+            memset(&fmtdesc,0,sizeof(fmtdesc));
+            fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+            uint32_t format;
+            memcpy(&format, v4l_4cc_fmt.c_str(), sizeof(format));
+
+            while (ioctl(fd,VIDIOC_ENUM_FMT,&fmtdesc) == 0)
+            {
+                if (fmtdesc.pixelformat == format)
+                {
+                    return true;
+                }
+
+                fmtdesc.index++;
+            }
+
+            ::close(fd);
+
+            return false;
+        }
+
+        bool v4l_uvc_device::is_device_depth_node(const std::string& dev_name)
+        {
+            bool is_depth = false;
+
+            // first search video node links, for example, video-rs-depth-0
+            std::smatch match;
+            static std::regex video_dev_rs("video-rs-");
+            static std::regex video_dev_depth("video-rs-depth-\\d+$");
+            if(std::regex_search(dev_name, match, video_dev_rs))
+            {
+                if (std::regex_search(dev_name, match, video_dev_depth))
+                    is_depth = true;
+                else
+                    is_depth = false;
+            }
+            // then search video nodes to find the depth node
+            else if (is_format_supported_on_node(dev_name, "Z16 "))
+                is_depth = true;
+            else
+                is_depth = false;
+
+            return is_depth;
+        }
+
+        uint16_t v4l_uvc_device::get_mipi_device_pid(const std::string& dev_name)
+        {
+            // GVD product ID
+            const uint8_t GVD_PID_OFFSET    = 4;
+
+            const uint8_t GVD_PID_D430_GMSL = 0x0F;
+            const uint8_t GVD_PID_D457      = 0x12;
+
+            // device PID
+            uint16_t device_pid = 0;
+
+            int fd = open(dev_name.c_str(), O_RDWR);
+            if (fd < 0)
+                throw linux_backend_exception("Mipi device PID could not be found");
+
+            uint8_t gvd[276];
+            struct v4l2_ext_control ctrl;
+
+            memset(gvd,0,276);
+
+            ctrl.id = RS_CAMERA_CID_GVD;
+            ctrl.size = sizeof(gvd);
+            ctrl.p_u8 = gvd;
+
+            struct v4l2_ext_controls ext;
+
+            ext.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
+            ext.controls = &ctrl;
+            ext.count = 1;
+
+            int retries = 5;
+            bool opcode_ok = false;
+            while (!opcode_ok && retries--)
+            {
+                if (xioctl(fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
+                {
+                    auto opcode = gvd[0];
+                    if (opcode != 0x10)
+                    {
+                        LOG_WARNING("Wrong opcode when pulling GVD: gvd[0] returned as: " << opcode);
+                        continue;
+                    }
+                    else {
+                        opcode_ok = true;
+                    }
+
+                    uint8_t product_pid = gvd[4 + GVD_PID_OFFSET];
+
+                    switch(product_pid)
+                    {
+                        case(GVD_PID_D457):
+                            device_pid = 0xABCD;
+                            break;
+
+                        case(GVD_PID_D430_GMSL):
+                            device_pid = 0xABCE;
+                            break;
+
+                        default:
+                            LOG_WARNING("Unidentified MIPI device product id: 0x" << std::hex << (int) product_pid << "remaining retries = " << retries);
+                            device_pid = 0x0000;
+                            break;
+                    }
+                }
+                std::this_thread::sleep_for( std::chrono::milliseconds(100));
+            }
+
+            ::close(fd);
+
+            return device_pid;
+        }
+
         void v4l_uvc_device::get_mipi_device_info(const std::string& dev_name,
                                                   std::string& bus_info, std::string& card)
         {
@@ -836,6 +960,7 @@ namespace librealsense
                 bus_info = reinterpret_cast<const char *>(vcap.bus_info);
                 card = reinterpret_cast<const char *>(vcap.card);
             }
+
             ::close(fd);
         }
 
@@ -849,10 +974,25 @@ namespace librealsense
 
             get_mipi_device_info(dev_name, bus_info, card);
 
-            // the following 2 lines need to be changed in order to enable multiple mipi devices support
-            // or maybe another field in the info structure - TBD
+            // find device PID from depth video node
+            static uint16_t device_pid = 0;
+            try
+            {
+                if (is_device_depth_node(dev_name))
+                {
+                    device_pid = get_mipi_device_pid(dev_name);
+                }
+            }
+            catch(const std::exception & e)
+            {
+                LOG_WARNING("MIPI device product id detection issue, device will be skipped: " << e.what());
+                device_pid = 0;
+            }
+
             vid = 0x8086;
-            pid = 0xABCD; // D457 dev
+            pid = device_pid;
+
+//          std::cout << "video_path:" << video_path << ", name:" << dev_name << ", pid=" << std::hex << (int) pid << std::endl;
 
             static std::regex video_dev_index("\\d+$");
             std::smatch match;
@@ -875,6 +1015,7 @@ namespace librealsense
             // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
             // further development is needed to permit use of several mipi devices
             static int  first_video_index = ind;
+
             // Use camera_video_nodes as number of /dev/video[%d] for each camera sensor subset
             const int camera_video_nodes = 6;
             int cam_id = ind / camera_video_nodes;
@@ -2840,7 +2981,7 @@ namespace librealsense
 
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
-            bool mipi_device = 0xABCD == info.pid; // D457 development. Not for upstream
+            bool mipi_device = (0xABCD == info.pid || 0xABCE == info.pid); // D457 development. Not for upstream
             auto v4l_uvc_dev =        mipi_device ?         std::make_shared<v4l_mipi_device>(info) :
                               ((!info.has_metadata_node) ?  std::make_shared<v4l_uvc_device>(info) :
                                                             std::make_shared<v4l_uvc_meta_device>(info));
