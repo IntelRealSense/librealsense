@@ -8,44 +8,41 @@
 # First import the library
 import pyrealsense2 as rs
 
-def main():
-    # Declare pointcloud object, for calculating pointclouds and texture mappings
-    pc = rs.pointcloud()
-    # We want the points object to be persistent so we can display the last cloud when a frame drops
-    points = rs.points()
 
-    # Declare RealSense pipeline, encapsulating the actual device and sensors
-    pipe = rs.pipeline()
-    config = rs.config()
-    # Enable depth stream
-    config.enable_stream(rs.stream.depth)
+# Declare pointcloud object, for calculating pointclouds and texture mappings
+pc = rs.pointcloud()
+# We want the points object to be persistent so we can display the last cloud when a frame drops
+points = rs.points()
 
-    # Start streaming with chosen configuration
-    pipe.start(config)
+# Declare RealSense pipeline, encapsulating the actual device and sensors
+pipe = rs.pipeline()
+config = rs.config()
+# Enable depth stream
+config.enable_stream(rs.stream.depth)
 
-    # We'll use the colorizer to generate texture for our PLY
-    # (alternatively, texture can be obtained from color or infrared stream)
-    colorizer = rs.colorizer()
+# Start streaming with chosen configuration
+pipe.start(config)
 
-    try:
-        # Wait for the next set of frames from the camera
-        frames = pipe.wait_for_frames()
-        colorized = colorizer.process(frames)
+# We'll use the colorizer to generate texture for our PLY
+# (alternatively, texture can be obtained from color or infrared stream)
+colorizer = rs.colorizer()
 
-        # Create save_to_ply object
-        ply = rs.save_to_ply("1.ply")
+try:
+    # Wait for the next set of frames from the camera
+    frames = pipe.wait_for_frames()
+    colorized = colorizer.process(frames)
 
-        # Set options to the desired values
-        # In this example we'll generate a textual PLY with normals (mesh is already created by default)
-        ply.set_option(rs.save_to_ply.option_ply_binary, False)
-        ply.set_option(rs.save_to_ply.option_ply_normals, True)
+    # Create save_to_ply object
+    ply = rs.save_to_ply("1.ply")
 
-        print("Saving to 1.ply...")
-        # Apply the processing block to the frameset which contains the depth frame and the texture
-        ply.process(colorized)
-        print("Done")
-    finally:
-        pipe.stop()
+    # Set options to the desired values
+    # In this example we'll generate a textual PLY with normals (mesh is already created by default)
+    ply.set_option(rs.save_to_ply.option_ply_binary, False)
+    ply.set_option(rs.save_to_ply.option_ply_normals, True)
 
-if __name__ == "__main__":
-    main()
+    print("Saving to 1.ply...")
+    # Apply the processing block to the frameset which contains the depth frame and the texture
+    ply.process(colorized)
+    print("Done")
+finally:
+    pipe.stop()

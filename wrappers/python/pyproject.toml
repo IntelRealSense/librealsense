@@ -43,25 +43,30 @@ path = "pyrealsense2/_version.py"
 [project.urls]
 homepage = "https://github.com/IntelRealSense/librealsense"
 
-[project.scripts]
-align-depth2color = "examples.align_depth2color:main"
-export_ply_example = "examples.export_ply:main"
-opencv_viewer_example = "examples.opencv_viewer:main"
-python-rs400-advanced-mode-example = "examples.rs400_advanced_mode:main"
-python-tutorial-1-depth = "examples.tutorial_1_depth:main"
-
 [tool.hatch.build]
 artifacts = [
     "pyrealsense2/*.so",
     "pyrealsense2/*.pyd",
     "pyrealsense2/*.dll"
 ]
-packages = ["pyrealsense2", "examples"]
-include = ["examples/align_depth2color.py",
-           "examples/export_ply.py", 
-           "examples/opencv_viewer.py",
-           "examples/rs400_advanced_mode.py",
-           "examples/tutorial_1_depth.py",
+packages = ["pyrealsense2"]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["pyrealsense2",
+                "examples/align-depth2color.py",
+                "examples/export_ply_example.py",
+                "examples/opencv_viewer_example.py",
+                "examples/python-rs400-advanced-mode-example.py",
+                "examples/python-tutorial-1-depth.py"
+]
+
+[tool.hatch.build.targets.wheel]
+only-include = ["pyrealsense2",
+                 "examples/align-depth2color.py",
+                 "examples/export_ply_example.py",
+                 "examples/opencv_viewer_example.py",
+                 "examples/python-rs400-advanced-mode-example.py",
+                 "examples/python-tutorial-1-depth.py"
 ]
 
 [tool.hatch.build.targets.wheel.hooks.custom]
