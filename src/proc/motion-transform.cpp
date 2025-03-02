@@ -236,12 +236,15 @@ namespace librealsense
 
     void motion_to_accel_gyro::process_function( uint8_t * const dest[], const uint8_t * source, int, int, int, int )
     {
-        if (source[0] == 1)
+        // The mipi stream alternates between accel and gyro data.
+        // '_accel_converter' processes accel,
+        // while '_converter' processes gyro.
+        if (source[0] == 1)//accel
         {
             _target_stream = RS2_STREAM_ACCEL;
             _accel_converter->convert( dest, source );
         }
-        else if (source[0] == 2)
+        else if (source[0] == 2)//gyro
         {
             _target_stream = RS2_STREAM_GYRO;
             _converter->convert( dest, source );

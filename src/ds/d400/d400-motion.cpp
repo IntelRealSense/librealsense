@@ -49,7 +49,7 @@ namespace librealsense
 
     double d400_motion_base::get_gyro_default_scale() const
     {
-        // FW scale in the HID feature report was 10 up to 5.16, changed to 1000 to support gyro sensitivity option.
+        // FW scale in the HID feature report was 10 up to FW version 5.16, changed to 1000 to support gyro sensitivity option.
         // D400 FW performs conversion from raw to physical, we get [deg/sec] values.
         return _fw_version >= firmware_version( 5, 16, 0, 0 ) ? 0.0001 : 0.1;
     }
