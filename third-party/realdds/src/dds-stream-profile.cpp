@@ -98,7 +98,7 @@ int dds_video_encoding::to_rs2() const
     std::string s = to_string();
     auto it = fcc_to_rs2.find( s );
     if( it == fcc_to_rs2.end() )
-        DDS_THROW( runtime_error, "invalid encoding '" + s + "'" );
+        DDS_THROW( runtime_error, "Invalid encoding '" + s + "'" );
     return it->second;
 }
 

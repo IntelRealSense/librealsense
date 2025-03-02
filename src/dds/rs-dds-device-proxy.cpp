@@ -253,21 +253,29 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             for( auto & profile : profiles )
             {
                 //LOG_DEBUG( "    " << profile->details_to_string() );
-                if( video_stream )
+                try
                 {
-                    auto video_profile = std::static_pointer_cast< realdds::dds_video_stream_profile >( profile );
-                    auto raw_stream_profile = sensor.add_video_stream(
-                        to_rs2_video_stream( stream_type, sidx, video_profile, video_stream->get_intrinsics() ),
-                        profile == default_profile );
-                    _stream_name_to_profiles[stream->name()].push_back( raw_stream_profile );
+                    if( video_stream )
+                    {
+                        auto video_profile = std::static_pointer_cast< realdds::dds_video_stream_profile >( profile );
+                        auto raw_stream_profile = sensor.add_video_stream(
+                            to_rs2_video_stream( stream_type, sidx, video_profile, video_stream->get_intrinsics() ),
+                            profile == default_profile );
+                        _stream_name_to_profiles[stream->name()].push_back( raw_stream_profile );
+                    }
+                    else if( motion_stream )
+                    {
+                        auto motion_profile = std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile );
+                        auto raw_stream_profile = sensor.add_motion_stream(
+                            to_rs2_motion_stream( stream_type, sidx, motion_profile, motion_stream->get_gyro_intrinsics() ),
+                            profile == default_profile );
+                        _stream_name_to_profiles[stream->name()].push_back( raw_stream_profile );
+                    }
                 }
-                else if( motion_stream )
+                catch( std::exception const& e )
                 {
-                    auto motion_profile = std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile );
-                    auto raw_stream_profile = sensor.add_motion_stream(
-                        to_rs2_motion_stream( stream_type, sidx, motion_profile, motion_stream->get_gyro_intrinsics() ),
-                        profile == default_profile );
-                    _stream_name_to_profiles[stream->name()].push_back( raw_stream_profile );
+                    LOG_ERROR( "Cannot add profile " << profile->details_to_string() << " to stream " << stream->name()
+                                                     << ". " << e.what() );
                 }
                 // NOTE: the raw profile will be cloned and overriden by the format converter!
             }
@@ -275,7 +283,14 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             auto & options = stream->options();
             for( auto & option : options )
             {
-                sensor_info.proxy->add_option( option );
+                try
+                {
+                    sensor_info.proxy->add_option( option );
+                }
+                catch( std::exception const& e )
+                {
+                    LOG_ERROR( e.what() );
+                }
             }
 
             auto & recommended_filters = stream->recommended_filters();
@@ -432,11 +447,20 @@ int dds_device_proxy::get_index_from_stream_name( const std::string & name ) con
 {
     int index = 0;
 
-    auto delimiter_pos = name.find( '_' );
+    // If index is not 0 we expect the index to be appended to the stream name with underscore after the name
+    // e.g 'Infrared_1'. There might be other underscores in the name, e.g. 'Compressed_Color_1'
+    auto delimiter_pos = name.find_last_of( '_' );
     if( delimiter_pos != std::string::npos )
     {
         std::string index_as_string = name.substr( delimiter_pos + 1, name.size() );
-        index = std::stoi( index_as_string );
+        try
+        {
+            index = std::stoi(index_as_string);
+        }
+        catch (...)
+        {
+            //Do nothing, return default index
+        }
     }
 
     return index;
