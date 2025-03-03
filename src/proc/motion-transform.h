@@ -67,6 +67,7 @@ namespace librealsense
 
         std::shared_ptr<stream_profile_interface> _source_stream_profile;
         std::shared_ptr<stream_profile_interface> _accel_gyro_target_profile;
+        std::unique_ptr< imu_to_librs_converter > _accel_converter;
     };
 
     class acceleration_transform : public motion_transform
