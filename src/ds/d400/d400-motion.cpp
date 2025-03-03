@@ -165,19 +165,6 @@ namespace librealsense
         return std::dynamic_pointer_cast< hid_sensor >( raw_sensor );
     }
 
-    bool d400_motion::is_imu_high_accuracy() const
-    {
-        // D400 FW 5.16 and above use 32 bits in the struct, instead of 16.
-        return _fw_version >= firmware_version( 5, 16, 0, 0 );
-    }
-
-    double d400_motion::get_gyro_default_scale() const
-    {
-        // FW scale in the HID feature report was 10 up to 5.16, changed to 1000 to support gyro sensitivity option.
-        // D400 FW performs conversion from raw to physical, we get [deg/sec] values.
-        return _fw_version >= firmware_version( 5, 16, 0, 0 ) ? 0.0001 : 0.1;
-    }
-
     d400_motion_uvc::d400_motion_uvc( std::shared_ptr< const d400_info > const & dev_info )
         : device(dev_info),
           d400_device(dev_info),
