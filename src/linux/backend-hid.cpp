@@ -760,7 +760,7 @@ namespace librealsense
             return false;
         }
 
-        bool iio_hid_sensor::sort_hids(hid_input* first, hid_input* second)
+        bool iio_hid_sensor::sort_hids(std::shared_ptr<hid_input> first, std::shared_ptr<hid_input> second)
         {
             return (second->get_hid_input_info().index >= first->get_hid_input_info().index);
         }
@@ -980,8 +980,9 @@ namespace librealsense
 
                         try
                         {
-                            auto* new_input = new hid_input(_iio_device_path, file);
+                            auto new_input = std::make_shared<hid_input>(_iio_device_path, file);
                             // push to input list.
+                            
                             _inputs.push_front(new_input);
                         }
                         catch(...)

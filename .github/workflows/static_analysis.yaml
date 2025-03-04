@@ -98,6 +98,63 @@ jobs:
           echo "commit all files in the artifact to .github/workflows/ if these are valid results"
           exit 1
 #---------------------------------------------------------------------------------------------------#
+  ValgrindCheck:
+    name: Valgrind Memory Leak Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
+      
+      - name: Install Valgrind
+        run: |
+          sudo apt-get update;
+          sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+          sudo apt-get install -qq libusb-1.0-0-dev;
+          sudo apt-get install -qq libgtk-3-dev;
+          sudo apt-get install libglfw3-dev libglfw3;
+          sudo apt-get install -y valgrind
+
+      - name: Move files into examples folder in order to build automaticly
+        run: |
+            sudo mv .github/workflows/memory-leaks-check examples/
+
+      - name: Modify CMakeLists.txt
+        run: |
+          # Path to the CMakeLists.txt file
+          CMAKE_FILE=./examples/CMakeLists.txt
+
+          # Check if the line already exists to avoid duplicates
+          if ! grep -q "add_subdirectory(memory-leaks-check)" "$CMAKE_FILE"; then
+            # Add the line before the first occurrence of 'add_subdirectory(hello-realsense)'
+            sed -i '/add_subdirectory(hello-realsense)/i add_subdirectory(memory-leaks-check)' "$CMAKE_FILE"
+          fi
+      
+      - name: Build Application with V4L2 Backend
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DBUILD_EXAMPLES=true
+          make -j$(($(nproc)-1))
+      
+      - name: Run Valgrind with V4L2 Backend
+        run: |
+          cd build
+          valgrind --leak-check=yes --show-leak-kinds=all --track-origins=yes --log-file=valgrind-V4L2-out.txt ./Release/mem-leak-test
+        continue-on-error: true
+      
+      - name: Upload Valgrind V4L2 backend log
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        with:
+          name: valgrind-V4L2-log
+          path: build/valgrind-V4L2-out.txt
+
+      - name: Check Valgrind V4L Results
+        run: |
+            if grep -q "ERROR SUMMARY: [^0]" build/valgrind-V4L-out.txt; then
+                echo "Valgrind detected errors with V4L backend."
+                exit 1
+            else
+                echo "No errors detected by Valgrind with V4L backend."
+            fi
   # We verify the minimal CMake version we support is preserved when building with default CMake flags
   minimal_cmake_version:
     name: "Minimal CMake version"
