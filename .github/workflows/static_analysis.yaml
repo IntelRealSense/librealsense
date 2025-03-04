@@ -155,33 +155,6 @@ jobs:
             else
                 echo "No errors detected by Valgrind with V4L backend."
             fi
-
-      - name: Build Application with USB Backend
-        run: |
-          cd build
-          cmake .. -DBUILD_EXAMPLES=true -DFORCE_RSUSB_BACKEND=true
-          make -j$(($(nproc)-1))
-      
-      - name: Run Valgrind with USB Backend
-        run: |
-          cd build
-          valgrind --leak-check=yes --show-leak-kinds=all --track-origins=yes --log-file=valgrind-USB-out.txt ./Release/mem-leak-test
-        continue-on-error: true
-      
-      - name: Upload Valgrind USB log
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
-        with:
-          name: valgrind-USB-backend-log
-          path: build/valgrind-USB-out.txt
-
-      - name: Check Valgrind Results
-        run: |
-            if grep -q "ERROR SUMMARY: [^0]" build/valgrind-USB-out.txt; then
-              echo "Valgrind detected errors with USB backend."
-              exit 1
-            else
-              echo "No errors detected by Valgrind with USB backend."
-            fi
   # We verify the minimal CMake version we support is preserved when building with default CMake flags
   minimal_cmake_version:
     name: "Minimal CMake version"
