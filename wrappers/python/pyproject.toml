@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Python Wrapper for Intel Realsense SDK 2.0."
 readme = {file = "README.rst", content-type = "text/x-rst", charset = "utf-8"}
 authors = [
-    { name = "Intel(R) RealSense(TM)", email = "realsense@intel.com" },
+    { name = "Intel(R) RealSense(TM)", email = "realsense@intel.com" }
 ]
 license = {text = "Apache License, Version 2.0"}
 requires-python = ">=3.9"
@@ -50,24 +50,6 @@ artifacts = [
     "pyrealsense2/*.dll"
 ]
 packages = ["pyrealsense2"]
-
-[tool.hatch.build.targets.sdist]
-only-include = ["pyrealsense2",
-                "examples/align-depth2color.py",
-                "examples/export_ply_example.py",
-                "examples/opencv_viewer_example.py",
-                "examples/python-rs400-advanced-mode-example.py",
-                "examples/python-tutorial-1-depth.py"
-]
-
-[tool.hatch.build.targets.wheel]
-only-include = ["pyrealsense2",
-                 "examples/align-depth2color.py",
-                 "examples/export_ply_example.py",
-                 "examples/opencv_viewer_example.py",
-                 "examples/python-rs400-advanced-mode-example.py",
-                 "examples/python-tutorial-1-depth.py"
-]
 
 [tool.hatch.build.targets.wheel.hooks.custom]
 path = "hatch_build.py"
