@@ -421,11 +421,11 @@ def devices_by_test_config( test, exceptions ):
             continue
 
 
-def test_wrapper_( test, configuration=None, repetition=1, retry=0, sns=None ):
+def test_wrapper_( test, configuration=None, repetition=1, curr_retry=0, max_retry = 0, sns=None ):
     global rslog
     #
     if not log.is_debug_on():
-        conf_str = configuration_str( configuration, repetition, retry=retry, prefix='  ', sns=sns )
+        conf_str = configuration_str( configuration, repetition, retry=curr_retry, prefix='  ', sns=sns )
         log.i( f'Running {test.name}{conf_str}' )
     #
     log_path = test.get_log()
@@ -441,10 +441,11 @@ def test_wrapper_( test, configuration=None, repetition=1, retry=0, sns=None ):
         log.e( log.red + test.name + log.reset + ':', configuration_str( configuration, repetition, suffix=' ' ) + 'timed out' )
     except subprocess.CalledProcessError as cpe:
         if not check_log_for_fails( log_path, test.name, configuration, repetition, sns=sns ):
-            # An unexpected error occurred
-            log.e( log.red + test.name + log.reset + ':',
-                   configuration_str( configuration, repetition, suffix=' ' ) + 'exited with non-zero value (' + str(
-                       cpe.returncode ) + ')' )
+            # An unexpected error occurred, if there are no more retries issue error
+            if curr_retry == max_retry:
+                log.e( log.red + test.name + log.reset + ':',
+                       configuration_str( configuration, repetition, suffix=' ' ) + 'exited with non-zero value (' +
+                           str( cpe.returncode ) + ')' )
     else:
         return True
     return False
@@ -463,9 +464,8 @@ def test_wrapper( test, configuration=None, repetition=1, serial_numbers=None ):
                 time.sleep(1)  # small pause between tries
             else:
                 devices.enable_only( serial_numbers, recycle=True )
-        if test_wrapper_( test, configuration, repetition, retry, serial_numbers ):
+        if test_wrapper_( test, configuration, repetition, retry, test.config.retries, serial_numbers ):
             return True
-        log._n_errors -= 1
 
     log._n_errors += 1
     return False
