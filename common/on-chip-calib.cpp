@@ -32,6 +32,9 @@ namespace rs2
             device_name_string = _dev.get_info( RS2_CAMERA_INFO_NAME );
             if( val_in_range( device_name_string, { std::string( "Intel RealSense D415" ) } ) )
                 speed = 4;
+
+            if ( strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD") || strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCE"))
+                is_mipi_sku = true;
         }
         if (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
         {
@@ -812,7 +815,7 @@ namespace rs2
             const plane p,
             const rs2::region_of_interest roi,
             const float baseline_mm,
-            const float focal_length_pixels,
+            const rs2_intrinsics* intrin,
             const int ground_thruth_mm,
             const bool plane_fit,
             const float plane_fit_to_ground_truth_mm,
@@ -2089,7 +2092,7 @@ namespace rs2
                     RsImGui::CustomTooltip("%s", "Calculate ground truth for the specific target");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 30) });
-                get_manager().host_assistance = (get_manager().device_name_string ==  std::string("Intel RealSense D457") ); // To be used for MIPI SKU only
+                get_manager().host_assistance = get_manager().is_mipi_sku; // To be used for MIPI SKU only
                 bool assistance = (get_manager().host_assistance != 0);
                 if (ImGui::Checkbox("Host Assistance", &assistance))
                     get_manager().host_assistance = (assistance ? 1 : 0);
@@ -2185,7 +2188,7 @@ namespace rs2
                 //    RsImGui::CustomTooltip("%s", "On-Chip Calibration Extended");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 31) });
-                get_manager().host_assistance = (get_manager().device_name_string ==  std::string("Intel RealSense D457") ); // To be used for MIPI SKU only
+                get_manager().host_assistance = get_manager().is_mipi_sku; // To be used for MIPI SKU only
                 bool assistance = (get_manager().host_assistance != 0);
                 ImGui::Checkbox("Host Assistance", &assistance);
                 if (ImGui::IsItemHovered())

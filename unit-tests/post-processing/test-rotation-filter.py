@@ -104,7 +104,7 @@ with test.closure("Test rotation filter"):
     # Define rotation angles to test
     rotation_angles = [90, 180, -90]
     for angle in rotation_angles:
-        rotation_filter = rs.rotation_filter()
+        rotation_filter = rs.rotation_filter([rs.stream.depth])
         rotation_filter.set_option(rs.option.rotation, angle)
 
         # Start depth sensor

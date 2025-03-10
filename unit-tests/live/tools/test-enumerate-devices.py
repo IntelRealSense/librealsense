@@ -14,9 +14,11 @@ test.start( "Run enumerate-devices runtime test" )
 rs_enumerate_devices = repo.find_built_exe( 'tools/enumerate-devices', 'rs-enumerate-devices' )
 test.check(rs_enumerate_devices)
 if rs_enumerate_devices:
+    dev, ctx = test.find_first_device_or_exit()
+    is_dds = dev.supports(rs.camera_info.connection_type) and dev.get_info(rs.camera_info.connection_type) == "DDS"
     import subprocess
     run_time_stopwatch = Stopwatch()
-    run_time_threshold = 2
+    run_time_threshold = 5 if is_dds else 2  # currently, DDS devices take longer time to complete rs_enumerate_devices
     p = subprocess.run( [rs_enumerate_devices],
                     stdout=None,
                     stderr=subprocess.STDOUT,

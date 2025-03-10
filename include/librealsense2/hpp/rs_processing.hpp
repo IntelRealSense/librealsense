@@ -891,12 +891,17 @@ namespace rs2
          * Rotation filter performs rotation of the frames
          */
         rotation_filter()
-            : filter( init(), 1 )
+            : filter( init( std::vector< rs2_stream >{ RS2_STREAM_DEPTH } ), 1 )
         {
         }
 
-        rotation_filter( float value )
-            : filter( init(), 1 )
+        rotation_filter( std::vector< rs2_stream > streams_to_rotate )
+            : filter( init( streams_to_rotate ), 1 )
+        {
+        }
+
+        rotation_filter( std::vector< rs2_stream > streams_to_rotate, float value )
+            : filter( init( streams_to_rotate ), 1 )
         {
             set_option( RS2_OPTION_ROTATION, value );
         }
@@ -915,10 +920,14 @@ namespace rs2
     private:
         friend class context;
 
-        std::shared_ptr< rs2_processing_block > init()
+        std::shared_ptr< rs2_processing_block > init( std::vector< rs2_stream > streams_to_rotate )
         {
             rs2_error * e = nullptr;
-            auto block = std::shared_ptr< rs2_processing_block >( rs2_create_rotation_filter_block( &e ),
+
+            rs2_streams_list streams_list;
+            streams_list.list = std::move( streams_to_rotate ); 
+
+            auto block = std::shared_ptr< rs2_processing_block >( rs2_create_rotation_filter_block( streams_list, &e ),
                                                                   rs2_delete_processing_block );
             error::handle( e );
             return block;

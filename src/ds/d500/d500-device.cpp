@@ -54,7 +54,6 @@ namespace librealsense
         {rs_fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
         {rs_fourcc('Y','1','6','I'), RS2_FORMAT_Y16I},
         {rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
-        {rs_fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
         {rs_fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
         {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
         {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
@@ -551,8 +550,6 @@ namespace librealsense
                 usb_modality = false;
 
             _is_symmetrization_enabled = check_symmetrization_enabled();
-
-            depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
 
             depth_sensor.register_processing_block(
                 { {RS2_FORMAT_Y8I} },

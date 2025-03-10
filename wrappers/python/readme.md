@@ -20,14 +20,16 @@ Package is available at https://pypi.python.org/pypi/pyrealsense2
 To install the package, run:
 > `pip install pyrealsense2`
 
-Windows users can install the RealSense SDK 2.0 from the release tab to get pre-compiled binaries of the wrapper, for both x86 and x64 architectures. (Python versions 3.9, 3.10, 3.11, 3.12 are supported).
+Windows users can install the RealSense SDK 2.0 from the release tab to get pre-compiled binaries of the wrapper, for both x86 and x64 architectures. (Python versions 3.9, 3.10, 3.11, 3.12 and 3.13 are supported).
 
 > **Note:**
-> Python 3.7 distributables can be found for pyrealsense2 versions <= 2.55.1
+> EOL Python 3.8 distributables can be found for pyrealsense2 versions <= 2.55.2
+> EOL Python 3.7 distributables can be found for pyrealsense2 versions <= 2.55.1
+
 
 ## Building From Source
 
-#### Ubuntu 14.04/16.04 LTS
+#### Ubuntu LTS
 1. Ensure apt-get is up to date
   * `sudo apt-get update && sudo apt-get upgrade`
   * **Note:** Use `sudo apt-get dist-upgrade`, instead of `sudo apt-get upgrade`, in case you have an older Ubuntu 14.04 version

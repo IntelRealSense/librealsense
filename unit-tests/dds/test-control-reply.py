@@ -139,6 +139,5 @@ with test.remote.fork( nested_indent=None ) as remote:
         test.check_equal( reply_count[device.guid()], dev1_replies + 1 )
         test.check_equal( reply_count[device2.guid()], dev2_replies + 1 )
 
-    device = None
-
 test.print_results()
+

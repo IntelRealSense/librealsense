@@ -65,6 +65,7 @@ public:
     dds_guid const & guid() const;
     std::shared_ptr< dds_participant > participant() const;
     std::shared_ptr< dds_subscriber > subscriber() const { return _subscriber; }
+    std::shared_ptr< dds_publisher > publisher() const { return _publisher; }
     std::string const & topic_root() const { return _topic_root; }
     rsutils::string::slice debug_name() const;
 
@@ -85,6 +86,7 @@ public:
     bool operator!() const { return ! is_valid(); }
 
     std::map< std::string, std::shared_ptr< dds_stream_server > > const & streams() const { return _stream_name_to_server; }
+    dds_options const & options() const { return _options; }
 
     void publish_notification( topics::flexible_msg && );
     void publish_metadata( rsutils::json && );
@@ -103,6 +105,7 @@ public:
     std::shared_ptr< dds_option > find_option( std::string const & option_name, std::string const & stream_name ) const;
     // Same as find_options, except throws if not found
     std::shared_ptr< dds_option > get_option( std::string const & option_name, std::string const & stream_name ) const;
+
 
 private:
     struct control_sample;

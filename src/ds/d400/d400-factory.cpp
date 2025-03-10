@@ -686,6 +686,69 @@ namespace librealsense
 
     };
 
+
+    class rs430_gmsl_device : public d400_active,
+                         public d400_motion_uvc,
+                         public ds_advanced_mode_base,
+                         public firmware_logger_device
+    {
+    public:
+        rs430_gmsl_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_active( dev_info )
+            , d400_motion_uvc( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<tagged_profile> get_profiles_tags() const override
+        {
+            std::vector<tagged_profile> tags;
+
+            tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+
+            return tags;
+        };
+
+        void hardware_reset() override
+        {
+            d400_device::hardware_reset();
+            //limitation: the user must hold the context from which the device was created
+            //creating fake notification to trigger invoke_devices_changed_callbacks, causing disconnection and connection
+            auto dev_info = this->get_device_info();
+            auto non_const_device_info = std::const_pointer_cast< librealsense::device_info >( dev_info );
+            std::vector< std::shared_ptr< device_info > > devices{ non_const_device_info };
+            auto ctx = std::weak_ptr< context >( get_context() );
+            std::thread fake_notification(
+                [ ctx, devs = std::move( devices ) ]()
+                {
+                    try
+                    {
+                        if( auto strong = ctx.lock() )
+                        {
+                            strong->invoke_devices_changed_callbacks( devs, {} );
+                            // MIPI devices do not re-enumerate so we need to give them some time to restart
+                            std::this_thread::sleep_for( std::chrono::milliseconds( 3000 ) );
+                        }
+                        if( auto strong = ctx.lock() )
+                            strong->invoke_devices_changed_callbacks( {}, devs );
+                    }
+                    catch( const std::exception & e )
+                    {
+                        LOG_ERROR( e.what() );
+                        return;
+                    }
+                } );
+            fake_notification.detach();
+        }
+    };
+
     // AWGCT
     class rs430_rgb_mm_device : public d400_active,
                                 public d400_color,
@@ -1128,6 +1191,7 @@ namespace librealsense
         bool const register_device_notifications = true;
 
         auto pid = _group.uvc_devices.front().pid;
+
         switch(pid)
         {
         case RS400_PID:
@@ -1171,6 +1235,8 @@ namespace librealsense
             return std::make_shared< rs455_device >( dev_info, register_device_notifications );
         case RS457_PID:
             return std::make_shared< rs457_device >( dev_info, register_device_notifications );
+        case RS430_GMSL_PID:
+            return std::make_shared< rs430_gmsl_device >( dev_info, register_device_notifications );
         default:
             throw std::runtime_error( rsutils::string::from() << "Unsupported RS400 model! 0x" << std::hex
                                                               << std::setw( 4 ) << std::setfill( '0' ) << (int)pid );
@@ -1368,6 +1434,16 @@ namespace librealsense
         }
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
+
+
+    std::shared_ptr<matcher> rs430_gmsl_device::create_matcher(const frame_holder& frame) const
+    {
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get() };
+        std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get()};
+        streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
+    }
+
 
     std::shared_ptr<matcher> rs400_imu_device::create_matcher(const frame_holder& frame) const
     {
