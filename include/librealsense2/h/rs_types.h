@@ -133,6 +133,7 @@ typedef enum rs2_log_severity {
 const char* rs2_log_severity_to_string(rs2_log_severity info);
 
 /** \brief Specifies advanced interfaces (capabilities) objects may implement. */
+// To add a new extension, append it at the end of this enum to preserve ordering.
 typedef enum rs2_extension
 {
     RS2_EXTENSION_UNKNOWN,
@@ -161,7 +162,6 @@ typedef enum rs2_extension
     RS2_EXTENSION_SOFTWARE_DEVICE,
     RS2_EXTENSION_SOFTWARE_SENSOR,
     RS2_EXTENSION_DECIMATION_FILTER,
-    RS2_EXTENSION_ROTATION_FILTER,
     RS2_EXTENSION_THRESHOLD_FILTER,
     RS2_EXTENSION_DISPARITY_FILTER,
     RS2_EXTENSION_SPATIAL_FILTER,
@@ -192,6 +192,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR,
     RS2_EXTENSION_DEBUG_STREAM_SENSOR,
     RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE,
+    RS2_EXTENSION_ROTATION_FILTER,
     RS2_EXTENSION_SAFETY_SENSOR,
     RS2_EXTENSION_DEPTH_MAPPING_SENSOR,
     RS2_EXTENSION_LABELED_POINTS,
@@ -287,6 +288,7 @@ typedef struct rs2_sensor_list rs2_sensor_list;
 typedef struct rs2_sensor rs2_sensor;
 typedef struct rs2_options rs2_options;
 typedef struct rs2_options_list rs2_options_list;
+typedef struct rs2_streams_list rs2_streams_list;
 typedef struct rs2_options_changed_callback rs2_options_changed_callback;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_notification rs2_notification;

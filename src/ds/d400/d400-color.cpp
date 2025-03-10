@@ -276,13 +276,7 @@ namespace librealsense
         // attributes of md_mipi_rgb_control structure
         auto md_prop_offset = offsetof(metadata_mipi_rgb_raw, rgb_mode);
 
-        // to be checked
         color_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
-                                       make_attribute_parser(&md_mipi_rgb_mode::hw_timestamp,
-                                                             md_mipi_rgb_control_attributes::hw_timestamp_attribute,
-                                                             md_prop_offset));
-
-        color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,
                                        make_attribute_parser(&md_mipi_rgb_mode::hw_timestamp,
                                                              md_mipi_rgb_control_attributes::hw_timestamp_attribute,
                                                              md_prop_offset));

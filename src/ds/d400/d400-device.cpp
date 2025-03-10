@@ -64,7 +64,6 @@ namespace librealsense
         {fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
         {fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
         {fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
-        {fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
         {fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
         {fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
         {fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
@@ -453,13 +452,30 @@ namespace librealsense
         {
             val |= ds_caps::CAP_IMU_SENSOR;
             if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI055_ID_ACC)
+            {
                 val |= ds_caps::CAP_BMI_055;
+                LOG_DEBUG("The IMU sensor is for PID " << std::hex << _pid << " has been identified as BMI055" << std::dec);
+            }
             else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
+            {
                 val |= ds_caps::CAP_BMI_085;
+                LOG_DEBUG("The IMU sensor is for PID " << std::hex << _pid << " has been identified as BMI085" << std::dec);
+            }
+            else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI088_ID_ACC)
+            {
+                val |= ds_caps::CAP_BMI_088;
+                LOG_DEBUG("The IMU sensor is for PID " << std::hex << _pid << " has been identified as BMI088" << std::dec);
+            }
             else if (d400_hid_bmi_055_pid.end() != d400_hid_bmi_055_pid.find(_pid))
+            {
                 val |= ds_caps::CAP_BMI_055;
+                LOG_DEBUG("The IMU sensor is for PID " << std::hex << _pid << " has been identified as BMI055" << std::dec);
+            }
             else if (d400_hid_bmi_085_pid.end() != d400_hid_bmi_085_pid.find(_pid))
+            {
                 val |= ds_caps::CAP_BMI_085;
+                LOG_DEBUG("The IMU sensor is for PID " << std::hex << _pid << " has been identified as BMI085" << std::dec);
+            }
             else
                 LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << _pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);
         }
@@ -501,7 +517,7 @@ namespace librealsense
 
         std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
         frame_timestamp_reader* timestamp_reader_from_metadata;
-        if (all_device_infos.front().pid != RS457_PID)
+        if (all_device_infos.front().pid != RS457_PID && all_device_infos.front().pid != RS430_GMSL_PID)
             timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata(std::move(timestamp_reader_backup));
         else
             timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata_mipi(std::move(timestamp_reader_backup));
@@ -550,7 +566,7 @@ namespace librealsense
         auto raw_sensor = get_raw_depth_sensor();
         _pid = group.uvc_devices.front().pid;
         // to be changed for D457
-        bool mipi_sensor = (RS457_PID == _pid);
+        bool mipi_sensor = (RS457_PID == _pid || RS430_GMSL_PID == _pid);
 
         _color_calib_table_raw = [this]()
         {
@@ -638,11 +654,6 @@ namespace librealsense
                     usb_modality = false;
             }
 
-            if (_fw_version >= firmware_version("5.12.1.1"))
-            {
-                depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
-            }
-
             depth_sensor.register_processing_block(
                 { {RS2_FORMAT_Y8I} },
                 { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
@@ -688,7 +699,7 @@ namespace librealsense
             //if hw_monitor was created by usb replace it with xu
             // D400_IMU will remain using USB interface due to HW limitations
             {
-                if (_pid == ds::RS457_PID)
+                if (_pid == ds::RS457_PID || _pid == ds::RS430_GMSL_PID)
                 {
                     depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                         std::make_shared<asic_temperature_option_mipi>(_hw_monitor,
@@ -909,7 +920,7 @@ namespace librealsense
                 }
             }
 
-            if (!val_in_range(_pid, { ds::RS457_PID }))
+            if (!val_in_range(_pid, { ds::RS457_PID, RS430_GMSL_PID }))
             {
                 depth_sensor.register_option( RS2_OPTION_STEREO_BASELINE,
                                               std::make_shared< const_value_option >(
@@ -992,7 +1003,7 @@ namespace librealsense
         firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
         auto pid = get_pid();
 
-        if( ( pid == ds::RS457_PID || pid == ds::RS455_PID ) && fw_ver >= firmware_version( 5, 14, 0, 0 ) )
+        if( ( pid == ds::RS457_PID || pid == ds::RS455_PID || pid == ds::RS430_GMSL_PID ) && fw_ver >= firmware_version( 5, 14, 0, 0 ) )
             register_feature( std::make_shared< emitter_frequency_feature >( get_depth_sensor() ) );
 
         if( fw_ver >= firmware_version( 5, 11, 9, 0 ) )
@@ -1003,7 +1014,7 @@ namespace librealsense
 
         register_feature( std::make_shared< auto_exposure_roi_feature >( get_depth_sensor(), _hw_monitor ) );
 
-        if( pid != ds::RS457_PID && pid != ds::RS415_PID && fw_ver >= firmware_version( 5, 12, 10, 11 ) )
+        if( pid != ds::RS457_PID && pid != ds::RS415_PID && pid != ds::RS430_GMSL_PID && fw_ver >= firmware_version( 5, 12, 10, 11 ) )
         {
             register_feature(
                 std::make_shared< auto_exposure_limit_feature >( get_depth_sensor(), d400_device::_hw_monitor ) );

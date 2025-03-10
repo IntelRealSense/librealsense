@@ -293,7 +293,7 @@ def check_log_for_fails( path_to_log, testname, configuration=None, repetition=1
     if path_to_log is None:
         return False
     results = None
-    for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)|^----------TEST-SEPARATOR----------$',
+    for ctx in file.grep( r'test cases:\s*(\d+) \|\s*(\d+) (passed|failed)|^----------TEST-SEPARATOR----------$',
                           path_to_log ):
         m = ctx['match']
         if m.string == "----------TEST-SEPARATOR----------":
@@ -421,11 +421,11 @@ def devices_by_test_config( test, exceptions ):
             continue
 
 
-def test_wrapper_( test, configuration=None, repetition=1, retry=0, sns=None ):
+def test_wrapper_( test, configuration=None, repetition=1, curr_retry=0, max_retry = 0, sns=None ):
     global rslog
     #
     if not log.is_debug_on():
-        conf_str = configuration_str( configuration, repetition, retry=retry, prefix='  ', sns=sns )
+        conf_str = configuration_str( configuration, repetition, retry=curr_retry, prefix='  ', sns=sns )
         log.i( f'Running {test.name}{conf_str}' )
     #
     log_path = test.get_log()
@@ -441,10 +441,11 @@ def test_wrapper_( test, configuration=None, repetition=1, retry=0, sns=None ):
         log.e( log.red + test.name + log.reset + ':', configuration_str( configuration, repetition, suffix=' ' ) + 'timed out' )
     except subprocess.CalledProcessError as cpe:
         if not check_log_for_fails( log_path, test.name, configuration, repetition, sns=sns ):
-            # An unexpected error occurred
-            log.e( log.red + test.name + log.reset + ':',
-                   configuration_str( configuration, repetition, suffix=' ' ) + 'exited with non-zero value (' + str(
-                       cpe.returncode ) + ')' )
+            # An unexpected error occurred, if there are no more retries issue error
+            if curr_retry == max_retry:
+                log.e( log.red + test.name + log.reset + ':',
+                       configuration_str( configuration, repetition, suffix=' ' ) + 'exited with non-zero value (' +
+                           str( cpe.returncode ) + ')' )
     else:
         return True
     return False
@@ -463,9 +464,8 @@ def test_wrapper( test, configuration=None, repetition=1, serial_numbers=None ):
                 time.sleep(1)  # small pause between tries
             else:
                 devices.enable_only( serial_numbers, recycle=True )
-        if test_wrapper_( test, configuration, repetition, retry, serial_numbers ):
+        if test_wrapper_( test, configuration, repetition, retry, test.config.retries, serial_numbers ):
             return True
-        log._n_errors -= 1
 
     log._n_errors += 1
     return False
@@ -480,8 +480,8 @@ try:
         if pyrs:
             sys.path.insert( 1, pyrs_path )  # Make sure we pick up the right pyrealsense2!
         from rspy import devices
-
-        devices.query( hub_reset = hub_reset ) #resets the device
+        disable_dds = "dds" not in context
+        devices.query( hub_reset = hub_reset, disable_dds=disable_dds ) #resets the device
         devices.map_unknown_ports()
         #
         # Under a development environment (i.e., without a hub), we may only have one device connected
@@ -594,8 +594,8 @@ try:
                     try:
                         log.d( 'configuration:', configuration_str( configuration, repetition, sns=serial_numbers ) )
                         log.debug_indent()
-                        if not no_reset:
-                            devices.enable_only( serial_numbers, recycle=True )
+                        should_reset = not no_reset
+                        devices.enable_only( serial_numbers, recycle=should_reset )
                     except RuntimeError as e:
                         log.w( log.red + test.name + log.reset + ': ' + str( e ) )
                     else:

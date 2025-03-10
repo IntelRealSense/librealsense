@@ -13,6 +13,8 @@ add_executable(${PROJECT_NAME} rs-convert.cpp
     converters/converter-bin.hpp
     converters/converter-csv.hpp
     converters/converter-csv.cpp
+    converters/converter-3d-csv.hpp
+    converters/converter-3d-csv.cpp
     converters/converter-ply.hpp
     converters/converter-png.hpp
     converters/converter-raw.hpp

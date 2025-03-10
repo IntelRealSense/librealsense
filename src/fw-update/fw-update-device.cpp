@@ -341,7 +341,7 @@ namespace librealsense
     void update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
     {
         LOG_INFO( "Uploading FW image ..." );
-        if(_pid == "ABCD" || _pid == "BBCD")
+        if(_pid == "ABCD" || _pid == "BBCD" || _pid == "ABCE")
         {
             update_mipi(fw_image, fw_image_size, update_progress_callback);
         }

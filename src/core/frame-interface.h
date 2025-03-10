@@ -4,6 +4,7 @@
 
 #include <librealsense2/h/rs_frame.h>
 #include <memory>
+#include <cstdint> // for uint8_t
 #include <iosfwd>
 
 
