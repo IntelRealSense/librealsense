@@ -54,6 +54,7 @@ def usage():
     print( '        --skip-disconnected  Skip live test if required device is disconnected (only applies w/o a hub)' )
     print( '        --test-dir <>        Path to test dir; default: librealsense/unit-tests' )
     print( '                             ex: --test-dir $HOME/my_ws/my_tests; logs are stored in the same dir' )
+    print( '        --skip-regex         Skip all tests whose name matches the following regular expression' )
     print( 'Examples:' )
     print( 'Running: python run-unit-tests.py -s' )
     print( '    Runs all tests, but direct their output to the console rather than log files' )
@@ -80,7 +81,7 @@ try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
                                           'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset', 'hub-reset',
-                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device=', 'test-dir='] )
+                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device=', 'test-dir=','skip-regex='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -102,6 +103,7 @@ only_live = False
 only_not_live = False
 test_dir = current_dir
 test_dir_log =  False
+skip_regex = None
 for opt, arg in opts:
     if opt in ('-h', '--help'):
         usage()
@@ -159,6 +161,8 @@ for opt, arg in opts:
         libci.unit_tests_dir = test_dir
         log.i(f'Tests dir changed from default to: {test_dir}')
         test_dir_log = True
+    elif opt in ('--skip-regex'):
+        skip_regex = arg
 
 def find_build_dir( dir ):
     """
@@ -329,9 +333,13 @@ def check_log_for_fails( path_to_log, testname, configuration=None, repetition=1
 
 
 def get_tests():
-    global regex, build_dir, exe_dir, pyrs, test_dir, linux, context, list_only
+    global regex, build_dir, exe_dir, pyrs, test_dir, linux, context, list_only, skip_regex
     if regex:
-        pattern = re.compile( regex )
+        run_pattern = re.compile( regex )
+
+    if skip_regex:
+        skip_pattern = re.compile( skip_regex )
+
     # In Linux, the build targets are located elsewhere than on Windows
     # Go over all the tests from a "manifest" we take from the result of the last CMake
     # run (rather than, for example, looking for test-* in the build-directory):
@@ -349,7 +357,10 @@ def get_tests():
             else:
                 testname = testdir  # no parent folder so we get "test-all"
 
-            if regex and not pattern.search( testname ):
+            if regex and not run_pattern.search( testname ):
+                continue
+            
+            if skip_regex and skip_pattern.search( testname ):
                 continue
 
             exe = os.path.join( exe_dir, testname )
@@ -371,7 +382,10 @@ def get_tests():
             else:
                 testname = os.path.basename( cpp_test )[:-4]
 
-            if regex and not pattern.search( testname ):
+            if regex and not run_pattern.search( testname ):
+                continue
+
+            if skip_regex and skip_pattern.search( testname ):
                 continue
 
             yield libci.ExeTest( testname, context = context )
@@ -385,7 +399,10 @@ def get_tests():
         else:
             testname = os.path.basename( py_test )[:-3]
 
-        if regex and not pattern.search( testname ):
+        if regex and not run_pattern.search( testname ):
+            continue
+
+        if skip_regex and skip_pattern.search( testname ):
             continue
 
         yield libci.PyTest( testname, py_test, context )
