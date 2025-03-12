@@ -229,7 +229,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
                 _software_sensors.push_back( sensor_info.proxy );
             }
             auto stream_type = to_rs2_stream_type( stream->type_string() );
-            int index = get_index_from_stream_name( stream->name() );
+            int index = get_unique_index_in_sensor( sensor_info.proxy, stream->name(), stream_type );
             sid_index sidx( environment::get_instance().generate_stream_id(), index);
             sid_index type_and_index( stream_type, index );
             _stream_name_to_librs_stream[stream->name()]
@@ -317,28 +317,32 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             auto source_profile = source_profiles[0];
 
             sid_index type_and_index( source_profile->get_stream_type(), source_profile->get_stream_index() );
-            sid_index sidx = sensor_info.type_and_index_to_dds_stream_sidx.at( type_and_index );
-
-            auto & streams = sensor_proxy->streams();
-            auto stream_iter = streams.find( sidx );
-            if( stream_iter == streams.end() )
+            const auto & it = sensor_info.type_and_index_to_dds_stream_sidx.find( type_and_index );
+            if( it != sensor_info.type_and_index_to_dds_stream_sidx.end())
             {
-                LOG_ERROR( "No dds stream " << sidx.to_string() << " found for '" << sensor_name << "' " << profile
-                                            << " -> " << source_profile << " " << type_and_index.to_string() );
-                continue;
+                sid_index sidx = (*it).second;
+
+                auto & streams = sensor_proxy->streams();
+                auto stream_iter = streams.find( sidx );
+                if( stream_iter == streams.end() )
+                {
+                    LOG_ERROR( "No dds stream " << sidx.to_string() << " found for '" << sensor_name << "' " << profile
+                                                << " -> " << source_profile << " " << type_and_index.to_string() );
+                    continue;
+                }
+
+                //LOG_DEBUG( "    " << profile << " -> " << source_profile << " " << type_and_index.to_string() );
+                profile->set_unique_id( sidx.sid );  // Was lost on clone
+
+                // NOTE: the 'get_stream_profiles' call above creates target profiles from the raw profiles we supplied it.
+                // The raw profile intrinsics will be overriden to call the target's intrinsics function (which by default
+                // calls the raw again, creating an infinite loop), so we must override the target:
+                set_profile_intrinsics( profile, stream_iter->second );
+
+                _stream_name_to_profiles.at( stream_iter->second->name() ).push_back( profile );  // For extrinsics
+
+                tag_default_profile_of_stream( profile, stream_iter->second );
             }
-
-            //LOG_DEBUG( "    " << profile << " -> " << source_profile << " " << type_and_index.to_string() );
-            profile->set_unique_id( sidx.sid );  // Was lost on clone
-
-            // NOTE: the 'initialization_done' call above creates target profiles from the raw profiles we supplied it.
-            // The raw profile intrinsics will be overriden to call the target's intrinsics function (which by default
-            // calls the raw again, creating an infinite loop), so we must override the target:
-            set_profile_intrinsics( profile, stream_iter->second );
-
-            _stream_name_to_profiles.at( stream_iter->second->name() ).push_back( profile );  // For extrinsics
-
-            tag_default_profile_of_stream( profile, stream_iter->second );
         }
     }
 
@@ -447,8 +451,8 @@ int dds_device_proxy::get_index_from_stream_name( const std::string & name ) con
 {
     int index = 0;
 
-    // If index is not 0 we expect the index to be appended to the stream name with underscore after the name
-    // e.g 'Infrared_1'. There might be other underscores in the name, e.g. 'Compressed_Color_1'
+    // If camera sends stream index the info is appended to the stream name with underscore after the name
+    // e.g 'Infrared_1'. However, there might be other underscores in the name, e.g. 'Compressed_Color_1'
     auto delimiter_pos = name.find_last_of( '_' );
     if( delimiter_pos != std::string::npos )
     {
@@ -462,6 +466,33 @@ int dds_device_proxy::get_index_from_stream_name( const std::string & name ) con
             //Do nothing, return default index
         }
     }
+
+    return index;
+}
+
+
+int dds_device_proxy::get_unique_index_in_sensor( const std::shared_ptr< dds_sensor_proxy > & sensor,
+                                                  const std::string & stream_name, rs2_stream stream_type ) const
+{
+    bool index_adjusted = false;
+    int index = get_index_from_stream_name( stream_name );
+
+    // Sending stream index as part of stream name is optional. We want to distinguish streams of same type in the
+    // sensor so we create an internal, running index for it.
+    do
+    {
+        index_adjusted = false;
+        for( auto & stream : sensor->streams() )
+        {
+            // We can have multiple streams with same index (e.g. 0) but not two of the same type
+            if( index == stream.first.index && stream_type == to_rs2_stream_type( stream.second->type_string() ) )
+            {
+                index++;
+                index_adjusted = true;
+            }
+        }
+    }
+    while( index_adjusted );
 
     return index;
 }
@@ -582,7 +613,8 @@ void dds_device_proxy::tag_default_profile_of_stream(
         // Superset = picked up in pipeline with enable_all_stream() config
         // We want color and depth to be default, and add infrared as superset
         int tag = PROFILE_TAG_SUPERSET;
-        if( strcmp( stream->type_string(), "color" ) == 0 || strcmp( stream->type_string(), "depth" ) == 0 )
+        if( ( strcmp( stream->type_string(), "color" ) == 0 && profile->get_stream_index() == 0 ) || // Now we have cameras with more then one color stream, take the first
+              strcmp( stream->type_string(), "depth" ) == 0 )
             tag |= PROFILE_TAG_DEFAULT;
         else if( strcmp( stream->type_string(), "ir" ) != 0 || profile->get_stream_index() >= 2 )
             return;  // leave untagged
