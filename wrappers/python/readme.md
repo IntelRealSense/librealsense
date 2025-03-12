@@ -42,12 +42,12 @@ Windows users can install the RealSense SDK 2.0 from the release tab to get pre-
   * `mkdir build`
   * `cd build`
   * `cmake ../ -DBUILD_PYTHON_BINDINGS:bool=true -DPYTHON_EXECUTABLE=$(which python3)`
-  **Note:** For building a self-contained (statically compiled) pyrealsense2 library add the CMake flag:
+  * `make -j4`
+  * `sudo make install`
+> **Note**: For building a self-contained (statically compiled) pyrealsense2 library add the CMake flag:
   `-DBUILD_SHARED_LIBS=false`
 > **Note**: To force compilation with a specific version on a system with a few Python versions installed, add the following flag to CMake command:
 `-DPYTHON_EXECUTABLE=[full path to the exact python executable]`
-  * `make -j4`
-  * `sudo make install`
 5. update your PYTHONPATH environment variable to add the path to the pyrealsense library
   * `export PYTHONPATH=$PYTHONPATH:/usr/local/lib`
   > **Note:** If this doesn't work, try using the following path instead:
