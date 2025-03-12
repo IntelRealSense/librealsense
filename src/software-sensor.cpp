@@ -83,7 +83,7 @@ software_sensor::~software_sensor()
 
 
 std::shared_ptr< stream_profile_interface > software_sensor::add_video_stream( rs2_video_stream video_stream,
-                                                                               bool is_default )
+                                                                               bool is_default, std::string name )
 {
     auto profile = std::make_shared< video_stream_profile >();
     profile->set_dims( video_stream.width, video_stream.height );
@@ -93,6 +93,7 @@ std::shared_ptr< stream_profile_interface > software_sensor::add_video_stream( r
     profile->set_stream_type( video_stream.type );
     profile->set_unique_id( video_stream.uid );
     profile->set_intrinsics( [=]() { return video_stream.intrinsics; } );
+    profile->set_name( name );
     if( is_default )
         profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
     _sw_profiles.push_back( profile );
@@ -102,7 +103,7 @@ std::shared_ptr< stream_profile_interface > software_sensor::add_video_stream( r
 
 
 std::shared_ptr< stream_profile_interface > software_sensor::add_motion_stream( rs2_motion_stream motion_stream,
-                                                                                bool is_default )
+                                                                                bool is_default, std::string name )
 {
     auto profile = std::make_shared< motion_stream_profile >();
     profile->set_format( motion_stream.fmt );
@@ -111,16 +112,16 @@ std::shared_ptr< stream_profile_interface > software_sensor::add_motion_stream( 
     profile->set_stream_type( motion_stream.type );
     profile->set_unique_id( motion_stream.uid );
     profile->set_intrinsics( [=]() { return motion_stream.intrinsics; } );
+    profile->set_name( name );
     if( is_default )
         profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
     _sw_profiles.push_back( profile );
 
-    return std::move( profile );
+    return profile;
 }
 
 
-std::shared_ptr< stream_profile_interface > software_sensor::add_pose_stream( rs2_pose_stream pose_stream,
-                                                                              bool is_default )
+std::shared_ptr< stream_profile_interface > software_sensor::add_pose_stream( rs2_pose_stream pose_stream, bool is_default, std::string name )
 {
     auto profile = std::make_shared< pose_stream_profile >();
     if( ! profile )
@@ -131,6 +132,7 @@ std::shared_ptr< stream_profile_interface > software_sensor::add_pose_stream( rs
     profile->set_stream_index( pose_stream.index );
     profile->set_stream_type( pose_stream.type );
     profile->set_unique_id( pose_stream.uid );
+    profile->set_name( name );
     if( is_default )
         profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
     _sw_profiles.push_back( profile );

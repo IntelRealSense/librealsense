@@ -1422,6 +1422,13 @@ const rs2_stream_profile* rs2_get_frame_stream_profile(const rs2_frame* frame_re
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame_ref)
 
+const char * rs2_get_stream_profile_name( const rs2_stream_profile * profile, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( profile );
+    return profile->profile->get_name();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, profile )
+
 int rs2_get_frame_bits_per_pixel(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);

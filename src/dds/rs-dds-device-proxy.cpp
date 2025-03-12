@@ -260,7 +260,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
                         auto video_profile = std::static_pointer_cast< realdds::dds_video_stream_profile >( profile );
                         auto raw_stream_profile = sensor.add_video_stream(
                             to_rs2_video_stream( stream_type, sidx, video_profile, video_stream->get_intrinsics() ),
-                            profile == default_profile );
+                            profile == default_profile, stream->name() );
                         _stream_name_to_profiles[stream->name()].push_back( raw_stream_profile );
                     }
                     else if( motion_stream )
@@ -268,7 +268,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
                         auto motion_profile = std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile );
                         auto raw_stream_profile = sensor.add_motion_stream(
                             to_rs2_motion_stream( stream_type, sidx, motion_profile, motion_stream->get_gyro_intrinsics() ),
-                            profile == default_profile );
+                            profile == default_profile, stream->name() );
                         _stream_name_to_profiles[stream->name()].push_back( raw_stream_profile );
                     }
                 }
