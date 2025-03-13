@@ -79,45 +79,6 @@ void dds_sensor_proxy::add_dds_stream( sid_index sidx, std::shared_ptr< realdds:
 }
 
 
-std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_video_stream( rs2_video_stream video_stream,
-                                                                                bool is_default )
-{
-    auto profile = std::make_shared< video_stream_profile >();
-    profile->set_dims( video_stream.width, video_stream.height );
-    profile->set_format( video_stream.fmt );
-    profile->set_framerate( video_stream.fps );
-    profile->set_stream_index( video_stream.index );
-    profile->set_stream_type( video_stream.type );
-    profile->set_unique_id( video_stream.uid );
-    profile->set_intrinsics( [=]() {  //
-        return video_stream.intrinsics;
-    } );
-    if( is_default )
-        profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
-    _sw_profiles.push_back( profile );
-
-    return profile;
-}
-
-
-std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream( rs2_motion_stream motion_stream,
-                                                                                 bool is_default )
-{
-    auto profile = std::make_shared< motion_stream_profile >();
-    profile->set_format( motion_stream.fmt );
-    profile->set_framerate( motion_stream.fps );
-    profile->set_stream_index( motion_stream.index );
-    profile->set_stream_type( motion_stream.type );
-    profile->set_unique_id( motion_stream.uid );
-    profile->set_intrinsics( [=]() { return motion_stream.intrinsics; } );
-    if( is_default )
-        profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
-    _sw_profiles.push_back( profile );
-
-    return profile;
-}
-
-
 stream_profiles dds_sensor_proxy::init_stream_profiles()
 {
     auto profiles = get_raw_stream_profiles();
