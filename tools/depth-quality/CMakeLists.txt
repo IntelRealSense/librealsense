@@ -42,6 +42,12 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         ../../third-party/tinyfiledialogs/tinyfiledialogs.h
         ../../third-party/rsutils/include/rsutils/type/eth-config.h
         ../../third-party/rsutils/include/rsutils/type/eth-config.cpp
+        ../../common/graph-model.h
+        ../../common/graph-model.cpp
+        ../../third-party/implot/implot.cpp
+        ../../third-party/implot/implot.h
+        ../../third-party/implot/implot_internal.h
+        ../../third-party/implot/implot_items.cpp
         )
 
     if(WIN32)
@@ -76,6 +82,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
 
         include_directories(../../common  ../../third-party
                             ../../third-party/imgui
+                            ../../third-party/implot
                             ../../third-party/glad
                             ../../third-party/tinyfiledialogs
                             ${CMAKE_CURRENT_SOURCE_DIR}/res/)
@@ -94,6 +101,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
 
         include_directories(../../common  ../../third-party
                             ../../third-party/imgui
+                            ../../third-party/implot
                             ../../third-party/glad
                             ../../third-party/tinyfiledialogs )
     endif()

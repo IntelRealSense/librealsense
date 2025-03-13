@@ -14,7 +14,9 @@ namespace rs2
     stream_model::stream_model()
         : texture(std::unique_ptr<texture_buffer>(new texture_buffer())),
         _stream_not_alive(std::chrono::milliseconds(1500)),
-        _stabilized_reflectivity(10)
+        _stabilized_reflectivity(10),
+        gyro_graph("Gyro graph" , RS2_STREAM_GYRO),
+        accel_graph("Accel graph", RS2_STREAM_ACCEL)
     {
         show_map_ruler = config_file::instance().get_or_default(
             configurations::viewer::show_map_ruler, true);
@@ -378,6 +380,7 @@ namespace rs2
         if (!viewer.allow_stream_close) --num_of_buttons;
         if (viewer.streams.size() > 1) ++num_of_buttons;
         if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
+        if (RS2_FORMAT_MOTION_XYZ32F == profile.format()) ++num_of_buttons;
 
         RsImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -460,6 +463,72 @@ namespace rs2
 
         ImGui::SetCursorScreenPos({ stream_rect.x + stream_rect.w - 32 * num_of_buttons, stream_rect.y - top_bar_height });
 
+        if (profile.format() == RS2_FORMAT_MOTION_XYZ32F)
+        {
+            if (profile.stream_type() == RS2_STREAM_GYRO)
+            {
+                label = rsutils::string::from() << textual_icons::bar_chart << "##graph view" << profile.unique_id();
+                if (graph_view)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                    if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                    {
+                        gyro_graph.clear();
+                        graph_view = false;
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        RsImGui::CustomTooltip("Close graph view");
+                    }
+                    ImGui::PopStyleColor(2);
+                }
+                else
+                {
+                    if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                    {
+                        graph_view = true;
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        RsImGui::CustomTooltip("Open graph view");
+                    }
+                }
+                ImGui::SameLine();
+            }
+            if (profile.stream_type() == RS2_STREAM_ACCEL)
+            {
+                label = rsutils::string::from() << textual_icons::bar_chart << "##graph view" << profile.unique_id();
+                if (accel_view)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                    if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                    {
+                        accel_graph.clear();
+                        accel_view = false;
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        RsImGui::CustomTooltip("Close graph view");
+                    }
+                    ImGui::PopStyleColor(2);
+                }
+                else
+                {
+                    if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                    {
+                        accel_view = true;
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        RsImGui::CustomTooltip("Open graph view");
+                    }
+                }
+                ImGui::SameLine();
+            }
+            
+        }
 
         label = rsutils::string::from() << textual_icons::metadata << "##Metadata" << profile.unique_id();
         if (show_metadata)
@@ -791,6 +860,18 @@ namespace rs2
 
         if (show_metadata)
             stream_model::draw_stream_metadata(timestamp, timestamp_domain, frame_number, profile, original_size, stream_rect);
+
+        if (graph_view)
+        {
+            gyro_graph.process_frame(texture->get_last_frame());
+            gyro_graph.draw(stream_rect);
+        }
+
+        if (accel_view)
+        {
+            accel_graph.process_frame(texture->get_last_frame());
+            accel_graph.draw(stream_rect);
+        }
 
         ImGui::PopStyleColor(5);
     }

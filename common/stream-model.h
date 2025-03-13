@@ -8,6 +8,7 @@
 #include <imgui.h>
 #include "reflectivity/reflectivity.h"
 #include <rsutils/number/stabilized-value.h>
+#include <graph-model.h>
 
 namespace rs2
 {
@@ -103,6 +104,12 @@ namespace rs2
         temporal_event _stream_not_alive;
         bool show_map_ruler = true;
         bool show_metadata = false;
+
+        rs2::graph_model gyro_graph;
+        bool graph_view = false;
+
+        rs2::graph_model accel_graph;
+        bool accel_view = false;
 
         animated<float> _info_height{ 0.f };
         int _prev_mouse_pos_x = 0;
