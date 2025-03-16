@@ -75,8 +75,6 @@ public:
     const std::string & get_name() const { return _name; }
 
     void add_dds_stream( sid_index sidx, std::shared_ptr< realdds::dds_stream > const & stream );
-    std::shared_ptr<stream_profile_interface> add_video_stream( rs2_video_stream video_stream, bool is_default ) override;
-    std::shared_ptr<stream_profile_interface> add_motion_stream( rs2_motion_stream motion_stream, bool is_default ) override;
 
     void open( const stream_profiles & profiles ) override;
     void start( rs2_frame_callback_sptr callback ) override;

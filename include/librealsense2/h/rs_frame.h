@@ -396,6 +396,14 @@ unsigned int rs2_get_frame_labeled_points_bits_per_pixel(const rs2_frame* frame,
 const rs2_stream_profile* rs2_get_frame_stream_profile(const rs2_frame* frame, rs2_error** error);
 
 /**
+ * Returns the stream profile name
+ * \param[in] profile     stream profile whose name we want to get
+ * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return                Stream name, as a null terminated string
+ */
+const char * rs2_get_stream_profile_name( const rs2_stream_profile * profile, rs2_error ** error );
+
+/**
 * Test if the given frame can be extended to the requested extension
 * \param[in]  frame             Realsense frame
 * \param[in]  extension_type    The extension to which the frame should be tested if it is extendable
