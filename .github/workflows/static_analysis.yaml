@@ -173,35 +173,22 @@ jobs:
       run: |
             sudo mv .github/workflows/memory-leaks-check examples/
 
-    - name: Modify Top-Level CMakeLists.txt ### New step to modify the top-level CMakeLists.txt
+    - name: Modify CMakeLists.txt
       run: |
-        # Path to the top-level CMakeLists.txt file
-        CMAKE_FILE=./CMakeLists.txt ### Adjusted path to the top-level CMakeLists.txt
-
-        # Add ASAN flags if not already present
-        if ! grep -q "set(ASAN_FLAGS" "$CMAKE_FILE"; then
-          sed -i '/cmake_minimum_required/a \
-          set(ASAN_FLAGS "-fsanitize=address -fno-omit-frame-pointer -g") \n\
-          add_compile_options(${ASAN_FLAGS}) \n\
-          add_link_options(${ASAN_FLAGS})' "$CMAKE_FILE"
-        fi
-
-    - name: Modify Examples CMakeLists.txt ### New step to modify the examples CMakeLists.txt
-      run: |
-        # Path to the CMakeLists.txt file in the examples folder
+        # Path to the CMakeLists.txt file
         CMAKE_FILE=./examples/CMakeLists.txt
 
         # Check if the line already exists to avoid duplicates
         if ! grep -q "add_subdirectory(memory-leaks-check)" "$CMAKE_FILE"; then
-            # Add the line before the first occurrence of 'add_subdirectory(hello-realsense)'
-            sed -i '/add_subdirectory(hello-realsense)/i add_subdirectory(memory-leaks-check)' "$CMAKE_FILE"
+        # Add the line before the first occurrence of 'add_subdirectory(hello-realsense)'
+        sed -i '/add_subdirectory(hello-realsense)/i add_subdirectory(memory-leaks-check)' "$CMAKE_FILE"
         fi
 
     - name: Build Application with ASAN
       run: |
         mkdir build
         cd build
-        cmake .. -DBUILD_EXAMPLES=true
+        cmake .. -DBUILD_EXAMPLES=true -DCMAKE_CXX_FLAGS="-fsanitize=address -g" -DCMAKE_C_FLAGS="-fsanitize=address -g"
         make -j$(($(nproc)-1))
 
     - name: Run ASAN with V4L2 Backend
