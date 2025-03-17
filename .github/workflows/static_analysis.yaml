@@ -180,10 +180,10 @@ jobs:
 
         # Add ASAN flags if not already present
         if ! grep -q "set(ASAN_FLAGS" "$CMAKE_FILE"; then
-            sed -i '/cmake_minimum_required/a \
-            set(ASAN_FLAGS "-fsanitize=address -fno-omit-frame-pointer -g") ### New lines for ASAN\n\
-            add_compile_options(${ASAN_FLAGS}) ### New lines for ASAN\n\
-            add_link_options(${ASAN_FLAGS}) ### New lines for ASAN\n\
+          sed -i '/cmake_minimum_required/a \
+          set(ASAN_FLAGS "-fsanitize=address -fno-omit-frame-pointer -g") \n\
+          add_compile_options(${ASAN_FLAGS}) \n\
+          add_link_options(${ASAN_FLAGS})' "$CMAKE_FILE"
         fi
 
     - name: Modify Examples CMakeLists.txt ### New step to modify the examples CMakeLists.txt
