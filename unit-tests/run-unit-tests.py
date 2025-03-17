@@ -484,7 +484,6 @@ def test_wrapper( test, configuration=None, repetition=1, serial_numbers=None ):
         if test_wrapper_( test, configuration, repetition, retry, test.config.retries, serial_numbers ):
             return True
 
-    log._n_errors += 1
     return False
 
 # Run all tests
