@@ -195,7 +195,7 @@ jobs:
       run: |
         cd build
         ASAN_OPTIONS=detect_leaks=1 ./Release/mem-leak-test 2>asan-V4L2-out.txt
-        continue-on-error: true
+      continue-on-error: true
 
     - name: Upload ASAN V4L2 backend log
       uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
