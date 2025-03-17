@@ -169,6 +169,21 @@ jobs:
         sudo apt-get install -qq libgtk-3-dev;
         sudo apt-get install libglfw3-dev libglfw3;
 
+    - name: Move files into examples folder in order to build automaticly
+      run: |
+            sudo mv .github/workflows/memory-leaks-check examples/
+
+    - name: Modify CMakeLists.txt
+      run: |
+        # Path to the CMakeLists.txt file
+        CMAKE_FILE=./examples/CMakeLists.txt
+
+        # Check if the line already exists to avoid duplicates
+        if ! grep -q "add_subdirectory(memory-leaks-check)" "$CMAKE_FILE"; then
+        # Add the line before the first occurrence of 'add_subdirectory(hello-realsense)'
+        sed -i '/add_subdirectory(hello-realsense)/i add_subdirectory(memory-leaks-check)' "$CMAKE_FILE"
+        fi
+
     - name: Build Application with ASAN
       run: |
         mkdir build
