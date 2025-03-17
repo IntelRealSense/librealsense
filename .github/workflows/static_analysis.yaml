@@ -128,24 +128,24 @@ jobs:
             sed -i '/add_subdirectory(hello-realsense)/i add_subdirectory(memory-leaks-check)' "$CMAKE_FILE"
           fi
       
-      - name: Build Application with V4L2 Backend
+      - name: Build Application with V4L Backend
         run: |
           mkdir build
           cd build
           cmake .. -DBUILD_EXAMPLES=true
           make -j$(($(nproc)-1))
       
-      - name: Run Valgrind with V4L2 Backend
+      - name: Run Valgrind with V4L Backend
         run: |
           cd build
-          valgrind --leak-check=yes --show-leak-kinds=all --track-origins=yes --log-file=valgrind-V4L2-out.txt ./Release/mem-leak-test
+          valgrind --leak-check=yes --show-leak-kinds=all --track-origins=yes --log-file=valgrind-V4L-out.txt ./Release/mem-leak-test
         continue-on-error: true
       
-      - name: Upload Valgrind V4L2 backend log
+      - name: Upload Valgrind V4L backend log
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
-          name: valgrind-V4L2-log
-          path: build/valgrind-V4L2-out.txt
+          name: valgrind-V4L-log
+          path: build/valgrind-V4L-out.txt
 
       - name: Check Valgrind V4L Results
         run: |
@@ -154,6 +154,68 @@ jobs:
                 exit 1
             else
                 echo "No errors detected by Valgrind with V4L backend."
+            fi
+  ASANCheck: 
+    name: ASAN Memory Leak Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
+    
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update;
+        sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+        sudo apt-get install -qq libusb-1.0-0-dev;
+        sudo apt-get install -qq libgtk-3-dev;
+        sudo apt-get install libglfw3-dev libglfw3;
+
+    - name: Move files into examples folder in order to build automaticly
+      run: |
+            sudo mv .github/workflows/memory-leaks-check examples/
+
+    - name: Modify CMakeLists.txt
+      run: |
+        # Path to the CMakeLists.txt file
+        CMAKE_FILE=./examples/CMakeLists.txt
+
+        # Check if the line already exists to avoid duplicates
+        if ! grep -q "add_subdirectory(memory-leaks-check)" "$CMAKE_FILE"; then
+        # Add the line before the first occurrence of 'add_subdirectory(hello-realsense)'
+        sed -i '/add_subdirectory(hello-realsense)/i add_subdirectory(memory-leaks-check)' "$CMAKE_FILE"
+        fi
+
+    - name: Build Application with ASAN
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DBUILD_EXAMPLES=true -DBUILD_ASAN=true
+        make -j$(($(nproc)-1))
+
+    - name: Run ASAN with V4L2 Backend
+      run: |
+        cd build
+        ASAN_OPTIONS=halt_on_error=0:detect_leaks=1:log_path=asan-V4L2-out.txt ./Release/mem-leak-test
+      continue-on-error: true
+
+    - name: Upload ASAN V4L2 backend log
+      uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
+      with:
+          name: asan-V4L2-log
+          path: build/asan-V4L2-out.txt*
+
+    - name: Check ASAN V4L Results
+      run: |
+            # Use a wildcard to match the file with any number appended
+            ASAN_FILE=$(ls build/asan-V4L2-out.txt* 2>/dev/null)
+            if [ -n "$ASAN_FILE" ]; then
+                if grep -q "SUMMARY: AddressSanitizer:" "$ASAN_FILE"; then
+                    echo "ASAN detected memory leaks with V4L backend."
+                    exit 1
+                else
+                    echo "No memory leaks detected by ASAN with V4L backend."
+                fi
+            else
+                echo "No ASAN output file found. No errors detected."
             fi
   # We verify the minimal CMake version we support is preserved when building with default CMake flags
   minimal_cmake_version:
