@@ -155,6 +155,47 @@ jobs:
             else
                 echo "No errors detected by Valgrind with V4L backend."
             fi
+  ASANCheck: ### New section for ASAN
+    name: ASAN Memory Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
+    
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update;
+        sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+        sudo apt-get install -qq libusb-1.0-0-dev;
+        sudo apt-get install -qq libgtk-3-dev;
+        sudo apt-get install libglfw3-dev libglfw3;
+
+    - name: Build Application with ASAN
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DBUILD_EXAMPLES=true -DCMAKE_CXX_FLAGS="-fsanitize=address -g" -DCMAKE_C_FLAGS="-fsanitize=address -g"
+        make -j$(($(nproc)-1))
+
+    - name: Run ASAN with V4L2 Backend
+      run: |
+        cd build
+        ASAN_OPTIONS=detect_leaks=1 ./Release/mem-leak-test 2>asan-V4L2-out.txt
+        continue-on-error: true
+
+    - name: Upload ASAN V4L2 backend log
+      uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
+      with:
+          name: asan-V4L2-log
+          path: build/asan-V4L2-out.txt
+
+    - name: Check ASAN V4L Results
+      run: |
+            if grep -q "ERROR SUMMARY: [^0]" build/asan-V4L2-out.txt; then
+                echo "ASAN detected errors with V4L backend."
+                exit 1
+            else
+                echo "No errors detected by ASAN with V4L backend."
+            fi
   # We verify the minimal CMake version we support is preserved when building with default CMake flags
   minimal_cmake_version:
     name: "Minimal CMake version"
