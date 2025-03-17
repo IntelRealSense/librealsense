@@ -181,12 +181,9 @@ jobs:
         # Add ASAN flags if not already present
         if ! grep -q "set(ASAN_FLAGS" "$CMAKE_FILE"; then
             sed -i '/cmake_minimum_required/a \
-        # Enable AddressSanitizer ### New lines for ASAN\n\
-        #if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang") ### New lines for ASAN\n\
             set(ASAN_FLAGS "-fsanitize=address -fno-omit-frame-pointer -g") ### New lines for ASAN\n\
             add_compile_options(${ASAN_FLAGS}) ### New lines for ASAN\n\
             add_link_options(${ASAN_FLAGS}) ### New lines for ASAN\n\
-        #endif() ### New lines for ASAN\n' "$CMAKE_FILE"
         fi
 
     - name: Modify Examples CMakeLists.txt ### New step to modify the examples CMakeLists.txt
@@ -204,7 +201,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake .. -DBUILD_EXAMPLES=true -DCMAKE_CXX_FLAGS="-fsanitize=address -g" -DCMAKE_C_FLAGS="-fsanitize=address -g"
+        cmake .. -DBUILD_EXAMPLES=true
         make -j$(($(nproc)-1))
 
     - name: Run ASAN with V4L2 Backend
