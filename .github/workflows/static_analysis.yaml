@@ -194,7 +194,7 @@ jobs:
     - name: Run ASAN with V4L2 Backend
       run: |
         cd build
-        ASAN_OPTIONS=detect_leaks=1 ./Release/mem-leak-test 2>asan-V4L2-out.txt
+        ASAN_OPTIONS=halt_on_error=0:detect_leaks=1:log_path=asan-V4L2-out.txt ./Release/mem-leak-test
       continue-on-error: true
 
     - name: Upload ASAN V4L2 backend log
