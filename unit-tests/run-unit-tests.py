@@ -457,9 +457,10 @@ def test_wrapper_( test, configuration=None, repetition=1, curr_retry=0, max_ret
     except subprocess.TimeoutExpired:
         log.e( log.red + test.name + log.reset + ':', configuration_str( configuration, repetition, suffix=' ' ) + 'timed out' )
     except subprocess.CalledProcessError as cpe:
-        if not check_log_for_fails( log_path, test.name, configuration, repetition, sns=sns ):
-            # An unexpected error occurred, if there are no more retries issue error
-            if curr_retry == max_retry:
+        # An unexpected error occurred, if there are no more retries issue error
+        if curr_retry == max_retry:
+            if not check_log_for_fails( log_path, test.name, configuration, repetition, sns=sns ):
+                # check_log_for_fails logs a more verbose message, but if it fails to do so log a general message here.
                 log.e( log.red + test.name + log.reset + ':',
                        configuration_str( configuration, repetition, suffix=' ' ) + 'exited with non-zero value (' +
                            str( cpe.returncode ) + ')' )
