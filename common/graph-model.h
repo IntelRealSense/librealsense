@@ -28,6 +28,9 @@ namespace rs2
         void process_frame(rs2::frame f);
         void draw(rect r);
         void clear();
+        void pause();
+        void resume();
+        bool is_paused();
     protected:
         template<class T>
         T read_shared_data(std::function<T()> action)
@@ -46,6 +49,7 @@ namespace rs2
         bool _show_n_value;
         float _update_rate = 0.05f;
         double _last_time = 0.0;
+        bool _paused = false;
 
         const int VECTOR_SIZE = 300;
         std::vector< float > _x_history, _y_history, _z_history, _n_history;

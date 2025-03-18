@@ -10,7 +10,7 @@ void graph_model::process_frame(rs2::frame f)
     write_shared_data(
         [&]()
         {
-            if (f && f.is< rs2::motion_frame >()
+            if (!_paused && f && f.is< rs2::motion_frame >()
                 && (f.as< rs2::motion_frame >()).get_profile().stream_type() == _stream_type)
             {
                 double ts = glfwGetTime();
@@ -101,4 +101,19 @@ void graph_model::clear()
                     _n_history.push_back(0);
             }
         });
+}
+
+void graph_model::pause()
+{
+    _paused = true;
+}
+
+void graph_model::resume()
+{
+    _paused = false;
+}
+
+bool graph_model::is_paused()
+{
+    return _paused;
 }

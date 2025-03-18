@@ -105,11 +105,9 @@ namespace rs2
         bool show_map_ruler = true;
         bool show_metadata = false;
 
-        rs2::graph_model gyro_graph;
-        bool graph_view = false;
-
-        rs2::graph_model accel_graph;
-        bool accel_view = false;
+        std::shared_ptr<graph_model> graph;
+        bool show_graph = false;
+        bool graph_initialized = false;
 
         animated<float> _info_height{ 0.f };
         int _prev_mouse_pos_x = 0;
@@ -121,6 +119,7 @@ namespace rs2
 
         std::string format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const;
         bool should_show_in_hex(rs2_frame_metadata_value& md_val) const;
+        void create_graph(rs2_stream stream_type);
     };
 
     
