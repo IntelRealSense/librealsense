@@ -201,12 +201,14 @@ jobs:
       uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
       with:
           name: asan-V4L2-log
-          path: build/asan-V4L2-out.txt
+          path: build/asan-V4L2-out.txt*
 
     - name: Check ASAN V4L Results
       run: |
-            if [ -f build/asan-V4L2-out.txt ]; then
-                if grep -q "SUMMARY: AddressSanitizer:" build/asan-V4L2-out.txt; then
+            # Use a wildcard to match the file with any number appended
+            ASAN_FILE=$(ls build/asan-V4L2-out.txt* 2>/dev/null)
+            if [ -n "$ASAN_FILE" ]; then
+                if grep -q "SUMMARY: AddressSanitizer:" "$ASAN_FILE"; then
                     echo "ASAN detected memory leaks with V4L backend."
                     exit 1
                 else
