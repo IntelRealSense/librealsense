@@ -97,13 +97,13 @@ k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
 # do not skip md patch - new d421.
 #[ $k_maj_min -ge 605 ] && skip_md_patch=1
 
-# Construct branch name from distribution codename {xenial,bionic,..} and kernel version
+# Construct branch name from distribution codename {bionic,focal...} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
 ubuntu_codename=${ubuntu_codename:-$(lsb_release -c|cut -f2)}
 if [ -z "${ubuntu_codename}" ];
 then
-	# Trusty Tahr shall use xenial code base
-	ubuntu_codename="xenial"
+	# Trusty Tahr shall use bionic code base
+	ubuntu_codename="bionic"
 	retpoline_retrofit=1
 fi
 
@@ -111,17 +111,13 @@ kernel_branch=$(choose_kernel_branch ${LINUX_BRANCH} ${ubuntu_codename})
 kernel_name="ubuntu-${ubuntu_codename}"
 echo -e "\e[32mCreate patches workspace in \e[93m${kernel_name} \e[32mfolder\n\e[0m"
 
-#Distribution-specific packages
-if { [ ${ubuntu_codename} != "xenial" ];  } ;
-then
-	require_package libelf-dev
-	require_package elfutils
-	#Ubuntu 18.04 kernel 4.18 + 20.04/ 5.4
-	require_package bison
-	require_package flex
-	# required if kernel >=5.11
-	require_package dwarves
-fi
+require_package libelf-dev
+require_package elfutils
+#Ubuntu 18.04 kernel 4.18 + 20.04/ 5.4
+require_package bison
+require_package flex
+# required if kernel >=5.11
+require_package dwarves
 
 # Get the linux kernel and change into source tree
 if [ ! -d ${kernel_name} ]; then

@@ -36,12 +36,12 @@ retpoline_retrofit=0
 
 LINUX_BRANCH=$(uname -r)
 
-# Construct branch name from distribution codename {xenial,bionic,..} and kernel version
+# Construct branch name from distribution codename {bionic, focal...} and kernel version
 ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
 if [ -z "${ubuntu_codename}" ];
 then
-	# Trusty Tahr shall use xenial code base
-	ubuntu_codename="xenial"
+	# Trusty Tahr shall use bionic code base
+	ubuntu_codename="bionic"
 	retpoline_retrofit=1
 fi
 

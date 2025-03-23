@@ -39,12 +39,12 @@ else
 	kernel_branch=$(choose_kernel_branch $LINUX_BRANCH)	
 fi
 echo "Kernel branch: " $kernel_branch
-# Construct branch name from distribution codename {xenial,bionic,..} and kernel version
+# Construct branch name from distribution codename {bionic, focal...} and kernel version
 ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
 if [ -z "$UBUNTU_CODENAME" ];
 then
-	# Trusty Tahr shall use xenial code base
-	ubuntu_codename="xenial"
+	# Trusty Tahr shall use bionic code base
+	ubuntu_codename="bionic"
 	retpoline_retrofit=1
 fi
 

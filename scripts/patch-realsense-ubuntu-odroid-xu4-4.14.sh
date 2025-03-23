@@ -43,14 +43,6 @@ PLATFORM=$(uname -n)
 #fi
 kernel_branch="master"
 echo "Kernel branch: " $kernel_branch
-# Construct branch name from distribution codename {xenial,bionic,..} and kernel version
-#ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
-#if [ -z "$UBUNTU_CODENAME" ];
-#then
-	# Trusty Tahr shall use xenial code base
-#	ubuntu_codename="xenial"
-#	retpoline_retrofit=1
-#fi
 ubuntu_codename="bionic"
 
 #kernel_name="ubuntu-${ubuntu_codename}-$kernel_branch"
