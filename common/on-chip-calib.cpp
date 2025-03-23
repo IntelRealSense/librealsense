@@ -27,15 +27,20 @@ namespace rs2
         : process_manager("On-Chip Calibration"), _model(model), _dev(dev), _sub(sub), _viewer(viewer), _sub_color(sub_color), py_px_only(!uvmapping_calib_full)
     {
         device_name_string = "Unknown";
-        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID))
+        if (dev.supports(RS2_CAMERA_INFO_NAME))
         {
             device_name_string = _dev.get_info( RS2_CAMERA_INFO_NAME );
             if( val_in_range( device_name_string, { std::string( "Intel RealSense D415" ) } ) )
                 speed = 4;
-
-            if ( strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD") == 0 || strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCE") == 0)
-                host_assistance = true; // To be used for MIPI SKU only
         }
+
+        if( dev.supports( RS2_CAMERA_INFO_CONNECTION_TYPE ) )
+        {
+            auto con_type = std::string( dev.get_info( RS2_CAMERA_INFO_CONNECTION_TYPE ) );
+            if( con_type == "GMSL" )
+                host_assistance = 1;  // To be used for MIPI SKU only
+        }
+
         if (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
         {
             std::string fw_version = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
