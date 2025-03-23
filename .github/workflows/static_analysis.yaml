@@ -188,7 +188,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake .. -DBUILD_EXAMPLES=true -DCMAKE_CXX_FLAGS="-fsanitize=address -g" -DCMAKE_C_FLAGS="-fsanitize=address -g"
+        cmake .. -DBUILD_EXAMPLES=true -DBUILD_ASAN=true
         make -j$(($(nproc)-1))
 
     - name: Run ASAN with V4L2 Backend
@@ -205,11 +205,15 @@ jobs:
 
     - name: Check ASAN V4L Results
       run: |
-            if grep -q "ERROR SUMMARY: [^0]" build/asan-V4L2-out.txt; then
-                echo "ASAN detected errors with V4L backend."
-                exit 1
+            if [ -f build/asan-V4L2-out.txt ]; then
+                if grep -q "SUMMARY: AddressSanitizer:" build/asan-V4L2-out.txt; then
+                    echo "ASAN detected memory leaks with V4L backend."
+                    exit 1
+                else
+                    echo "No memory leaks detected by ASAN with V4L backend."
+                fi
             else
-                echo "No errors detected by ASAN with V4L backend."
+                echo "No ASAN output file found. No errors detected."
             fi
   # We verify the minimal CMake version we support is preserved when building with default CMake flags
   minimal_cmake_version:

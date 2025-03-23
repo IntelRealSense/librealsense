@@ -4,6 +4,18 @@ cmake_minimum_required(VERSION 3.8)
 set( LRS_TARGET realsense2 )
 project( ${LRS_TARGET} LANGUAGES CXX C )
 
+# Define custom option for ASan
+option(BUILD_ASAN "Enable AddressSanitizer" OFF)
+
+# Conditionally apply ASan flags
+if(BUILD_ASAN)
+  message(STATUS "AddressSanitizer is enabled")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+endif()
+
 # Allow librealsense2 and all of the nested project to include the main repo folder
 set(REPO_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${REPO_ROOT})
@@ -49,6 +61,10 @@ global_set_flags()
 
 # If no type is given explicitly the type is STATIC or SHARED based on whether the current value of the variable [BUILD_SHARED_LIBS](https://cmake.org/cmake/help/v3.10/variable/BUILD_SHARED_LIBS.html#variable:BUILD_SHARED_LIBS) is ON
 add_library(${LRS_TARGET})
+# Apply ASan flags if enabled
+if(BUILD_ASAN)
+  target_compile_options(${LRS_TARGET} PRIVATE -fsanitize=address -g)
+endif()
 
 config_cxx_flags()
 
