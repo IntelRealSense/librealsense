@@ -291,6 +291,8 @@ void software_sensor::invoke_new_frame( frame_holder && frame, void const * pixe
 
 void software_sensor::on_video_frame( rs2_software_video_frame const & software_frame )
 {
+    int* ptr = new int(5); // Memory leak check - remove this line to avoid memory leak - testing ASAN
+
     deferred on_release( [deleter = software_frame.deleter, data = software_frame.pixels]() { deleter( data ); } );
 
     stream_profile_interface * profile = software_frame.profile->profile;

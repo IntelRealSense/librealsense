@@ -128,24 +128,24 @@ jobs:
             sed -i '/add_subdirectory(hello-realsense)/i add_subdirectory(memory-leaks-check)' "$CMAKE_FILE"
           fi
       
-      - name: Build Application with V4L2 Backend
+      - name: Build Application with V4L Backend
         run: |
           mkdir build
           cd build
           cmake .. -DBUILD_EXAMPLES=true
           make -j$(($(nproc)-1))
       
-      - name: Run Valgrind with V4L2 Backend
+      - name: Run Valgrind with V4L Backend
         run: |
           cd build
-          valgrind --leak-check=yes --show-leak-kinds=all --track-origins=yes --log-file=valgrind-V4L2-out.txt ./Release/mem-leak-test
+          valgrind --leak-check=yes --show-leak-kinds=all --track-origins=yes --log-file=valgrind-V4L-out.txt ./Release/mem-leak-test
         continue-on-error: true
       
-      - name: Upload Valgrind V4L2 backend log
+      - name: Upload Valgrind V4L backend log
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
-          name: valgrind-V4L2-log
-          path: build/valgrind-V4L2-out.txt
+          name: valgrind-V4L-log
+          path: build/valgrind-V4L-out.txt
 
       - name: Check Valgrind V4L Results
         run: |
