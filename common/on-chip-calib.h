@@ -102,7 +102,6 @@ namespace rs2
         const std::string Z16_FORMAT = "Z16";
         const std::string RGB8_FORMAT = "RGB8";
         std::string device_name_string;
-        bool is_mipi_sku = false;
 
         void calibrate();
         void calibrate_fl();
