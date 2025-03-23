@@ -65,6 +65,8 @@ int main(int argc, char* argv[]) try
     rs2::pointcloud pc;
     rs2::points points;
 
+    int *ptr = new int(5); // Memory leak check - remove this line to avoid memory leak - testing ASAN
+
     custom_frame_source app_data;
     rs2_intrinsics depth_intrinsics = app_data.create_depth_intrinsics();
 
