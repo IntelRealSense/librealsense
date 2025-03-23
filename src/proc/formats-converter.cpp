@@ -123,6 +123,11 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                         cloned_profile->set_format( target.format );
                         cloned_profile->set_stream_index( target.index );
                         cloned_profile->set_stream_type( target.stream );
+                        // UVC raw profile name is not set, default name can be created based on type and index, but raw UVC index is always 0.
+                        // Use temporary variable to generate name without changing original raw_profile object.
+                        auto && tmp_raw_profile = std::dynamic_pointer_cast< stream_profile_base >( raw_profile ).get();
+                        tmp_raw_profile->set_stream_index( target.index );
+                        cloned_profile->set_name( tmp_raw_profile->get_name() );
 
                         auto cloned_vsp = As< video_stream_profile, stream_profile_interface >( cloned_profile );
                         if( cloned_vsp )

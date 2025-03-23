@@ -76,6 +76,7 @@ EXPORTS
     rs2_get_frame_stride_in_bytes
     rs2_get_frame_bits_per_pixel
     rs2_get_frame_stream_profile
+    rs2_get_stream_profile_name
     rs2_get_frame_vertices
     rs2_get_frame_texture_coordinates
     rs2_get_frame_points_count

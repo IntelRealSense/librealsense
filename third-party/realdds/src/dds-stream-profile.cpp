@@ -88,7 +88,7 @@ int dds_video_encoding::to_rs2() const
         { "RGBA", RS2_FORMAT_RGBA8 },
         { "RGB2", RS2_FORMAT_BGR8 },
         { "BGRA", RS2_FORMAT_BGRA8 },
-        { "MJPG", RS2_FORMAT_MJPEG },
+        { "jpeg", RS2_FORMAT_MJPEG }, // ROS2-compatible for compressed images
         { "CNF4", RS2_FORMAT_RAW8 },
         { "BYR2", RS2_FORMAT_RAW16 },
         { "R10", RS2_FORMAT_RAW10 },
@@ -98,7 +98,7 @@ int dds_video_encoding::to_rs2() const
     std::string s = to_string();
     auto it = fcc_to_rs2.find( s );
     if( it == fcc_to_rs2.end() )
-        DDS_THROW( runtime_error, "invalid encoding '" + s + "'" );
+        DDS_THROW( runtime_error, "Invalid encoding '" + s + "'" );
     return it->second;
 }
 
@@ -120,7 +120,7 @@ dds_video_encoding dds_video_encoding::from_rs2( int rs2_format )
     case RS2_FORMAT_RGBA8: encoding = "RGBA"; break;  // todo
     case RS2_FORMAT_BGR8: encoding = "RGB2"; break;
     case RS2_FORMAT_BGRA8: encoding = "BGRA"; break;  // todo
-    case RS2_FORMAT_MJPEG: encoding = "MJPG"; break;
+    case RS2_FORMAT_MJPEG: encoding = "jpeg"; break;
     case RS2_FORMAT_RAW8: encoding = "CNF4"; break;
     case RS2_FORMAT_RAW16: encoding = "BYR2"; break;
     case RS2_FORMAT_RAW10: encoding = "R10"; break;

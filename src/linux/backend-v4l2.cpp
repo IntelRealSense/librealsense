@@ -822,6 +822,7 @@ namespace librealsense
             {
                 if (fmtdesc.pixelformat == format)
                 {
+                    ::close(fd);
                     return true;
                 }
 

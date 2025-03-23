@@ -55,6 +55,8 @@ class dds_device_proxy
     rsutils::subscription _metadata_subscription;
 
     int get_index_from_stream_name( const std::string & name ) const;
+    int get_unique_index_in_sensor( const std::shared_ptr< dds_sensor_proxy > & sensor,
+                                    const std::string & stream_name, rs2_stream stream_type ) const;
     void set_profile_intrinsics( std::shared_ptr< stream_profile_interface > const & profile,
                                  const std::shared_ptr< realdds::dds_stream > & stream ) const;
     void set_video_profile_intrinsics( std::shared_ptr< stream_profile_interface > const & profile,
