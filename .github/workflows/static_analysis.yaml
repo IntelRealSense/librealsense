@@ -128,32 +128,32 @@ jobs:
             sed -i '/add_subdirectory(hello-realsense)/i add_subdirectory(memory-leaks-check)' "$CMAKE_FILE"
           fi
       
-      - name: Build Application with V4L Backend
+      - name: Build Application
         run: |
           mkdir build
           cd build
           cmake .. -DBUILD_EXAMPLES=true
           make -j$(($(nproc)-1))
       
-      - name: Run Valgrind with V4L Backend
+      - name: Run Valgrind
         run: |
           cd build
-          valgrind --leak-check=yes --show-leak-kinds=all --track-origins=yes --log-file=valgrind-V4L-out.txt ./Release/mem-leak-test
+          valgrind --leak-check=yes --show-leak-kinds=all --track-origins=yes --log-file=valgrind-out.txt ./Release/mem-leak-test
         continue-on-error: true
       
-      - name: Upload Valgrind V4L backend log
+      - name: Upload Valgrind log
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
-          name: valgrind-V4L-log
-          path: build/valgrind-V4L-out.txt
+          name: valgrind-log
+          path: build/valgrind-out.txt
 
-      - name: Check Valgrind V4L Results
+      - name: Check Valgrind Results
         run: |
-            if grep -q "ERROR SUMMARY: [^0]" build/valgrind-V4L-out.txt; then
-                echo "Valgrind detected errors with V4L backend."
+            if grep -q "ERROR SUMMARY: [^0]" build/valgrind-out.txt; then
+                echo "Valgrind detected errors with backend."
                 exit 1
             else
-                echo "No errors detected by Valgrind with V4L backend."
+                echo "No errors detected by Valgrind with backend."
             fi
   ASANCheck: 
     name: ASAN Memory Leak Check
@@ -191,28 +191,28 @@ jobs:
         cmake .. -DBUILD_EXAMPLES=true -DBUILD_ASAN=true
         make -j$(($(nproc)-1))
 
-    - name: Run ASAN with V4L2 Backend
+    - name: Run ASAN
       run: |
         cd build
-        ASAN_OPTIONS=halt_on_error=0:detect_leaks=1:log_path=asan-V4L2-out.txt ./Release/mem-leak-test
+        ASAN_OPTIONS=halt_on_error=0:detect_leaks=1:log_path=asan-out.txt ./Release/mem-leak-test
       continue-on-error: true
 
-    - name: Upload ASAN V4L2 backend log
+    - name: Upload ASAN log
       uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
       with:
-          name: asan-V4L2-log
-          path: build/asan-V4L2-out.txt*
+          name: asan-log
+          path: build/asan-out.txt*
 
-    - name: Check ASAN V4L Results
+    - name: Check ASAN Results
       run: |
             # Use a wildcard to match the file with any number appended
-            ASAN_FILE=$(ls build/asan-V4L2-out.txt* 2>/dev/null)
+            ASAN_FILE=$(ls build/asan-out.txt* 2>/dev/null || true)
             if [ -n "$ASAN_FILE" ]; then
                 if grep -q "SUMMARY: AddressSanitizer:" "$ASAN_FILE"; then
-                    echo "ASAN detected memory leaks with V4L backend."
+                    echo "ASAN detected memory leaks."
                     exit 1
                 else
-                    echo "No memory leaks detected by ASAN with V4L backend."
+                    echo "No memory leaks detected by ASAN."
                 fi
             else
                 echo "No ASAN output file found. No errors detected."
