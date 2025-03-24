@@ -12,6 +12,8 @@
   </description>
 
   <maintainer email="librs.ros@intel.com">LibRealSense ROS Team</maintainer>
+  <maintainer email="ashraf.kattoura@intel.com">Ashraf Kattoura</maintainer>
+  <maintainer email="nir.azkiel@intel.com">Nir Azkiel</maintainer>
 
   <url type="website">https://github.com/IntelRealSense/librealsense/</url>
 
