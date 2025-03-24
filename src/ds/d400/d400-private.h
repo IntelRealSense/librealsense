@@ -165,9 +165,9 @@ namespace librealsense
             {RS416_RGB_PID, "5.8.15.0" },
             {RS405_PID, "5.12.11.8" },
             {RS455_PID, "5.13.0.50" },
-            {RS457_PID, "5.13.1.1" },
+            {RS457_PID, "5.16.8.0" },
             {RS400_MIPI_RECOVERY_PID, "5.13.1.1" },
-            {RS430_GMSL_PID, "5.16.5.1" }
+            {RS430_GMSL_PID, "5.16.8.0" }
         };
 
         std::vector<platform::uvc_device_info> filter_d400_device_by_capability(
