@@ -27,10 +27,10 @@ namespace librealsense
     class ds_device_common
     {
     public:
-        ds_device_common(device* ds_device, std::shared_ptr<hw_monitor> hwm, bool is_d457 = false) :
+        ds_device_common(device* ds_device, std::shared_ptr<hw_monitor> hwm, bool is_gmsl = false) :
             _owner(ds_device),
             _hw_monitor(hwm),
-            _is_d457(is_d457),
+            _is_gmsl(is_gmsl),
             _is_locked(true)
         {}
 
@@ -48,7 +48,7 @@ namespace librealsense
         device* _owner;
         std::shared_ptr<hw_monitor> _hw_monitor;
         bool _is_locked;
-        bool _is_d457;
+        bool _is_gmsl;
     };
 
     
