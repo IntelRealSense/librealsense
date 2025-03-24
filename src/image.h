@@ -31,6 +31,8 @@ namespace librealsense
             auto b = reinterpret_cast<decltype(split_b(SOURCE()))*>(dest[1]);
             for (int i = 0; i < count; i += 2)
             {
+                // temporary workaround - swapping ordering of left, caused due to received frame
+                // when fixed we can use the regular split_frame
                 a[i] = split_a(source[i + 1]);
                 b[i] = split_b(source[i]);
 

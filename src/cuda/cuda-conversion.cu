@@ -350,9 +350,9 @@ __global__ void kernel_split_frame_y8_y8_from_y8i_mipi_cuda(uint8_t* a, uint8_t*
         return;
 
     int i = pair_index * 2;
-    //if (i >= count)
-    //    return;
-
+    
+    // temporary workaround - swapping ordering of left, caused due to received frame
+    // when fixed we can use the regular kernel_split_frame_y8_y8_from_y8i_cuda
     a[i]     = source[i + 1].l;
     b[i]     = source[i].r;
 
