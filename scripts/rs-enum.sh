@@ -11,8 +11,9 @@
 # mipi	0	      depth	  Metadata	/dev/video1	/dev/video-rs-depth-md-0
 # mipi	0	      color	  Streaming	/dev/video2	/dev/video-rs-color-0
 # mipi	0	      color	  Metadata	/dev/video3	/dev/video-rs-color-md-0
-# mipi	0	      ir	    Streaming	/dev/video4	/dev/video-rs-ir-0
-# mipi	0	      imu	    Streaming	/dev/video5	/dev/video-rs-imu-0
+# mipi	0	      ir	  Streaming	/dev/video4	/dev/video-rs-ir-0
+# mipi	0	      ir	  Metadata	/dev/video5	/dev/video-rs-ir-md-0
+# mipi	0	      imu	  Streaming	/dev/video6	/dev/video-rs-imu-0
 #
 # Alderlake:
 #$ ./rs-enum.sh 
@@ -80,10 +81,10 @@ fi
 mux_list=${mux_param:-'a b c d e f g h'}
 
 declare -A camera_idx=( [a]=0 [b]=1 [c]=2 [d]=3 [e]=4 [f]=5 [g]=6 [h]=7)
-declare -A d4xx_vc_named=([depth]=1 [rgb]=3 [ir]=5 [imu]=6)
+declare -A d4xx_vc_named=([depth]=1 [rgb]=3 [ir]=5 [imu]=7)
 declare -A camera_names=( [depth]=depth [rgb]=color [ir]=ir [imu]=imu )
 
-camera_vid=("depth" "depth-md" "color" "color-md" "ir" "imu")
+camera_vid=("depth" "depth-md" "color" "color-md" "ir" "ir-md" "imu")
 
 
 mdev=$(${v4l2_util} --list-devices | grep -A1 tegra | grep media)
@@ -127,8 +128,6 @@ for dfuid_x in ${dfuid[*]}; do # for all physical cameras one by one.
 
       sens_id=$((sens_id+1))
       # find metadata
-      # skip IR and imu metadata node for now.
-      [[ ${sensor_name} == 'ir' ]] && continue
       [[ ${sensor_name} == 'imu' ]] && continue
 
       i=$((i+1)) # metadata video index next to the video node always
