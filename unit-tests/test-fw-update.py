@@ -34,6 +34,19 @@ if 'jetson' not in test.context:
     devices.hub = None
 
 
+def get_custom_fw_version():
+    try:
+        with open("../../fw_version.txt", 'r') as fp:
+            bundled_fw_version = fp.read().rstrip()
+            return bundled_fw_version
+    except FileNotFoundError as e:
+        pass
+    return ""
+
+custom_fw_version = get_custom_fw_version()
+has_custom_fw = custom_fw_version != ""
+
+
 def send_hardware_monitor_command(device, command):
     # byte_index = -1
     raw_result = rs.debug_protocol(device).send_and_receive_raw_data(command)
@@ -139,6 +152,8 @@ if device.is_update_device():
     try:
         image_file = find_image_or_exit( product_name )
         cmd = [fw_updater_exe, '-r', '-f', image_file]
+        if has_custom_fw:
+            cmd.insert(1, '-u')
         log.d( 'running:', cmd )
         subprocess.run( cmd )
         recovered = True
@@ -151,8 +166,14 @@ if device.is_update_device():
 
 current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
 log.d( 'FW version:', current_fw_version )
-bundled_fw_version = rsutils.version( device.get_info( rs.camera_info.recommended_firmware_version ) )
-log.d( 'bundled FW version:', bundled_fw_version )
+
+
+if has_custom_fw:
+    bundled_fw_version = custom_fw_version
+    log.d( 'bundled FW version (Using custom FW):', bundled_fw_version )
+else:
+    bundled_fw_version = rsutils.version( device.get_info( rs.camera_info.recommended_firmware_version ) )
+    log.d( 'bundled FW version:', bundled_fw_version )
 
 if current_fw_version == bundled_fw_version:
     # Current is same as bundled
