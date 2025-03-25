@@ -362,11 +362,6 @@ __global__ void kernel_split_frame_y8_y8_from_y8i_mipi_cuda(uint8_t* a, uint8_t*
 
 void rscuda::y8_y8_from_y8i_mipi_cuda_helper(uint8_t* const dest[], int count, const rscuda::y8i_pixel_mipi * source)
 {
-    /*    cudaEvent_t start, stop;
-        cudaEventCreate(&start);
-        cudaEventCreate(&stop);
-        cudaEventRecord(start); */
-
     int pair_count = count / 2;
     int numBlocks = pair_count / RS2_CUDA_THREADS_PER_BLOCK;
     uint8_t* a = dest[0];
@@ -389,12 +384,6 @@ void rscuda::y8_y8_from_y8i_mipi_cuda_helper(uint8_t* const dest[], int count, c
     assert(result == cudaSuccess);
     result = cudaMemcpy(b, d_dst_1.get(), count * sizeof(uint8_t), cudaMemcpyDeviceToHost);
     assert(result == cudaSuccess);
-
-    /*    cudaEventRecord(stop);
-        cudaEventSynchronize(stop);
-        float milliseconds = 0;
-        cudaEventElapsedTime(&milliseconds, start, stop);
-        std::cout << milliseconds << std::endl; */
 }
 
 
