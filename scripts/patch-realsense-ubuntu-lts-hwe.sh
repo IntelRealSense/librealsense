@@ -15,7 +15,6 @@ xhci_patch=0
 build_usbcore_modules=0
 rebuild_ko=0
 debug_uvc=0
-retpoline_retrofit=0
 skip_hid_patch=0
 apply_hid_gyro_patch=0
 skip_plf_patch=0
@@ -97,15 +96,9 @@ k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
 # do not skip md patch - new d421.
 #[ $k_maj_min -ge 605 ] && skip_md_patch=1
 
-# Construct branch name from distribution codename {bionic,focal...} and kernel version
+# Construct branch name from distribution codename {focal, jammy...} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
 ubuntu_codename=${ubuntu_codename:-$(lsb_release -c|cut -f2)}
-if [ -z "${ubuntu_codename}" ];
-then
-	# Trusty Tahr shall use bionic code base
-	ubuntu_codename="bionic"
-	retpoline_retrofit=1
-fi
 
 kernel_branch=$(choose_kernel_branch ${LINUX_BRANCH} ${ubuntu_codename})
 kernel_name="ubuntu-${ubuntu_codename}"
@@ -255,8 +248,6 @@ then
 	#Vermagic identity is required
 	sed -i "s/\".*\"/\"$LINUX_BRANCH\"/g" ./include/generated/utsrelease.h
 	sed -i "s/.*/$LINUX_BRANCH/g" ./include/config/kernel.release
-	#Patch for Trusty Tahr (Ubuntu 14.05) with GCC not retrofitted with the retpoline patch.
-	[ $retpoline_retrofit -eq 1 ] && sed -i "s/#ifdef RETPOLINE/#if (1)/g" ./include/linux/vermagic.h
 
 
 	if [[ ( $xhci_patch -eq 1 ) && ( $build_usbcore_modules -eq 0 ) ]]; then
