@@ -15,6 +15,18 @@ import pyrealsense2 as rs
 import pyrsutils as rsutils
 from rspy import devices, log, test, file, repo
 import time
+import argparse
+
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Test firmware update")
+parser.add_argument('--custom-fw', type=str, help='Path to custom firmware file')
+args = parser.parse_args()
+
+custom_fw_path = args.custom_fw
+if custom_fw_path:
+    log.i(f"Custom firmware path provided: {custom_fw_path}")
+else:
+    log.i(f"No Custom firmware path provided. using bundled firmware")
 
 # This is the first test running, discover acroname modules.
 # Not relevant to MIPI devices running on jetson for LibCI
@@ -32,19 +44,6 @@ if 'jetson' not in test.context:
     # thrown ('failed to connect to acroname (result=11)'). We do not need it -- just
     # needed to verify it is available above...
     devices.hub = None
-
-
-def get_custom_fw_version():
-    try:
-        with open("../../fw_version.txt", 'r') as fp:
-            bundled_fw_version = fp.read().rstrip()
-            return bundled_fw_version
-    except FileNotFoundError as e:
-        pass
-    return ""
-
-custom_fw_version = get_custom_fw_version()
-has_custom_fw = custom_fw_version != ""
 
 
 def send_hardware_monitor_command(device, command):
@@ -150,9 +149,10 @@ recovered = False
 if device.is_update_device():
     log.d( "recovering device ..." )
     try:
-        image_file = find_image_or_exit( product_name )
+        image_file = find_image_or_exit(product_name) if not custom_fw_path else custom_fw_path
         cmd = [fw_updater_exe, '-r', '-f', image_file]
-        if has_custom_fw:
+        if custom_fw_path:
+            # unsiged fw
             cmd.insert(1, '-u')
         log.d( 'running:', cmd )
         subprocess.run( cmd )
@@ -166,19 +166,14 @@ if device.is_update_device():
 
 current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
 log.d( 'FW version:', current_fw_version )
-
-
-if has_custom_fw:
-    bundled_fw_version = custom_fw_version
-    log.d( 'bundled FW version (Using custom FW):', bundled_fw_version )
-else:
-    bundled_fw_version = rsutils.version( device.get_info( rs.camera_info.recommended_firmware_version ) )
-    log.d( 'bundled FW version:', bundled_fw_version )
+bundled_fw_version = rsutils.version( device.get_info( rs.camera_info.recommended_firmware_version ) )
+log.d( 'bundled FW version:', bundled_fw_version )
 
 if current_fw_version == bundled_fw_version:
     # Current is same as bundled
-    if recovered or 'nightly' not in test.context:
+    if recovered or 'nightly' not in test.context or custom_fw_path:
         # In nightly, we always update; otherwise we try to save time, so do not do anything!
+        # If custom fw was provided always update for now.
         log.d( 'versions are same; skipping FW update' )
         test.finish()
         test.print_results_and_exit()
@@ -197,10 +192,13 @@ fw_version_regex = bundled_fw_version.to_string()
 if not bundled_fw_version.build():
     fw_version_regex += ".0"  # version drops the build if 0
 fw_version_regex = re.escape( fw_version_regex )
-image_file = find_image_or_exit(product_name, fw_version_regex)
+image_file = find_image_or_exit(product_name, fw_version_regex) if not custom_fw_path else custom_fw_path
 # finding file containing image for FW update
 
 cmd = [fw_updater_exe, '-f', image_file]
+if custom_fw_path:
+    # unsiged fw
+    cmd.insert(1, '-u')
 log.d( 'running:', cmd )
 sys.stdout.flush()
 subprocess.run( cmd )   # may throw
@@ -211,7 +209,14 @@ devices.query( monitor_changes = False )
 sn_list = devices.all()
 device = devices.get_first( sn_list ).handle
 current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
-test.check_equal( current_fw_version, bundled_fw_version )
+
+# TODO perform version check also for custom fw when provided against current fw version
+# Perform version check only if custom_fw_path is not provided
+if custom_fw_path:
+    log.d("Custom firmware provided; skipping version check against current firmware.")
+else:
+    test.check_equal(current_fw_version, bundled_fw_version)
+    
 new_update_counter = get_update_counter( device )
 # According to FW: "update counter zeros if you load newer FW than (ever) before"
 if new_update_counter > 0:
