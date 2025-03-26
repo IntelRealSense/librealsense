@@ -157,7 +157,7 @@ namespace rs2
             it->second.set_option( RS2_OPTION_THERMAL_COMPENSATION, value, ignored_error_message );
             if( it->second.value_as_float() != value )
                 throw std::runtime_error( rsutils::string::from()
-                                          << "Failed to set laser " << ( value == off_value ? "off" : "on" ) );
+                                          << "Failed to set thermal compensation " << ( value == off_value ? "off" : "on" ) );
         }
     }
 

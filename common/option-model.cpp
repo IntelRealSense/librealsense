@@ -299,6 +299,19 @@ float option_model::value_as_float() const
     case RS2_OPTION_TYPE_BOOLEAN:
         return float( value->as_integer );
         break;
+    case RS2_OPTION_TYPE_STRING:
+        if( range.min == 0.f && range.step == 1.f ) // We can convert enum option to float
+        {
+            for( auto i = 0.f; i <= range.max; i += range.step )
+            {
+                auto desc = endpoint->get_option_value_description( opt, i );
+                if( ! desc )
+                    break;
+                if( strcmp( value->as_string, desc ) == 0 )
+                    return i;
+            }
+        }
+        break;
     }
     return 0.f;
 }
