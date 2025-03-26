@@ -580,7 +580,7 @@ namespace librealsense
             }
         }
 
-        bool v4l_uvc_device::get_devname_from_video_path(const std::string& video_path, std::string& devname)
+        bool v4l_uvc_device::get_devname_from_video_path(const std::string& video_path, std::string& devname, bool is_for_dfu)
         {
             std::ifstream uevent_file(video_path + "/uevent");
             if (!uevent_file)
@@ -593,10 +593,14 @@ namespace librealsense
             {
                 if (uevent_line.find("DEVNAME=") != std::string::npos)
                 {
-                    devname = "/dev/" + uevent_line.substr(uevent_line.find_last_of('=') + 1);
+                    devname = uevent_line.substr(uevent_line.find_last_of('=') + 1);
                 }
             }
             uevent_file.close();
+            if (!is_for_dfu)
+            {
+                devname = "/dev/" + devname;
+            }
             return true;
         }
 
@@ -688,7 +692,8 @@ namespace librealsense
                         continue;
                     }
                     std::string devname;
-                    if (get_devname_from_video_path(real_path, devname))
+                    bool for_dfu = true;
+                    if (get_devname_from_video_path(real_path, devname, for_dfu))
                     {
                         if (devname.empty())
                         {
@@ -1049,10 +1054,11 @@ namespace librealsense
             std::vector<std::string> dfu_device_paths = get_mipi_dfu_paths();
 
             for (const auto& dfu_device_path: dfu_device_paths) {
-                int vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
+                auto mipi_dfu_chardev = "/dev/" + dfu_device_path;
+                int vfd = open(mipi_dfu_chardev.c_str(), O_RDONLY | O_NONBLOCK);
                 if (vfd >= 0) {
                     // Use legacy DFU device node used in firmware_update_manager
-                    info.dfu_device_path = dfu_device_path;
+                    info.dfu_device_path = mipi_dfu_chardev;
                     ::close(vfd); // file exists, close file and continue to assign it
                     break;
                 }
