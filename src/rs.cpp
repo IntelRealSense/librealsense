@@ -782,7 +782,7 @@ float rs2_get_option(const rs2_options* options, rs2_option option_id, rs2_error
         if( r.min == 0.f && r.step == 1.f )
         {
             json value = option.get_value();
-            for( auto i = 0.f; i < r.max; i += r.step )
+            for( auto i = 0.f; i <= r.max; i += r.step )
             {
                 auto desc = option.get_value_description( i );
                 if( ! desc )
