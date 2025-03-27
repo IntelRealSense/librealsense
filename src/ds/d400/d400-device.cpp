@@ -591,7 +591,9 @@ namespace librealsense
         }
         set_hw_monitor_for_auto_calib(_hw_monitor);
 
-        _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor, (_pid == ds::RS457_PID)? true : false);
+
+        _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor, (mipi_sensor) ? true : false);
+        
 
         // Define Left-to-Right extrinsics calculation (lazy)
         // Reference CS - Right-handed; positive [X,Y,Z] point to [Left,Up,Forward] accordingly.
