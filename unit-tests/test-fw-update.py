@@ -198,7 +198,7 @@ if device.is_update_device():
         device = devices.get_first( devices.all() ).handle
 
 current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
-log.d( 'FW version:', current_fw_version )
+log.d( 'current FW version:', current_fw_version )
 bundled_fw_version = rsutils.version( device.get_info( rs.camera_info.recommended_firmware_version ) )
 log.d( 'bundled FW version:', bundled_fw_version )
 custom_fw_d400_version = extract_version_from_filename(custom_fw_d400_path)
