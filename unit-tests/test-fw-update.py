@@ -22,9 +22,9 @@ parser = argparse.ArgumentParser(description="Test firmware update")
 parser.add_argument('--custom-fw-d400', type=str, help='Path to custom firmware file')
 args = parser.parse_args()
 
-custom_fw_path = args.custom_fw_d400
-if custom_fw_path:
-    log.i(f"Custom firmware path provided: {custom_fw_path}")
+custom_fw_d400_path = args.custom_fw_d400
+if custom_fw_d400_path:
+    log.i(f"Custom firmware path provided: {custom_fw_d400_path}")
 else:
     log.i(f"No Custom firmware path provided. using bundled firmware")
 
@@ -169,9 +169,9 @@ recovered = False
 if device.is_update_device():
     log.d( "recovering device ..." )
     try:
-        image_file = find_image_or_exit(product_name) if not custom_fw_path else custom_fw_path
+        image_file = find_image_or_exit(product_name) if not custom_fw_d400_path else custom_fw_d400_path
         cmd = [fw_updater_exe, '-r', '-f', image_file]
-        if custom_fw_path:
+        if custom_fw_d400_path:
             # unsiged fw
             cmd.insert(1, '-u')
         log.d( 'running:', cmd )
@@ -188,11 +188,11 @@ current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_v
 log.d( 'FW version:', current_fw_version )
 bundled_fw_version = rsutils.version( device.get_info( rs.camera_info.recommended_firmware_version ) )
 log.d( 'bundled FW version:', bundled_fw_version )
-custom_fw_version = extract_version_from_filename(custom_fw_path)
-log.d( 'custom FW version:', custom_fw_version )
+custom_fw_d400_version = extract_version_from_filename(custom_fw_d400_path)
+log.d( 'custom FW version:', custom_fw_d400_version )
 
 
-if current_fw_version == bundled_fw_version or current_fw_version == custom_fw_version:
+if current_fw_version == bundled_fw_version or current_fw_version == custom_fw_d400_version:
     # Current is same as bundled
     if recovered or 'nightly' not in test.context:
         # In nightly, we always update; otherwise we try to save time, so do not do anything!
@@ -215,11 +215,11 @@ fw_version_regex = bundled_fw_version.to_string()
 if not bundled_fw_version.build():
     fw_version_regex += ".0"  # version drops the build if 0
 fw_version_regex = re.escape( fw_version_regex )
-image_file = find_image_or_exit(product_name, fw_version_regex) if not custom_fw_path else custom_fw_path
+image_file = find_image_or_exit(product_name, fw_version_regex) if not custom_fw_d400_path else custom_fw_d400_path
 # finding file containing image for FW update
 
 cmd = [fw_updater_exe, '-f', image_file]
-if custom_fw_path:
+if custom_fw_d400_path:
     # unsigned fw
     cmd.insert(1, '-u')
 log.d( 'running:', cmd )
@@ -232,11 +232,11 @@ devices.query( monitor_changes = False )
 sn_list = devices.all()
 device = devices.get_first( sn_list ).handle
 current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
-test.check_equal(current_fw_version, bundled_fw_version if not custom_fw_path else custom_fw_version)  
+test.check_equal(current_fw_version, bundled_fw_version if not custom_fw_d400_path else custom_fw_d400_version)  
 new_update_counter = get_update_counter( device )
 # According to FW: "update counter zeros if you load newer FW than (ever) before"
 # TODO: check why update counter is 255 when installing cutom fw
-if new_update_counter > 0 and not custom_fw_version:
+if new_update_counter > 0 and not custom_fw_d400_version:
     test.check_equal( new_update_counter, update_counter + 1 )
 
 test.finish()
