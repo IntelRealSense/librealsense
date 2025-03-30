@@ -203,7 +203,7 @@ struct advanced_mode_control
 };
 
 inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, 
-    advanced_mode_control& amc, bool& get_curr_advanced_controls, bool& was_set, std::string& error_message)
+    advanced_mode_control& amc, bool& get_curr_advanced_controls, bool& was_set, std::string& error_message, bool mipi_device=false)
 {
     if (get_curr_advanced_controls)
     {
@@ -553,7 +553,8 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("AE Control"))
+    //AE setpoint is blocked in D457 
+    if (!mipi_device && ImGui::TreeNode("AE Control"))
     {
         ImGui::PushItemWidth(ImGui::CalcItemWidth());
 
