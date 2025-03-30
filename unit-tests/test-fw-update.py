@@ -52,29 +52,39 @@ def send_hardware_monitor_command(device, command):
 
     return raw_result[4:]
 
+import os
+import re
+
 def extract_version_from_filename(file_path):
     """
     Extracts the version string from a filename like:
     FlashGeneratedImage_Image5_16_7_0.bin -> 5.16.7
+    FlashGeneratedImage_RELEASE_DS5_5_16_3_1.bin -> 5.16.3.1
 
     Args:
         file_path (str): Full path to the file.
 
     Returns:
-        str: Extracted version in format x.y.z, or None if not found or if path is invalid.
+        str: Extracted version in format x.y.z or x.y.z.w, or None if not found or if path is invalid.
     """
     if not file_path or not os.path.exists(file_path):
-        log.i( f"File not found: {file_path}" )
+        log.i(f"File not found: {file_path}")
         return None
 
     filename = os.path.basename(file_path)
     match = re.search(r'(\d+)_(\d+)_(\d+)_(\d+)\.bin$', filename)
     if match:
-        return rsutils.version(".".join(match.groups()[:3]))  # Skip the last digit
+        groups = match.groups()
+        if groups[3] == '0':
+            version_str = ".".join(groups[:3])
+        else:
+            version_str = ".".join(groups)
+        return rsutils.version(version_str)
     else:
-        log.i( f"Version not found in filename: {filename}" )
-        
+        log.i(f"Version not found in filename: {filename}")
+
     return None
+
 
 def get_update_counter(device):
     product_line = device.get_info(rs.camera_info.product_line)
