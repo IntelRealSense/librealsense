@@ -19,7 +19,7 @@ import argparse
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description="Test firmware update")
-parser.add_argument('--custom-fw', type=str, help='Path to custom firmware file')
+parser.add_argument('--custom-fw-d400', type=str, help='Path to custom firmware file')
 args = parser.parse_args()
 
 custom_fw_path = args.custom_fw

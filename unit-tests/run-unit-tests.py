@@ -51,7 +51,7 @@ def usage():
     print( '        --device <>          Run only on the specified devices; ignore any test that does not match (implies --live)' )
     print( '        --no-reset           Do not try to reset any devices, with or without a hub' )
     print( '        --hub-reset          If a hub is available, reset the hub itself' )
-    print( '        --custom-fw          If custom fw provided flash it if its different that the current fw installed' )
+    print( '        --custom-fw-d400          If custom fw provided flash it if its different that the current fw installed' )
     print( '        --rslog              Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
     print( '        --skip-disconnected  Skip live test if required device is disconnected (only applies w/o a hub)' )
     print( '        --test-dir <>        Path to test dir; default: librealsense/unit-tests' )
@@ -164,7 +164,7 @@ for opt, arg in opts:
         test_dir_log = True
     elif opt in ('--skip-regex'):
         skip_regex = arg
-    elif opt == '--custom-fw':
+    elif opt == '--custom-fw-d400':
         custom_fw_path = arg  # Store the custom firmware path
         log.i(f"custom firmware path was provided ${custom_fw_path}")
 
@@ -455,7 +455,7 @@ def test_wrapper_( test, configuration=None, repetition=1, curr_retry=0, max_ret
     if rslog:
         opts.append( '--rslog' )
     if test.name == "test-fw-update" and custom_fw_path:
-        opts.append('--custom-fw')
+        opts.append('--custom-fw-d400')
         opts.append(custom_fw_path)
     try:
         test.run_test( configuration = configuration, log_path = log_path, opts = opts )
