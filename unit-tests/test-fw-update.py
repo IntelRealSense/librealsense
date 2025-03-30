@@ -52,6 +52,26 @@ def send_hardware_monitor_command(device, command):
 
     return raw_result[4:]
 
+def extract_version_from_filename(file_path):
+    """
+    Extracts the version string from a filename like:
+    FlashGeneratedImage_Image5_16_7_0.bin -> 5.16.7.0
+
+    Args:
+        file_path (str): Full path to the file.
+
+    Returns:
+        str: Extracted version in format x.y.z.w, or None if not found or if path is invalid.
+    """
+    if not file_path or not os.path.exists(file_path):
+        return None
+
+    filename = os.path.basename(file_path)
+    match = re.search(r'Image(\d+)_(\d+)_(\d+)_(\d+)', filename)
+    if match:
+        return ".".join(match.groups())
+    
+    return None
 
 def get_update_counter(device):
     product_line = device.get_info(rs.camera_info.product_line)
@@ -168,10 +188,13 @@ current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_v
 log.d( 'FW version:', current_fw_version )
 bundled_fw_version = rsutils.version( device.get_info( rs.camera_info.recommended_firmware_version ) )
 log.d( 'bundled FW version:', bundled_fw_version )
+custom_fw_version = extract_version_from_filename(custom_fw_path)
+log.d( 'custom FW version:', custom_fw_version )
 
-if current_fw_version == bundled_fw_version:
+
+if current_fw_version == bundled_fw_version or current_fw_version == custom_fw_version:
     # Current is same as bundled
-    if recovered or 'nightly' not in test.context or custom_fw_path:
+    if recovered or 'nightly' not in test.context:
         # In nightly, we always update; otherwise we try to save time, so do not do anything!
         # If custom fw was provided always update for now.
         log.d( 'versions are same; skipping FW update' )
@@ -209,14 +232,7 @@ devices.query( monitor_changes = False )
 sn_list = devices.all()
 device = devices.get_first( sn_list ).handle
 current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
-
-# TODO perform version check also for custom fw when provided against current fw version
-# Perform version check only if custom_fw_path is not provided
-if custom_fw_path:
-    log.d("Custom firmware provided; skipping version check against current firmware.")
-else:
-    test.check_equal(current_fw_version, bundled_fw_version)
-    
+test.check_equal(current_fw_version, bundled_fw_version)  
 new_update_counter = get_update_counter( device )
 # According to FW: "update counter zeros if you load newer FW than (ever) before"
 if new_update_counter > 0:
