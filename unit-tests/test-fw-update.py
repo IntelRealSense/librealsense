@@ -197,7 +197,7 @@ image_file = find_image_or_exit(product_name, fw_version_regex) if not custom_fw
 
 cmd = [fw_updater_exe, '-f', image_file]
 if custom_fw_path:
-    # unsiged fw
+    # unsigned fw
     cmd.insert(1, '-u')
 log.d( 'running:', cmd )
 sys.stdout.flush()
