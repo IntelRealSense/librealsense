@@ -148,6 +148,9 @@ def _find_active_hub():
     ykush_hub = _create_ykush()
     if ykush_hub:
         return ykush_hub
+    unifi_hub = _create_unifi()
+    if unifi_hub:
+        return unifi_hub
     import sys
     log.d('sys.path=', sys.path)
     return None
@@ -174,4 +177,20 @@ def _create_ykush():
     except ykush.NoneFoundError:
         return None
     except BaseException:
+        return None
+
+def _create_unifi():
+    try:
+        from rspy import unifi
+        import os
+        switch_ip = "192.168.11.20"
+        ssh_user = "admin"
+        ssh_pass = os.environ["UNIFI_SSH_PASSWORD"]
+
+        return unifi.UniFiSwitch(switch_ip, ssh_user, ssh_pass)
+    except ModuleNotFoundError:
+        return None
+    except unifi.NoneFoundError:
+        return None
+    except BaseException as e:
         return None
