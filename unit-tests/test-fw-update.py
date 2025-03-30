@@ -64,13 +64,16 @@ def extract_version_from_filename(file_path):
         str: Extracted version in format x.y.z, or None if not found or if path is invalid.
     """
     if not file_path or not os.path.exists(file_path):
+        log.i( f"File not found: {file_path}" )
         return None
 
     filename = os.path.basename(file_path)
-    match = re.search(r'Image(\d+)_(\d+)_(\d+)_(\d+)', filename)
+    match = re.search(r'(\d+)_(\d+)_(\d+)_(\d+)\.bin$', filename)
     if match:
         return rsutils.version(".".join(match.groups()[:3]))  # Skip the last digit
-    
+    else:
+        log.i( f"Version not found in filename: {filename}" )
+        
     return None
 
 def get_update_counter(device):
@@ -189,7 +192,7 @@ log.d( 'FW version:', current_fw_version )
 bundled_fw_version = rsutils.version( device.get_info( rs.camera_info.recommended_firmware_version ) )
 log.d( 'bundled FW version:', bundled_fw_version )
 custom_fw_d400_version = extract_version_from_filename(custom_fw_d400_path)
-log.d( 'custom FW version:', custom_fw_d400_version )
+log.d( 'custom FW D400 version:', custom_fw_d400_version )
 
 
 if current_fw_version == bundled_fw_version or current_fw_version == custom_fw_d400_version:
