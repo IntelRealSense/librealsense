@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser(description="Test firmware update")
 parser.add_argument('--custom-fw-d400', type=str, help='Path to custom firmware file')
 args = parser.parse_args()
 
-custom_fw_path = args.custom_fw
+custom_fw_path = args.custom_fw_d400
 if custom_fw_path:
     log.i(f"Custom firmware path provided: {custom_fw_path}")
 else:
@@ -55,13 +55,13 @@ def send_hardware_monitor_command(device, command):
 def extract_version_from_filename(file_path):
     """
     Extracts the version string from a filename like:
-    FlashGeneratedImage_Image5_16_7_0.bin -> 5.16.7.0
+    FlashGeneratedImage_Image5_16_7_0.bin -> 5.16.7
 
     Args:
         file_path (str): Full path to the file.
 
     Returns:
-        str: Extracted version in format x.y.z.w, or None if not found or if path is invalid.
+        str: Extracted version in format x.y.z, or None if not found or if path is invalid.
     """
     if not file_path or not os.path.exists(file_path):
         return None
@@ -69,7 +69,7 @@ def extract_version_from_filename(file_path):
     filename = os.path.basename(file_path)
     match = re.search(r'Image(\d+)_(\d+)_(\d+)_(\d+)', filename)
     if match:
-        return ".".join(match.groups())
+        return rsutils.version(".".join(match.groups()[:3]))  # Skip the last digit
     
     return None
 
@@ -232,7 +232,7 @@ devices.query( monitor_changes = False )
 sn_list = devices.all()
 device = devices.get_first( sn_list ).handle
 current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
-test.check_equal(current_fw_version, bundled_fw_version)  
+test.check_equal(current_fw_version, bundled_fw_version if not custom_fw_path else custom_fw_version)  
 new_update_counter = get_update_counter( device )
 # According to FW: "update counter zeros if you load newer FW than (ever) before"
 if new_update_counter > 0:
