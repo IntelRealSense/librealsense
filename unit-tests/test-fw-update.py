@@ -236,7 +236,7 @@ test.check_equal(current_fw_version, bundled_fw_version if not custom_fw_path el
 new_update_counter = get_update_counter( device )
 # According to FW: "update counter zeros if you load newer FW than (ever) before"
 # TODO: check why update counter is 255 when installing cutom fw
-if new_update_counter > 0 and custom_fw_version:
+if new_update_counter > 0 and not custom_fw_version:
     test.check_equal( new_update_counter, update_counter + 1 )
 
 test.finish()
