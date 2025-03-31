@@ -468,17 +468,17 @@ try
             std::cout << std::endl << "Updating device FW: " << std::endl;
             print_device_info( d );
 
-            // If device is D457 connected by MIPI connector
-            if( is_mipi_device( d ) )
-            {
-                if( unsigned_arg.isSet() )
-                {
-                    std::cout << std::endl << "Only signed FW is currently supported for MIPI devices" << std::endl;
-                    return EXIT_FAILURE;
-                }
+            // // If device is D457 connected by MIPI connector
+            // if( is_mipi_device( d ) )
+            // {
+            //     if( unsigned_arg.isSet() )
+            //     {
+            //         std::cout << std::endl << "Only signed FW is currently supported for MIPI devices" << std::endl;
+            //         return EXIT_FAILURE;
+            //     }
 
-                return write_fw_to_mipi_device( d, fw_image );
-            }
+            //     return write_fw_to_mipi_device( d, fw_image );
+            // }
 
             if( unsigned_arg.isSet() )
             {
