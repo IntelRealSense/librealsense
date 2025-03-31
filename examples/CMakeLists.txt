@@ -51,5 +51,6 @@ add_subdirectory(record-playback)
 add_subdirectory(motion)
 add_subdirectory(gl)
 add_subdirectory(hdr)
+add_subdirectory(on-chip-calib)
 
 unset_security_flags_for_executable()
