@@ -205,17 +205,15 @@ custom_fw_d400_version = extract_version_from_filename(custom_fw_d400_path)
 log.d( 'custom FW D400 version:', custom_fw_d400_version )
 
 
-if current_fw_version == bundled_fw_version or current_fw_version == custom_fw_d400_version:
-    # Current is same as bundled
+if (current_fw_version == bundled_fw_version and not custom_fw_d400_path) or \
+   (current_fw_version == custom_fw_d400_version):
     if recovered or 'nightly' not in test.context:
-        # In nightly, we always update; otherwise we try to save time, so do not do anything!
-        # If custom fw was provided always update for now.
-        log.d( 'versions are same; skipping FW update' )
+        log.d('versions are same; skipping FW update')
         test.finish()
         test.print_results_and_exit()
 else:
     # It is expected that, post-recovery, the FW versions will be the same
-    test.check( not recovered, on_fail=test.ABORT )
+    test.check(not recovered, on_fail=test.ABORT)
 
 update_counter = get_update_counter( device )
 log.d( 'update counter:', update_counter )
