@@ -47,6 +47,24 @@ int main(int argc, char * argv[]) try
 
     std::cout << "Completed successfully" << std::endl;
 
+    // Device is currently using calibration results, but they are not saved and will be lost after HW reset/power cycling.
+    std::cout << std::endl << "Keep results? Yes/No" << std::endl;
+    std::string keep;
+    std::cin >> keep;
+    for( auto & c : keep )
+        c = tolower( c );
+    if( keep == "y" || keep == "yes" )
+    {
+        cal_dev.set_calibration_table( res );
+        std::cout << "Results saved to flash" << std::endl;
+    }
+    else
+    {
+        // To return using previous calibration parameters you can `get_calibration_table` before calibrating and save
+        // the old table back. Or just reset the camera to avoid flash writes
+        std::cout << "Results not saved" << std::endl;
+    }
+
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)

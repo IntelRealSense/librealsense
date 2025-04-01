@@ -8,6 +8,7 @@ For more information see [self-calibration white paper](https://dev.intelrealsen
 
 ## Expected Output
 Assuming camera is connected and valid depth image can be obtained (usually more than 50% valid depth points), "Completed successfully" output is expected.
+User will be promped to save calibration results to flash. "Results saved to flash" is expected in case user chooses to save, "Results not saved" otherwise.
 
 ## Code Overview 
 
@@ -65,3 +66,12 @@ rs2::calibration_table res = cal_dev.run_on_chip_calibration( json, &health, [&]
     std::cout << "progress = " << progress << "%" << std::endl;
 }, timeout_ms );
 ```
+
+After the calibration process, the device is using calibrated parameters. However the result is not saved and will be lost on reset or power loss.
+User may save the new calibration table to flash, so the device will use it in the future.
+```cpp
+cal_dev.set_calibration_table( res );
+std::cout << "Results saved to flash" << std::endl;
+```
+To restore previous calibration parameters, user can `get_calibration_table` before the calibration and save that to the flash.
+Alternativly, user can reset the device, making it re-read the old calibration table at start up.
