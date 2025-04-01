@@ -469,7 +469,7 @@ try
             print_device_info( d );
 
             // If device is D457 connected by MIPI connector
-            if( is_mipi_device( d ) )
+            if( is_mipi_device( d ) && !unsigned_arg.isSet())
             {
                 // if( unsigned_arg.isSet() )
                 // {
