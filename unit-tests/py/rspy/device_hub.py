@@ -182,12 +182,7 @@ def _create_ykush():
 def _create_unifi():
     try:
         from rspy import unifi
-        import os
-        switch_ip = "192.168.11.20"
-        ssh_user = "admin"
-        ssh_pass = os.environ["UNIFI_SSH_PASSWORD"]
-
-        return unifi.UniFiSwitch(switch_ip, ssh_user, ssh_pass)
+        return unifi.UniFiSwitch()
     except ModuleNotFoundError:
         return None
     except unifi.NoneFoundError:

@@ -36,21 +36,22 @@ except ModuleNotFoundError:
     log.d( 'no paramiko library is available' )
     raise
 
-_ip = None
-_ssh_username = None
-_ssh_password = None
+SWITCH_IP = "192.168.11.20"
+SWITCH_SSH_USER = "admin"
+SWITCH_SSH_PASS = os.environ["UNIFI_SSH_PASSWORD"]
 
-def discover(retries = 0):
+
+def discover(ip=SWITCH_IP, ssh_username=SWITCH_SSH_USER, ssh_password=SWITCH_SSH_PASS, retries = 0):
     """
-    Return a UniFi device and connect to it using SSH
+    Return a UniFi device and connect to it via SSH
     """
     log.d("Discovering UniFi devices...")
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     for i in range(retries+1):
         try:
-           client.connect(hostname=_ip, username=_ssh_username,
-                                password=_ssh_password, timeout=10)
+           client.connect(hostname=ip, username=ssh_username,
+                                password=ssh_password, timeout=10)
            return client
         except Exception as e:
             log.w(f"Failed connecting in SSH to UniFi! {e}{", retrying..." if i != retries else ""}")
@@ -66,18 +67,17 @@ class NoneFoundError( RuntimeError ):
 
 
 class UniFiSwitch(device_hub.device_hub):
-    def __init__(self, ip, ssh_username, ssh_password):
+    def __init__(self, ip=SWITCH_IP, ssh_username=SWITCH_SSH_USER, ssh_password=SWITCH_SSH_PASS):
         """
         :param ip: IP address of the switch.
         :param ssh_username: SSH username.
         :param ssh_password: SSH password.
         """
-        global _ip, _ssh_username, _ssh_password
-        _ip = ip
-        _ssh_username = ssh_username
-        _ssh_password = ssh_password
+        self.ip = ip
+        self.username = ssh_username
+        self.password = ssh_password
 
-        self.client = discover()
+        self.client = discover(self.ip, self.username, self.password)
         if self.client is None:
             raise NoneFoundError()
 
@@ -85,18 +85,25 @@ class UniFiSwitch(device_hub.device_hub):
         self.POE_PORTS = [1, 2, 3, 4]
         self.REGULAR_PORTS = [5, 6, 7, 8]
 
-        self.ip_port_dict = None
+        self.mac_port_dict = None
 
     def _init_mac_port_dict(self):
+        """
+        Initialize mac_port_dict which maps MAC addresses to port numbers
+        """
         cmd_out = self._run_command("swctrl mac show")
-        self.ip_port_dict = {}
+        self.mac_port_dict = {}
 
         for line in cmd_out.splitlines()[2:-1]:
             port, vlan, mac, ip = line.split()[:4] # ip is missing sometimes, best to use MAC address
-            self.ip_port_dict[mac] = port
+            self.mac_port_dict[mac] = port
 
 
     def _get_port_stats(self):
+        """
+        Get the status of all ports on the switch
+        return: a dictionary of port numbers to whether they are up or down
+        """
         cmd_out = self._run_command("swctrl port show")
         port_stats = {}
         for line in cmd_out.splitlines()[3:]:
@@ -108,10 +115,11 @@ class UniFiSwitch(device_hub.device_hub):
 
     def connect(self, reset=False):
         if self.client is None:
-            self.client = discover() # assuming no throw because it's done in the c'tor
+            self.client = discover(self.ip, self.username, self.password) # assuming no throw because it's done in the c'tor
 
         if reset:
-            log.w("reset flag passed to unifi switch, ignoring it") # rebooting the switch takes a long time, over a minute
+            # rebooting the switch takes over a minute, so the reboot code is commented out
+            log.w("reset flag passed to unifi switch, ignoring it")
             return
             # self._run_command("reboot")
             # time.sleep(5)
@@ -132,18 +140,34 @@ class UniFiSwitch(device_hub.device_hub):
             self.client = None
 
     def all_ports(self):
-        return self.POE_PORTS  # usually we only want to work with PoE ports
+        """
+        :return: a list of all PoE ports on the switch
+        """
+        return self.POE_PORTS
 
     def ports(self):
+        """
+        :return: a list of all PoE ports that are currently enabled
+        """
         return [port for port, is_on in self._get_port_stats().items() if is_on and port in self.all_ports()]
 
     def is_port_enabled(self, port):
         return port in self.ports()
 
     def port_state(self, port):
+        """
+        Get the state of a port
+        :param port: port number
+        :return: "enabled" if the port is enabled, "disabled" otherwise
+        """
         return "enabled" if self.is_port_enabled(port) else "disabled"
 
     def _run_command(self, command):
+        """
+        Run a command on the switch
+        :param command: the command to run
+        :return: the output of the command
+        """
         if not self.is_connected():
             raise Exception("Not connected to switch.")
         stdin, stdout, stderr = self.client.exec_command(command)
@@ -186,20 +210,21 @@ class UniFiSwitch(device_hub.device_hub):
             time.sleep(sleep_on_change)
         return True
 
-    def get_port_by_location(self, ip_address): # since this isn't usb, we use MAC address ("network location")
-        if self.ip_port_dict is None:
+    def get_port_by_location(self, mac_address):
+        """
+        Get the port number of a device connected to the switch
+        Since this isn't usb, we use MAC address ("network location")
+        :param mac_address: MAC address of the device
+        :return: port number
+        """
+        if self.mac_port_dict is None:
             self._init_mac_port_dict()
-        return self.ip_port_dict[ip_address]
+        return self.mac_port_dict[mac_address]
 
 
 # Example usage:
 if __name__ == '__main__':
-    switch_ip = "192.168.11.20"
-    ssh_user = "admin"
-    ssh_pass = os.environ["UNIFI_SSH_PASSWORD"]
-
-    # Create an instance of UniFiSwitch
-    unifi = UniFiSwitch(switch_ip, ssh_user, ssh_pass)
+    unifi = UniFiSwitch()
 
     for opt,arg in opts:
         if opt in ('--enable'):
