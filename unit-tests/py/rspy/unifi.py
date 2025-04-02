@@ -54,7 +54,7 @@ def discover(ip=SWITCH_IP, ssh_username=SWITCH_SSH_USER, ssh_password=SWITCH_SSH
                                 password=ssh_password, timeout=10)
            return client
         except Exception as e:
-            log.w(f"Failed connecting in SSH to UniFi! {e}{", retrying..." if i != retries else ""}")
+            log.w(f"Failed connecting in SSH to UniFi! {e}{', retrying...' if i != retries else ''}")
             time.sleep(2)
 
     log.w(f"Failed connecting in SSH to UniFi!")
