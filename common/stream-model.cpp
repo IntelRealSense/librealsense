@@ -393,7 +393,7 @@ namespace rs2
         if (!viewer.allow_stream_close) --num_of_buttons;
         if (viewer.streams.size() > 1) ++num_of_buttons;
         if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
-        if (RS2_FORMAT_MOTION_XYZ32F == profile.format()) ++num_of_buttons;
+        if (RS2_FORMAT_MOTION_XYZ32F == profile.format()) ++num_of_buttons; // Motion graph button
 
         RsImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -505,8 +505,8 @@ namespace rs2
                     RsImGui::CustomTooltip("Open graph view");
                 }
             }
+            ImGui::SameLine();
         }
-        ImGui::SameLine();
         
         label = rsutils::string::from() << textual_icons::metadata << "##Metadata" << profile.unique_id();
         if (show_metadata)

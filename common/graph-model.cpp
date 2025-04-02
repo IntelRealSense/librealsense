@@ -15,7 +15,7 @@ void graph_model::process_frame(rs2::frame f)
             {
                 double ts = glfwGetTime();
 
-                if (ts - _last_time > _update_rate)
+                if (_update_timer) // Check if timer expired
                 {
                     rs2::motion_frame frame = f.as< rs2::motion_frame >();
 
@@ -40,7 +40,6 @@ void graph_model::process_frame(rs2::frame f)
                     _z_history.push_back(_z_value);
                     _n_history.push_back(_n_value);
 
-                    _last_time = ts;
                 }
             }
         });

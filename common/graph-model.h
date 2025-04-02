@@ -8,6 +8,7 @@
 #include <mutex>
 #include <vector>
 #include <GLFW/glfw3.h>
+#include <rsutils/time/periodic-timer.h>
 #include "rect.h"
 
 #include <librealsense2/rs.hpp>
@@ -20,7 +21,8 @@ namespace rs2
         graph_model(std::string name, rs2_stream stream, bool show_n_value = true)
             : _name(name),
             _stream_type(stream),
-            _show_n_value(show_n_value)
+            _show_n_value(show_n_value),
+            _update_timer{ std::chrono::milliseconds(_update_rate) }
         {
             clear();
         }
@@ -47,8 +49,8 @@ namespace rs2
     private:
         float _x_value = 0.0f, _y_value = 0.0f, _z_value = 0.0f, _n_value = 0.0f;
         bool _show_n_value;
-        float _update_rate = 0.05f;
-        double _last_time = 0.0;
+        int _update_rate = 50;
+        rsutils::time::periodic_timer _update_timer;
         bool _paused = false;
 
         const int VECTOR_SIZE = 300;
