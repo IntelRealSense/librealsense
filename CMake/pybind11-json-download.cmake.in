@@ -6,7 +6,7 @@ ExternalProject_Add(
     pybind11_json
     PREFIX .
     GIT_REPOSITORY "https://github.com/pybind/pybind11_json.git"
-    GIT_TAG        0.2.13
+    GIT_TAG        0.2.15
     GIT_CONFIG     advice.detachedHead=false  # otherwise we'll get "You are in 'detached HEAD' state..."
     SOURCE_DIR     "${CMAKE_BINARY_DIR}/third-party/pybind11-json"
     GIT_SHALLOW    ON        # No history needed (requires cmake 3.6)
