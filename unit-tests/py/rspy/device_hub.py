@@ -148,6 +148,9 @@ def _find_active_hub():
     ykush_hub = _create_ykush()
     if ykush_hub:
         return ykush_hub
+    unifi_hub = _create_unifi()
+    if unifi_hub:
+        return unifi_hub
     import sys
     log.d('sys.path=', sys.path)
     return None
@@ -174,4 +177,15 @@ def _create_ykush():
     except ykush.NoneFoundError:
         return None
     except BaseException:
+        return None
+
+def _create_unifi():
+    try:
+        from rspy import unifi
+        return unifi.UniFiSwitch()
+    except ModuleNotFoundError:
+        return None
+    except unifi.NoneFoundError:
+        return None
+    except BaseException as e:
         return None
