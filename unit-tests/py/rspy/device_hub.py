@@ -185,6 +185,8 @@ def _create_unifi():
         return unifi.UniFiSwitch()
     except ModuleNotFoundError:
         return None
+    except EnvironmentError:
+        return None
     except unifi.NoneFoundError:
         return None
     except BaseException as e:
