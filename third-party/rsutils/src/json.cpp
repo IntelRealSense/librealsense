@@ -116,8 +116,8 @@ json json_config::load_from_file( std::string const & filename )
             ::nlohmann::detail::parser< json, input_stream_adapter >( input_stream_adapter( f ), nullptr, false ).parse( false, result );
             return result;
         }
-        // Even that we sent allow_exceptions = false, we add an extra protection that if it will
-        // throws we catch it here and fallback to return missing_json.
+        // Even that we set allow_exceptions = false, we add an extra protection that if it will
+        // throw we catch it here and fallback to return missing_json.
         catch( ... ) {}
     }
     return missing_json;
