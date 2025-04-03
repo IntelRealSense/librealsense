@@ -3,7 +3,7 @@
 
 # we want this test to run first so that all tests run with updated FW versions, so we give it priority 0
 #test:priority 0
-#test:timeout 600
+#test:timeout 500
 #test:donotrun:gha
 #test:device each(D400*)
 
