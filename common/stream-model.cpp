@@ -839,7 +839,7 @@ namespace rs2
         if (show_metadata)
             stream_model::draw_stream_metadata(timestamp, timestamp_domain, frame_number, profile, original_size, stream_rect);
 
-        if (show_graph)
+        if (show_graph && graph)
         {
             if (dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
             {
