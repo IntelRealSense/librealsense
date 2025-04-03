@@ -36,6 +36,10 @@ except ModuleNotFoundError:
     log.d( 'no paramiko library is available' )
     raise
 
+
+if "UNIFI_SSH_PASSWORD" not in os.environ:
+    log.d("no unifi credentials set")
+    raise EnvironmentError("Environment variable UNIFI_SSH_PASSWORD not set")
 SWITCH_IP = "192.168.11.20"
 SWITCH_SSH_USER = "admin"
 SWITCH_SSH_PASS = os.environ["UNIFI_SSH_PASSWORD"]
