@@ -468,13 +468,13 @@ namespace librealsense
 
     void d500_auto_calibrated::reset_to_factory_calibration() const
     {
-        throw not_implemented_exception(rsutils::string::from() << "Reset to factory Calibration not applicable for this device");
+        auto cmd = _debug_dev->build_command(ds::CAL_RESTORE_DFLT);
+        auto res = _debug_dev->send_receive_raw_data(cmd);
 
-        // Uncomment if function implemented
-        //for( auto & cb : _depth_write_callbacks )
-        //    cb();
-        //for( auto & cb : _color_write_callbacks )
-        //    cb();
+        for( auto & cb : _depth_write_callbacks )
+            cb();
+        for( auto & cb : _color_write_callbacks )
+            cb();
     }
 
     std::vector< uint8_t > d500_auto_calibrated::run_focal_length_calibration( rs2_frame_queue * left,
