@@ -465,7 +465,15 @@ namespace librealsense
         std::map<unsigned, unsigned> fps_and_frequency_map;
         if ((_device_capabilities & ds::ds_caps::CAP_BMI_085) != ds::ds_caps::CAP_UNDEFINED || 
             (_device_capabilities & ds::ds_caps::CAP_BMI_088) != ds::ds_caps::CAP_UNDEFINED)
-                accel_fps_rates = { odr::IMU_FPS_100,odr::IMU_FPS_200, odr::IMU_FPS_400 };
+        {
+               accel_fps_rates = { odr::IMU_FPS_100, odr::IMU_FPS_200 };
+            if( _owner->supports_info( RS2_CAMERA_INFO_PRODUCT_LINE )
+                && _owner->get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) == "D400" )
+            {
+                // D400 new BMI's also support rate of 400 for the accelerometer
+                accel_fps_rates.push_back( odr::IMU_FPS_400 );
+            }
+        }
         else // Applies to BMI_055 and unrecognized sensors
             accel_fps_rates = { odr::IMU_FPS_63,odr::IMU_FPS_250 };
 
