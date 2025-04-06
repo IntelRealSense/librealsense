@@ -27,6 +27,7 @@
 
 #include <src/proc/depth-formats-converter.h>
 #include <src/proc/y8i-to-y8y8.h>
+#include <src/proc/y8i-to-y8y8-mipi.h>
 #include <src/proc/y12i-to-y16y16.h>
 #include <src/proc/y12i-to-y16y16-mipi.h>
 #include <src/proc/color-formats-converter.h>
@@ -590,7 +591,9 @@ namespace librealsense
         }
         set_hw_monitor_for_auto_calib(_hw_monitor);
 
-        _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor, (_pid == ds::RS457_PID)? true : false);
+
+        _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor, (mipi_sensor) ? true : false);
+        
 
         // Define Left-to-Right extrinsics calculation (lazy)
         // Reference CS - Right-handed; positive [X,Y,Z] point to [Left,Up,Forward] accordingly.
@@ -654,11 +657,23 @@ namespace librealsense
                     usb_modality = false;
             }
 
-            depth_sensor.register_processing_block(
-                { {RS2_FORMAT_Y8I} },
-                { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
-                []() { return std::make_shared<y8i_to_y8y8>(); }
-            ); // L+R
+            if (!mipi_sensor)
+            {
+                depth_sensor.register_processing_block(
+                    { {RS2_FORMAT_Y8I} },
+                    { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
+                    []() { return std::make_shared<y8i_to_y8y8>(); }
+                ); // L+R
+            }
+            else
+            {
+                depth_sensor.register_processing_block(
+                    { {RS2_FORMAT_Y8I} },
+                    { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
+                    []() { return std::make_shared<y8i_to_y8y8_mipi>(); }
+                ); // L+R
+            }
+            
 
             if (!mipi_sensor)
             {

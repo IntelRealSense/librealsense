@@ -463,8 +463,9 @@ namespace librealsense
         // Dynamically populate the supported HID profiles according to the selected IMU module
         std::vector<odr> accel_fps_rates;
         std::map<unsigned, unsigned> fps_and_frequency_map;
-        if (ds::ds_caps::CAP_BMI_085 && _device_capabilities)
-            accel_fps_rates = { odr::IMU_FPS_100,odr::IMU_FPS_200 };
+        if ((_device_capabilities & ds::ds_caps::CAP_BMI_085) != ds::ds_caps::CAP_UNDEFINED || 
+            (_device_capabilities & ds::ds_caps::CAP_BMI_088) != ds::ds_caps::CAP_UNDEFINED)
+                accel_fps_rates = { odr::IMU_FPS_100,odr::IMU_FPS_200, odr::IMU_FPS_400 };
         else // Applies to BMI_055 and unrecognized sensors
             accel_fps_rates = { odr::IMU_FPS_63,odr::IMU_FPS_250 };
 

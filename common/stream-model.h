@@ -8,6 +8,7 @@
 #include <imgui.h>
 #include "reflectivity/reflectivity.h"
 #include <rsutils/number/stabilized-value.h>
+#include <graph-model.h>
 
 namespace rs2
 {
@@ -105,6 +106,10 @@ namespace rs2
         bool show_metadata = false;
         bool show_safety_zones_2d = true;
 
+        std::shared_ptr<graph_model> graph;
+        bool show_graph = false;
+        bool graph_initialized = false;
+
         animated<float> _info_height{ 0.f };
         int _prev_mouse_pos_x = 0;
         int _prev_mouse_pos_y = 0;
@@ -116,6 +121,7 @@ namespace rs2
         std::string smcu_internal_state_to_string(rs2_metadata_type& attribute_val) const;
         std::string format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const;
         bool should_show_in_hex(rs2_frame_metadata_value& md_val) const;
+        void create_graph(rs2_stream stream_type);
         void show_metadata_by_default(const rs2::stream_profile& p);
         void add_d585S_metadata_descriptions(std::map<rs2_frame_metadata_value, std::string>& descriptions) const;
         std::string adapt_d585S_metadata_name(const std::string& name) const;

@@ -580,7 +580,7 @@ namespace librealsense
             }
         }
 
-        bool v4l_uvc_device::get_devname_from_video_path(const std::string& video_path, std::string& devname)
+        bool v4l_uvc_device::get_devname_from_video_path(const std::string& video_path, std::string& devname, bool is_for_dfu)
         {
             std::ifstream uevent_file(video_path + "/uevent");
             if (!uevent_file)
@@ -593,10 +593,14 @@ namespace librealsense
             {
                 if (uevent_line.find("DEVNAME=") != std::string::npos)
                 {
-                    devname = "/dev/" + uevent_line.substr(uevent_line.find_last_of('=') + 1);
+                    devname = uevent_line.substr(uevent_line.find_last_of('=') + 1);
                 }
             }
             uevent_file.close();
+            if (!is_for_dfu)
+            {
+                devname = "/dev/" + devname;
+            }
             return true;
         }
 
@@ -688,7 +692,8 @@ namespace librealsense
                         continue;
                     }
                     std::string devname;
-                    if (get_devname_from_video_path(real_path, devname))
+                    bool for_dfu = true;
+                    if (get_devname_from_video_path(real_path, devname, for_dfu))
                     {
                         if (devname.empty())
                         {
@@ -1011,21 +1016,21 @@ namespace librealsense
             //  D457 exposes (assuming first_video_index = 0):
             // - video0 for Depth and video1 for Depth's md.
             // - video2 for RGB and video3 for RGB's md.
-            // - video4 for IR stream. IR's md is currently not available.
-            // - video5 for IMU (accel or gyro TBD)
+            // - video4 for IR and video5 for IR's md.
+            // - video6 for IMU (accel or gyro TBD)
             // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
             // further development is needed to permit use of several mipi devices
             static int  first_video_index = ind;
 
             // Use camera_video_nodes as number of /dev/video[%d] for each camera sensor subset
-            const int camera_video_nodes = 6;
+            const int camera_video_nodes = 7;
             int cam_id = ind / camera_video_nodes;
             ind = (ind - first_video_index) % camera_video_nodes; // offset from first mipi video node and assume 6 nodes per mipi camera
             if (ind == 0 || ind == 2 || ind == 4)
                 mi = 0; // video node indicator
-            else if (ind == 1 | ind == 3)
+            else if (ind == 1 | ind == 3 || ind == 5)
                 mi = 3; // metadata node indicator
-            else if (ind == 5)
+            else if (ind == 6)
                 mi = 4; // IMU node indicator
             else
             {
@@ -1049,10 +1054,11 @@ namespace librealsense
             std::vector<std::string> dfu_device_paths = get_mipi_dfu_paths();
 
             for (const auto& dfu_device_path: dfu_device_paths) {
-                int vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
+                auto mipi_dfu_chardev = "/dev/" + dfu_device_path;
+                int vfd = open(mipi_dfu_chardev.c_str(), O_RDONLY | O_NONBLOCK);
                 if (vfd >= 0) {
                     // Use legacy DFU device node used in firmware_update_manager
-                    info.dfu_device_path = dfu_device_path;
+                    info.dfu_device_path = mipi_dfu_chardev;
                     ::close(vfd); // file exists, close file and continue to assign it
                     break;
                 }

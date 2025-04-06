@@ -35,8 +35,7 @@ from rspy import repo
 pyrs_dir = repo.find_pyrs_dir()
 sys.path.insert( 1, pyrs_dir )
 
-# D585S can take up to 15 sec to boot according to PRD
-MAX_ENUMERATION_TIME = 15  # [sec]
+MAX_ENUMERATION_TIME = 17  # [sec]
 
 # We need both pyrealsense2 and hub. We can work without hub, but
 # without pyrealsense2 no devices at all will be returned.
@@ -85,14 +84,20 @@ class Device:
             self._usb_location = _get_usb_location(self._physical_port)
         except Exception as e:
             log.e('Failed to get usb location:', e)
+
+        self._mac_address = get_mac_address(dev, self._is_dds)
+
         self._port = None
         if hub:
             try:
-                self._port = hub.get_port_by_location(self._usb_location)
+                if self._is_dds:
+                    self._port = hub.get_port_by_location(self._mac_address)
+                else:
+                    self._port = hub.get_port_by_location(self._usb_location)
             except Exception as e:
                 log.e('Failed to get device port:', e)
                 log.d('    physical port is', self._physical_port)
-                log.d('    USB location is', self._usb_location)
+                log.d('    location is', self._mac_address if self._is_dds else self._usb_location)
 
         self._removed = False
 
@@ -281,7 +286,6 @@ def _device_change_callback( info ):
     for device in _device_by_sn.values():
         if device.enabled  and  info.was_removed( device.handle ):
             device._removed = True
-            device._dev = None
             log.d( 'device removed:', device.serial_number )
     for handle in info.get_new_devices():
         sn = handle.get_info( rs.camera_info.firmware_update_id )
@@ -678,11 +682,11 @@ if 'windows' in platform.system().lower():
         #
         import winreg
         if mi:
-            registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}&MI_{}\{}".format(
+            registry_path = r"SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}&MI_{}\{}".format(
                 dev_type, vid, pid, mi, unique_identifier
                 )
         else:
-            registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}\{}".format(
+            registry_path = r"SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}\{}".format(
                 dev_type, vid, pid, unique_identifier
                 )
         try:
@@ -715,6 +719,18 @@ else:
         # location example: 2-3.3.1
         return port_location
 
+
+def get_mac_address(dev, is_dds):
+    if not is_dds:
+        return None
+
+    GET_ETH_CONFIG_OPCODE = 187
+    raw_command = rs.debug_protocol(dev).build_command(GET_ETH_CONFIG_OPCODE,1)
+    raw_result = rs.debug_protocol(dev).send_and_receive_raw_data(raw_command)
+    if raw_result[0] == GET_ETH_CONFIG_OPCODE: # success
+        return ":".join([hex(num)[2:] for num in raw_result[52:58]]) # bytes for the MAC address
+
+    return None
 
 ###############################################################################################
 if __name__ == '__main__':

@@ -49,8 +49,15 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     ../../common/rs-config.cpp
     ../../common/os.h
     ../../common/os.cpp
+    ../../common/graph-model.h
+    ../../common/graph-model.cpp
     ../../third-party/rsutils/include/rsutils/type/eth-config.h
     ../../third-party/rsutils/include/rsutils/type/eth-config.cpp
+    ../../third-party/implot/implot.cpp
+    ../../third-party/implot/implot.h
+    ../../third-party/implot/implot_internal.h
+    ../../third-party/implot/implot_items.cpp
+
 )
 
 SET(DELAYED
@@ -222,6 +229,7 @@ include_directories(
     ../../third-party/tinyfiledialogs
     ${GLFW_SOURCE_DIR}/include
     ../../third-party/imgui
+    ../../third-party/implot
     ../../third-party/glad
     )
 
