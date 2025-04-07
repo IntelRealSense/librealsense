@@ -14,10 +14,10 @@ plugins {
 }
 
 ext {
-    defaultCompileSdkVersion = 34
-    defaultTargetSdkVersion = 33
+    defaultCompileSdkVersion = 35
+    defaultTargetSdkVersion = 34
     //defaultMinSdkVersion = 19
-    defaultMinSdkVersion = 23
+    defaultMinSdkVersion = 24
 
     appcompatVersion = '1.6.1'
     constraintlayoutVersion = '2.1.4'

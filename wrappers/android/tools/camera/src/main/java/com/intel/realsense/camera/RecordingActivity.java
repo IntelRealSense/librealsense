@@ -190,4 +190,3 @@ public class RecordingActivity extends AppCompatActivity {
         return file.getAbsolutePath();
     }
 }
-
