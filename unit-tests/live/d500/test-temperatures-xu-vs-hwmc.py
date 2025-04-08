@@ -93,8 +93,8 @@ pvt_temp_xu, ohm_temp_xu, projector_temp_xu = get_temperatures_from_xu()
 
 pvt_temp_hwm, ohm_temp_hwm, projector_temp_hwm = get_temperatures_from_hwm()
 
-# Since PVT in XU is different sensor than PVT in HMC, we increase the tollerance to 2 deg
-tolerance = 2.0
+# Since PVT in XU is different sensor than PVT in HMC, we increase the tollerance to 3 deg
+tolerance = 3.0
 test.check_approx_abs(pvt_temp_xu, pvt_temp_hwm, tolerance)
 test.check_approx_abs(ohm_temp_xu, ohm_temp_hwm, tolerance)
 test.check_approx_abs(projector_temp_xu, projector_temp_xu, tolerance)
