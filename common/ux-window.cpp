@@ -9,6 +9,7 @@
 #include "ux-window.h"
 
 #include <imgui.h>
+#include <implot.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <realsense_imgui.h>
@@ -225,6 +226,7 @@ namespace rs2
             if (_use_glsl_proc) rs2::gl::shutdown_processing();
 
             ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
+            ImPlot::DestroyContext();
             RsImGui::PopNewFrame();
             glfwDestroyWindow(_win);
             glfwDestroyCursor(_hand_cursor);
@@ -377,6 +379,7 @@ namespace rs2
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+        ImPlot::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;   // added in order to prevents cursor chang when interacting with other element (when nedded remove the flag accordingly)
@@ -672,6 +675,7 @@ namespace rs2
         }
 
         ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
+        ImPlot::DestroyContext();
         RsImGui::PopNewFrame();
         glfwDestroyWindow(_win);
 

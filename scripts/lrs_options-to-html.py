@@ -1,6 +1,5 @@
 import sys
 
-
 def add_style(option, val):
     # colorize ON and OFF keywords
     val = val.replace('ON', '<span style="color: #4CAF50;">ON</span>')
@@ -22,25 +21,32 @@ def add_style(option, val):
 
     return val
 
-
 def add_row(option, description, value):
+    advanced = "YES" if option in advanced_options else "NO"
     if option in table_rows:
         # update value if option exists
         table_rows[option][2] = value
+        table_rows[option][3] = advanced
     else:
         # add to table new option
-        table_rows[option] = [option, description, value]
+        table_rows[option] = [option, description, value, advanced]
 
+def update_advanced_status():
+    for option in table_rows:
+        if option in advanced_options:
+            table_rows[option][3] = "YES"  # Update advanced status to YES
 
 with open('CMake/lrs_options.cmake', 'r') as file:
     lines = file.readlines()
 
 table_rows = {}
+advanced_options = set()
 in_cond = False
 in_elseif = False
 in_else = False
 current_condition = None
 current_comment = ""
+last_option = None  # Track the last option processed
 
 for i, line in enumerate(lines):
     if line.strip().startswith(('option(', 'set(')):
@@ -71,6 +77,7 @@ for i, line in enumerate(lines):
 
         value = add_style(option, value)
         add_row(option, description, value)
+        last_option = option  # Update the last option processed
     elif line.startswith('if'):
         parts = line.strip().split('(', 1)
         condition = parts[1][:-1]  # remove last ")" - part of the 'if'
@@ -94,10 +101,18 @@ for i, line in enumerate(lines):
         continue  # ignore internal comments
     elif line.startswith('#'):
         current_comment += line.strip('# \n')
+    elif line.startswith('mark_as_advanced'):
+        parts = line.strip().split('(')
+        option = parts[1].strip(')')  # extract the option name
+        advanced_options.add(option)  # add to advanced options set
+        if last_option:  # Check if last_option is set
+            advanced_options.add(last_option)  # Mark the last option as advanced
     elif line.strip():
         # if we reach a line that doesn't match the pattern, throw an error as it's not handled (shouldn't happen)
         raise Exception(f"{i, line} not handled")
 
+# Update advanced status for all options after processing the file
+update_advanced_status()
 
 def format_dict_values():
     return ''.join(
@@ -105,8 +120,9 @@ def format_dict_values():
                     f'\n\t<td>\n\t  <b><code>{option}</code></b>'f'\n\t</td>'
                     f'\n\t<td>\n\t  {description}\n\t</td>'
                     f'\n\t<td>\n\t  {value}\n\t</td>'
+                    f'\n\t<td>\n\t  <span style="color: {"#4CAF50" if advanced == "YES" else "#E74C3C"};">{advanced}</span>\n\t</td>'
                     f'\n      </tr>'
-                    for option, description, value in table_rows.values())
+                    for option, description, value, advanced in table_rows.values())
 
 def get_sdk_version():
     if len(sys.argv) > 1:
@@ -116,7 +132,6 @@ def get_sdk_version():
     else:
         # if no parameter provided - no version number will be included
         return ""
-
 
 html = f'''<!DOCTYPE html>
 <html>
@@ -131,9 +146,10 @@ html = f'''<!DOCTYPE html>
     <h2>{get_sdk_version()}</h2>
     <table>
       <tr>
-        <th style="width: 30%">Option</th>
-        <th style="width: 55%">Description</th>
+        <th style="width: 25%">Option</th>
+        <th style="width: 45%">Description</th>
         <th style="width: 15%">Default</th>
+        <th style="width: 15%">Advanced</th>
       </tr>{format_dict_values()}
     </table>
   </div>

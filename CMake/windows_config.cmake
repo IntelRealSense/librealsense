@@ -1,5 +1,5 @@
 message(STATUS "Setting Windows configurations")
-cmake_minimum_required(VERSION 3.6.0) #Required by list(FILTER ...
+cmake_minimum_required(VERSION 3.8)
 config_crt()
 
 macro(os_set_flags)

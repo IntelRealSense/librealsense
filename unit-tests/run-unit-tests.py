@@ -51,6 +51,7 @@ def usage():
     print( '        --device <>          Run only on the specified devices; ignore any test that does not match (implies --live)' )
     print( '        --no-reset           Do not try to reset any devices, with or without a hub' )
     print( '        --hub-reset          If a hub is available, reset the hub itself' )
+    print( '        --custom-fw-d400          If custom fw provided flash it if its different that the current fw installed' )
     print( '        --rslog              Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
     print( '        --skip-disconnected  Skip live test if required device is disconnected (only applies w/o a hub)' )
     print( '        --test-dir <>        Path to test dir; default: librealsense/unit-tests' )
@@ -66,8 +67,7 @@ def usage():
     print( "    exe files in the provided directory. Each test will create its own .log file to which its" )
     print( "    output will be written." )
     sys.exit( 2 )
-
-
+    
 # get os and directories for future use
 # NOTE: WSL will read as 'Linux' but the build is Windows-based!
 system = platform.system()
@@ -81,7 +81,7 @@ try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
                                           'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset', 'hub-reset',
-                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device=', 'test-dir=','skip-regex='] )
+                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device=', 'test-dir=','skip-regex=','custom-fw-d400='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -98,6 +98,7 @@ device_set = None
 no_reset = False
 hub_reset = False
 skip_disconnected = False
+custom_fw_path=''
 rslog = False
 only_live = False
 only_not_live = False
@@ -163,6 +164,9 @@ for opt, arg in opts:
         test_dir_log = True
     elif opt in ('--skip-regex'):
         skip_regex = arg
+    elif opt == '--custom-fw-d400':
+        custom_fw_path = arg  # Store the custom firmware path
+        log.i(f"custom firmware path was provided ${custom_fw_path}")
 
 def find_build_dir( dir ):
     """
@@ -447,9 +451,12 @@ def test_wrapper_( test, configuration=None, repetition=1, curr_retry=0, max_ret
     #
     log_path = test.get_log()
     #
-    opts = set()
+    opts = []
     if rslog:
-        opts.add( '--rslog' )
+        opts.append( '--rslog' )
+    if test.name == "test-fw-update" and custom_fw_path:
+        opts.append('--custom-fw-d400')
+        opts.append(custom_fw_path)
     try:
         test.run_test( configuration = configuration, log_path = log_path, opts = opts )
     except FileNotFoundError as e:
