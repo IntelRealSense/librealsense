@@ -142,19 +142,23 @@ public class RecordingActivity extends AppCompatActivity {
         Log.d(TAG, "onResume: entry");
         if(mPermissionsGranted){
             Log.d(TAG, "onResume: permissions granted");
-            mStreamer = new Streamer(this,true, new Streamer.Listener() {
-                @Override
-                public void config(Config config) {
-                    Log.d(TAG, "config: entry");
-                    config.enableRecordToFile(getFilePath());
-                    Log.d(TAG, "config: exit");
-                }
+            if (mStreamer == null) {
+                Log.d(TAG, "onResume: mStreamer is null, creating new Streamer");
+                mStreamer = new Streamer(this, true, new Streamer.Listener() {
+                    @Override
+                    public void config(Config config) {
+                        Log.d(TAG, "config: entry");
+                        //config.enableRecordToFile(getFilePath());
+                        Log.d(TAG, "config: exit");
+                    }
 
-                @Override
-                public void onFrameset(FrameSet frameSet) {
-                    mGLSurfaceView.upload(frameSet);
-                }
-            });
+                    @Override
+                    public void onFrameset(FrameSet frameSet) {
+                        mGLSurfaceView.upload(frameSet);
+                    }
+                });
+                mStreamer.setRecordFilePath(getFilePath());
+            }
             try {
                 mGLSurfaceView.clear();
                 mStreamer.start();
