@@ -9,7 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 if(BUILD_GRAPHICAL_EXAMPLES AND NOT APPLE)
     #pointcloud
-    add_executable(rs-gl rs-gl.cpp ../example.hpp)
+    add_executable(rs-gl rs-gl.cpp ../example.hpp ${IMGUI_SOURCES})
     set_property(TARGET rs-gl PROPERTY CXX_STANDARD 11)
     target_link_libraries(rs-gl ${DEPENDENCIES} realsense2-gl)
     include_directories(../)

@@ -6,6 +6,7 @@
 #include "device-model.h"
 #include "os.h"
 #include "ux-window.h"
+#include <realsense_imgui.h>
 
 #include "../src/ds/d400/d400-private.h"
 
@@ -176,7 +177,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         if (ImGui::IsItemHovered())
         {
             window.link_hovered();
-            ImGui::SetTooltip("%s", "Load calibration from file");
+            RsImGui::CustomTooltip("%s", "Load calibration from file");
         }
         ImGui::SameLine();
         if (ImGui::Button(u8"\uF0C7 Save As...", ImVec2(100, 30)))
@@ -232,7 +233,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         if (ImGui::IsItemHovered())
         {
             window.link_hovered();
-            ImGui::SetTooltip("%s", "Save calibration image to file");
+            RsImGui::CustomTooltip("%s", "Save calibration image to file");
         }
         ImGui::SameLine();
         if (_accept)
@@ -263,7 +264,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
             if (ImGui::IsItemHovered())
             {
                 window.link_hovered();
-                ImGui::SetTooltip("%s", "Restore calibration in flash to factory settings");
+                RsImGui::CustomTooltip("%s", "Restore calibration in flash to factory settings");
             }
         }
         else
@@ -274,13 +275,13 @@ void calibration_model::update(ux_window& window, std::string& error_message)
             ImGui::Button(u8"\uF275 Restore Factory", ImVec2(115, 30));
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", "Write selected calibration table to the device. For advanced users");
+                RsImGui::CustomTooltip("%s", "Write selected calibration table to the device. For advanced users");
             }
 
             ImGui::PopStyleColor(2);
         }
 
-        ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, dark_sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, dark_sensor_bg);
 
         ImGui::BeginChild("##CalibData",ImVec2(w - 15, h - 110), true);
 
@@ -361,7 +362,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("%s", "Changing calibration will affect depth quality. Changes are persistent.\nThere is an option to get back to factory calibration, but it maybe worse than current calibration\nBefore writing to flash, we strongly recommend to make a file backup");
+            RsImGui::CustomTooltip("%s", "Changing calibration will affect depth quality. Changes are persistent.\nThere is an option to get back to factory calibration, but it maybe worse than current calibration\nBefore writing to flash, we strongly recommend to make a file backup");
         }
 
         ImGui::SetCursorScreenPos({ (float)(x0 + w - 230), (float)(y0 + h - 30) });
@@ -373,7 +374,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         if (ImGui::IsItemHovered())
         {
             window.link_hovered();
-            ImGui::SetTooltip("%s", "Close without saving any changes");
+            RsImGui::CustomTooltip("%s", "Close without saving any changes");
         }
         ImGui::SameLine();
 
@@ -403,7 +404,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
             if (ImGui::IsItemHovered())
             {
                 window.link_hovered();
-                ImGui::SetTooltip("%s", "Write selected calibration table to the device");
+                RsImGui::CustomTooltip("%s", "Write selected calibration table to the device");
             }
         }
         else
@@ -414,7 +415,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
             ImGui::Button(u8"\uF2DB  Write Table", ImVec2(120, 25));
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", "Write selected calibration table to the device. For advanced users");
+                RsImGui::CustomTooltip("%s", "Write selected calibration table to the device. For advanced users");
             }
 
             ImGui::PopStyleColor(2);

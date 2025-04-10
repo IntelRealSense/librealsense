@@ -24,7 +24,9 @@
 #include <src/context.h>
 
 #include <src/proc/color-formats-converter.h>
+#include <src/proc/y16-10msb-to-y16.h>
 
+#include <rsutils/string/nocase.h>
 #include <rsutils/json.h>
 using rsutils::json;
 
@@ -74,45 +76,6 @@ void dds_sensor_proxy::add_dds_stream( sid_index sidx, std::shared_ptr< realdds:
         return;
     }
     s = stream;
-}
-
-
-std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_video_stream( rs2_video_stream video_stream,
-                                                                                bool is_default )
-{
-    auto profile = std::make_shared< video_stream_profile >();
-    profile->set_dims( video_stream.width, video_stream.height );
-    profile->set_format( video_stream.fmt );
-    profile->set_framerate( video_stream.fps );
-    profile->set_stream_index( video_stream.index );
-    profile->set_stream_type( video_stream.type );
-    profile->set_unique_id( video_stream.uid );
-    profile->set_intrinsics( [=]() {  //
-        return video_stream.intrinsics;
-    } );
-    if( is_default )
-        profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
-    _sw_profiles.push_back( profile );
-
-    return profile;
-}
-
-
-std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream( rs2_motion_stream motion_stream,
-                                                                                 bool is_default )
-{
-    auto profile = std::make_shared< motion_stream_profile >();
-    profile->set_format( motion_stream.fmt );
-    profile->set_framerate( motion_stream.fps );
-    profile->set_stream_index( motion_stream.index );
-    profile->set_stream_type( motion_stream.type );
-    profile->set_unique_id( motion_stream.uid );
-    profile->set_intrinsics( [=]() { return motion_stream.intrinsics; } );
-    if( is_default )
-        profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
-    _sw_profiles.push_back( profile );
-
-    return profile;
 }
 
 
@@ -170,11 +133,22 @@ void dds_sensor_proxy::register_basic_converters()
                               { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1 },
                               { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2 } },
                             []() { return std::make_shared< identity_processing_block >(); } } );
+    std::string product_line = get_device().get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
+    bool d400 = product_line.find("D400") != std::string::npos;
     _formats_converter.register_converter(
                           { { { RS2_FORMAT_Y16, RS2_STREAM_INFRARED } },
                             { { RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1 },
                               { RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2 } },
-                            []() { return std::make_shared< identity_processing_block >(); } } );
+                            [d400]() -> std::shared_ptr< stream_filter_processing_block >
+                            {
+                                // Y16 is calibration format, sent with 10bit data that needs conversion to 16bit.
+                                // D400 products don't have DDS so we use rs-dds-adapter that already converts.
+                                // Calibration with other products that use rs-dds-adapter is currently not supported.
+                                if( d400 )
+                                    return std::make_shared< identity_processing_block >();
+
+                                return std::make_shared< y16_10msb_to_y16 >();
+                            } } );
 
     // Motion
     _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_COMBINED_MOTION, RS2_STREAM_MOTION ) );
@@ -189,6 +163,10 @@ rsutils::subscription dds_sensor_proxy::register_options_changed_callback( optio
     return _options_watcher.subscribe( std::move( cb ) );
 }
 
+stream_profiles dds_sensor_proxy::get_active_streams() const 
+{
+    return _active_converted_profiles;
+}
 
 std::shared_ptr< realdds::dds_video_stream_profile >
 dds_sensor_proxy::find_profile( sid_index sidx, realdds::dds_video_stream_profile const & profile ) const
@@ -242,7 +220,7 @@ dds_sensor_proxy::find_profile( sid_index sidx, realdds::dds_motion_stream_profi
 void dds_sensor_proxy::open( const stream_profiles & profiles )
 {
     _formats_converter.prepare_to_convert( profiles );
-
+    _active_converted_profiles = profiles;
     const auto & source_profiles = _formats_converter.get_active_source_profiles();
     // TODO - register processing block options?
 
@@ -472,6 +450,9 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f,
 
 void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
 {
+    // Remove leftovers from previous starts.
+    _streaming_by_name.clear();
+
     for( auto & profile : sensor_base::get_active_streams() )
     {
         auto streamit = _streams.find( sid_index( profile->get_unique_id(), profile->get_stream_index() ) );
@@ -497,6 +478,7 @@ void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
                     invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
                 }
             } );
+        streaming.syncer.start();
 
         if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
         {
@@ -546,7 +528,10 @@ void dds_sensor_proxy::stop()
         dds_stream->stop_streaming();
         dds_stream->close();
 
-        _streaming_by_name[dds_stream->name()].syncer.on_frame_ready( nullptr );
+        // Nullifing the lambda is commented out because we don't want to nullify in middle of user callback (that might
+        // be long) instead we use start/stop.
+        //_streaming_by_name[dds_stream->name()].syncer.on_frame_ready( nullptr );
+        _streaming_by_name[dds_stream->name()].syncer.stop();
 
         if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
         {
@@ -565,7 +550,15 @@ void dds_sensor_proxy::stop()
 
     // Must be done after dds_stream->stop_streaming or we will need to add validity checks to on_data_available,
     // and after software_sensor::stop cause to make sure _is_streaming is false
-    _streaming_by_name.clear();
+    // Removed here, same reason of killing on_frame_ready lambda instance. Moved to start()
+    //_streaming_by_name.clear();
+}
+
+
+void dds_sensor_proxy::close()
+{
+    software_sensor::close();
+    _active_converted_profiles.clear();
 }
 
 
@@ -664,13 +657,50 @@ void dds_sensor_proxy::add_processing_block( std::string const & filter_name )
         if( ! ppb )
             LOG_WARNING( "Unsupported processing block '" + filter_name + "' received" );
         else
+        {
+            // Currently processing block factory does not support block settings, add here if needed.
+            add_processing_block_settings( filter_name, ppb );
             super::add_processing_block( ppb );
+        }
     }
     catch( std::exception const & e )
     {
         // Bad settings, error in configuration, etc.
         LOG_ERROR( "Failed to create processing block '" << filter_name << "': " << e.what() );
     }
+}
+
+void dds_sensor_proxy::add_processing_block_settings( const std::string & filter_name,
+                                                      std::shared_ptr< librealsense::processing_block_interface > & ppb ) const
+{
+    if( rsutils::string::nocase_equal( filter_name, "Decimation Filter" ) )
+        if( !ppb->supports_option( RS2_OPTION_STREAM_FILTER ) )
+            LOG_ERROR( "Decimation Filter does not support stream filter option" );
+        else
+            if( rsutils::string::nocase_equal( get_name(), "RGB Camera" ) )
+            {
+                ppb->get_option( RS2_OPTION_STREAM_FILTER ).set( RS2_STREAM_COLOR );
+                ppb->get_option( RS2_OPTION_STREAM_FORMAT_FILTER ).set( RS2_FORMAT_ANY );
+            }
+            else
+            {
+                ppb->get_option( RS2_OPTION_STREAM_FILTER ).set( RS2_STREAM_DEPTH );
+                ppb->get_option( RS2_OPTION_STREAM_FORMAT_FILTER ).set( RS2_FORMAT_Z16 );
+            }
+}
+
+
+void dds_sensor_proxy::set_frames_callback( rs2_frame_callback_sptr callback )
+{
+    // This callback is mutable, might be modified.
+    // For instance, record_sensor modifies this callback in order to hook it to record frames.
+    _formats_converter.set_frames_callback( callback );
+}
+
+
+rs2_frame_callback_sptr dds_sensor_proxy::get_frames_callback() const
+{
+    return _formats_converter.get_frames_callback();
 }
 
 

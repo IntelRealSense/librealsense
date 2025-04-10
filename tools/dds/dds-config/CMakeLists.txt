@@ -1,6 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
-cmake_minimum_required( VERSION 3.1.0 )
+cmake_minimum_required(VERSION 3.8)
 project( rs-dds-config )
 
 add_executable( ${PROJECT_NAME} )
@@ -9,6 +9,7 @@ file( GLOB_RECURSE RS_DDS_CONFIG_SOURCE_FILES
     LIST_DIRECTORIES false
     RELATIVE ${PROJECT_SOURCE_DIR}
     "${CMAKE_CURRENT_LIST_DIR}/*"
+    "${CMAKE_SOURCE_DIR}/third-party/rsutils/include/rsutils/type/*"
     )
 target_sources( ${PROJECT_NAME} PRIVATE ${RS_DDS_CONFIG_SOURCE_FILES} )
 

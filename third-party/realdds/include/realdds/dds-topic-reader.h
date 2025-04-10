@@ -57,6 +57,7 @@ public:
     bool has_writers() const { return _n_writers > 0; }
 
     std::shared_ptr< dds_topic > const & topic() const { return _topic; }
+    dds_guid const & guid() const;
 
     typedef std::function< void() > on_data_available_callback;
     typedef std::function< void( eprosima::fastdds::dds::SubscriptionMatchedStatus const & ) >

@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyrealsense2"
+dynamic = ["version"]
+description = "Python Wrapper for Intel Realsense SDK 2.0."
+readme = {file = "README.rst", content-type = "text/x-rst", charset = "utf-8"}
+authors = [
+    { name = "Intel(R) RealSense(TM)", email = "realsense@intel.com" },
+]
+license = {text = "Apache License, Version 2.0"}
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Human Machine Interfaces",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries :: Application Frameworks"
+]
+
+[tool.hatch.version]
+path = "pyrealsense2/_version.py"
+
+[project.urls]
+homepage = "https://github.com/IntelRealSense/librealsense"
+
+[tool.hatch.build]
+artifacts = [
+    "pyrealsense2/*.so",
+    "pyrealsense2/*.pyd",
+    "pyrealsense2/*.dll"
+]
+packages = ["pyrealsense2"]
+
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_build.py"

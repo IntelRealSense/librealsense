@@ -11,6 +11,7 @@
 #include "updates-model.h"
 #include "calibration-model.h"
 #include "objects-in-frame.h"
+#include "dds-model.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -107,6 +108,11 @@ namespace rs2
         namespace calibration
         {
             static const char* enable_writing{ "calibration.enable_writing" };
+        }
+        namespace dds
+        {
+            static const char* enable_dds{ "context.dds.enabled" };
+            static const char* domain_id{ "context.dds.domain" };
         }
         namespace viewer
         {
@@ -451,6 +457,7 @@ namespace rs2
         std::shared_ptr<updates_model> _updates;
         std::shared_ptr<sw_update::dev_updates_profile::update_profile >_updates_profile;
         calibration_model _calib_model;
+        dds_model _dds_model;
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);

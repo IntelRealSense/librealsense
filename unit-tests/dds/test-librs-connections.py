@@ -2,14 +2,14 @@
 # Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 from rspy import log, test
 log.nested = 'C  '
 
 import d435i
 import d405
-import librs as rs
+from rspy import librs as rs
 if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )
 from time import sleep
@@ -72,13 +72,14 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Close the third", on_fail=test.ABORT ):
         remote.run( 'close_server( instance3 )' )
-        remote.run( 'instance2 = None', timeout=1 )
+        remote.run( 'instance3 = None', timeout=1 )
         rs.wait_for_devices( context, n=1. )
     #
     #############################################################################################
     #
     with test.closure( "Close the last", on_fail=test.ABORT ):
         remote.run( 'close_server( instance4 )' )
+        remote.run( 'instance4 = None', timeout=1 )
         rs.wait_for_devices( context, n=0. )
     #
     #############################################################################################

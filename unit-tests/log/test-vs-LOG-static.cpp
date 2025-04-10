@@ -25,7 +25,7 @@ using namespace librealsense;
 
 static void dummy_callback( rs2_log_severity, rs2_log_message const *, void * )
 {
-};
+}
 
 
 TEST_CASE( "rs2_log vs LOG() - internal", "[log]" )

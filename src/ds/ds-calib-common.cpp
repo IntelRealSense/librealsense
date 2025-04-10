@@ -105,7 +105,7 @@ namespace librealsense
             throw invalid_value_exception( rsutils::string::from()
                                            << "Auto calibration failed! Given value of 'max iteration steps' "
                                            << step_count << " is out of range (5 - 30)." );
-        if( accuracy < ACCURACY_HIGH || accuracy > ACCURACY_LOW )
+        if( accuracy < ACCURACY_VERY_HIGH || accuracy > ACCURACY_LOW )
             throw invalid_value_exception( rsutils::string::from()
                                            << "Auto calibration failed! Given value of 'subpixel accuracy' " << accuracy
                                            << " is out of range (0 - 3)." );

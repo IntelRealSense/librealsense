@@ -190,8 +190,7 @@ public:
     }
 };
 
-
-bool check_imu_is_supported()
+bool check_accel_gyro_are_supported()
 {
     bool found_gyro = false;
     bool found_accel = false;
@@ -218,13 +217,48 @@ bool check_imu_is_supported()
     return found_gyro && found_accel;
 }
 
+bool check_combined_motion_is_supported()
+{
+    rs2::context ctx;
+
+    for (auto dev : ctx.query_devices())
+    {
+        for (auto sensor : dev.query_sensors())
+        {
+            for (auto profile : sensor.get_stream_profiles())
+            {
+                if (profile.stream_type() == RS2_STREAM_MOTION)
+                    return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 int main(int argc, char * argv[]) try
 {
+    // Declare RealSense pipeline, encapsulating the actual device and sensors
+    rs2::pipeline pipe;
+    // Create a configuration for configuring the pipeline with a non default profile
+    rs2::config cfg;
+
     // Before running the example, check that a device supporting IMU is connected
-    if (!check_imu_is_supported())
+    if (check_accel_gyro_are_supported())
     {
-        std::cerr << "Device supporting IMU not found";
-        return EXIT_FAILURE;
+        // Add streams of gyro and accelerometer to configuration
+        cfg.enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
+        cfg.enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F);
+    }
+    else if (check_combined_motion_is_supported())
+    {
+        // Add combined gyro and accelerometer to configuration
+        cfg.enable_stream(RS2_STREAM_MOTION, RS2_FORMAT_COMBINED_MOTION);
+    }
+    else
+    {
+            std::cerr << "Device supporting IMU not found";
+            return EXIT_FAILURE;
     }
 
     // Initialize window for rendering
@@ -233,15 +267,6 @@ int main(int argc, char * argv[]) try
     glfw_state app_state(0.0, 0.0);
     // Register callbacks to allow manipulation of the view state
     register_glfw_callbacks(app, app_state);
-
-    // Declare RealSense pipeline, encapsulating the actual device and sensors
-    rs2::pipeline pipe;
-    // Create a configuration for configuring the pipeline with a non default profile
-    rs2::config cfg;
-
-    // Add streams of gyro and accelerometer to configuration
-    cfg.enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
-    cfg.enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F);
 
     // Declare object for rendering camera motion
     camera_renderer camera;

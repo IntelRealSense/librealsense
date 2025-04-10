@@ -3,6 +3,7 @@
 #include <iomanip>
 #include "depth-quality-model.h"
 #include <librealsense2/rs_advanced_mode.hpp>
+#include <realsense_imgui.h>
 #include "model-views.h"
 #include "viewer.h"
 #include "os.h"
@@ -25,7 +26,9 @@ namespace rs2
               _skew_down(std::chrono::seconds(1)),
               _angle_alert(std::chrono::seconds(4)),
               _min_dist(300.f), _max_dist(2000.f), _max_angle(10.f),
-              _metrics_model(_viewer_model)
+              _metrics_model(_viewer_model),
+              _limit_capture(1),
+              _use_limit_capture(false)
         {
             _viewer_model.is_3d_view = true;
             _viewer_model.allow_3d_source_change = false;
@@ -46,22 +49,25 @@ namespace rs2
             rs2::pipeline_profile active_profile;
 
             // Adjust settings according to USB type
-            bool usb3_device = true;
+            bool usb2_device = false;
             auto devices = _ctx.query_devices();
             if (devices.size())
             {
                 auto dev = devices[0];
-                bool usb3_device = true;
-                if (dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+                if (dev.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
                 {
-                    std::string usb_type = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
-                    usb3_device = !(std::string::npos != usb_type.find("2."));
+                    std::string connection_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
+                    if (connection_type == "USB" && dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+                    {
+                        std::string usb_type = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+                        usb2_device = (std::string::npos != usb_type.find("2."));
+                    }
                 }
             }
             else
                 return valid_config;
 
-            int requested_fps = usb3_device ? 30 : 15;
+            int requested_fps = usb2_device ? 15 : 30;
 
             // open Depth and Infrared streams using default profile
             {
@@ -476,8 +482,8 @@ namespace rs2
             // *********************
             // Creating window menus
             // *********************
+            ImGui::SetNextWindowContentSize(ImVec2(_viewer_model.panel_width - 26 , 0.0f));
             ImGui::Begin("Control Panel", nullptr, viewer_ui_traits::imgui_flags | ImGuiWindowFlags_AlwaysVerticalScrollbar);
-            ImGui::SetContentRegionWidth(_viewer_model.panel_width - 26);
 
             if (_device_model.get())
             {
@@ -512,7 +518,6 @@ namespace rs2
                 {
                     update_configuration();
                 }
-                ImGui::SetContentRegionWidth(windows_width);
                 auto pos = ImGui::GetCursorScreenPos();
 
                 for (auto&& lambda : draw_later)
@@ -550,7 +555,8 @@ namespace rs2
 
                         if (_depth_sensor_model->draw_stream_selection(_error_message))
                         {
-                            if (_depth_sensor_model->is_selected_combination_supported())
+                            if (_depth_sensor_model->is_selected_combination_supported() &&
+                                !_depth_sensor_model->is_depth_calibration_profile())
                             {
                                 // Preserve streams and ui selections
                                 auto primary = _depth_sensor_model->get_selected_profiles().front().as<video_stream_profile>();
@@ -580,17 +586,6 @@ namespace rs2
                                 {
                                     try // Retries are needed to cope with HW stability issues
                                     {
-
-                                        auto dev = cfg.resolve(_pipe);
-                                        auto depth_sensor = dev.get_device().first< rs2::depth_sensor >();
-                                        if (depth_sensor.supports(RS2_OPTION_SENSOR_MODE))
-                                        {
-                                            auto depth_profile = dev.get_stream(RS2_STREAM_DEPTH);
-                                            auto w = depth_profile.as<video_stream_profile>().width();
-                                            auto h = depth_profile.as<video_stream_profile>().height();
-                                            depth_sensor.set_option(RS2_OPTION_SENSOR_MODE, (float)(resolution_from_width_height(w, h)));
-                                        }
-
                                         auto profile = _pipe.start(cfg);
                                         success = profile;
                                     }
@@ -615,7 +610,7 @@ namespace rs2
                         ImGui::Text("Region of Interest:");
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
 
-                        ImGui::PushItemWidth(-1);
+                        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - 25);
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
                         static std::vector<std::string> items{ "80%", "60%", "40%", "20%" };
@@ -675,7 +670,7 @@ namespace rs2
 
                                 if (ImGui::IsItemHovered())
                                 {
-                                    ImGui::SetTooltip(
+                                    RsImGui::CustomTooltip(
                                         "%s",
                                         ds.get_option_description(
                                             RS2_OPTION_ENABLE_IR_REFLECTIVITY ) );
@@ -693,7 +688,7 @@ namespace rs2
                         ImGui::Text("Distance:");
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::SetTooltip("Estimated distance to an average within the ROI of the target (wall) in mm");
+                            RsImGui::CustomTooltip("Estimated distance to an average within the ROI of the target (wall) in mm");
                         }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
 
@@ -721,7 +716,7 @@ namespace rs2
                         }
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::SetTooltip("True measured distance to the wall in mm");
+                            RsImGui::CustomTooltip("True measured distance to the wall in mm");
                         }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                         if (_use_ground_truth)
@@ -744,10 +739,36 @@ namespace rs2
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                        std::string limit_captures("Limit Captures");
+                        if (_use_limit_capture) limit_captures += ":";
+                        ImGui::Checkbox(limit_captures.c_str(), &_use_limit_capture);
+                        if (ImGui::IsItemHovered())
+                        {
+                            RsImGui::CustomTooltip("Capture will be limited to this number of records");
+                        }
+                        if (_use_limit_capture)
+                        {
+                            ImGui::SameLine(); ImGui::SetCursorPosX(col1);
+                            ImGui::PushItemWidth(120);
+                            if (ImGui::InputInt("##LC", &_limit_capture, 1))
+                            {
+                                // Ensure the value is positive
+                                if (_limit_capture <= 0)
+                                {
+                                    _limit_capture = 1; // Set to a default positive value
+                                }
+                            }
+                            ImGui::PopItemWidth();
+                        }
+                        ImGui::PopStyleColor();
+
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
                         ImGui::Text("Angle:");
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::SetTooltip("Estimated angle to the wall in degrees");
+                            RsImGui::CustomTooltip("Estimated angle to the wall in degrees");
                         }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
                         static float prev_metric_angle = 0;
@@ -792,12 +813,19 @@ namespace rs2
                         {
                             if (ImGui::Button(u8"\uf0c7 Start_record", { 140, 25 }))
                             {
-                                _metrics_model.start_record();
+                                if (_use_limit_capture)
+                                {
+                                    _metrics_model.start_record(_limit_capture);
+                                }
+                                else
+                                {
+                                    _metrics_model.start_record();
+                                }
                             }
 
                             if (ImGui::IsItemHovered())
                             {
-                                ImGui::SetTooltip("Save Metrics snapshot. This will create:\nPNG image with the depth frame\nPLY 3D model with the point cloud\nJSON file with camera settings you can load later\nand a CSV with metrics recent values");
+                                RsImGui::CustomTooltip("Save Metrics snapshot. This will create:\nPNG image with the depth frame\nPLY 3D model with the point cloud\nJSON file with camera settings you can load later\nand a CSV with metrics recent values");
                             }
                         }
 
@@ -1015,7 +1043,9 @@ namespace rs2
             _plane_fit(false),
             _roi_percentage(0.4f),
             _active(true),
-            _recorder(viewer_model)
+            _recorder(viewer_model),
+            _limit_captures(0),
+            _is_capture_limited(false)
         {
             _worker_thread = std::thread([this]() {
                 while (_active)
@@ -1067,7 +1097,25 @@ namespace rs2
                         }
                     }
                     if (_recorder.is_recording())
-                        _recorder.add_sample(frames, std::move(sample));
+                    {
+                        if (_is_capture_limited)
+                        { 
+                            if (_limit_captures > 0)
+                            {
+                                --_limit_captures;
+                                _recorder.add_sample(frames, std::move(sample));
+                            }
+                            else
+                            {
+                                _recorder.stop_record(nullptr);
+                            }
+                        }
+                        else
+                        {
+                            _recorder.add_sample(frames, std::move(sample));
+                        }
+                    }
+                        
 
                     // Artificially slow down the calculation, so even on small ROIs / resolutions
                     // the output is updated within reasonable interval (keeping it human readable)
@@ -1178,7 +1226,7 @@ namespace rs2
                 ImGui::Text(u8"\uf102");
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("This metric shows positive trend");
+                    RsImGui::CustomTooltip("This metric shows positive trend");
                 }
                 ImGui::PopFont();
                 ImGui::SameLine(); ImGui::SetCursorPos(col0);
@@ -1194,7 +1242,7 @@ namespace rs2
                 ImGui::Text(u8"\uf103");
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("This metric shows negative trend");
+                    RsImGui::CustomTooltip("This metric shows negative trend");
                 }
                 ImGui::PopFont();
                 ImGui::SameLine(); ImGui::SetCursorPos(col0);

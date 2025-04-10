@@ -144,7 +144,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
             /* Process the case when a new publisher was found in the domain */
             LOG_DEBUG( _owner.name() << ": +writer (" << _owner.print( info.info.guid() ) << ") publishing "
                                      << info.info );
-            _owner.on_writer_added( info.info.guid(), info.info.topicName().c_str() );
+            _owner.on_writer_added( info.info );
             break;
 
         case eprosima::fastrtps::rtps::WriterDiscoveryInfo::REMOVED_WRITER:
@@ -163,7 +163,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         {
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::DISCOVERED_READER:
             LOG_DEBUG( _owner.name() << ": +reader (" << _owner.print( info.info.guid() ) << ") of " << info.info );
-            _owner.on_reader_added( info.info.guid(), info.info.topicName().c_str() );
+            _owner.on_reader_added( info.info );
             break;
 
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::REMOVED_READER:
@@ -359,14 +359,14 @@ std::string dds_participant::print( dds_guid const & guid_to_print ) const
 }
 
 
-void dds_participant::on_writer_added( dds_guid guid, char const * topic_name )
+void dds_participant::on_writer_added( eprosima::fastrtps::rtps::WriterProxyData const & data )
 {
     for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
             if( l->_on_writer_added )
-                l->_on_writer_added( guid, topic_name );
+                l->_on_writer_added( data );
         }
     }
 }
@@ -385,14 +385,14 @@ void dds_participant::on_writer_removed( dds_guid guid, char const * topic_name 
 }
 
 
-void dds_participant::on_reader_added( dds_guid guid, char const * topic_name )
+void dds_participant::on_reader_added( eprosima::fastrtps::rtps::ReaderProxyData const & data )
 {
     for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
             if( l->_on_reader_added )
-                l->_on_reader_added( guid, topic_name );
+                l->_on_reader_added( data );
         }
     }
 }

@@ -11,8 +11,6 @@
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
 #include <realdds/topics/flexible-msg.h>
-#include <realdds/topics/ros2/ros2imagePubSubTypes.h>
-#include <realdds/topics/ros2/ros2imuPubSubTypes.h>
 #include <realdds/dds-time.h>
 
 #include <fastdds/dds/topic/Topic.hpp>

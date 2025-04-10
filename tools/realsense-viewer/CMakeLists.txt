@@ -6,8 +6,10 @@ project(realsense-viewer)
 
 if(WIN32)
     add_executable( ${PROJECT_NAME} WIN32 "" )
+    target_link_libraries( ${PROJECT_NAME} OpenGL::GL)
 else()
     add_executable( ${PROJECT_NAME} "" )
+    target_link_libraries( ${PROJECT_NAME} OpenGL::GL dl) # Check the platform and conditionally link OpenGL and libdl (for linux)
 endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -23,11 +25,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     set(RS_VIEWER_CPP
     ${COMMON_SRC}
     realsense-viewer.cpp
-    ../../third-party/imgui/imgui.cpp
-    ../../third-party/imgui/imgui_draw.cpp
-    ../../third-party/imgui/imgui_impl_glfw.cpp
-    ../../third-party/imgui/imgui-fonts-karla.hpp
-    ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+    ${IMGUI_SOURCES}
     ../../common/realsense-ui-advanced-mode.h
     ../../common/rendering.h
     ../../common/model-views.h
@@ -51,6 +49,15 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     ../../common/rs-config.cpp
     ../../common/os.h
     ../../common/os.cpp
+    ../../common/graph-model.h
+    ../../common/graph-model.cpp
+    ../../third-party/rsutils/include/rsutils/type/eth-config.h
+    ../../third-party/rsutils/include/rsutils/type/eth-config.cpp
+    ../../third-party/implot/implot.cpp
+    ../../third-party/implot/implot.h
+    ../../third-party/implot/implot_internal.h
+    ../../third-party/implot/implot_items.cpp
+
 )
 
 SET(DELAYED
@@ -182,6 +189,7 @@ if(WIN32)
         ../../third-party/tinyfiledialogs/tinyfiledialogs.h
         ../../third-party/imgui/imgui.cpp
         ../../third-party/imgui/imgui_draw.cpp
+        ../../third-party/imgui/imgui_impl_opengl3.cpp
         ../../third-party/imgui/imgui_impl_glfw.cpp
         ../../third-party/imgui/imgui-fonts-karla.hpp
         ../../third-party/imgui/imgui-fonts-fontawesome.hpp
@@ -221,6 +229,7 @@ include_directories(
     ../../third-party/tinyfiledialogs
     ${GLFW_SOURCE_DIR}/include
     ../../third-party/imgui
+    ../../third-party/implot
     ../../third-party/glad
     )
 

@@ -10,6 +10,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set_security_flags_for_executable() # tools are executables so we want position indepandent executables and not libraries
 
 list( APPEND DEPENDENCIES ${LRS_TARGET} tclap )
+# Add all imgui cpp source files and store the list in the IMGUI_SOURCES variable
+file(GLOB IMGUI_SOURCES "../third-party/imgui/*.cpp") 
 
 if(BUILD_TOOLS)
     add_subdirectory(convert)

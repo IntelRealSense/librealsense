@@ -2,7 +2,7 @@
 # Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 # We disable under Linux for now, pending feedback from FastDDS team:
 # Having two participants in the same process ("client" and "librs" below) usually works, but in this case the former
@@ -181,7 +181,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
     #############################################################################################
     #
     with test.closure( "Initialize librs device", on_fail=test.ABORT ):
-        import librs as rs
+        from rspy import librs as rs
         if log.is_debug_on():
             rs.log_to_console( rs.log_severity.debug )
         context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'librs' }} )

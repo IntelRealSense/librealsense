@@ -49,6 +49,15 @@ global_set_flags()
 
 # If no type is given explicitly the type is STATIC or SHARED based on whether the current value of the variable [BUILD_SHARED_LIBS](https://cmake.org/cmake/help/v3.10/variable/BUILD_SHARED_LIBS.html#variable:BUILD_SHARED_LIBS) is ON
 add_library(${LRS_TARGET})
+# Apply ASan flags if enabled
+if(BUILD_ASAN)
+  message(STATUS "AddressSanitizer is enabled")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+  target_compile_options(${LRS_TARGET} PRIVATE -fsanitize=address -g)
+endif()
 
 config_cxx_flags()
 

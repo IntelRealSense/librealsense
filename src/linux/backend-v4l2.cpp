@@ -58,6 +58,8 @@
 
 #include <sys/signalfd.h>
 #include <signal.h>
+#include "rsutils/accelerators/gpu.h"
+
 #pragma GCC diagnostic ignored "-Woverflow"
 
 const size_t MAX_DEV_PARENT_DIR = 10;
@@ -360,7 +362,7 @@ namespace librealsense
             if (_use_memory_map)
             {
                if(munmap(_start, _original_length) < 0)
-                   linux_backend_exception("munmap");
+                   LOG_DEBUG_V4L("munmap failed on buffer Dtor");
             }
             else
             {
@@ -578,7 +580,7 @@ namespace librealsense
             }
         }
 
-        bool v4l_uvc_device::get_devname_from_video_path(const std::string& video_path, std::string& devname)
+        bool v4l_uvc_device::get_devname_from_video_path(const std::string& video_path, std::string& devname, bool is_for_dfu)
         {
             std::ifstream uevent_file(video_path + "/uevent");
             if (!uevent_file)
@@ -591,10 +593,14 @@ namespace librealsense
             {
                 if (uevent_line.find("DEVNAME=") != std::string::npos)
                 {
-                    devname = "/dev/" + uevent_line.substr(uevent_line.find_last_of('=') + 1);
+                    devname = uevent_line.substr(uevent_line.find_last_of('=') + 1);
                 }
             }
             uevent_file.close();
+            if (!is_for_dfu)
+            {
+                devname = "/dev/" + devname;
+            }
             return true;
         }
 
@@ -686,7 +692,8 @@ namespace librealsense
                         continue;
                     }
                     std::string devname;
-                    if (get_devname_from_video_path(real_path, devname))
+                    bool for_dfu = true;
+                    if (get_devname_from_video_path(real_path, devname, for_dfu))
                     {
                         if (devname.empty())
                         {
@@ -755,9 +762,12 @@ namespace librealsense
             if (!is_usb_path_valid(video_path, dev_name, busnum, devnum, devpath))
             {
 #ifndef RS2_USE_CUDA
-               /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
-               Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
-               LOG_INFO("Failed to read busnum/devnum. Device Path: " << ("/sys/class/video4linux/" + name));
+                if (rsutils::rs2_is_gpu_available())
+                {
+                    /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
+                    Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
+                    LOG_INFO("Failed to read busnum/devnum. Device Path: " << ("/sys/class/video4linux/" + name));
+                }
 #endif
                throw linux_backend_exception("Failed to read busnum/devnum of usb device");
             }
@@ -800,6 +810,131 @@ namespace librealsense
             return info;
         }
 
+        bool v4l_uvc_device::is_format_supported_on_node(const std::string& dev_name, std::string v4l_4cc_fmt)
+        {
+            int fd = open(dev_name.c_str(), O_RDWR);
+            if (fd < 0)
+                throw linux_backend_exception("Mipi device format could not be grabbed");
+
+            struct v4l2_fmtdesc fmtdesc;
+            memset(&fmtdesc,0,sizeof(fmtdesc));
+            fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+            uint32_t format;
+            memcpy(&format, v4l_4cc_fmt.c_str(), sizeof(format));
+
+            while (ioctl(fd,VIDIOC_ENUM_FMT,&fmtdesc) == 0)
+            {
+                if (fmtdesc.pixelformat == format)
+                {
+                    ::close(fd);
+                    return true;
+                }
+
+                fmtdesc.index++;
+            }
+
+            ::close(fd);
+
+            return false;
+        }
+
+        bool v4l_uvc_device::is_device_depth_node(const std::string& dev_name)
+        {
+            bool is_depth = false;
+
+            // first search video node links, for example, video-rs-depth-0
+            std::smatch match;
+            static std::regex video_dev_rs("video-rs-");
+            static std::regex video_dev_depth("video-rs-depth-\\d+$");
+            if(std::regex_search(dev_name, match, video_dev_rs))
+            {
+                if (std::regex_search(dev_name, match, video_dev_depth))
+                    is_depth = true;
+                else
+                    is_depth = false;
+            }
+            // then search video nodes to find the depth node
+            else if (is_format_supported_on_node(dev_name, "Z16 "))
+                is_depth = true;
+            else
+                is_depth = false;
+
+            return is_depth;
+        }
+
+        uint16_t v4l_uvc_device::get_mipi_device_pid(const std::string& dev_name)
+        {
+            // GVD product ID
+            const uint8_t GVD_PID_OFFSET    = 4;
+
+            const uint8_t GVD_PID_D430_GMSL = 0x0F;
+            const uint8_t GVD_PID_D457      = 0x12;
+
+            // device PID
+            uint16_t device_pid = 0;
+
+            int fd = open(dev_name.c_str(), O_RDWR);
+            if (fd < 0)
+                throw linux_backend_exception("Mipi device PID could not be found");
+
+            uint8_t gvd[276];
+            struct v4l2_ext_control ctrl;
+
+            memset(gvd,0,276);
+
+            ctrl.id = RS_CAMERA_CID_GVD;
+            ctrl.size = sizeof(gvd);
+            ctrl.p_u8 = gvd;
+
+            struct v4l2_ext_controls ext;
+
+            ext.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
+            ext.controls = &ctrl;
+            ext.count = 1;
+
+            int retries = 5;
+            bool opcode_ok = false;
+            while (!opcode_ok && retries--)
+            {
+                if (xioctl(fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
+                {
+                    auto opcode = gvd[0];
+                    if (opcode != 0x10)
+                    {
+                        LOG_WARNING("Wrong opcode when pulling GVD: gvd[0] returned as: " << opcode);
+                        continue;
+                    }
+                    else {
+                        opcode_ok = true;
+                    }
+
+                    uint8_t product_pid = gvd[4 + GVD_PID_OFFSET];
+
+                    switch(product_pid)
+                    {
+                        case(GVD_PID_D457):
+                            device_pid = 0xABCD;
+                            break;
+
+                        case(GVD_PID_D430_GMSL):
+                            device_pid = 0xABCE;
+                            break;
+
+                        default:
+                            LOG_WARNING("Unidentified MIPI device product id: 0x" << std::hex << (int) product_pid << "remaining retries = " << retries);
+                            device_pid = 0x0000;
+                            break;
+                    }
+                }
+                std::this_thread::sleep_for( std::chrono::milliseconds(100));
+            }
+
+            ::close(fd);
+
+            return device_pid;
+        }
+
         void v4l_uvc_device::get_mipi_device_info(const std::string& dev_name,
                                                   std::string& bus_info, std::string& card)
         {
@@ -831,6 +966,7 @@ namespace librealsense
                 bus_info = reinterpret_cast<const char *>(vcap.bus_info);
                 card = reinterpret_cast<const char *>(vcap.card);
             }
+
             ::close(fd);
         }
 
@@ -844,10 +980,25 @@ namespace librealsense
 
             get_mipi_device_info(dev_name, bus_info, card);
 
-            // the following 2 lines need to be changed in order to enable multiple mipi devices support
-            // or maybe another field in the info structure - TBD
+            // find device PID from depth video node
+            static uint16_t device_pid = 0;
+            try
+            {
+                if (is_device_depth_node(dev_name))
+                {
+                    device_pid = get_mipi_device_pid(dev_name);
+                }
+            }
+            catch(const std::exception & e)
+            {
+                LOG_WARNING("MIPI device product id detection issue, device will be skipped: " << e.what());
+                device_pid = 0;
+            }
+
             vid = 0x8086;
-            pid = 0xABCD; // D457 dev
+            pid = device_pid;
+
+//          std::cout << "video_path:" << video_path << ", name:" << dev_name << ", pid=" << std::hex << (int) pid << std::endl;
 
             static std::regex video_dev_index("\\d+$");
             std::smatch match;
@@ -865,20 +1016,21 @@ namespace librealsense
             //  D457 exposes (assuming first_video_index = 0):
             // - video0 for Depth and video1 for Depth's md.
             // - video2 for RGB and video3 for RGB's md.
-            // - video4 for IR stream. IR's md is currently not available.
-            // - video5 for IMU (accel or gyro TBD)
+            // - video4 for IR and video5 for IR's md.
+            // - video6 for IMU (accel or gyro TBD)
             // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
             // further development is needed to permit use of several mipi devices
             static int  first_video_index = ind;
+
             // Use camera_video_nodes as number of /dev/video[%d] for each camera sensor subset
-            const int camera_video_nodes = 6;
+            const int camera_video_nodes = 7;
             int cam_id = ind / camera_video_nodes;
             ind = (ind - first_video_index) % camera_video_nodes; // offset from first mipi video node and assume 6 nodes per mipi camera
             if (ind == 0 || ind == 2 || ind == 4)
                 mi = 0; // video node indicator
-            else if (ind == 1 | ind == 3)
+            else if (ind == 1 | ind == 3 || ind == 5)
                 mi = 3; // metadata node indicator
-            else if (ind == 5)
+            else if (ind == 6)
                 mi = 4; // IMU node indicator
             else
             {
@@ -902,10 +1054,11 @@ namespace librealsense
             std::vector<std::string> dfu_device_paths = get_mipi_dfu_paths();
 
             for (const auto& dfu_device_path: dfu_device_paths) {
-                int vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
+                auto mipi_dfu_chardev = "/dev/" + dfu_device_path;
+                int vfd = open(mipi_dfu_chardev.c_str(), O_RDONLY | O_NONBLOCK);
                 if (vfd >= 0) {
                     // Use legacy DFU device node used in firmware_update_manager
-                    info.dfu_device_path = dfu_device_path;
+                    info.dfu_device_path = mipi_dfu_chardev;
                     ::close(vfd); // file exists, close file and continue to assign it
                     break;
                 }
@@ -2835,7 +2988,7 @@ namespace librealsense
 
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
-            bool mipi_device = 0xABCD == info.pid; // D457 development. Not for upstream
+            bool mipi_device = (0xABCD == info.pid || 0xABCE == info.pid); // D457 development. Not for upstream
             auto v4l_uvc_dev =        mipi_device ?         std::make_shared<v4l_mipi_device>(info) :
                               ((!info.has_metadata_node) ?  std::make_shared<v4l_uvc_device>(info) :
                                                             std::make_shared<v4l_uvc_meta_device>(info));

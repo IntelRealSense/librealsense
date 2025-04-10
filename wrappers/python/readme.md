@@ -20,35 +20,44 @@ Package is available at https://pypi.python.org/pypi/pyrealsense2
 To install the package, run:
 > `pip install pyrealsense2`
 
-Windows users can install the RealSense SDK 2.0 from the release tab to get pre-compiled binaries of the wrapper, for both x86 and x64 architectures. (Python versions 3.9, 3.10, 3.11, 3.12 are supported).
+Windows users can install the RealSense SDK 2.0 from the release tab to get pre-compiled binaries of the wrapper, for both x86 and x64 architectures. (Python versions 3.9, 3.10, 3.11, 3.12 and 3.13 are supported).
 
 > **Note:**
-> Python 3.7 distributables can be found for pyrealsense2 versions <= 2.55.1
+> EOL Python 3.8 distributables can be found for pyrealsense2 versions <= 2.55.2
+> EOL Python 3.7 distributables can be found for pyrealsense2 versions <= 2.55.1
+
 
 ## Building From Source
 
-#### Ubuntu 14.04/16.04 LTS
+#### Ubuntu LTS
 1. Ensure apt-get is up to date
   * `sudo apt-get update && sudo apt-get upgrade`
-  * **Note:** Use `sudo apt-get dist-upgrade`, instead of `sudo apt-get upgrade`, in case you have an older Ubuntu 14.04 version
+  **Note:** Use `sudo apt-get dist-upgrade`, instead of `sudo apt-get upgrade`, in case you have an older Ubuntu 14.04 version
 2. Install Python and its development files via apt-get
   * `sudo apt-get install python3 python3-dev`
-3. Run the top level CMake command with the following additional flag `-DBUILD_PYTHON_BINDINGS:bool=true`:
-
-   * **Note:** For building a self-contained (statically compiled) pyrealsense2 library add the CMake flag:
-
-      `-DBUILD_SHARED_LIBS=false`
+3. Clone the librealsense repository and navigate into the directory:
+   * `git clone https://github.com/IntelRealSense/librealsense.git`
+   * `cd librealsense`
+4. Configure and make:
   * `mkdir build`
   * `cd build`
-  * `cmake ../ -DBUILD_PYTHON_BINDINGS:bool=true`
-> **Note**: To force compilation with a specific version on a system with a few Python versions installed, add the following flag to CMake command:
-`-DPYTHON_EXECUTABLE=[full path to the exact python executable]`
+  * `cmake ../ -DBUILD_PYTHON_BINDINGS:bool=true -DPYTHON_EXECUTABLE=$(which python3)`
   * `make -j4`
   * `sudo make install`
-4. update your PYTHONPATH environment variable to add the path to the pyrealsense library
+  > **Note**: For building a self-contained (statically compiled) pyrealsense2 library add the CMake flag:
+  >
+  >`-DBUILD_SHARED_LIBS=false`
+  >
+  > **Note**: To force compilation with a specific version on a system with a few Python versions installed, add the following flag to CMake command:
+  >
+  >`-DPYTHON_EXECUTABLE=[full path to the exact python executable]`
+  
+5. update your PYTHONPATH environment variable to add the path to the pyrealsense library
   * `export PYTHONPATH=$PYTHONPATH:/usr/local/lib`
-5. Alternatively, copy the build output (`librealsense2.so` and `pyrealsense2.so`) next to your script.
-  * **Note:** Python 3 module filenames may contain additional information, e.g. `pyrealsense2.cpython-35m-arm-linux-gnueabihf.so`)
+  > **Note:** If this doesn't work, try using the following path instead:
+	`export PYTHONPATH=$PYTHONPATH:/usr/local/lib/[python version]/pyrealsense2`
+6. Alternatively, copy the build output (`librealsense2.so` and `pyrealsense2.so`) next to your script.
+  **Note:** Python 3 module filenames may contain additional information, e.g. `pyrealsense2.cpython-35m-arm-linux-gnueabihf.so`)
 
 
 
@@ -57,7 +66,7 @@ Windows users can install the RealSense SDK 2.0 from the release tab to get pre-
 
 2. When running `cmake-gui`, select the `BUILD_PYTHON_BINDINGS` option
 
-   * **Note:** For building a self-contained (statically compiled) pyrealsense2 library add the CMake flag:
+   **Note:** For building a self-contained (statically compiled) pyrealsense2 library add the CMake flag:
 
       `-DBUILD_SHARED_LIBS=false`
 

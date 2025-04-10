@@ -192,15 +192,14 @@ int write_fw_to_mipi_device( const rs2::device & dev, const std::vector< uint8_t
 
 bool is_mipi_device( const rs2::device & dev )
 {
-    std::string usb_type = "unknown";
-
-    if( dev.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
-        usb_type = dev.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
-
-    bool d457_device = strcmp( dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ), "ABCD" ) == 0;
-
-    // Currently only D457 model has MIPI connection
-    return d457_device && usb_type.compare( "unknown" ) == 0;
+    bool is_mipi_device = false;
+    if (dev.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
+    {
+        std::string connection_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
+        if (connection_type == "GMSL")
+            is_mipi_device = true;
+    }
+    return is_mipi_device;
 }
 
 int main( int argc, char ** argv )
@@ -470,13 +469,13 @@ try
             print_device_info( d );
 
             // If device is D457 connected by MIPI connector
-            if( is_mipi_device( d ) )
+            if( is_mipi_device( d ) && !unsigned_arg.isSet())
             {
-                if( unsigned_arg.isSet() )
-                {
-                    std::cout << std::endl << "Only signed FW is currently supported for MIPI devices" << std::endl;
-                    return EXIT_FAILURE;
-                }
+                // if( unsigned_arg.isSet() )
+                // {
+                //     std::cout << std::endl << "Only signed FW is currently supported for MIPI devices" << std::endl;
+                //     return EXIT_FAILURE;
+                // }
 
                 return write_fw_to_mipi_device( d, fw_image );
             }

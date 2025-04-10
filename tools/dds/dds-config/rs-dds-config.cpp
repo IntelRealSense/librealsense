@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include "eth-config.h"
+#include <rsutils/type/eth-config.h>
 
 #include <common/cli.h>
 
@@ -106,6 +106,27 @@ eth_config get_eth_config( rs2::debug_protocol hwm, bool golden )
 }
 
 
+struct describe_device
+{
+    rs2::device const & device;
+    describe_device( rs2::device const & d ) : device( d ) {}
+};
+
+std::ostream & operator<<( std::ostream & os, describe_device const & dd )
+{
+    os << dd.device.get_description();
+    if( dd.device.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
+        os << ", FW version " << dd.device.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
+    return os;
+}
+
+
+void list_device( rs2::device const & device )
+{
+    INFO( describe_device( device ) );
+}
+
+
 bool find_device( rs2::context const & ctx,
                   rs2::device & device,
                   eth_config & config,
@@ -115,6 +136,7 @@ bool find_device( rs2::context const & ctx,
 {
     auto device_list = ctx.query_devices();
     auto const n_devices = device_list.size();
+    bool more_than_one_device = false;
     for( uint32_t i = 0; i < n_devices; ++i )
     {
         auto possible_device = device_list[i];
@@ -125,21 +147,19 @@ bool find_device( rs2::context const & ctx,
                 continue;
             if( ! devices_looked_at.insert( sn ).second )
                 continue;  // insert failed: device was already looked at
-            if( possible_device.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
-                LOG_DEBUG( "trying " << possible_device.get_description() << ", FW version "
-                           << possible_device.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
-            else
-                LOG_DEBUG( "trying " << possible_device.get_description() );
+            LOG_DEBUG( "trying " << describe_device( possible_device ) );
             config = get_eth_config( possible_device, golden );
             if( device )
-                throw std::runtime_error( "More than one device is available; please use --serial-number" );
-            device = possible_device;
+                more_than_one_device = true;
+            list_device( device = possible_device );
         }
         catch( std::exception const & e )
         {
             LOG_DEBUG( "failed! " << e.what() );
         }
     }
+    if( more_than_one_device )
+        throw std::runtime_error( "More than one device is available; please use --serial-number" );
     return device;
 }
 
@@ -151,19 +171,19 @@ try
 
     cli::flag quiet_arg( "quiet", "Suppress regular informational (-I-) messages" );
     cli::flag reset_arg( "reset", "Hardware reset without making any changes" );
-    cli::flag disable_arg( "disable", "Disable DDS in all librealsense examples & tools by default and exit" );
+    cli::flag disable_arg( "disable", "Disable DDS in all librealsense examples & tools by default" );
     cli::flag no_reset_arg( "no-reset", "Do not hardware reset after changes are made" );
     cli::flag golden_arg( "golden", "Show R/O golden values vs. current; mutually exclusive with any changes" );
     cli::flag factory_reset_arg( "factory-reset", "Reset settings back to the --golden values" );
     cli::value< std::string > sn_arg( "serial-number", "S/N", "", "Device serial-number to use, if more than one device is available" );
     cli::value< std::string > ip_arg( "ip", "address", "", "Device static IP address to use when DHCP is off" );
     cli::value< std::string > mask_arg( "mask", "1.2.3.4", "", "Device static IP network mask to use when DHCP is off" );
-    cli::value< std::string > gateway_arg( "gateway", "1.2.3.4", "", "Device static IP network mask to use when DHCP is off" );
+    cli::value< std::string > gateway_arg( "gateway", "1.2.3.4", "", "Gateway to use when DHCP is off" );
     cli::value< std::string > dhcp_arg( "dhcp", "on/off", "on", "DHCP dynamic IP discovery 'on' or 'off'" );
     cli::value< uint32_t > dhcp_timeout_arg( "dhcp-timeout", "seconds", 30, "Seconds before DHCP times out and falls back to a static IP" );
     cli::value< uint32_t > link_timeout_arg( "link-timeout", "milliseconds", 4000, "Milliseconds before --eth-first link times out and falls back to USB" );
     cli::value< int > domain_id_arg( "domain-id", "0-232", 0, "DDS Domain ID to use (default is 0)" );
-    cli::flag usb_first_arg( "usb-first", "Prioritize USB before Ethernet" );
+    cli::flag usb_first_arg( "usb-first", "Prioritize USB and fall back to Ethernet after link timeout" );
     cli::flag eth_first_arg( "eth-first", "Prioritize Ethernet and fall back to USB after link timeout" );
     cli::flag dynamic_priority_arg( "dynamic-priority", "Dynamically prioritize the last-working connection method (the default)" );
 
@@ -225,11 +245,6 @@ try
 
         throw std::runtime_error( "No device found supporting Eth" );
     }
-    if( device.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
-        INFO( "Device: " << device.get_description() << ", FW version "
-                         << device.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
-    else
-        INFO( "Device: " << device.get_description() );
 
     eth_config requested( current );
     if( golden || factory_reset_arg.isSet() || reset_arg.isSet() )

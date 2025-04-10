@@ -25,11 +25,7 @@ Information about the Intel® RealSense™ technology at [www.intelrealsense.com
 
 ## Update on Recent Changes to the RealSense Product Line
 
-Intel has EOLed the LiDAR, Facial Authentication, and Tracking product lines. These products have been discontinued and will no longer be available for new orders.
-
-Intel WILL continue to sell and support stereo products including the following: D410, D415, D430, , D401 ,D450 modules and D415, D435, D435i, D435f, D405, D455, D457 depth cameras. We will also continue the work to support and develop our LibRealSense open source SDK.
-
-In the future, Intel and the RealSense team will focus our new development on advancing innovative technologies that better support our core businesses and IDM 2.0 strategy.
+Please visit this link for product updates - https://www.intelrealsense.com/message-to-customers/
 
 ## Building librealsense - Using vcpkg
 

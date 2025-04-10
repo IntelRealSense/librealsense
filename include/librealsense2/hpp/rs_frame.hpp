@@ -112,10 +112,19 @@ namespace rs2
         */
         std::string stream_name() const
         {
-            std::stringstream ss;
-            ss << rs2_stream_to_string(stream_type());
-            if (stream_index() != 0) ss << " " << stream_index();
-            return ss.str();
+            rs2_error * e = nullptr;
+            std::string name = rs2_get_stream_profile_name( _profile, &e );
+
+            if( name.empty() )
+            {
+                std::stringstream ss;
+                ss << rs2_stream_to_string( stream_type() );
+                if( stream_index() != 0 )
+                    ss << " " << stream_index();
+                name = ss.str();
+            }
+
+            return name;
         }
 
         /**

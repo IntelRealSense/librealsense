@@ -224,7 +224,7 @@ namespace Intel.RealSense
         /// <summary>Change the depth digital gain see rs2_digital_gain for values</summary>
         DigitalGain = 69,
 
-        /// <summary>The resolution mode: see rs2_sensor_mode for values</summary>
+        /// <summary>Deprecated - The resolution mode: see rs2_sensor_mode for values</summary>
         SensorMode = 70,
 
         /// <summary>Enable Laser On constantly (GS SKU Only)</summary>

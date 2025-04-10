@@ -416,30 +416,14 @@ std::ostream & operator<<( std::ostream & os, RemoteLocatorsAllocationAttributes
 
 std::ostream & operator<<( std::ostream & os, WriterProxyData const & info )
 {
-    field::group group;
-    os << "'" << info.topicName() << "' " << group;
-    os << /*field::separator << "type" <<*/ field::value << info.typeName();
-    os << /*field::separator << "reliability" << field::group() <<*/ info.m_qos.m_reliability;
-    if( ! ( info.m_qos.m_durability == eprosima::fastdds::dds::DurabilityQosPolicy() ) )
-        os << /*field::separator << "durability" << field::group() <<*/ info.m_qos.m_durability;
-    if( ! ( info.m_qos.m_liveliness == eprosima::fastdds::dds::LivelinessQosPolicy() ) )
-        os << field::separator << "liveliness" << field::value << info.m_qos.m_liveliness;
-    if( info.m_qos.m_publishMode.flow_controller_name
-        && info.m_qos.m_publishMode.flow_controller_name != eprosima::fastdds::rtps::FASTDDS_FLOW_CONTROLLER_DEFAULT )
-        os << field::separator << "flow-controller" << field::value << "'"
-           << info.m_qos.m_publishMode.flow_controller_name << "'";
+    os << "'" << info.topicName() << "' " << field::group() << realdds::print_writer_info( info );
     return os;
 }
 
 
 std::ostream & operator<<( std::ostream & os, ReaderProxyData const & info )
 {
-    field::group group;
-    os << "'" << info.topicName() << "' " << group;
-    os << /*field::separator << "type" <<*/ field::value << info.typeName();
-    os << /*field::separator << "reliability" << field::group() <<*/ info.m_qos.m_reliability;
-    if( ! ( info.m_qos.m_durability == eprosima::fastdds::dds::DurabilityQosPolicy() ) )
-        os << /*field::separator << "durability" << field::group() <<*/ info.m_qos.m_durability;
+    os << "'" << info.topicName() << "' " << field::group() << realdds::print_reader_info( info );
     return os;
 }
 
@@ -491,6 +475,34 @@ std::ostream & operator<<( std::ostream & os, BuiltinAttributes const & qos )
 
 
 namespace realdds {
+
+
+std::ostream & operator<<( std::ostream & os, print_writer_info const & pwi )
+{
+    auto & info = pwi.info;
+    os << /*field::separator << "type" <<*/ field::value << info.typeName();
+    os << /*field::separator << "reliability" << field::group() <<*/ info.m_qos.m_reliability;
+    if( ! ( info.m_qos.m_durability == eprosima::fastdds::dds::DurabilityQosPolicy() ) )
+        os << /*field::separator << "durability" << field::group() <<*/ info.m_qos.m_durability;
+    if( ! ( info.m_qos.m_liveliness == eprosima::fastdds::dds::LivelinessQosPolicy() ) )
+        os << field::separator << "liveliness" << field::value << info.m_qos.m_liveliness;
+    if( info.m_qos.m_publishMode.flow_controller_name
+        && info.m_qos.m_publishMode.flow_controller_name != eprosima::fastdds::rtps::FASTDDS_FLOW_CONTROLLER_DEFAULT )
+        os << field::separator << "flow-controller" << field::value << "'"
+           << info.m_qos.m_publishMode.flow_controller_name << "'";
+    return os;
+}
+
+
+std::ostream & operator<<( std::ostream & os, print_reader_info const & pri )
+{
+    auto & info = pri.info;
+    os << /*field::separator << "type" <<*/ field::value << info.typeName();
+    os << /*field::separator << "reliability" << field::group() <<*/ info.m_qos.m_reliability;
+    if( ! ( info.m_qos.m_durability == eprosima::fastdds::dds::DurabilityQosPolicy() ) )
+        os << /*field::separator << "durability" << field::group() <<*/ info.m_qos.m_durability;
+    return os;
+}
 
 
 eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability_kind_from_string( std::string const & s )

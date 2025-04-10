@@ -595,8 +595,8 @@ class closure:
 
 def print_results():
     """
-    Used to print the results of the tests in the file. The format has to agree with the expected format in check_log()
-    in run-unit-tests and with the C++ format using Catch
+    Used to print the results of the tests in the file. The format has to agree with the expected format in
+    check_log_for_fails() in run-unit-tests and with the C++ format using Catch
     """
     print_separator()
     global n_assertions, n_tests, n_failed_assertions, n_failed_tests, failed_tests

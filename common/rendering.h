@@ -59,7 +59,8 @@ namespace rs2
             : _counter(0),
             _delta(0),
             _last_timestamp(0),
-            _num_of_frames(0)
+            _num_of_frames(0),
+            _last_frame_counter(0)
         {}
 
         fps_calc(const fps_calc& other)
@@ -75,7 +76,7 @@ namespace rs2
             std::lock_guard<std::mutex> lock(_mtx);
             if (++_counter >= _skip_frames)
             {
-                if (_last_timestamp != 0)
+                if (_last_timestamp != 0 && frame_counter > _last_frame_counter)
                 {
                     _delta = timestamp - _last_timestamp;
                     _num_of_frames = frame_counter - _last_frame_counter;
@@ -90,7 +91,7 @@ namespace rs2
         double get_fps() const
         {
             std::lock_guard<std::mutex> lock(_mtx);
-            if (_delta == 0)
+            if (std::abs(_delta) < std::numeric_limits<double>::epsilon())
                 return 0;
 
             return (static_cast<double>(_numerator) * _num_of_frames) / _delta;
@@ -510,7 +511,7 @@ namespace rs2
                 case RS2_FORMAT_ANY:
                     throw std::runtime_error("not a valid format");
                 case RS2_FORMAT_Z16H:
-                    throw std::runtime_error("unexpected format: Z16H. Check decoder processing block");
+                    throw std::runtime_error("unexpected format: Z16H is deprecated! Check decoder processing block");
                 case RS2_FORMAT_Z16:
                 case RS2_FORMAT_DISPARITY16:
                 case RS2_FORMAT_DISPARITY32:

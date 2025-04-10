@@ -126,7 +126,7 @@ namespace librealsense
     {
         firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
 
-        if( fw_ver >= firmware_version( 5, 10, 9, 0 ) )
+        if( fw_ver >= firmware_version( 5, 10, 9, 0 ) && _pid != ds::RS405_PID ) //D405 does not support an actual RGB sensor
             register_feature( std::make_shared< auto_exposure_roi_feature >( get_color_sensor(), _hw_monitor, true ) );
     }
 
@@ -156,7 +156,9 @@ namespace librealsense
         {
             register_metadata_mipi(color_ep);
         }
-        register_processing_blocks();       
+        register_processing_blocks();
+
+        auto_calibrated::add_color_write_observer( [this]() {  _color_calib_table_raw.reset(); } );
     }
 
     void d400_color::register_options()
@@ -274,13 +276,7 @@ namespace librealsense
         // attributes of md_mipi_rgb_control structure
         auto md_prop_offset = offsetof(metadata_mipi_rgb_raw, rgb_mode);
 
-        // to be checked
         color_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
-                                       make_attribute_parser(&md_mipi_rgb_mode::hw_timestamp,
-                                                             md_mipi_rgb_control_attributes::hw_timestamp_attribute,
-                                                             md_prop_offset));
-
-        color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,
                                        make_attribute_parser(&md_mipi_rgb_mode::hw_timestamp,
                                                              md_mipi_rgb_control_attributes::hw_timestamp_attribute,
                                                              md_prop_offset));

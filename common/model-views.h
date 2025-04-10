@@ -13,6 +13,7 @@
 #include <GLFW/glfw3.h>
 #include "opengl3.h"
 #include <imgui.h>
+#include <realsense_imgui.h>
 #include <imgui_impl_glfw.h>
 #include <map>
 #include <set>
@@ -47,8 +48,6 @@ namespace rs2
     void hyperlink(ux_window& window, const char* title, const char* link);
 
     static const float FEET_TO_METER = 0.3048f;
-
-    rs2_sensor_mode resolution_from_width_height(int width, int height);
 
     template<class T>
     void sort_together(std::vector<T>& vec, std::vector<std::string>& names)

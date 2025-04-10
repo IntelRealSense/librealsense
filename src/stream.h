@@ -83,6 +83,9 @@ namespace librealsense
             _uid = uid;
         };
 
+        const char * get_name() override { return _name.c_str(); }
+        void set_name( const std::string & name ) override { _name = name; }
+
         rs2_stream_profile* get_c_wrapper() const override;
 
         void set_c_wrapper(rs2_stream_profile* wrapper) override;
@@ -99,6 +102,7 @@ namespace librealsense
         int _tag = profile_tag::PROFILE_TAG_ANY;
         rs2_stream_profile _c_wrapper;
         rs2_stream_profile* _c_ptr = nullptr;
+        std::string _name;
     };
 
     class video_stream_profile : public virtual video_stream_profile_interface, public stream_profile_base, public extension_snapshot

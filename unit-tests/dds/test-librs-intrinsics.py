@@ -2,7 +2,7 @@
 # Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 from rspy import log, test
 
@@ -11,6 +11,7 @@ with test.remote.fork( nested_indent=None ) as remote:
 
         import pyrealdds as dds
         import d435i
+        import d455
 
         dds.debug( log.is_debug_on(), log.nested )
 
@@ -34,22 +35,22 @@ with test.remote.fork( nested_indent=None ) as remote:
 
         def build_scaled_intrinsics_server():
             color = dds.color_stream_server( 'Color', 'RGB Camera' )
-            color.init_profiles( d435i.color_stream_profiles(), 8 )
+            color.init_profiles( d455.color_stream_profiles(), 5 )
             color.init_options( [] )
 
             # Add only a single set of intrinsics for 1920x1080, from which we expect to scale to all resolutions:
             i = dds.video_intrinsics();
-            i.width = 1920
-            i.height = 1080
-            i.principal_point.x = 970.4506225585938
-            i.principal_point.y = 542.8473510742188
-            i.focal_length.x = 1362.133056640625
-            i.focal_length.y = 1362.629638671875
+            i.width = 1280
+            i.height = 720
+            i.principal_point.x = 648.580993652344
+            i.principal_point.y = 358.821014404297
+            i.focal_length.x = 636.450012207031
+            i.focal_length.y = 635.622009277344
             i.distortion.model = dds.distortion_model.inverse_brown
-            i.distortion.coeffs = [0.0,0.0,0.0,0.0,0.0]
+            i.distortion.coeffs = [-0.0569772012531757,0.0660239011049271,0.000211432998185046,0.00068545201793313,-0.0208512991666794]
             color.set_intrinsics( set( [i] ) )
 
-            dev = dds.device_server( participant, d435i.device_info.topic_root )
+            dev = dds.device_server( participant, d455.device_info.topic_root )
             dev.init( [color], [], {} )
             return dev
 
@@ -69,7 +70,7 @@ with test.remote.fork( nested_indent=None ) as remote:
 
     log.nested = 'C  '
 
-    import librs as rs
+    from rspy import librs as rs
     if log.is_debug_on():
         rs.log_to_console( rs.log_severity.debug )
 
@@ -167,7 +168,7 @@ with test.remote.fork( nested_indent=None ) as remote:
         dev = None
 
     with test.closure( 'Scaled intrinsics' ):
-        remote.run( 'instance = broadcast_device( build_scaled_intrinsics_server(), d435i.device_info )' )
+        remote.run( 'instance = broadcast_device( build_scaled_intrinsics_server(), d455.device_info )' )
         dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
         sensors = dev.query_sensors()
         test.check_equal( len(sensors), 1 )
