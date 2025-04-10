@@ -8,6 +8,7 @@
 
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"
+#include "rsutils/accelerators/gpu.h"
 #endif
 
 namespace librealsense
@@ -17,12 +18,15 @@ namespace librealsense
     {
         auto count = width * height;
 #ifdef RS2_USE_CUDA
-        rscuda::split_frame_y8_y8_from_y8i_cuda(dest, count, reinterpret_cast<const y8i_pixel *>(source));
-#else
+        if (rsutils::rs2_is_gpu_available())
+        {
+            rscuda::split_frame_y8_y8_from_y8i_cuda(dest, count, reinterpret_cast<const y8i_pixel*>(source));
+            return;
+        }
+#endif
         split_frame(dest, count, reinterpret_cast<const y8i_pixel*>(source),
             [](const y8i_pixel & p) -> uint8_t { return p.l; },
             [](const y8i_pixel & p) -> uint8_t { return p.r; });
-#endif
     }
 
     y8i_to_y8y8::y8i_to_y8y8(int left_idx, int right_idx) :

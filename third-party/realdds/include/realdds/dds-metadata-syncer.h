@@ -8,6 +8,7 @@
 #include <memory>
 #include <mutex>
 #include <functional>
+#include <atomic>
 
 
 namespace realdds {
@@ -93,12 +94,17 @@ public:
         return frame_holder( frame, _on_frame_release );
     }
 
+    void start() { _started = true; }
+    void stop() { _started = false; }
+
 private:
     // Call these under lock:
     void search_for_match( std::unique_lock< std::mutex > & );
     bool handle_match( std::unique_lock< std::mutex > & );
     bool handle_frame_without_metadata( std::unique_lock< std::mutex > & );
     bool drop_metadata( std::unique_lock< std::mutex > & );
+
+    std::atomic< bool > _started;
 };
 
 

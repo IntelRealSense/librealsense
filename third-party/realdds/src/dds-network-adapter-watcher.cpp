@@ -60,7 +60,6 @@ public:
                                 if( new_ips.size() || old_ips.size() )
                                     callbacks.raise( new_ips, old_ips );
                             }
-                            _th.detach();  // so it's not joinable
                             LOG_DEBUG( "done waiting for IP changes" );
                         } );
                 }
@@ -72,8 +71,15 @@ public:
     ~network_adapter_watcher_singleton()
     {
         _adapter_watcher.reset();  // signal the thread to finish
-        if( _th.joinable() )
-            _th.join();
+        try
+        {
+            if (_th.joinable())
+                _th.join();
+        }
+        catch (std::exception& e)
+        {
+            LOG_DEBUG("Network adapter watcher termination failed: " << e.what());
+        }
     }
 
     void update_ips( ip_set * p_new_ips = nullptr, ip_set * p_old_ips = nullptr )

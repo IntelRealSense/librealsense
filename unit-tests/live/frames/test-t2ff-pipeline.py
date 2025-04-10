@@ -52,7 +52,7 @@ test.finish()
 
 ################################################################################################
 product_name = dev.get_info(rs.camera_info.name)
-if 'D421' not in product_name and 'D405' not in product_name: # Cameras with no color sensor
+if 'D421' not in product_name and 'D405' not in product_name and 'D430' not in product_name: # Cameras with no color sensor
     test.start("Testing pipeline first color frame delay on " + product_line + " device - " + platform.system() + " OS")
     color_cfg = rs.config()
     color_cfg.enable_stream(rs.stream.color, rs.format.rgb8, 30)

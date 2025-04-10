@@ -1,11 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-5 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <realdds/dds-defines.h>
 #include <fastdds/rtps/common/Time_t.h>
 
-#include <realdds/topics/ros2/ros2image.h>
+#include <realdds/topics/ros2/sensor_msgs/msg/Image.h>
 
 #include <string>
 #include <memory>

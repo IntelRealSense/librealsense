@@ -6,6 +6,7 @@
 #include "viewer.h"
 #include "os.h"
 #include <imgui_internal.h>
+#include <realsense_imgui.h>
 
 
 namespace rs2
@@ -48,9 +49,24 @@ namespace rs2
             else
                 frame_md.md_attributes[i].first = false;
         }
-
+        create_graph(profile.stream_type());
         texture->upload(f);
         return texture;
+    }
+
+    void stream_model::create_graph(rs2_stream stream_type)
+    {
+        if (!graph_initialized) 
+        {
+            // create graph if the stream is gyro/accel
+            if (profile.stream_type() == RS2_STREAM_GYRO) {
+                graph = std::make_shared<graph_model>("Gyro graph", RS2_STREAM_GYRO);
+            }
+            else if (profile.stream_type() == RS2_STREAM_ACCEL) {
+                graph = std::make_shared<graph_model>("Accel graph", RS2_STREAM_ACCEL);
+            }
+            graph_initialized = true;
+        }
     }
 
     void outline_rect(const rect& r)
@@ -366,7 +382,7 @@ namespace rs2
     bool draw_combo_box(const std::string& id, const std::vector<std::string>& device_names, int& new_index)
     {
         std::vector<const char*>  device_names_chars = get_string_pointers(device_names);
-        return ImGui::Combo(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
+        return RsImGui::CustomComboBox(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
     }
 
     void stream_model::show_stream_header(ImFont* font, const rect &stream_rect, viewer_model& viewer)
@@ -377,8 +393,9 @@ namespace rs2
         if (!viewer.allow_stream_close) --num_of_buttons;
         if (viewer.streams.size() > 1) ++num_of_buttons;
         if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
+        if (RS2_FORMAT_MOTION_XYZ32F == profile.format()) ++num_of_buttons; // Motion graph button
 
-        ImGui_ScopePushFont(font);
+        RsImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
@@ -454,12 +471,43 @@ namespace rs2
         ImGui::PushTextWrapPos(stream_rect.x + stream_rect.w - 32 * num_of_buttons - 5);
         ImGui::Text("%s", label.c_str());
         if (tooltip != label && ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", tooltip.c_str());
+            RsImGui::CustomTooltip("%s", tooltip.c_str());
         ImGui::PopTextWrapPos();
 
         ImGui::SetCursorScreenPos({ stream_rect.x + stream_rect.w - 32 * num_of_buttons, stream_rect.y - top_bar_height });
-
-
+        
+        if (graph)
+        {
+            label = rsutils::string::from() << textual_icons::bar_chart << "##graph view" << profile.unique_id();
+            if (show_graph)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    graph->clear();
+                    show_graph = false;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    RsImGui::CustomTooltip("Close graph view");
+                }
+                ImGui::PopStyleColor(2);
+            }
+            else
+            {
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    show_graph = true;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    RsImGui::CustomTooltip("Open graph view");
+                }
+            }
+            ImGui::SameLine();
+        }
+        
         label = rsutils::string::from() << textual_icons::metadata << "##Metadata" << profile.unique_id();
         if (show_metadata)
         {
@@ -471,7 +519,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Hide frame metadata");
+                RsImGui::CustomTooltip("Hide frame metadata");
             }
             ImGui::PopStyleColor(2);
         }
@@ -483,7 +531,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Show frame metadata");
+                RsImGui::CustomTooltip("Show frame metadata");
             }
         }
         ImGui::SameLine();
@@ -502,7 +550,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Hide color map ruler");
+                    RsImGui::CustomTooltip("Hide color map ruler");
                 }
                 ImGui::PopStyleColor(2);
             }
@@ -515,7 +563,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Show color map ruler");
+                    RsImGui::CustomTooltip("Show color map ruler");
                 }
             }
             ImGui::SameLine();
@@ -537,7 +585,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Resume sensor");
+                RsImGui::CustomTooltip("Resume sensor");
             }
             ImGui::PopStyleColor(2);
         }
@@ -555,7 +603,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Pause sensor");
+                RsImGui::CustomTooltip("Pause sensor");
             }
         }
         ImGui::SameLine();
@@ -572,7 +620,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Save snapshot");
+            RsImGui::CustomTooltip("Save snapshot");
         }
         ImGui::SameLine();
 
@@ -591,7 +639,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Hide stream info overlay");
+                RsImGui::CustomTooltip("Hide stream info overlay");
             }
 
             ImGui::PopStyleColor(2);
@@ -607,7 +655,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Show stream info overlay");
+                RsImGui::CustomTooltip("Show stream info overlay");
             }
         }
         ImGui::SameLine();
@@ -625,7 +673,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Maximize stream to full-screen");
+                    RsImGui::CustomTooltip("Maximize stream to full-screen");
                 }
 
                 ImGui::SameLine();
@@ -643,7 +691,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Restore tile view");
+                    RsImGui::CustomTooltip("Restore tile view");
                 }
 
                 ImGui::PopStyleColor(2);
@@ -664,7 +712,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Stop this sensor");
+                RsImGui::CustomTooltip("Stop this sensor");
             }
         }
 
@@ -731,11 +779,11 @@ namespace rs2
                         }
                         else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
                         {
-                            ImGui::SetTooltip("Timestamp: Global Time");
+                            RsImGui::CustomTooltip("Timestamp: Global Time");
                         }
                         else
                         {
-                            ImGui::SetTooltip("Timestamp: Hardware Clock");
+                            RsImGui::CustomTooltip("Timestamp: Hardware Clock");
                         }
                     }
 
@@ -765,7 +813,7 @@ namespace rs2
                         ImGui::Text("%s", label.c_str());
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Stream Resolution, Format");
+                        RsImGui::CustomTooltip("%s", "Stream Resolution, Format");
                     }
 
                     ImGui::SameLine();
@@ -780,7 +828,7 @@ namespace rs2
                         ImGui::Text("%s", label.c_str());
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
+                        RsImGui::CustomTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
                     }
                 }
 
@@ -790,6 +838,21 @@ namespace rs2
 
         if (show_metadata)
             stream_model::draw_stream_metadata(timestamp, timestamp_domain, frame_number, profile, original_size, stream_rect);
+
+        if (show_graph && graph)
+        {
+            if (dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
+            {
+                graph->pause();
+            }
+            else
+            {
+                if(graph->is_paused())
+                    graph->resume();
+            }
+            graph->process_frame(texture->get_last_frame());
+            graph->draw(stream_rect);
+        }
 
         ImGui::PopStyleColor(5);
     }
@@ -1007,7 +1070,7 @@ namespace rs2
                 {
                     if( ImGui::IsItemHovered() )
                     {
-                        ImGui::SetTooltip( "%s", at.description.c_str() );
+                        RsImGui::CustomTooltip( "%s", at.description.c_str() );
                     }
                 }
 
@@ -1114,7 +1177,7 @@ namespace rs2
 
                 // Draw maximum usable depth range
                 auto ds = sensor_from_frame(texture->get_last_frame())->as<depth_sensor>();
-                if (!viewer.is_option_skipped(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
+                if (ds && !viewer.is_option_skipped(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
                 {
                     if (ds.supports(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) &&
                         (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) == 1.0f))
@@ -1199,7 +1262,7 @@ namespace rs2
 
             std::string msg(ss.str().c_str());
 
-            ImGui_ScopePushFont(font);
+            RsImGui_ScopePushFont(font);
 
             // adjust windows size to the message length
             auto new_line_start_idx = msg.find_first_of('\n');
@@ -1310,7 +1373,7 @@ namespace rs2
                 ImGui::Text("%s:", motion.name.c_str());
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", motion.toolTip.c_str());
+                    RsImGui::CustomTooltip("%s", motion.toolTip.c_str());
                 }
                 ImGui::PopStyleColor(1);
 
@@ -1411,7 +1474,7 @@ namespace rs2
             ImGui::Text("%s:", pose.name.c_str());
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", pose.toolTip.c_str());
+                RsImGui::CustomTooltip("%s", pose.toolTip.c_str());
             }
 
             if (pose.fixedColor == false)
@@ -1637,7 +1700,7 @@ namespace rs2
     {
         auto zoom_val = 1.f;
         // Allow mouse scrolling for zoom when not displaying scrollable metadata
-        if (stream_rect.contains(g.cursor) && !show_metadata)
+        if(stream_rect.contains(g.cursor) && !show_metadata && !show_graph)
         {
             static const auto wheel_step = 0.1f;
             auto mouse_wheel_value = -g.mouse_wheel * 0.1f;

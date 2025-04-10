@@ -36,7 +36,7 @@ float get_depth_unit_value(const rs2_device* const dev)
     int num_of_sensors = rs2_get_sensors_count(sensor_list, &e);
     check_error(e);
 
-    float depth_scale = 0;
+    float depth_scale = 0.001f; // Default to mm
     int is_depth_sensor_found = 0;
     int i;
     for (i = 0; i < num_of_sensors; ++i)
@@ -50,7 +50,8 @@ float get_depth_unit_value(const rs2_device* const dev)
 
         if (1 == is_depth_sensor_found)
         {
-            depth_scale = rs2_get_option((const rs2_options*)sensor, RS2_OPTION_DEPTH_UNITS, &e);
+            if( rs2_supports_option((const rs2_options*)sensor, RS2_OPTION_DEPTH_UNITS, &e) )
+                depth_scale = rs2_get_option((const rs2_options*)sensor, RS2_OPTION_DEPTH_UNITS, &e);
             check_error(e);
             rs2_delete_sensor(sensor);
             break;

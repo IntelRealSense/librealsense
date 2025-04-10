@@ -42,7 +42,7 @@ namespace rsutils
                 _delta.set_expired();
             }
         protected:
-            timer _delta;
+            mutable timer _delta;
         };
     }
 }

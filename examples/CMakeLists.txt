@@ -18,6 +18,15 @@ else()
         list( APPEND DEPENDENCIES log )
     endif()
 endif()
+# Check the platform and conditionally link OpenGL and libdl (for linux)
+if(WIN32)
+    list( APPEND DEPENDENCIES OpenGL::GL)
+else()
+    list( APPEND DEPENDENCIES OpenGL::GL dl)
+endif()
+
+# Add all imgui cpp source files and store the list in the IMGUI_SOURCES variable
+file(GLOB IMGUI_SOURCES "../third-party/imgui/*.cpp") 
 
 # We need tclap for command-line interface
 list(APPEND DEPENDENCIES tclap)
@@ -42,5 +51,6 @@ add_subdirectory(record-playback)
 add_subdirectory(motion)
 add_subdirectory(gl)
 add_subdirectory(hdr)
+add_subdirectory(on-chip-calib)
 
 unset_security_flags_for_executable()

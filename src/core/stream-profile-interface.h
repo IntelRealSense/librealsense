@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 #include <iosfwd>
+#include <string>
 
 
 namespace librealsense {
@@ -28,6 +29,9 @@ public:
 
     virtual int get_tag() const = 0;
     virtual void tag_profile( int tag ) = 0;
+
+    virtual const char * get_name() = 0;
+    virtual void set_name( const std::string & name ) = 0;
 
     virtual std::shared_ptr< stream_profile_interface > clone() const = 0;
     virtual rs2_stream_profile * get_c_wrapper() const = 0;

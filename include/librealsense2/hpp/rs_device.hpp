@@ -54,17 +54,8 @@ namespace rs2
          */
         std::string get_type() const
         {
-            if( supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
-                return "USB";
-            if( supports( RS2_CAMERA_INFO_PRODUCT_ID ) )
-            {
-                std::string pid = get_info( RS2_CAMERA_INFO_PRODUCT_ID );
-                if( pid == "ABCD" ) // Specific for D457
-                    return "GMSL";
-                if( pid == "BBCD" ) // Specific for D457 Recovery DFU
-                    return "GMSL";
-                return pid;  // for DDS devices, this will be "DDS"
-            }
+            if( supports( RS2_CAMERA_INFO_CONNECTION_TYPE ) )
+                return get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
             return {};
         }
 

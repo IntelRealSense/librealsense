@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-24 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "core/sensor-interface.h"
@@ -13,6 +13,7 @@
 
 #include <rsutils/lazy.h>
 #include <rsutils/signal.h>
+#include <rsutils/deferred.h>
 
 #include <chrono>
 #include <memory>
@@ -88,6 +89,16 @@ namespace librealsense
         processing_blocks get_recommended_processing_blocks() const override
         {
             return {};
+        }
+
+        // Sometimes it is more efficient to prepare for large or repeating operations. Depending on the actual sensor
+        // type we might want to change power state or encapsulate small transactions into a large one.
+        virtual void prepare_for_bulk_operation() {}
+        virtual void finished_bulk_operation() {}
+        rsutils::deferred bulk_operation()
+        {
+            prepare_for_bulk_operation();
+            return rsutils::deferred( [this] { finished_bulk_operation(); } );
         }
 
         // recordable< recommended_proccesing_blocks_interface > is needed to record our recommended processing blocks
@@ -196,11 +207,6 @@ namespace librealsense
 
         std::shared_ptr< std::map< uint32_t, rs2_format > > & get_fourcc_to_rs2_format_map();
         std::shared_ptr< std::map< uint32_t, rs2_stream > > & get_fourcc_to_rs2_stream_map();
-
-        // Sometimes it is more efficient to prepare for large or repeating operations. Depending on the actual sensor
-        // type we might want to change power state or encapsulate small transactions into a large one.
-        virtual void prepare_for_bulk_operation() {}
-        virtual void finished_bulk_operation(){}
     };
 
     // A sensor pointer to another "raw sensor", usually UVC/HID
@@ -253,6 +259,9 @@ namespace librealsense
         rsutils::subscription register_options_changed_callback( options_watcher::callback && cb ) override;
         virtual void register_option_to_update( rs2_option id, std::shared_ptr< option > option );
         virtual void unregister_option_from_update( rs2_option id );
+
+        void prepare_for_bulk_operation() override { _raw_sensor->prepare_for_bulk_operation(); }
+        void finished_bulk_operation() override { _raw_sensor->finished_bulk_operation(); }
 
     private:
         void register_processing_block_options(const processing_block& pb);

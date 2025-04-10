@@ -4,55 +4,13 @@
 #include "post-processing-filters-list.h"
 #include "post-processing-block-model.h"
 #include <imgui_internal.h>
+#include <realsense_imgui.h>
 
 #include "metadata-helper.h"
 #include "subdevice-model.h"
 
 namespace rs2
 {
-    static void width_height_from_resolution(rs2_sensor_mode mode, int& width, int& height)
-    {
-        switch (mode)
-        {
-        case RS2_SENSOR_MODE_VGA:
-            width = 640;
-            height = 480;
-            break;
-        case RS2_SENSOR_MODE_XGA:
-            width = 1024;
-            height = 768;
-            break;
-        case RS2_SENSOR_MODE_QVGA:
-            width = 320;
-            height = 240;
-            break;
-        default:
-            width = height = 0;
-            break;
-        }
-    }
-
-    static int get_resolution_id_from_sensor_mode(rs2_sensor_mode sensor_mode,
-        const std::vector< std::pair< int, int > >& res_values)
-    {
-        int width = 0, height = 0;
-        width_height_from_resolution(sensor_mode, width, height);
-        auto iter = std::find_if(res_values.begin(),
-            res_values.end(),
-            [width, height](std::pair< int, int > res) {
-                if (((res.first == width) && (res.second == height))
-                    || ((res.first == height) && (res.second == width)))
-                    return true;
-                return false;
-            });
-        if (iter != res_values.end())
-        {
-            return static_cast<int>(std::distance(res_values.begin(), iter));
-        }
-
-        throw std::runtime_error("cannot convert sensor mode to resolution ID");
-    }
-
     std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec)
     {
         std::vector<const char*> res;
@@ -436,33 +394,6 @@ namespace rs2
                 ui.selected_res_id = selection_index;
             }
 
-            if (new_device_connected)
-            {
-                // Have the various preset options automatically update based on the resolution of the
-                // (closed) stream...
-                // TODO we have no res_values when loading color rosbag, and color sensor isn't
-                // even supposed to support SENSOR_MODE... see RS5-7726
-                if (s->supports(RS2_OPTION_SENSOR_MODE) && !res_values.empty())
-                {
-                    // Watch out for read-only options in the playback sensor!
-                    try
-                    {
-                        auto requested_sensor_mode = static_cast<float>(resolution_from_width_height(
-                            res_values[ui.selected_res_id].first,
-                            res_values[ui.selected_res_id].second));
-
-                        auto currest_sensor_mode = s->get_option(RS2_OPTION_SENSOR_MODE);
-
-                        if (requested_sensor_mode != currest_sensor_mode)
-                            s->set_option(RS2_OPTION_SENSOR_MODE, requested_sensor_mode);
-                    }
-                    catch (not_implemented_error const&)
-                    {
-                        // Just ignore for now: need to figure out a way to write to playback sensors...
-                    }
-                }
-            }
-
             if (ui.is_multiple_resolutions)
             {
                 for (auto it = ui.selected_res_id_map.begin(); it != ui.selected_res_id_map.end(); ++it)
@@ -559,55 +490,17 @@ namespace rs2
             }
             else
             {
-                ImGui::PushItemWidth(-1);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - 25 ); // Set the width for the combo box itself with a 25 buffer 
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                 auto tmp_selected_res_id = ui.selected_res_id;
-                if (ImGui::Combo(label.c_str(), &tmp_selected_res_id, res_chars.data(),
+                if (RsImGui::CustomComboBox(label.c_str(), &tmp_selected_res_id, res_chars.data(),
                     static_cast<int>(res_chars.size())))
                 {
                     res = true;
                     _options_invalidated = true;
 
-                    // Set sensor mode only at the Viewer app,
-                    // DQT app will handle the sensor mode when the streaming is off (while reseting the stream)
-                    if (s->supports(RS2_OPTION_SENSOR_MODE) && !allow_change_resolution_while_streaming)
-                    {
-                        auto width = res_values[tmp_selected_res_id].first;
-                        auto height = res_values[tmp_selected_res_id].second;
-                        auto res = resolution_from_width_height(width, height);
-                        if (res >= RS2_SENSOR_MODE_VGA && res < RS2_SENSOR_MODE_COUNT)
-                        {
-                            try
-                            {
-                                s->set_option(RS2_OPTION_SENSOR_MODE, float(res));
-                            }
-                            catch (const error& e)
-                            {
-                                error_message = error_to_string(e);
-                            }
+                    ui.selected_res_id = tmp_selected_res_id;
 
-                            // Only update the cached value once set_option is done! That way, if it doesn't change anything...
-                            try
-                            {
-                                int sensor_mode_val = static_cast<int>(s->get_option(RS2_OPTION_SENSOR_MODE));
-                                {
-                                    ui.selected_res_id = get_resolution_id_from_sensor_mode(
-                                        static_cast<rs2_sensor_mode>(sensor_mode_val),
-                                        res_values);
-                                }
-                            }
-                            catch (...) {}
-                        }
-                        else
-                        {
-                            error_message = rsutils::string::from() << "Resolution " << width << "x" << height
-                                << " is not supported on this device";
-                        }
-                    }
-                    else
-                    {
-                        ui.selected_res_id = tmp_selected_res_id;
-                    }
                 }
                 ImGui::PopStyleColor();
                 ImGui::PopItemWidth();
@@ -638,9 +531,9 @@ namespace rs2
             }
             else
             {
-                ImGui::PushItemWidth(-1);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - 25); // Set the width for the combo box itself with a 25 buffer 
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                if (ImGui::Combo(label.c_str(), &ui.selected_shared_fps_id, fps_chars.data(),
+                if (RsImGui::CustomComboBox(label.c_str(), &ui.selected_shared_fps_id, fps_chars.data(),
                     static_cast<int>(fps_chars.size())))
                 {
                     res = true;
@@ -717,9 +610,9 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::PushItemWidth(-1);
+                    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - 25); // Set the width for the combo box itself with a 25 buffer 
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                    ImGui::Combo(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
+                    RsImGui::CustomComboBox(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
                         static_cast<int>(formats_chars.size()));
                     ImGui::PopStyleColor();
                     ImGui::PopItemWidth();
@@ -744,9 +637,9 @@ namespace rs2
                     }
                     else
                     {
-                        ImGui::PushItemWidth(-1);
+                        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - 25); // Set the width for the combo box itself with a 25 buffer 
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                        ImGui::Combo(label.c_str(), &ui.selected_fps_id[f.first], fps_chars.data(),
+                        RsImGui::CustomComboBox(label.c_str(), &ui.selected_fps_id[f.first], fps_chars.data(),
                             static_cast<int>(fps_chars.size()));
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
@@ -799,55 +692,17 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::PushItemWidth(-1);
+                    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - 25); // Set the width for the combo box itself with a 25 buffer 
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                     auto tmp_selected_res_id = ui.selected_res_id_map[stream_type_id];
-                    if (ImGui::Combo(label.c_str(), &tmp_selected_res_id, res_chars.data(),
+                    if (RsImGui::CustomComboBox(label.c_str(), &tmp_selected_res_id, res_chars.data(),
                         static_cast<int>(res_chars.size())))
                     {
                         res = true;
                         _options_invalidated = true;
+                        
+                        ui.selected_res_id_map[stream_type_id] = tmp_selected_res_id;
 
-                        // Set sensor mode only at the Viewer app,
-                        // DQT app will handle the sensor mode when the streaming is off (while reseting the stream)
-                        if (s->supports(RS2_OPTION_SENSOR_MODE) && !allow_change_resolution_while_streaming)
-                        {
-                            auto width = res_values[tmp_selected_res_id].first;
-                            auto height = res_values[tmp_selected_res_id].second;
-                            auto res = resolution_from_width_height(width, height);
-                            if (res >= RS2_SENSOR_MODE_VGA && res < RS2_SENSOR_MODE_COUNT)
-                            {
-                                try
-                                {
-                                    s->set_option(RS2_OPTION_SENSOR_MODE, float(res));
-                                }
-                                catch (const error& e)
-                                {
-                                    error_message = error_to_string(e);
-                                }
-
-                                // Only update the cached value once set_option is done! That way, if it doesn't change anything...
-                                try
-                                {
-                                    int sensor_mode_val = static_cast<int>(s->get_option(RS2_OPTION_SENSOR_MODE));
-                                    {
-                                        ui.selected_res_id = get_resolution_id_from_sensor_mode(
-                                            static_cast<rs2_sensor_mode>(sensor_mode_val),
-                                            res_values);
-                                    }
-                                }
-                                catch (...) {}
-                            }
-                            else
-                            {
-                                error_message = rsutils::string::from() << "Resolution " << width << "x" << height
-                                    << " is not supported on this device";
-                            }
-                        }
-                        else
-                        {
-                            ui.selected_res_id_map[stream_type_id] = tmp_selected_res_id;
-                        }
                     }
                     ImGui::PopStyleColor();
                     ImGui::PopItemWidth();
@@ -932,9 +787,9 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::PushItemWidth(-1);
+                    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - 25); // Set the width for the combo box itself with a 25 buffer 
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                    ImGui::Combo(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
+                    RsImGui::CustomComboBox(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
                         static_cast<int>(formats_chars.size()));
                     ImGui::PopStyleColor();
                     ImGui::PopItemWidth();
@@ -977,6 +832,7 @@ namespace rs2
     // The function returns true if one of the configuration parameters changed
     bool subdevice_model::draw_stream_selection(std::string& error_message)
     {
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10);
         bool res = false;
 
         std::string label = rsutils::string::from()
@@ -986,7 +842,7 @@ namespace rs2
         auto streaming_tooltip = [&]() {
             if ((!allow_change_resolution_while_streaming && streaming)
                 && ImGui::IsItemHovered())
-                ImGui::SetTooltip("Can't modify while streaming");
+                RsImGui::CustomTooltip("Can't modify while streaming");
         };
 
         auto col0 = ImGui::GetCursorPosX();
@@ -1417,6 +1273,45 @@ namespace rs2
             }
         }
         return is_cal_format;
+    }
+
+    bool subdevice_model::is_depth_calibration_profile() const
+    {
+        // Check if D555 at depth resolution of 1280x800
+        std::string dev_name = "";
+        if( dev.supports( RS2_CAMERA_INFO_NAME ) )
+            dev_name = dev.get_info( RS2_CAMERA_INFO_NAME );
+
+        if( dev_name.find( "D555" ) != std::string::npos )
+        {
+            // More efficient to check resolution before format
+            if( ui.selected_res_id > 0 && res_values.size() > ui.selected_res_id &&  // Verify res_values is initialized
+                res_values[ui.selected_res_id].first == 1280 && res_values[ui.selected_res_id].second == 800 )
+            {
+                for( auto it = stream_enabled.begin(); it != stream_enabled.end(); ++it )
+                {
+                    if( it->second )
+                    {
+                        int selected_format_index = -1;
+                        if( ui.selected_format_id.count( it->first ) > 0 )
+                            selected_format_index = ui.selected_format_id.at( it->first );
+
+                        if( format_values.count( it->first ) > 0 && selected_format_index > -1 )
+                        {
+                            auto formats = format_values.at( it->first );
+                            if( formats.size() > selected_format_index )
+                            {
+                                auto format = formats[selected_format_index];
+                                if( format == RS2_FORMAT_Z16 )
+                                    return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     std::pair<int, int> subdevice_model::get_max_resolution(rs2_stream stream) const

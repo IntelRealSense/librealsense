@@ -64,7 +64,7 @@ enum rs2_format  // copy from rs2_sensor.h
     RS2_FORMAT_INZI,  /**< multi-planar Depth 16bit + IR 10bit.  */
     RS2_FORMAT_INVI,  /**< 8-bit IR stream.  */
     RS2_FORMAT_W10,   /**< Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes */
-    RS2_FORMAT_Z16H,  /**< Variable-length Huffman-compressed 16-bit depth values. */
+    RS2_FORMAT_Z16H,  /**< DEPRECATED! - Variable-length Huffman-compressed 16-bit depth values. */
     RS2_FORMAT_FG,    /**< 16-bit per-pixel frame grabber format. */
     RS2_FORMAT_Y411,  /**< 12-bit per-pixel. */
     RS2_FORMAT_COMBINED_MOTION,
@@ -80,16 +80,15 @@ int dds_video_encoding::to_rs2() const
         { "mono8", RS2_FORMAT_Y8 },  // Used by IR streams; ROS2-compatible
         { "Y8I",  RS2_FORMAT_Y8I },
         { "W10",  RS2_FORMAT_W10 },
-        { "Y16",  RS2_FORMAT_Y16 },
+        { "mono16",  RS2_FORMAT_Y16 }, // Used by IR streams; ROS2-compatible
         { "Y12I", RS2_FORMAT_Y12I },
 //      { "Y16I", RS2_FORMAT_Y16I },
         { "16UC1", RS2_FORMAT_Z16 },  // Used by depth streams; ROS2-compatible
-        { "Z16H", RS2_FORMAT_Z16H },
         { "rgb8", RS2_FORMAT_RGB8 },  // Used by color streams; ROS2-compatible
         { "RGBA", RS2_FORMAT_RGBA8 },
         { "RGB2", RS2_FORMAT_BGR8 },
         { "BGRA", RS2_FORMAT_BGRA8 },
-        { "MJPG", RS2_FORMAT_MJPEG },
+        { "jpeg", RS2_FORMAT_MJPEG }, // ROS2-compatible for compressed images
         { "CNF4", RS2_FORMAT_RAW8 },
         { "BYR2", RS2_FORMAT_RAW16 },
         { "R10", RS2_FORMAT_RAW10 },
@@ -99,7 +98,7 @@ int dds_video_encoding::to_rs2() const
     std::string s = to_string();
     auto it = fcc_to_rs2.find( s );
     if( it == fcc_to_rs2.end() )
-        DDS_THROW( runtime_error, "invalid encoding '" + s + "'" );
+        DDS_THROW( runtime_error, "Invalid encoding '" + s + "'" );
     return it->second;
 }
 
@@ -113,16 +112,15 @@ dds_video_encoding dds_video_encoding::from_rs2( int rs2_format )
     case RS2_FORMAT_Y8: encoding = "mono8"; break;
     case RS2_FORMAT_Y8I: encoding = "Y8I"; break;
     case RS2_FORMAT_W10: encoding = "W10"; break;
-    case RS2_FORMAT_Y16: encoding = "Y16"; break;
+    case RS2_FORMAT_Y16: encoding = "mono16"; break;
     case RS2_FORMAT_Y12I: encoding = "Y12I"; break;
 //  case RS2_FORMAT_Y16I: encoding = "Y16I"; break;
     case RS2_FORMAT_Z16: encoding = "16UC1"; break;
-    case RS2_FORMAT_Z16H: encoding = "Z16H"; break;
     case RS2_FORMAT_RGB8: encoding = "rgb8"; break;
     case RS2_FORMAT_RGBA8: encoding = "RGBA"; break;  // todo
     case RS2_FORMAT_BGR8: encoding = "RGB2"; break;
     case RS2_FORMAT_BGRA8: encoding = "BGRA"; break;  // todo
-    case RS2_FORMAT_MJPEG: encoding = "MJPG"; break;
+    case RS2_FORMAT_MJPEG: encoding = "jpeg"; break;
     case RS2_FORMAT_RAW8: encoding = "CNF4"; break;
     case RS2_FORMAT_RAW16: encoding = "BYR2"; break;
     case RS2_FORMAT_RAW10: encoding = "R10"; break;

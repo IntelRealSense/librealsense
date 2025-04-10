@@ -13,7 +13,8 @@ participant.init( 123, "formats-conversion-server" )
 
 device_info = dds.message.device_info.from_json({
     "name": "formats-conversion-device",
-    "topic-root": "root_123"
+    "topic-root": "root_123",
+    "product-line": "D400"
 })
 
 # Used to created a device_server per test case, but it currently creates problems when creating a second device while

@@ -79,7 +79,7 @@ namespace librealsense
             _devices_changed;
 
         rsutils::json _settings; // Save operation settings
-        unsigned const _device_mask;
+        unsigned _device_mask;
 
         std::vector< std::shared_ptr< device_factory > > _factories;
     };

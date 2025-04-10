@@ -25,7 +25,9 @@
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
+#include "imgui_impl_opengl3.h"
 #include <imgui_internal.h>
+#include <realsense_imgui.h>
 #ifdef _MSC_VER
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -59,6 +61,7 @@ public:
         if (!_first_frame)
         {
             ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
             glfwSwapBuffers(_window);
         }
         bool res = !glfwWindowShouldClose(_window);
@@ -67,7 +70,7 @@ public:
         glfwGetWindowSize(_window, &_w, &_h);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        ImGui_ImplGlfw_NewFrame(1);
+        RsImGui::PushNewFrame();
         _first_frame = false;
         return res;
     }
@@ -96,7 +99,9 @@ private:
             f->AddFiles(std::vector<std::string>(paths, paths + count));
         });
 
-        ImGui_ImplGlfw_Init(_window, true);
+        ImGui::CreateContext();
+        ImGui_ImplGlfw_InitForOpenGL(_window, true);
+        ImGui_ImplOpenGL3_Init();
 
         glfwSetScrollCallback(_window, [](GLFWwindow * w, double xoffset, double yoffset)
         {
@@ -408,13 +413,16 @@ int main(int argc, const char** argv) try
         ImGui::PushStyleColor(ImGuiCol_HeaderActive, from_rgba(0, 115, 210, 255));
         ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(37, 40, 48, 255));
         ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
+        ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(0.286f, 0.298f, 0.549f, 1.0f));
         ImGuiStyle& style = ImGui::GetStyle();
         style.FramePadding.x = 10;
         style.FramePadding.y = 5;
         int flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings;
 
         static bool open = true;
-        ImGui::SetNextWindowSize({ float(window.width()), float(window.height()) }, flags | ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::SetNextWindowSize({ float(window.width()), float(window.height()) }, ImGuiCond_FirstUseEver);
+        style.WindowRounding = 10.0f; // Set the window rounding
         if (ImGui::Begin("Rosbag Inspector", nullptr, flags | ImGuiWindowFlags_MenuBar))
         {
             draw_menu_bar();
@@ -429,11 +437,11 @@ int main(int argc, const char** argv) try
             draw_error_modal();
         }
         ImGui::End();
-        ImGui::PopStyleColor(10);
+        ImGui::PopStyleColor(11);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-
-    ImGui_ImplGlfw_Shutdown();
+    // Cleanup
+    RsImGui::PopNewFrame();
     glfwTerminate();
     return 0;
 }

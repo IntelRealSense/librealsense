@@ -63,6 +63,7 @@ private:
     std::map< std::string, streaming_impl > _streaming_by_name;
 
     formats_converter _formats_converter;
+    stream_profiles _active_converted_profiles;
 
 public:
     dds_sensor_proxy( std::string const & sensor_name,
@@ -74,22 +75,24 @@ public:
     const std::string & get_name() const { return _name; }
 
     void add_dds_stream( sid_index sidx, std::shared_ptr< realdds::dds_stream > const & stream );
-    std::shared_ptr<stream_profile_interface> add_video_stream( rs2_video_stream video_stream, bool is_default ) override;
-    std::shared_ptr<stream_profile_interface> add_motion_stream( rs2_motion_stream motion_stream, bool is_default ) override;
 
     void open( const stream_profiles & profiles ) override;
     void start( rs2_frame_callback_sptr callback ) override;
     void stop();
+    void close() override;
 
     void add_option( std::shared_ptr< realdds::dds_option > option );
 
     void add_processing_block( std::string const & filter_name );
 
     const std::map< sid_index, std::shared_ptr< realdds::dds_stream > > & streams() const { return _streams; }
+    void set_frames_callback( rs2_frame_callback_sptr callback ) override;
+    rs2_frame_callback_sptr get_frames_callback() const override;
 
     // sensor_interface
 public:
     rsutils::subscription register_options_changed_callback( options_watcher::callback && ) override;
+    stream_profiles get_active_streams() const override;
 
 protected:
     void register_basic_converters();
@@ -114,6 +117,9 @@ protected:
 
     virtual void add_no_metadata( frame *, streaming_impl & );
     virtual void add_frame_metadata( frame *, rsutils::json const & metadata, streaming_impl & );
+
+    void add_processing_block_settings( const std::string & filter_name,
+                                        std::shared_ptr< librealsense::processing_block_interface > & ppb ) const;
 
     friend class dds_device_proxy;  // Currently calls handle_new_metadata
 };

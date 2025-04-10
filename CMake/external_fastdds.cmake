@@ -60,6 +60,9 @@ function(get_fastdds)
 
     add_library(dds INTERFACE)
     target_link_libraries( dds INTERFACE fastcdr fastrtps )
+    
+    disable_third_party_warnings(fastcdr)  
+    disable_third_party_warnings(fastrtps)  
 
     add_definitions(-DBUILD_WITH_DDS)
 

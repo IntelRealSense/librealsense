@@ -591,6 +591,7 @@ const char * get_string( rs2_camera_info value )
     CASE( FIRMWARE_UPDATE_ID )
     CASE( IP_ADDRESS )
     CASE( DFU_DEVICE_PATH )
+    CASE( CONNECTION_TYPE )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

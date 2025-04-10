@@ -5,7 +5,9 @@
 #include "example-imgui.hpp"
 #include <librealsense2-gl/rs_processing_gl.hpp> // Include GPU-Processing API
 #include <common/cli.h>
-
+#include "imgui_impl_glfw.h"
+#include <imgui_impl_opengl3.h>
+#include <realsense_imgui.h>
 
 /*
  This example introduces the concept of spatial stream alignment.
@@ -50,7 +52,11 @@ int main(int argc, char * argv[]) try
 
     // Create and initialize GUI related objects
     window app(1280, 720, "RealSense Align Example"); // Simple window handling
-    ImGui_ImplGlfw_Init(app, false);      // ImGui library intializition
+    // Setup Dear ImGui context
+    ImGui::CreateContext();
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(app, false);
+    ImGui_ImplOpenGL3_Init();
 
     // Once we have a window, initialize GL module
     // Pass our window to enable sharing of textures between processed frames and the window
@@ -124,11 +130,12 @@ int main(int argc, char * argv[]) try
         glDisable(GL_BLEND);
 
         // Render the UI:
-        ImGui_ImplGlfw_NewFrame(1);
+        RsImGui::PushNewFrame();
         render_slider({ 15.f, app.height() - 60, app.width() - 30, app.height() }, &alpha, &dir);
         ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
-
+    RsImGui::PopNewFrame();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
@@ -153,6 +160,7 @@ void render_slider(rect location, float* alpha, direction* dir)
 
     ImGui::SetNextWindowPos({ location.x, location.y });
     ImGui::SetNextWindowSize({ location.w, location.h });
+    ImGuiSetStyleColors();
 
     // Render transparency slider:
     ImGui::Begin("slider", nullptr, flags);
@@ -160,7 +168,7 @@ void render_slider(rect location, float* alpha, direction* dir)
     ImGui::SliderFloat("##Slider", alpha, 0.f, 1.f);
     ImGui::PopItemWidth();
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Texture Transparancy: %.3f", *alpha);
+        RsImGui::CustomTooltip("Texture Transparancy: %.3f", *alpha);
 
     // Render direction checkboxes:
     bool to_depth = (*dir == direction::to_depth);

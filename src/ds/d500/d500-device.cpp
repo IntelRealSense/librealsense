@@ -22,7 +22,7 @@
 
 #include "proc/depth-formats-converter.h"
 #include "proc/y8i-to-y8y8.h"
-#include "proc/y16i-to-y10msby10msb.h"
+#include "proc/y16i-10msb-to-y16y16.h"
 
 #include <rsutils/type/fourcc.h>
 using rs_fourcc = rsutils::type::fourcc;
@@ -54,7 +54,6 @@ namespace librealsense
         {rs_fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
         {rs_fourcc('Y','1','6','I'), RS2_FORMAT_Y16I},
         {rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
-        {rs_fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
         {rs_fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
         {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
         {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
@@ -359,13 +358,17 @@ namespace librealsense
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
         auto depth_devs_info = filter_by_mi( all_device_infos, 0 );
 
-        if ( depth_devs_info.empty() )
+        for (auto&& info : depth_devs_info) // Filter just mi=0, DEPTH
+        {
+            auto depth_uvc_device = get_backend()->create_uvc_device(info);
+            if (depth_uvc_device)
+                depth_devices.push_back(depth_uvc_device);
+        }
+
+        if (depth_devs_info.empty() || depth_devices.empty())
         {
             throw backend_exception("cannot access depth sensor", RS2_EXCEPTION_TYPE_BACKEND);
         }
-
-        for( auto & info : depth_devs_info )  // Filter just mi=0, DEPTH
-            depth_devices.push_back( get_backend()->create_uvc_device( info ) );
 
         std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
@@ -501,8 +504,6 @@ namespace librealsense
 
             _is_symmetrization_enabled = check_symmetrization_enabled();
 
-            depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
-
             depth_sensor.register_processing_block(
                 { {RS2_FORMAT_Y8I} },
                 { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
@@ -512,7 +513,7 @@ namespace librealsense
             depth_sensor.register_processing_block(
                 { RS2_FORMAT_Y16I },
                 { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                []() {return std::make_shared<y16i_to_y10msby10msb>(); }
+                []() {return std::make_shared<y16i_10msb_to_y16y16>(); }
             );
                 
             pid_hex_str = rsutils::string::from() << std::uppercase << rsutils::string::hexdump( _pid );
@@ -602,6 +603,7 @@ namespace librealsense
 
             depth_sensor.register_option( RS2_OPTION_ERROR_POLLING_ENABLED,
                                           std::make_shared< polling_errors_disable >( _polling_error_handler ) );
+
         }); //group_multiple_fw_calls
 
         // attributes of md_capture_timing
@@ -699,9 +701,18 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 
         if (usb_modality)
+        {
+            register_info(RS2_CAMERA_INFO_CONNECTION_TYPE, "USB");
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+        }
 
         register_features();
+
+        d500_auto_calibrated::add_depth_write_observer( [this]()
+        {
+            _coefficients_table_raw.reset();
+            _new_calib_table_raw.reset();
+        } );
     }
 
     void d500_device::register_features()
@@ -797,10 +808,9 @@ namespace librealsense
         constexpr size_t gvd_header_size = 8;
         auto gvd_payload_data = gvd_buff.data() + gvd_header_size;
         auto computed_crc = rsutils::number::calc_crc32( gvd_payload_data, parsed_fields->payload_size );
-        LOG_INFO( "D500 GVD version is: " << static_cast< int >( parsed_fields->gvd_version[0] )
-                                          << "."
-                                          << static_cast< int >( parsed_fields->gvd_version[1] ) );
-        LOG_INFO( "D500 GVD payload_size is: " << parsed_fields->payload_size );
+        LOG_DEBUG( "D500 GVD version is: " << static_cast< int >( parsed_fields->gvd_version[0] ) << "."
+                                           << static_cast< int >( parsed_fields->gvd_version[1] )
+                                           << "\n\tD500 GVD payload_size is: " << parsed_fields->payload_size );
 
         if( computed_crc != parsed_fields->crc32 )
         {

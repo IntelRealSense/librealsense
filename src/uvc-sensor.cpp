@@ -193,7 +193,7 @@ void uvc_sensor::open( const stream_profiles & requests )
                         expected_size = compute_frame_expected_size( width, height, bpp );
 
                     // For compressed formats copy the raw data as is
-                    if( val_in_range( req_profile_base->get_format(), { RS2_FORMAT_MJPEG, RS2_FORMAT_Z16H } ) )
+                    if( val_in_range( req_profile_base->get_format(), { RS2_FORMAT_MJPEG } ) )
                         expected_size = static_cast< int >( f.frame_size );
 
                     auto extension = frame_source::stream_to_frame_types( req_profile_base->get_stream_type() );

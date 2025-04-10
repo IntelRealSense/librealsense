@@ -62,8 +62,8 @@ def measure_fps(sensor, profile, seconds_to_count_frames = 10):
 
 
 delta_Hz = 1
-tested_fps = [6, 15, 30, 60, 90]
-time_to_test_fps = [20, 13, 10, 5, 4]
+tested_fps = [5, 6, 15, 30, 60, 90]
+time_to_test_fps = [25, 20, 13, 10, 5, 4]
 test.check_equal( len(tested_fps), len(time_to_test_fps) )
 
 dev, _ = test.find_first_device_or_exit()
@@ -126,7 +126,7 @@ if cs:
         else:
             fps = measure_fps(cs, cp, time_to_test_fps[i])
             log.i("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
-            delta_Hz = requested_fps * 0.05 # Validation KPI is 5%
+            delta_Hz = requested_fps * (0.10 if requested_fps == 5 else 0.05) # Validation KPI is 5% for all non 5 FPS rate
             test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
 
 test.finish()

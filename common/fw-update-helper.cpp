@@ -4,6 +4,7 @@
 #include "fw-update-helper.h"
 #include "model-views.h"
 #include "viewer.h"
+#include <realsense_imgui.h>
 #include "ux-window.h"
 
 #include <rsutils/os/special-folder.h>
@@ -139,7 +140,10 @@ namespace rs2
             auto dev_updatable = _dev.as<updatable>();
             if(!(dev_updatable && dev_updatable.check_firmware_compatibility(_fw)))
             {
-                fail("Firmware Update failed - fw version must be newer than version 5.13.1.1");
+                std::stringstream ss;
+                ss << "The firmware version is not compatible with ";
+                ss << _dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+                fail(ss.str());
                 return;
             }
         }
@@ -187,10 +191,11 @@ namespace rs2
         std::function<void()> cleanup,
         invoker invoke)
     {
-        // if device is D457, and fw is signed - using mipi specific procedure
+        // if device is MIPI device, and fw is signed - using mipi specific procedure
         if (_is_signed
                 && (!strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD")
-                 || !strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "BBCD"))
+                 || !strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "BBCD")
+                 || !strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCE"))
                 )
         {
             process_mipi();
@@ -509,7 +514,7 @@ namespace rs2
 
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "New firmware will be flashed to the device");
+                    RsImGui::CustomTooltip("%s", "New firmware will be flashed to the device");
                 }
             }
             else if (update_state == RS2_FWU_STATE_IN_PROGRESS)
@@ -557,7 +562,7 @@ namespace rs2
             if (ImGui::IsItemHovered())
             {
                 win.link_hovered();
-                ImGui::SetTooltip("%s", "Internet connection required");
+                RsImGui::CustomTooltip("%s", "Internet connection required");
             }
         }
     }

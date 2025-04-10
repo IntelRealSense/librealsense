@@ -8,6 +8,7 @@
 #include "ds/d400/d400-private.h"
 
 #include <rsutils/string/hexdump.h>
+#include <rsutils/time/stopwatch.h>
 
 #include <chrono>
 #include <stdexcept>
@@ -58,12 +59,20 @@ namespace librealsense
             LOG_WARNING("DFU - failed to detach device");
     }
 
-    void update_device::read_device_info(std::shared_ptr<platform::usb_messenger> messenger)
+    void update_device::read_device_info( std::shared_ptr< platform::usb_messenger > messenger )
     {
-        auto state = get_dfu_state(messenger);
-
-        if (state != RS2_DFU_STATE_DFU_IDLE)
-            throw std::runtime_error("DFU detach failed!");
+        auto state = get_dfu_state( messenger );
+        if( state != RS2_DFU_STATE_DFU_IDLE )
+        {
+            LOG_DEBUG( "DFU state is: " << state << "; detaching..." );
+            detach( messenger );
+            state = get_dfu_state( messenger );
+            if( state != RS2_DFU_STATE_DFU_IDLE )
+            {
+                LOG_ERROR( "DFU detach failed!" << "; state is " << state );
+                throw std::runtime_error( "DFU detach failed!" );
+            }
+        }
 
         dfu_fw_status_payload payload;
         uint32_t transferred = 0;
@@ -77,40 +86,32 @@ namespace librealsense
         _highest_fw_version = get_formatted_fw_version(payload.fw_highest_version);
         _last_fw_version = get_formatted_fw_version(payload.fw_last_version);
 
-        std::string lock_status = _is_dfu_locked ? "device is locked" : "device is unlocked";
-        LOG_INFO("This device is in DFU mode, previously-installed firmware: " << _last_fw_version <<
-            ", the highest firmware ever installed: " << _highest_fw_version);
-
-        LOG_INFO("DFU status: " << lock_status << " , DFU version is: " << payload.dfu_version);
+        LOG_INFO( "DFU payload for " << get_device_info()->get_address() << ":"
+                  << "\n\tSerial number: "
+                      << rsutils::string::hexdump( payload.serial_number.serial, sizeof( payload.serial_number.serial ) )
+                  << "\n\tDevice is " << ( _is_dfu_locked ? "locked" : "unlocked" )
+                  << "\n\tDFU version is: " << payload.dfu_version
+                  << "\n\tPrevious version: " << _last_fw_version
+                  << "\n\tHighest ever installed: " << _highest_fw_version );
     }
 
-    std::string update_device::to_string(rs2_dfu_state state) const
+    std::ostream & operator<<( std::ostream & os, rs2_dfu_state state )
     {
-        switch (state)
+        switch( state )
         {
-        case(RS2_DFU_STATE_APP_IDLE):
-            return "APP_IDLE";
-        case(RS2_DFU_STATE_APP_DETACH):
-            return "APP_DETACH";
-        case(RS2_DFU_STATE_DFU_DOWNLOAD_SYNC):
-            return "DFU_DOWNLOAD_SYNC";
-        case(RS2_DFU_STATE_DFU_DOWNLOAD_BUSY):
-            return "DFU_DOWNLOAD_BUSY";
-        case(RS2_DFU_STATE_DFU_DOWNLOAD_IDLE):
-            return "DFU_DOWNLOAD_IDLE";
-        case(RS2_DFU_STATE_DFU_MANIFEST_SYNC):
-            return "DFU_MANIFEST_SYNC";
-        case(RS2_DFU_STATE_DFU_MANIFEST):
-            return "DFU_MANIFEST";
-        case(RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET):
-            return "DFU_MANIFEST_WAIT_RESET";
-        case(RS2_DFU_STATE_DFU_UPLOAD_IDLE):
-            return "DFU_UPLOAD_IDLE";
-        case(RS2_DFU_STATE_DFU_ERROR):
-            return "DFU_ERROR";
-        default:
-            return "DFU_STATE_???";
+        case RS2_DFU_STATE_DFU_IDLE:                 return os << "IDLE";
+        case RS2_DFU_STATE_DFU_ERROR:                return os << "ERROR";
+        case RS2_DFU_STATE_APP_IDLE:                 return os << "APP_IDLE";
+        case RS2_DFU_STATE_APP_DETACH:               return os << "APP_DETACH";
+        case RS2_DFU_STATE_DFU_DOWNLOAD_SYNC:        return os << "DFU_DOWNLOAD_SYNC";
+        case RS2_DFU_STATE_DFU_DOWNLOAD_BUSY:        return os << "DFU_DOWNLOAD_BUSY";
+        case RS2_DFU_STATE_DFU_DOWNLOAD_IDLE:        return os << "DFU_DOWNLOAD_IDLE";
+        case RS2_DFU_STATE_DFU_MANIFEST_SYNC:        return os << "DFU_MANIFEST_SYNC";
+        case RS2_DFU_STATE_DFU_MANIFEST:             return os << "DFU_MANIFEST";
+        case RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET:  return os << "DFU_MANIFEST_WAIT_RESET";
+        case RS2_DFU_STATE_DFU_UPLOAD_IDLE:          return os << "DFU_UPLOAD_IDLE";
         }
+        return os << (int)state;
     }
 
     bool update_device::wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout) const
@@ -146,9 +147,10 @@ namespace librealsense
 
     float update_device::compute_progress(float progress, float start, float end, float threshold) const
     {
-        if (threshold < 1.f)
-            throw std::invalid_argument("Avoid division by zero");
-        return start + (ceil(progress * threshold) / threshold) * (end - start) / 100.f;
+        // NOTE: this is usually overriden; see derived classes!
+        if( threshold > 1.f )
+            progress = ceil( progress * threshold ) / threshold;
+        return start + progress * (end - start);
     }
 
     update_device::update_device( std::shared_ptr< const device_info > const & dev_info,
@@ -162,20 +164,15 @@ namespace librealsense
     {
         if (auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER))
         {
-            auto state = get_dfu_state(messenger);
-            LOG_DEBUG("DFU state is: " << state);
-            if (state != RS2_DFU_STATE_DFU_IDLE)
-                detach(messenger);
-
-            read_device_info(messenger);
+            read_device_info( messenger );
         }
         else
         {
-            std::stringstream s;
+            std::ostringstream s;
             s << "access failed for " << std::hex <<  _usb_device->get_info().vid << ":"
               <<_usb_device->get_info().pid << " uid: " <<  _usb_device->get_info().id << std::dec;
-            LOG_ERROR(s.str().c_str());
-            throw std::runtime_error(s.str().c_str());
+            LOG_ERROR( s.str() );
+            throw std::runtime_error( s.str() );
         }
     }
 
@@ -221,6 +218,7 @@ namespace librealsense
         size_t offset = 0;
         uint32_t transferred = 0;
         int retries = 10;
+        rsutils::time::stopwatch sw;
 
         while (remaining_bytes > 0)
         {
@@ -251,11 +249,17 @@ namespace librealsense
             offset += chunk_size;
 
             float progress = (float)block_number / (float)blocks_count;
-            LOG_DEBUG("fw update progress: " << progress);
-            if (update_progress_callback)
+            if( sw.get_elapsed_ms() >= 500. )
             {
-                auto progress_for_bar = compute_progress(progress, 0.f, 20.f, 5.f) / 100.f;
-                update_progress_callback->on_update_progress(progress_for_bar);
+                // Only update every half-second to avoid spurious callbacks
+                // (we can get here many many times in a split second)
+                LOG_DEBUG( "transfer progress: " << progress );
+                if( update_progress_callback )
+                {
+                    auto progress_for_bar = compute_progress( progress, 0.f, 20.f, 0.f ) / 100.f;
+                    update_progress_callback->on_update_progress( progress_for_bar );
+                }
+                sw.reset();
             }
         }
 
@@ -267,6 +271,7 @@ namespace librealsense
         if (sts != platform::RS2_USB_STATUS_SUCCESS)
             throw std::runtime_error("Failed to send final FW packet");
 
+        LOG_INFO( "Resetting device ..." );
         dfu_manifest_phase(messenger, update_progress_callback);
     }
 
@@ -335,7 +340,8 @@ namespace librealsense
 
     void update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
     {
-        if(_pid == "ABCD" || _pid == "BBCD")
+        LOG_INFO( "Uploading FW image ..." );
+        if(_pid == "ABCD" || _pid == "BBCD" || _pid == "ABCE")
         {
             update_mipi(fw_image, fw_image_size, update_progress_callback);
         }

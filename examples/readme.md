@@ -10,7 +10,7 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 
 |Name | Language | Description | Experience Level | Technology |
 |---|---|---|---|---|
-|[Hello-RealSense](./hello-realsense)| C++ | Demonstrates the basics of connecting to a RealSense device and using depth data | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
+|[Hello-RealSense](./hello-realsense) | C++ | Demonstrates the basics of connecting to a RealSense device and using depth data | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[Distance](./C/distance) | C | Equivalent to `hello-realsense` but rewritten for C users | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)|
 |[Color](./C/color) | C | Demonstrate how to stream color data and prints some frame information | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)|
 |[Capture](./capture)| C++ | Shows how to synchronize and render multiple streams: left, right, depth and RGB streams | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)|
@@ -20,6 +20,7 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 |[Multicam](./multicam)| C++ | Present multiple cameras depth streams simultaneously, in separate windows | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[Face](../wrappers/dlib/face)| C++ & [Dlib](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/dlib) | Facial recognition with simple anti-spoofing | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)  |
 |[Face](../wrappers/openvino/face)| C++ & [OpenVINO](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/openvino) | Facial recognition with OpenVINO™ | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)  |
+|[On Chip Calibration](./on-chip-calib)| C++ | Demonstrates the basic flow of activating a RealSense device internal calibration | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[Depth](./C/depth) | C | Demonstrates how to stream depth data and prints a simple text-based representation of the depth image | :star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)|
 |[Spatial Alignment](./align)| C++ | Introduces the concept of spatial stream alignment, using depth-color mapping | :star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[Advanced Alignment](./align-advanced)| C++ | Show a simple method for dynamic background removal from video | :star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |

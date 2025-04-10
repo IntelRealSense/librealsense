@@ -6,7 +6,7 @@ project( rs-align )
 
 if(BUILD_GRAPHICAL_EXAMPLES)
 
-add_executable( ${PROJECT_NAME} rs-align.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp)
+add_executable( ${PROJECT_NAME} rs-align.cpp ${IMGUI_SOURCES})
 set_property( TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11 )
 target_link_libraries( ${PROJECT_NAME} ${DEPENDENCIES} )
 include_directories( ../../third-party/imgui ../../examples )
