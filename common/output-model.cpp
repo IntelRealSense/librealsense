@@ -1204,7 +1204,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
 
 void frame_drops_dashboard::process_frame(rs2::frame f)
 {
-    write_shared_data([&](){
+    shared_data_access::write_shared_data([&](){
         double ts = glfwGetTime();
         if (method == 1) ts = f.get_timestamp() / 1000.f;
         auto it = stream_to_time.find(f.get_profile().unique_id());
@@ -1236,12 +1236,12 @@ void frame_drops_dashboard::process_frame(rs2::frame f)
         }
 
         stream_to_time[f.get_profile().unique_id()] = ts;
-    });
+    }, m );
 }
 
 void frame_drops_dashboard::draw(ux_window& win, rect r)
 {
-    auto hist = read_shared_data<std::deque<int>>([&](){ return drops_history; });
+    auto hist = shared_data_access::read_shared_data<std::deque<int>>([&](){ return drops_history; }, m);
     for (int i = 0; i < hist.size(); i++)
     {
         add_point((float)i, (float)hist[i]);
@@ -1277,7 +1277,7 @@ int frame_drops_dashboard::get_height() const
 
 void frame_drops_dashboard::clear(bool full)
 {
-    write_shared_data([&](){
+    shared_data_access::write_shared_data([&](){
         stream_to_time.clear();
         last_time = 0;
         *total = 0;
@@ -1288,5 +1288,5 @@ void frame_drops_dashboard::clear(bool full)
             for (int i = 0; i < 100; i++)
                 drops_history.push_back(0);
         }
-    });
+    }, m);
 }

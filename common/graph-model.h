@@ -7,11 +7,9 @@
 #include <implot.h> 
 #include <mutex>
 #include <vector>
-#include <GLFW/glfw3.h>
 #include <rsutils/time/periodic-timer.h>
-#include "rect.h"
 
-#include <librealsense2/rs.hpp>
+#include "output-model.h"
 
 namespace rs2
 {
@@ -33,19 +31,7 @@ namespace rs2
         void pause();
         void resume();
         bool is_paused();
-    protected:
-        template<class T>
-        T read_shared_data(std::function<T()> action)
-        {
-            std::lock_guard<std::mutex> lock(_m);
-            T res = action();
-            return res;
-        }
-        void write_shared_data(std::function<void()> action)
-        {
-            std::lock_guard<std::mutex> lock(_m);
-            action();
-        }
+
     private:
         float _x_value = 0.0f, _y_value = 0.0f, _z_value = 0.0f, _n_value = 0.0f;
         bool _show_n_value;

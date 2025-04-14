@@ -7,7 +7,7 @@ using namespace rs2;
 
 void graph_model::process_frame(rs2::frame f)
 {
-    write_shared_data(
+    shared_data_access::write_shared_data(
         [&]()
         {
             if (!_paused && f && f.is< rs2::motion_frame >()
@@ -42,7 +42,7 @@ void graph_model::process_frame(rs2::frame f)
 
                 }
             }
-        });
+        }, _m);
 }
 
 void graph_model::draw(rect stream_rect)
@@ -56,13 +56,13 @@ void graph_model::draw(rect stream_rect)
         time_index[i] = static_cast<float>(i);
 
     // Read shared history data
-    auto x_hist = read_shared_data<std::vector<float>>([&]() { return _x_history; });
-    auto y_hist = read_shared_data<std::vector<float>>([&]() { return _y_history; });
-    auto z_hist = read_shared_data<std::vector<float>>([&]() { return _z_history; });
+    auto x_hist = shared_data_access::read_shared_data<std::vector<float>>([&]() { return _x_history; }, _m);
+    auto y_hist = shared_data_access::read_shared_data<std::vector<float>>([&]() { return _y_history; }, _m);
+    auto z_hist = shared_data_access::read_shared_data<std::vector<float>>([&]() { return _z_history; }, _m);
 
     std::vector<float> n_hist;
     if(_show_n_value) 
-        n_hist = read_shared_data<std::vector<float>>([&]() { return _n_history; });
+        n_hist = shared_data_access::read_shared_data<std::vector<float>>([&]() { return _n_history; }, _m);
 
     ImGui::BeginChild(_name.c_str(), ImVec2(stream_rect.w + 2, stream_rect.h));
 
@@ -83,7 +83,7 @@ void graph_model::draw(rect stream_rect)
 
 void graph_model::clear()
 {
-    write_shared_data(
+    shared_data_access::write_shared_data(
         [&]()
         {
             _x_history.clear();
@@ -99,7 +99,7 @@ void graph_model::clear()
                 if(_show_n_value)
                     _n_history.push_back(0);
             }
-        });
+        }, _m);
 }
 
 void graph_model::pause()

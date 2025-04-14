@@ -24,6 +24,25 @@ namespace rs2
     class device_model;
     class ux_window;
 
+    class shared_data_access
+    {
+    public:
+        shared_data_access() = delete;
+
+        static void write_shared_data( const std::function< void() > & action, std::mutex & m )
+        {
+            std::lock_guard< std::mutex > lock( m );
+            action();
+        }
+
+        template< class T >
+        static T read_shared_data( const std::function< T() > & action, std::mutex & m )
+        {
+            std::lock_guard< std::mutex > lock( m );
+            return action();
+        }
+    };
+
     class stream_dashboard
     {
     public:
@@ -50,24 +69,11 @@ namespace rs2
     protected:
         virtual void process_frame(rs2::frame f) = 0;
 
-        void write_shared_data(std::function<void()> action)
-        {
-            std::lock_guard<std::mutex> lock(m);
-            action();
-        }
-
-        template<class T>
-        T read_shared_data(std::function<T()> action)
-        {
-            std::lock_guard<std::mutex> lock(m);
-            T res = action();
-            return res;
-        }
-
         void add_point(float x, float y) { xy.push_back(std::make_pair(x, y)); }
 
         void draw_dashboard(ux_window& win, rect& r);
 
+        std::mutex m;
     private:
         void thread_function()
         {
@@ -80,7 +86,6 @@ namespace rs2
         }
         std::string name;
         rs2::frame_queue q;
-        std::mutex m;
         std::atomic<int> stop { false };
         std::thread t;
         std::vector<std::pair<float, float>> xy;
