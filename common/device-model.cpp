@@ -3554,6 +3554,17 @@ namespace rs2
                         RsImGui::CustomTooltip( "Tare calibration is used to adjust camera absolute distance to flat target.\n"
                                            "User needs either to enter the known ground truth or use the get button\n"
                                            "with specific target to get the ground truth." );
+
+                    if (_calib_model.supports())
+                    {
+                        if (ImGui::Selectable("Calibration Data"))
+                        {
+                            _calib_model.open();
+                        }
+                        if (ImGui::IsItemHovered())
+                            RsImGui::CustomTooltip("Access low level camera calibration parameters");
+                    }
+
                 }
 
                 has_autocalib = true;

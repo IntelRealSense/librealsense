@@ -17,14 +17,16 @@ calibration_model::calibration_model(rs2::device dev, std::shared_ptr<notificati
     : dev(dev), _not_model(not_model)
 {
     _accept = config_file::instance().get_or_default(configurations::calibration::enable_writing, false);
+    if( dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) ) {
+        std::string product_line = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
+        d400_device = ( product_line == "D400" );
+        d500_device = ( product_line == "D500" );
+    }
 }
 
 bool calibration_model::supports()
 {
-    bool is_d400 = dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) ?
-        std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400" : false;
-
-    return dev.is<rs2::auto_calibrated_device>() && is_d400;
+    return dev.is<rs2::auto_calibrated_device>();
 }
 
 void calibration_model::draw_float(std::string name, float& x, const float& orig, bool& changed)
@@ -36,6 +38,27 @@ void calibration_model::draw_float(std::string name, float& x, const float& orig
     {
         changed = true;
     }
+    ImGui::PopStyleColor();
+}
+
+void calibration_model::draw_int( std::string name, uint16_t & x, const uint16_t & orig, bool & changed )
+{
+    int temp = static_cast< int >( x );
+    if( temp != static_cast< int >( orig ) )
+        ImGui::PushStyleColor( ImGuiCol_FrameBg, regular_blue );
+    else
+        ImGui::PushStyleColor( ImGuiCol_FrameBg, black );
+    std::string label = "##" + name;
+    if( ImGui::DragInt( label.c_str(), &temp, 1, 0, 65535 ) )
+    {
+        uint16_t new_val = static_cast< uint16_t >( temp );
+        if( new_val != x )
+        {
+            x = new_val;
+            changed = true;
+        }
+    }
+
     ImGui::PopStyleColor();
 }
 
@@ -73,17 +96,58 @@ void calibration_model::draw_float4x4(std::string name, float3x3& feild,
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 }
 
+void calibration_model::draw_intrinsics(std::string name, mini_intrinsics& feild,
+                                       const mini_intrinsics& original, bool& changed)
+{
+    ImGui::SetCursorPosX(10);
+    ImGui::Text("%s:", name.c_str()); ImGui::SameLine();
+    ImGui::SetCursorPosX(200);
+
+    ImGui::PushItemWidth(120);
+    ImGui::SetCursorPosX(200);
+    ImGui::Text("%s:", "ppx"); ImGui::SameLine();
+    ImGui::SetCursorPosX(250);
+    draw_float(name + "_ppx", feild.ppx, original.ppx, changed);
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(400);
+    ImGui::Text("%s:", "ppy"); ImGui::SameLine();
+    ImGui::SetCursorPosX(450);
+    draw_float(name + "_ppy", feild.ppy, original.ppy, changed);
+
+    ImGui::SetCursorPosX(200);
+    ImGui::Text("%s:", "fx"); ImGui::SameLine();
+    ImGui::SetCursorPosX(250);
+    draw_float(name + "_fx", feild.fx, original.fx, changed);
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(400);
+    ImGui::Text("%s:", "fy"); ImGui::SameLine();
+    ImGui::SetCursorPosX(450);
+    draw_float(name + "_fy", feild.fy, original.fy, changed);
+
+    ImGui::SetCursorPosX(200);
+    ImGui::Text("%s:", "width"); ImGui::SameLine();
+    ImGui::SetCursorPosX(250);
+    draw_int(name + "width", feild.image_width, original.image_width, changed);
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(400);
+    ImGui::Text("%s:", "height"); ImGui::SameLine();
+    ImGui::SetCursorPosX(450);
+    draw_int(name + "height", feild.image_height, original.image_height, changed);
+
+    ImGui::PopItemWidth();
+
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+}
+
 void calibration_model::update(ux_window& window, std::string& error_message)
 {
-    const auto window_name = "Calibration Window";
-
     if (to_open)
     {
         try
         {
             _calibration = dev.as<rs2::auto_calibrated_device>().get_calibration_table();
             _original = _calibration;
-            ImGui::OpenPopup(window_name);
+            ImGui::OpenPopup("Calibration Window");
         }
         catch(std::exception e)
         {
@@ -91,7 +155,18 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         }
         to_open = false;
     }
+    if (d400_device)
+    {
+        d400_update(window, error_message);
+    }
+    if (d500_device)
+    {
+        d500_update(window, error_message);
+    }
+}
 
+void calibration_model::d400_update(ux_window& window, std::string& error_message)
+{
     auto table = (librealsense::ds::d400_coefficients_table*)_calibration.data();
     auto orig_table = (librealsense::ds::d400_coefficients_table*)_original.data();
     bool changed = false;
@@ -112,7 +187,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
-    if (ImGui::BeginPopupModal(window_name, nullptr, flags))
+    if (ImGui::BeginPopupModal("Calibration Window", nullptr, flags))
     {
         if (error_message != "") ImGui::CloseCurrentPopup();
 
@@ -238,7 +313,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         ImGui::SameLine();
         if (_accept)
         {
-            if (ImGui::Button(u8"\uF275 Restore Factory", ImVec2(115, 30)))
+            if (ImGui::Button(u8"\uF275 Restore Factory", ImVec2(120, 30)))
             {
                 try
                 {
@@ -272,7 +347,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
             ImGui::PushStyleColor(ImGuiCol_Text, grey);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
 
-            ImGui::Button(u8"\uF275 Restore Factory", ImVec2(115, 30));
+            ImGui::Button(u8"\uF275 Restore Factory", ImVec2(120, 30));
             if (ImGui::IsItemHovered())
             {
                 RsImGui::CustomTooltip("%s", "Write selected calibration table to the device. For advanced users");
@@ -378,8 +453,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         }
         ImGui::SameLine();
 
-        auto streams = dev.query_sensors()[0].get_active_streams();
-        if (_accept && streams.size())
+        if (_accept)
         {
             if (ImGui::Button(u8"\uF2DB  Write Table", ImVec2(120, 25)))
             {
@@ -420,8 +494,329 @@ void calibration_model::update(ux_window& window, std::string& error_message)
 
             ImGui::PopStyleColor(2);
         }
+        auto streams = dev.query_sensors()[0].get_active_streams();
+        if (changed)
+        {
+            try
+            {
+                dev.as<rs2::auto_calibrated_device>().set_calibration_table(_calibration);
+            }
+            catch (const std::exception&)
+            {
+                try
+                {
+                    dev.query_sensors()[0].close();
+                    dev.query_sensors()[0].open(streams);
+                    dev.as<rs2::auto_calibrated_device>().set_calibration_table(_calibration);
+                }
+                catch (const std::exception& ex)
+                {
+                    error_message = ex.what();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+        }
 
-        if (changed && streams.size())
+        if (ImGui::IsWindowHovered()) window.set_hovered_over_input();
+
+        ImGui::EndPopup();
+    }
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar(2);
+}
+
+void calibration_model::d500_update( ux_window & window, std::string & error_message )
+{
+    auto table = (librealsense::ds::d500_coefficients_table*)_calibration.data();
+    auto orig_table = (librealsense::ds::d500_coefficients_table*)_original.data();
+    bool changed = false;
+
+    const float w = 620;
+    const float h = 500;
+    const float x0 = std::max(window.width() - w, 0.f) / 2;
+    const float y0 = std::max(window.height() - h, 0.f) / 2;
+    ImGui::SetNextWindowPos({ x0, y0 });
+    ImGui::SetNextWindowSize({ w, h });
+
+    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+    ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+
+    if (ImGui::BeginPopupModal("Calibration Window", nullptr, flags))
+    {
+        if (error_message != "") ImGui::CloseCurrentPopup();
+
+        std::string title_message = "CAMERA CALIBRATION";
+        auto title_size = ImGui::CalcTextSize(title_message.c_str());
+        ImGui::SetCursorPosX(w / 2 - title_size.x / 2);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+        ImGui::PushFont(window.get_large_font());
+        ImGui::PushStyleColor(ImGuiCol_Text, white);
+        ImGui::Text("%s", title_message.c_str());
+        ImGui::PopStyleColor();
+        ImGui::PopFont();
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+        ImGui::SetCursorPosX(w / 2 - 260 / 2);
+        if (ImGui::Button(u8"\uF07C Load...", ImVec2(70, 30)))
+        {
+            try
+            {
+                if (auto fn = file_dialog_open(file_dialog_mode::open_file, "Calibration JSON\0*.json\0", nullptr, nullptr))
+                {
+                    config_file cf(fn);
+                    table->baseline = cf.get("baseline");
+
+                    auto load_float3x4 = [&](std::string name, librealsense::float3x3& m){
+                        m.x.x = cf.get(std::string( rsutils::string::from() << name << ".x.x").c_str());
+                        m.x.y = cf.get(std::string( rsutils::string::from() << name << ".x.y").c_str());
+                        m.x.z = cf.get(std::string( rsutils::string::from() << name << ".x.z").c_str());
+
+                        m.y.x = cf.get(std::string( rsutils::string::from() << name << ".y.x").c_str());
+                        m.y.y = cf.get(std::string( rsutils::string::from() << name << ".y.y").c_str());
+                        m.y.z = cf.get(std::string( rsutils::string::from() << name << ".y.z").c_str());
+
+                        m.z.x = cf.get(std::string( rsutils::string::from() << name << ".z.x").c_str());
+                        m.z.y = cf.get(std::string( rsutils::string::from() << name << ".z.y").c_str());
+                        m.z.z = cf.get(std::string( rsutils::string::from() << name << ".z.z").c_str());
+                    };
+
+                    auto load_intrinsics = [&]( std::string name, mini_intrinsics & m ) {
+                        m.ppx = cf.get( std::string( rsutils::string::from() << name << ".ppx" ).c_str() );
+                        m.ppy = cf.get( std::string( rsutils::string::from() << name << ".ppy" ).c_str() );
+
+                        m.fx = cf.get( std::string( rsutils::string::from() << name << ".fx" ).c_str() );
+                        m.fy = cf.get( std::string( rsutils::string::from() << name << ".fy" ).c_str() );
+
+                        m.image_width = cf.get( std::string( rsutils::string::from() << name << ".image_width" ).c_str() );
+                        m.image_height = cf.get( std::string( rsutils::string::from() << name << ".image_height" ).c_str() );
+                    };
+
+                    load_intrinsics( "left_coefficients_table", table->left_coefficients_table.base_instrinsics );
+                    load_intrinsics( "right_coefficients_table", table->right_coefficients_table.base_instrinsics );
+                    load_intrinsics( "rectified_intrinsics", table->rectified_intrinsics );
+                    load_float3x4( "left_rotation_matrix", table->left_coefficients_table.rotation_matrix );
+                    load_float3x4( "right_rotation_matrix", table->right_coefficients_table.rotation_matrix );
+
+                }
+
+                changed = true;
+            }
+            catch (const std::exception& ex)
+            {
+                error_message = ex.what();
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        if (ImGui::IsItemHovered())
+        {
+            window.link_hovered();
+            RsImGui::CustomTooltip("%s", "Load calibration from file");
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(u8"\uF0C7 Save As...", ImVec2(100, 30)))
+        {
+            try
+            {
+                if (auto fn = file_dialog_open(file_dialog_mode::save_file, "Calibration JSON\0*.json\0", nullptr, nullptr))
+                {
+                    config_file cf(fn);
+                    cf.set("baseline", table->baseline);
+
+                    auto save_float3x4 = [&](std::string name, librealsense::float3x3& m){
+                        cf.set(std::string( rsutils::string::from() << name << ".x.x").c_str(), m.x.x);
+                        cf.set(std::string( rsutils::string::from() << name << ".x.y").c_str(), m.x.y);
+                        cf.set(std::string( rsutils::string::from() << name << ".x.z").c_str(), m.x.z);
+
+                        cf.set(std::string( rsutils::string::from() << name << ".y.x").c_str(), m.y.x);
+                        cf.set(std::string( rsutils::string::from() << name << ".y.y").c_str(), m.y.y);
+                        cf.set(std::string( rsutils::string::from() << name << ".y.z").c_str(), m.y.z);
+
+                        cf.set(std::string( rsutils::string::from() << name << ".z.x").c_str(), m.z.x);
+                        cf.set(std::string( rsutils::string::from() << name << ".z.y").c_str(), m.z.y);
+                        cf.set(std::string( rsutils::string::from() << name << ".z.z").c_str(), m.z.z);
+                    };
+
+                    auto save_intrinsics = [&]( std::string name, mini_intrinsics & m ) {
+                        cf.set( std::string( rsutils::string::from() << name << ".ppx" ).c_str(), m.ppx );
+                        cf.set( std::string( rsutils::string::from() << name << ".ppy" ).c_str(), m.ppy );
+
+                        cf.set( std::string( rsutils::string::from() << name << ".fx" ).c_str(), m.fx );
+                        cf.set( std::string( rsutils::string::from() << name << ".fy" ).c_str(), m.fy );
+
+                        cf.set( std::string( rsutils::string::from() << name << ".image_width" ).c_str(), m.image_width );
+                        cf.set( std::string( rsutils::string::from() << name << ".image_height" ).c_str(), m.image_height );
+                    };
+
+                    save_intrinsics( "left_coefficients_table", table->left_coefficients_table.base_instrinsics );
+                    save_intrinsics( "right_coefficients_table", table->right_coefficients_table.base_instrinsics );
+                    save_intrinsics( "rectified_intrinsics", table->rectified_intrinsics );
+                    save_float3x4( "left_rotation_matrix", table->left_coefficients_table.rotation_matrix );
+                    save_float3x4( "right_rotation_matrix", table->right_coefficients_table.rotation_matrix );
+
+                }
+            }
+            catch (const std::exception& ex)
+            {
+                error_message = ex.what();
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        if (ImGui::IsItemHovered())
+        {
+            window.link_hovered();
+            RsImGui::CustomTooltip("%s", "Save calibration image to file");
+        }
+        ImGui::SameLine();
+        if (_accept)
+        {
+            if (ImGui::Button(u8"\uF275 Restore Factory", ImVec2(120, 30)))
+            {
+                try
+                {
+                    dev.as<rs2::auto_calibrated_device>().reset_to_factory_calibration();
+                    _calibration = dev.as<rs2::auto_calibrated_device>().get_calibration_table();
+                    _original = _calibration;
+                    table = reinterpret_cast< librealsense::ds::d500_coefficients_table * >( _calibration.data() );
+                    orig_table = reinterpret_cast< librealsense::ds::d500_coefficients_table * >( _original.data() );
+                    changed = true;
+
+                    if (auto nm = _not_model.lock())
+                    {
+                        nm->add_notification({ rsutils::string::from() << "Depth Calibration is reset to Factory Settings",
+                                              RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT });
+                    }
+                }
+                catch(const std::exception& ex)
+                {
+                    error_message = ex.what();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (ImGui::IsItemHovered())
+            {
+                window.link_hovered();
+                RsImGui::CustomTooltip("%s", "Restore calibration in flash to factory settings");
+            }
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, grey);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
+
+            ImGui::Button(u8"\uF275 Restore Factory", ImVec2(120, 30));
+            if (ImGui::IsItemHovered())
+            {
+                RsImGui::CustomTooltip("%s", "Write selected calibration table to the device. For advanced users");
+            }
+
+            ImGui::PopStyleColor(2);
+        }
+
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, dark_sensor_bg);
+
+        ImGui::BeginChild("##CalibData",ImVec2(w - 15, h - 110), true);
+
+        ImGui::SetCursorPosX(10);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+        ImGui::Text("Baseline(mm):"); ImGui::SameLine();
+        ImGui::SetCursorPosX(200);
+
+        ImGui::PushItemWidth(120);
+        draw_float("Baseline", table->baseline, orig_table->baseline, changed);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+        ImGui::PopItemWidth();
+
+        draw_intrinsics( "Left Intrinsics", table->left_coefficients_table.base_instrinsics, orig_table->left_coefficients_table.base_instrinsics, changed );
+        draw_intrinsics( "Right Intrinsics", table->right_coefficients_table.base_instrinsics, orig_table->right_coefficients_table.base_instrinsics, changed );
+        draw_intrinsics( "Rectified Intrinsics", table->rectified_intrinsics, orig_table->rectified_intrinsics, changed );
+        draw_float4x4( "Left Rotation Matrix", table->left_coefficients_table.rotation_matrix, orig_table->left_coefficients_table.rotation_matrix, changed );
+        draw_float4x4( "Right Rotation Matrix", table->right_coefficients_table.rotation_matrix, orig_table->right_coefficients_table.rotation_matrix, changed );
+       
+        ImGui::SetCursorPosX(10);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+        ImGui::SetCursorPosX(200);
+
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+        if (ImGui::IsWindowHovered()) window.set_hovered_over_input();
+
+        ImGui::EndChild();
+        ImGui::PopStyleColor();
+
+        ImGui::SetCursorScreenPos({ (float)(x0 + 10), (float)(y0 + h - 30) });
+        if (ImGui::Checkbox("I know what I'm doing", &_accept))
+        {
+            config_file::instance().set(configurations::calibration::enable_writing, _accept);
+        }
+        if (ImGui::IsItemHovered())
+        {
+            RsImGui::CustomTooltip("%s", "Changing calibration will affect depth quality. Changes are persistent.\nThere is an option to get back to factory calibration, but it maybe worse than current calibration\nBefore writing to flash, we strongly recommend to make a file backup");
+        }
+
+        ImGui::SetCursorScreenPos({ (float)(x0 + w - 230), (float)(y0 + h - 30) });
+
+        if (ImGui::Button("Cancel", ImVec2(100, 25)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::IsItemHovered())
+        {
+            window.link_hovered();
+            RsImGui::CustomTooltip("%s", "Close without saving any changes");
+        }
+        ImGui::SameLine();
+
+        if (_accept)
+        {
+            if (ImGui::Button(u8"\uF2DB  Write Table", ImVec2(120, 25)))
+            {
+                try
+                {
+                    auto actual_data = _calibration.data() + sizeof(librealsense::ds::table_header);
+                    auto actual_data_size = _calibration.size() - sizeof(librealsense::ds::table_header);
+                    auto crc = rsutils::number::calc_crc32( actual_data, actual_data_size );
+                    table->header.crc32 = crc;
+                    dev.as<rs2::auto_calibrated_device>().set_calibration_table(_calibration);
+                    dev.as<rs2::auto_calibrated_device>().write_calibration();
+                    _original = _calibration;
+                    orig_table = reinterpret_cast< librealsense::ds::d500_coefficients_table * >( _original.data() );
+                    ImGui::CloseCurrentPopup();
+                }
+                catch (const std::exception& ex)
+                {
+                    error_message = ex.what();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (ImGui::IsItemHovered())
+            {
+                window.link_hovered();
+                RsImGui::CustomTooltip("%s", "Write selected calibration table to the device");
+            }
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, grey);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
+
+            ImGui::Button(u8"\uF2DB  Write Table", ImVec2(120, 25));
+            if (ImGui::IsItemHovered())
+            {
+                RsImGui::CustomTooltip("%s", "Write selected calibration table to the device. For advanced users");
+            }
+
+            ImGui::PopStyleColor(2);
+        }
+        auto streams = dev.query_sensors()[0].get_active_streams();
+        if (changed)
         {
             try
             {
