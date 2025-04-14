@@ -237,7 +237,6 @@ public class DetachedActivity extends AppCompatActivity {
 
                     mDetached = false;
 
-
                     // launch preview activity and keep it alive
                     // the activity is single top instance, can be killed later the same instance
                     // to prevent issues with multiple instances

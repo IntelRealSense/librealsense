@@ -54,7 +54,6 @@ public class PlaybackActivity extends AppCompatActivity {
         super.onConfigurationChanged(newConfig);
 
         // handling device orientation changes to avoid interruption during playback
-
         // cleanup previous surface
         if(mGLSurfaceView != null) {
             mGLSurfaceView.clear();
@@ -95,14 +94,8 @@ public class PlaybackActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-/*
-        if(mFilePath == null){
-            Intent intent = new Intent(this, FileBrowserActivity.class);
-            intent.putExtra(getString(R.string.browse_folder), getString(R.string.realsense_folder) + File.separator + "video");
-            startActivityForResult(intent, OPEN_FILE_REQUEST_CODE);
-        }
 
- */     if(mFilePath == null){
+     if(mFilePath == null){
             Log.d(TAG, "onResume: mFilePath is null");
             Intent intent = new Intent(this, FileBrowserActivity.class);
             String correct_path= getExternalFilesDir(null).getAbsolutePath() +

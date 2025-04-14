@@ -22,9 +22,7 @@ public class FileBrowserActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list_view);
         String folderName = getIntent().getStringExtra(getString(R.string.browse_folder));
-        //File folder = new File(getFilesDir(), folderName);
-        File folder = new File(folderName);
-        mFolder = folder;
+        mFolder = new File(folderName);
     }
 
     @Override
