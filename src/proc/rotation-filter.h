@@ -36,7 +36,7 @@ namespace librealsense
         uint16_t                  _rotated_width;     
         uint16_t                  _rotated_height;
         float _value;
-        float _last_rotation_value = 0;
+        std::map< std::pair< rs2_stream, int >, float > _last_rotation_values;
     };
     MAP_EXTENSION( RS2_EXTENSION_ROTATION_FILTER, librealsense::rotation_filter );
     }

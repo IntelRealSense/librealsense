@@ -108,10 +108,20 @@ namespace librealsense {
 
     void  rotation_filter::update_output_profile(const rs2::frame& f, float & value)
     {
-        if( value == _last_rotation_value )
-            return;
-
         _source_stream_profile = f.get_profile();
+        auto stream_type = _source_stream_profile.stream_type();
+        auto stream_index = _source_stream_profile.stream_index();
+        std::pair< rs2_stream, int > stream_key( stream_type, stream_index );
+
+        // If the map is empty last rotation value is 0
+        float last_rotation = 0.0f;
+        auto it = _last_rotation_values.find( stream_key );
+        if( it != _last_rotation_values.end() )
+            last_rotation = it->second;
+
+        // If the current rotation value is already applied, do nothing
+        if( last_rotation == value )
+            return;
         
         _target_stream_profile = _source_stream_profile.clone( _source_stream_profile.stream_type(),
                                                             _source_stream_profile.stream_index(),
@@ -168,7 +178,7 @@ namespace librealsense {
 
         tgt_vspi->set_intrinsics( [tgt_intrin]() { return tgt_intrin; } );
         tgt_vspi->set_dims( _rotated_width, _rotated_height );
-        _last_rotation_value = value;
+
     }
 
     rs2::frame rotation_filter::prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source, rs2_extension tgt_type)
