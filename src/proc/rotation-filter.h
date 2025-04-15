@@ -17,10 +17,10 @@ namespace librealsense
         rotation_filter( std::vector< rs2_stream > streams_to_rotate );
 
     protected:
-        rs2::frame rotation_filter::prepare_target_frame( const rs2::frame & f,
-                                                          const rs2::frame_source & source,
-                                                          const rs2::stream_profile & target_profile,
-                                                          rs2_extension tgt_type );
+        rs2::frame prepare_target_frame( const rs2::frame & f,
+                                         const rs2::frame_source & source,
+                                         const rs2::stream_profile & target_profile,
+                                         rs2_extension tgt_type );
         void rotate_frame( uint8_t * const out, const uint8_t * source, int width, int height, int bpp, float & value );
         void rotate_YUYV_frame( uint8_t * const out, const uint8_t * source, int width, int height );
 
