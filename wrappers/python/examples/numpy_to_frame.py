@@ -1,3 +1,6 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2025 Intel Corporation. All Rights Reserved.
+
 import numpy as np
 import pyrealsense2 as rs
 import cv2
@@ -93,7 +96,7 @@ numpy_to_color_frame = NumpyToFrame(mode='color')
 converted_color_frame = numpy_to_color_frame.convert(modified_color)
 print("Color conversion test:", np.array_equal(modified_color, np.asanyarray(converted_color_frame.get_data())))
 
-# cv2.imshow("Color Frame Conversion - Original vs converted",
-#            cv2.hconcat([np_color, np.ones((np_color.shape[0], 50, np_color.shape[2]), dtype=np_color.dtype),
-#                         np.asanyarray(converted_color_frame.get_data())]))
-# cv2.waitKey(0)
+cv2.imshow("Color Frame Conversion - Original vs converted",
+           cv2.hconcat([np_color, np.ones((np_color.shape[0], 50, np_color.shape[2]), dtype=np_color.dtype),
+                        np.asanyarray(converted_color_frame.get_data())]))
+cv2.waitKey(0)
