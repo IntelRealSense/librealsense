@@ -46,6 +46,8 @@ namespace librealsense {
                 if( ! strong_rotation_control )
                     return;
 
+                std::lock_guard< std::mutex > lock( _mutex );
+
                 if( ! strong_rotation_control->is_valid( val ) )
                     throw invalid_value_exception( rsutils::string::from()
                                                    << "Unsupported rotation scale " << val << " is out of range." );
@@ -63,20 +65,26 @@ namespace librealsense {
 
         // Copying to a local variable to avoid locking.
         float local_value = _value;
-
         auto src = f.as< rs2::video_frame >();
         rs2::stream_profile profile = f.get_profile();
-        
-        auto bpp = src.get_bytes_per_pixel();
+
         update_output_profile( f, local_value );
-        rs2_stream type = profile.stream_type();
+
+        // Create the stream key to get the matching target profile.
+        auto stream_type = profile.stream_type();
+        auto stream_index = profile.stream_index();
+        std::pair< rs2_stream, int > stream_key( stream_type, stream_index );
+
+        // Retrieve the per-stream target profile.
+        rs2::stream_profile target_profile = _target_stream_profiles[stream_key];
+
         rs2_extension tgt_type;
-        if( type == RS2_STREAM_COLOR || type == RS2_STREAM_INFRARED )
+        if( stream_type == RS2_STREAM_COLOR || stream_type == RS2_STREAM_INFRARED )
             tgt_type = RS2_EXTENSION_VIDEO_FRAME;
         else
             tgt_type = f.is< rs2::disparity_frame >() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
 
-        if (auto tgt = prepare_target_frame(f, source, tgt_type))
+        if (auto tgt = prepare_target_frame( f, source, target_profile, tgt_type ))
         {
             auto format = profile.format();
             if( format == RS2_FORMAT_YUYV && ( local_value == 90 || local_value == -90 ) )
@@ -98,74 +106,78 @@ namespace librealsense {
                               static_cast< const uint8_t * >( src.get_data() ),
                               src.get_width(),
                               src.get_height(),
-                              bpp,
+                              src.get_bytes_per_pixel(),
                               local_value );
             }
             return tgt;
         }
         return f;
     }
-
-    void  rotation_filter::update_output_profile(const rs2::frame& f, float & value)
+    
+    void rotation_filter::update_output_profile(const rs2::frame & f, float & value)
     {
-        _source_stream_profile = f.get_profile();
-        auto stream_type = _source_stream_profile.stream_type();
-        auto stream_index = _source_stream_profile.stream_index();
+        // Get the current source profile for this frame
+        rs2::stream_profile current_source_profile = f.get_profile();
+        auto stream_type = current_source_profile.stream_type();
+        auto stream_index = current_source_profile.stream_index();
         std::pair< rs2_stream, int > stream_key( stream_type, stream_index );
 
-        // If the map is empty last rotation value is 0
-        float last_rotation = 0.0f;
-        auto it = _last_rotation_values.find( stream_key );
-        if( it != _last_rotation_values.end() )
-            last_rotation = it->second;
+        // Initialize the rotation value to 0 if not already stored
+        if( _last_rotation_values.find( stream_key ) == _last_rotation_values.end() )
+        {
+            _last_rotation_values[stream_key] = 0.0f;
+        }
+        float last_rotation = _last_rotation_values[stream_key];
 
-        // If the current rotation value is already applied, do nothing
-        if( last_rotation == value )
-            return;
-        
-        _target_stream_profile = _source_stream_profile.clone( _source_stream_profile.stream_type(),
-                                                            _source_stream_profile.stream_index(),
-                                                            _source_stream_profile.format() );
+        // Check if we've already processed this same source profile and rotation value.
+        if( _source_stream_profiles.find( stream_key ) != _source_stream_profiles.end()
+            && current_source_profile.get() == _source_stream_profiles[stream_key].get() && value == last_rotation )
+        {
+            return;  // No change needed for this stream.
+        }
 
+        // Update the source stream profile map for this stream key.
+        _source_stream_profiles[stream_key] = current_source_profile;
 
-        auto src_vspi = dynamic_cast< video_stream_profile_interface * >( _source_stream_profile.get()->profile );
+        // Clone the current source profile into a target profile for further processing.
+        rs2::stream_profile target_profile
+            = current_source_profile.clone( stream_type, stream_index, current_source_profile.format() );
+
+        auto src_vspi = dynamic_cast< video_stream_profile_interface * >( current_source_profile.get()->profile );
         if( ! src_vspi )
             throw std::runtime_error( "Stream profile interface is not video stream profile interface" );
-
-        auto tgt_vspi = dynamic_cast< video_stream_profile_interface * >( _target_stream_profile.get()->profile );
+        auto tgt_vspi = dynamic_cast< video_stream_profile_interface * >( target_profile.get()->profile );
         if( ! tgt_vspi )
             throw std::runtime_error( "Profile is not video stream profile" );
 
+        // Get intrinsics and set up new ones based on the rotation value.
         rs2_intrinsics src_intrin = src_vspi->get_intrinsics();
         rs2_intrinsics tgt_intrin = tgt_vspi->get_intrinsics();
 
+        int rotated_width = 0;
+        int rotated_height = 0;
         if( value == 90 )
         {
-            _rotated_width = src_intrin.height;
-            _rotated_height = src_intrin.width;
-
+            rotated_width = src_intrin.height;
+            rotated_height = src_intrin.width;
             tgt_intrin.fx = src_intrin.fy;
             tgt_intrin.fy = src_intrin.fx;
-
             tgt_intrin.ppx = src_intrin.height - src_intrin.ppy;
             tgt_intrin.ppy = src_intrin.ppx;
         }
         else if( value == -90 )
         {
-            _rotated_width = src_intrin.height;
-            _rotated_height = src_intrin.width;
-
+            rotated_width = src_intrin.height;
+            rotated_height = src_intrin.width;
             tgt_intrin.fx = src_intrin.fy;
             tgt_intrin.fy = src_intrin.fx;
-
             tgt_intrin.ppx = src_intrin.ppy;
             tgt_intrin.ppy = src_intrin.width - src_intrin.ppx;
         }
-        else if( value == 180 )  // 180 degrees rotation
+        else if( value == 180 )
         {
-            _rotated_width = src_intrin.width;
-            _rotated_height = src_intrin.height;
-
+            rotated_width = src_intrin.width;
+            rotated_height = src_intrin.height;
             tgt_intrin.fx = src_intrin.fx;
             tgt_intrin.fy = src_intrin.fy;
             tgt_intrin.ppx = src_intrin.width - src_intrin.ppx;
@@ -173,24 +185,40 @@ namespace librealsense {
         }
         else { throw std::invalid_argument( "Unsupported rotation angle" ); }
 
-        tgt_intrin.width = _rotated_width;
-        tgt_intrin.height = _rotated_height;
+        // Update the per-stream rotated dimensions.
+        _rotated_dimensions[stream_key] = { rotated_width, rotated_height };
+
+        // Update dimensions for the intrinsics.
+        tgt_intrin.width = rotated_width;
+        tgt_intrin.height = rotated_height;
 
         tgt_vspi->set_intrinsics( [tgt_intrin]() { return tgt_intrin; } );
-        tgt_vspi->set_dims( _rotated_width, _rotated_height );
+        tgt_vspi->set_dims( rotated_width, rotated_height );
 
+        _last_rotation_values[stream_key] = value;
+        _target_stream_profiles[stream_key] = target_profile;
     }
 
-    rs2::frame rotation_filter::prepare_target_frame(const rs2::frame& f, const rs2::frame_source& source, rs2_extension tgt_type)
+    rs2::frame rotation_filter::prepare_target_frame( const rs2::frame & f,
+                                                      const rs2::frame_source & source,
+                                                      const rs2::stream_profile & target_profile,
+                                                      rs2_extension tgt_type )
     {
         auto vf = f.as<rs2::video_frame>();
-        auto ret = source.allocate_video_frame(_target_stream_profile, f,
-            vf.get_bytes_per_pixel(),
-            _rotated_width,
-            _rotated_height,
-            _rotated_width * vf.get_bytes_per_pixel(),
-            tgt_type);
+        std::pair< rs2_stream, int > stream_key( f.get_profile().stream_type(), f.get_profile().stream_index() );
 
+        if( _rotated_dimensions.find( stream_key ) == _rotated_dimensions.end() )
+            throw std::runtime_error( "Rotated dimensions not set for stream." );
+
+        RotatedDims dims = _rotated_dimensions[stream_key];
+
+        auto ret = source.allocate_video_frame( target_profile,
+                                                f,
+                                                vf.get_bytes_per_pixel(),
+                                                dims.width,
+                                                dims.height,
+                                                dims.width * vf.get_bytes_per_pixel(),
+                                                tgt_type );
         return ret;
     }
 
