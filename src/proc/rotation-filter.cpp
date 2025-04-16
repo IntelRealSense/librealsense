@@ -185,9 +185,6 @@ namespace librealsense {
         }
         else { throw std::invalid_argument( "Unsupported rotation angle" ); }
 
-        // Update the per-stream rotated dimensions.
-        _rotated_dimensions[stream_key] = { rotated_width, rotated_height };
-
         // Update dimensions for the intrinsics.
         tgt_intrin.width = rotated_width;
         tgt_intrin.height = rotated_height;
@@ -205,19 +202,25 @@ namespace librealsense {
                                                       rs2_extension tgt_type )
     {
         auto vf = f.as<rs2::video_frame>();
+        if( ! vf )
+            throw std::runtime_error( "Failed to cast frame to video_frame" );
         std::pair< rs2_stream, int > stream_key( f.get_profile().stream_type(), f.get_profile().stream_index() );
 
-        if( _rotated_dimensions.find( stream_key ) == _rotated_dimensions.end() )
-            throw std::runtime_error( "Rotated dimensions not set for stream." );
+        int out_width = 0, out_height = 0;
+        auto video_profile = dynamic_cast< video_stream_profile_interface * >( target_profile.get()->profile );
+        if( ! video_profile )
+            throw std::runtime_error( "Target profile is not a video stream profile interface" );
 
-        RotatedDims dims = _rotated_dimensions[stream_key];
+        rs2_intrinsics intrin = video_profile->get_intrinsics();
+        out_width = intrin.width;
+        out_height = intrin.height;
 
         auto ret = source.allocate_video_frame( target_profile,
                                                 f,
                                                 vf.get_bytes_per_pixel(),
-                                                dims.width,
-                                                dims.height,
-                                                dims.width * vf.get_bytes_per_pixel(),
+                                                out_width,
+                                                out_height,
+                                                out_width * vf.get_bytes_per_pixel(),
                                                 tgt_type );
         return ret;
     }

@@ -40,15 +40,6 @@ namespace librealsense
         std::map< std::pair< rs2_stream, int >, float > _last_rotation_values;
         std::map< std::pair< rs2_stream, int >, rs2::stream_profile > _target_stream_profiles;
         std::map< std::pair< rs2_stream, int >, rs2::stream_profile > _source_stream_profiles;
-        // Define a simple structure to hold rotated dimensions
-        struct RotatedDims
-        {
-            int width;
-            int height;
-        };
-
-        // In the rotation_filter class add a map to hold dimensions per stream key:
-        std::map< std::pair< rs2_stream, int >, RotatedDims > _rotated_dimensions;
     };
     MAP_EXTENSION( RS2_EXTENSION_ROTATION_FILTER, librealsense::rotation_filter );
     }
