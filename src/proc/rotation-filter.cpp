@@ -46,8 +46,6 @@ namespace librealsense {
                 if( ! strong_rotation_control )
                     return;
 
-                std::lock_guard< std::mutex > lock( _mutex );
-
                 if( ! strong_rotation_control->is_valid( val ) )
                     throw invalid_value_exception( rsutils::string::from()
                                                    << "Unsupported rotation scale " << val << " is out of range." );
