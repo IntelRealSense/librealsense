@@ -42,7 +42,7 @@ Instead, we found it easiest to download a Docker image for FastDDS (last used i
     cid=`docker run -itd --privileged ubuntu-fastdds:v2.9.1`
     docker exec $cid mkdir /idl /idl/out
     docker cp *.idl $cid:idl/
-    docker exec -w /idl/out $cid fastddsgen -typeobject /idl/`ls -1 *.idl`
+    docker exec -w /idl/out $cid fastddsgen -cs -typeros2 -typeobject /idl/`ls -1 *.idl`
     docker cp $cid:/idl/out .
     docker kill $cid
     cd out

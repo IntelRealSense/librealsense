@@ -6,11 +6,13 @@
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
+#include <realdds/topics/compressed-image-msg.h>
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
 #include <realdds/topics/blob-msg.h>
 #include <realdds/topics/ros2/participant-entities-info-msg.h>
 #include <realdds/topics/blob/blobPubSubTypes.h>
+#include <realdds/topics/ros2/sensor_msgs/msg/CompressedImagePubSubTypes.h>
 #include <realdds/topics/ros2/sensor_msgs/msg/ImagePubSubTypes.h>
 #include <realdds/topics/ros2/sensor_msgs/msg/ImuPubSubTypes.h>
 #include <realdds/topics/ros2/rmw_dds_common/msg/ParticipantEntitiesInfoPubSubTypes.h>
@@ -719,6 +721,50 @@ PYBIND11_MODULE(NAME, m) {
             py::call_guard< py::gil_scoped_release >() )
         /*.def("write_to", &image_msg::write_to, py::call_guard< py::gil_scoped_release >())*/;
 
+    using compressed_image_msg = realdds::topics::compressed_image_msg;
+    py::class_< compressed_image_msg, std::shared_ptr< compressed_image_msg > >( message, "compressed_image" )
+        .def( py::init<>() )
+        .def_static( "create_topic", &compressed_image_msg::create_topic )
+        .def_property(
+            "data",
+            []( compressed_image_msg const & self ) { return py::memoryview::from_memory( self.raw().data().data(), self.raw().data().size() ); },
+            []( compressed_image_msg & self, std::vector< uint8_t > bytes ) { self.raw().data( std::move( bytes ) ); } )
+        .def_property( "format", &compressed_image_msg::format, &compressed_image_msg::set_format )
+        .def_property( "timestamp", &compressed_image_msg::timestamp, &compressed_image_msg::set_timestamp )
+        .def_property( "frame_id", &compressed_image_msg::frame_id, &compressed_image_msg::set_frame_id )
+        .def( "__bool__", &compressed_image_msg::is_valid )
+        .def( "__repr__",
+              []( compressed_image_msg const & self )
+              {
+                  std::ostringstream os;
+                  os << "<" SNAME ".message.compressed_image";
+                  if( self.is_valid() )
+                  {
+                      if( ! self.frame_id().empty() )
+                          os << " " << self.frame_id();
+                      if( ! self.format().empty() )
+                          os << " '" << self.format() << "'";
+                  }
+                  os << " @ " << realdds::time_to_string( self.timestamp() );
+                  os << ">";
+                  return os.str();
+              } )
+        .def_static(
+            "take_next",
+            []( dds_topic_reader & reader, dds_sample * sample )
+            {
+                auto actual_type = reader.topic()->get()->get_type_name();
+                if( actual_type != compressed_image_msg::type().getName() )
+                    throw std::runtime_error( "can't initialize raw::compressed_image from " + actual_type );
+                compressed_image_msg data;
+                if( ! compressed_image_msg::take_next( reader, &data, sample ) )
+                    assert( ! data.is_valid() );
+                return data;
+            },
+            py::arg( "reader" ),
+            py::arg( "sample" ) = nullptr,
+            py::call_guard< py::gil_scoped_release >() )
+        /*.def("write_to", &compressed_image_msg::write_to, py::call_guard< py::gil_scoped_release >())*/;
 
     using participant_entities_info_msg = realdds::topics::ros2::participant_entities_info_msg;
     py::class_< participant_entities_info_msg, std::shared_ptr< participant_entities_info_msg > >( message, "participant_entities_info" )
