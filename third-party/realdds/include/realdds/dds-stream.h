@@ -14,7 +14,6 @@
 namespace realdds {
 
 namespace topics {
-class image_msg;
 class imu_msg;
 class flexible_msg;
 }  // namespace topics
@@ -67,7 +66,7 @@ public:
 
     void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) override;
 
-    typedef std::function< void( topics::image_msg &&, dds_sample && ) > on_data_available_callback;
+    typedef std::function< void( std::vector< uint8_t > &&, dds_time &&, dds_sample && ) > on_data_available_callback;
     void on_data_available( on_data_available_callback cb ) { _on_data_available = cb; }
 
     void set_intrinsics( std::set< video_intrinsics > intrinsics ) { _intrinsics = std::move( intrinsics ); }

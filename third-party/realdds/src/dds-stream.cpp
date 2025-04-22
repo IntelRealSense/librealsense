@@ -6,6 +6,7 @@
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader-thread.h>
 #include <realdds/dds-subscriber.h>
+#include <realdds/topics/compressed-image-msg.h>
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
 #include <realdds/topics/flexible-msg.h>
@@ -39,7 +40,11 @@ void dds_video_stream::open( std::string const & topic_name, std::shared_ptr< dd
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
     // Topics with same name and type can be created multiple times (multiple open() calls) without an error.
-    auto topic = topics::image_msg::create_topic( subscriber->get_participant(), topic_name.c_str() );
+    std::shared_ptr< dds_topic > topic;
+    if( _compressed )
+        topic = topics::compressed_image_msg::create_topic( subscriber->get_participant(), topic_name.c_str() );
+    else
+        topic = topics::image_msg::create_topic( subscriber->get_participant(), topic_name.c_str() );
 
     // To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
     // here and destroyed on close()
@@ -90,15 +95,30 @@ void dds_stream::start_streaming()
 
 void dds_video_stream::handle_data()
 {
-    topics::image_msg frame;
     dds_sample sample;
-    while( _reader && topics::image_msg::take_next( *_reader, &frame, &sample ) )
+    if( _compressed )
     {
-        if( ! frame.is_valid() )
-            continue;
+        topics::compressed_image_msg frame;
+        while( _reader && topics::compressed_image_msg::take_next( *_reader, &frame, &sample ) )
+        {
+            if( ! frame.is_valid() )
+                continue;
 
-        if( is_streaming() && _on_data_available )
-            _on_data_available( std::move( frame ), std::move( sample ) );
+            if( is_streaming() && _on_data_available )
+                _on_data_available( std::move( frame.raw().data() ), frame.timestamp(), std::move( sample ) );
+        }
+    }
+    else
+    {
+        topics::image_msg frame;
+        while( _reader && topics::image_msg::take_next( *_reader, &frame, &sample ) )
+        {
+            if( ! frame.is_valid() )
+                continue;
+
+            if( is_streaming() && _on_data_available )
+                _on_data_available( std::move( frame.raw().data() ), frame.timestamp(), std::move( sample ) );
+        }
     }
 }
 

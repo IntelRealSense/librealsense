@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022-5 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 
 #include <realdds/topics/compressed-image-msg.h>
 #include <realdds/topics/ros2/sensor_msgs/msg/CompressedImagePubSubTypes.h>

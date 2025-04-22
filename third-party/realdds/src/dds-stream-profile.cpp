@@ -200,6 +200,11 @@ dds_video_stream_profile::dds_video_stream_profile( rsutils::json const & j, int
     _height = j[index++].get< int16_t >();
 }
 
+bool dds_video_stream_profile::is_compressed_encoding() const
+{
+    return _encoding.to_rs2() == RS2_FORMAT_MJPEG;
+}
+
 
 rsutils::json dds_video_stream_profile::to_json() const
 {
