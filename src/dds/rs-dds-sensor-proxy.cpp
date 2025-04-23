@@ -274,7 +274,8 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
 }
 
 
-void dds_sensor_proxy::handle_video_data( realdds::topics::image_msg && dds_frame,
+void dds_sensor_proxy::handle_video_data( std::vector< uint8_t > && buffer,
+                                          realdds::dds_time && timestamp,
                                           realdds::dds_sample && dds_sample,
                                           const std::shared_ptr< stream_profile_interface > & profile,
                                           streaming_impl & streaming )
@@ -284,29 +285,29 @@ void dds_sensor_proxy::handle_video_data( realdds::topics::image_msg && dds_fram
     data.backend_timestamp                        // time when the underlying backend (DDS) received it
         = static_cast<rs2_time_t>(realdds::time_to_double( dds_sample.reception_timestamp ) * 1e3);
     data.timestamp               // in ms
-        = static_cast< rs2_time_t >( realdds::time_to_double( dds_frame.timestamp() ) * 1e3 );
+        = static_cast< rs2_time_t >( realdds::time_to_double( timestamp ) * 1e3 );
     data.last_timestamp = streaming.last_timestamp.exchange( data.timestamp );
     data.timestamp_domain;  // from metadata, or leave default (hardware domain)
     data.depth_units;       // from metadata
     data.frame_number;      // filled in only once metadata is known
-    data.raw_size = static_cast< uint32_t >( dds_frame.raw().data().size() );
+    data.raw_size = static_cast< uint32_t >( buffer.size() );
 
     auto vid_profile = dynamic_cast< video_stream_profile_interface * >( profile.get() );
     if( ! vid_profile )
         throw invalid_value_exception( "non-video profile provided to on_video_frame" );
 
-    auto stride = static_cast< int >( dds_frame.height() > 0 ? data.raw_size / dds_frame.height() : data.raw_size );
-    auto bpp = dds_frame.width() > 0 ? stride / dds_frame.width() : stride;
+    auto stride = static_cast< int >( vid_profile->get_height() > 0 ? data.raw_size / vid_profile->get_height() : data.raw_size );
+    auto bpp = vid_profile->get_width() > 0 ? stride / vid_profile->get_width() : stride;
     auto new_frame_interface = allocate_new_video_frame( vid_profile, stride, bpp, std::move( data ) );
     if( ! new_frame_interface )
         return;
 
     auto new_frame = static_cast< frame * >( new_frame_interface );
-    new_frame->data = std::move( dds_frame.raw().data() );
+    new_frame->data = std::move( buffer );
 
     if( _md_enabled )
     {
-        streaming.syncer.enqueue_frame( dds_frame.timestamp().to_ns(), streaming.syncer.hold( new_frame ) );
+        streaming.syncer.enqueue_frame( timestamp.to_ns(), streaming.syncer.hold( new_frame ) );
     }
     else
     {
@@ -483,10 +484,10 @@ void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
         if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
         {
             dds_video_stream->on_data_available(
-                [profile, this, &streaming]( realdds::topics::image_msg && dds_frame, realdds::dds_sample && sample )
+                [profile, this, &streaming]( std::vector< uint8_t > && data, realdds::dds_time && timestamp, realdds::dds_sample && sample )
                 {
                     if( _is_streaming )
-                        handle_video_data( std::move( dds_frame ), std::move( sample ), profile, streaming );
+                        handle_video_data( std::move( data ), std::move( timestamp ), std::move( sample ), profile, streaming );
                 } );
         }
         else if( auto dds_motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( dds_stream ) )
