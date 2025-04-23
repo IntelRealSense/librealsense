@@ -940,6 +940,13 @@ namespace rs2
 
     void on_chip_calib_manager::calibrate()
     {
+        auto exposure = _sub->s->get_option( RS2_OPTION_EXPOSURE );
+        if( exposure > 15500 )
+        {
+            throw std::runtime_error( "Exposure limiting fps!\n"
+                                        "Please reduce exposure value"  ); 
+        }
+
         int occ_timeout_ms = 9000;
         if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
