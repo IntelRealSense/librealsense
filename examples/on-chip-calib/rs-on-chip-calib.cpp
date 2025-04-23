@@ -56,6 +56,7 @@ int main(int argc, char * argv[]) try
     if( keep == "y" || keep == "yes" )
     {
         cal_dev.set_calibration_table( res );
+        cal_dev.write_calibration();
         std::cout << "Results saved to flash" << std::endl;
     }
     else
