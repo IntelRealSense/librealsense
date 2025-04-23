@@ -95,31 +95,10 @@ void dds_stream::start_streaming()
 
 void dds_video_stream::handle_data()
 {
-    dds_sample sample;
     if( _compressed )
-    {
-        topics::compressed_image_msg frame;
-        while( _reader && topics::compressed_image_msg::take_next( *_reader, &frame, &sample ) )
-        {
-            if( ! frame.is_valid() )
-                continue;
-
-            if( is_streaming() && _on_data_available )
-                _on_data_available( std::move( frame.raw().data() ), frame.timestamp(), std::move( sample ) );
-        }
-    }
+        handle_image< topics::compressed_image_msg >();
     else
-    {
-        topics::image_msg frame;
-        while( _reader && topics::image_msg::take_next( *_reader, &frame, &sample ) )
-        {
-            if( ! frame.is_valid() )
-                continue;
-
-            if( is_streaming() && _on_data_available )
-                _on_data_available( std::move( frame.raw().data() ), frame.timestamp(), std::move( sample ) );
-        }
-    }
+        handle_image< topics::image_msg >();
 }
 
 

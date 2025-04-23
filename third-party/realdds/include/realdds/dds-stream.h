@@ -76,6 +76,21 @@ protected:
     void handle_data() override;
     bool can_start_streaming() const override { return _on_data_available != nullptr; }
 
+    template< typename frame_type >
+    void handle_image()
+    {
+        frame_type frame;
+        dds_sample sample;
+        while( _reader && frame_type::take_next( *_reader, &frame, &sample ) )
+        {
+            if( ! frame.is_valid() )
+                continue;
+
+            if( is_streaming() && _on_data_available )
+                _on_data_available( std::move( frame.raw().data() ), frame.timestamp(), std::move( sample ) );
+        }
+    }
+
     std::set< video_intrinsics > _intrinsics;
     on_data_available_callback _on_data_available = nullptr;
 };
