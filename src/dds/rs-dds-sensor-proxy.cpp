@@ -105,7 +105,7 @@ stream_profiles dds_sensor_proxy::init_stream_profiles()
 void dds_sensor_proxy::register_converters()
 {
     // Some stream types have typicaly more then one stream, indexes must be used to differentiate them and needs to be
-    // set in converter target profiles. Gather info for such stream types in one loop over all profiles.
+    // set in converter taget profiles. Gather info for such stream types in one loop over all profiles.
     std::set< int > y8_indexes;
     std::set< int > y16_indexes;
     std::set< int > jpeg_indexes;
@@ -145,9 +145,9 @@ void dds_sensor_proxy::register_converters()
     {
         std::vector< stream_profile > target_profiles;
         for( int index : jpeg_indexes )
-            target_profiles.push_back( { RS2_FORMAT_RGB8, RS2_STREAM_COLOR, index } );
-        _formats_converter.register_converter( { { RS2_FORMAT_MJPEG, RS2_STREAM_COLOR } }, target_profiles,
-                                               []() { return std::make_shared< mjpeg_converter >( RS2_FORMAT_RGB8 ); } );
+            target_profiles.push_back( { RS2_FORMAT_MJPEG, RS2_STREAM_COLOR, index } );
+        _formats_converter.register_converter( { { { RS2_FORMAT_MJPEG, RS2_STREAM_COLOR } }, target_profiles,
+                                               []() { return std::make_shared< identity_processing_block >(); } } );
     }
 
     // Depth
