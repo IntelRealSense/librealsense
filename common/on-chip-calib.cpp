@@ -943,8 +943,9 @@ namespace rs2
         auto exposure = _sub->s->get_option( RS2_OPTION_EXPOSURE );
         if( exposure > 15500 )
         {
-            throw std::runtime_error( "Exposure limiting fps!\n"
-                                        "Please reduce exposure value"  ); 
+            throw std::runtime_error( "Exposure value is limiting the fps,\n"
+                                        "for the algorithm to be able to converge,\n"
+                                        "please reduce exposure value."  ); 
         }
 
         int occ_timeout_ms = 9000;
