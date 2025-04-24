@@ -1301,6 +1301,11 @@ size_t lrs_device_controller::get_index_of_profile( const realdds::dds_stream_pr
     for( size_t i = 0; i < profiles.size(); ++i )
     {
         auto dds_vp = std::dynamic_pointer_cast< dds_video_stream_profile >( profiles[i] );
+        if( ! dds_vp )
+        {
+            LOG_ERROR( "Profile is not a video profile" << profiles[i] );
+            continue;
+        }
         if( dds_vp->frequency() == profile.frequency()
             && dds_vp->encoding() == profile.encoding()
             && dds_vp->width()  == profile.width()
