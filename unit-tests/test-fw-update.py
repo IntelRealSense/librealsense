@@ -173,6 +173,8 @@ log.d( 'found:', device )
 product_line = device.get_info( rs.camera_info.product_line )
 product_name = device.get_info( rs.camera_info.name )
 log.d( 'product line:', product_line )
+sn = device.get_info( rs.camera_info.serial_number )
+print("Device serial number = " + repr(sn))
 ###############################################################################
 #
 
@@ -184,7 +186,7 @@ if device.is_update_device():
     log.d( "recovering device ..." )
     try:
         image_file = find_image_or_exit(product_name) if not custom_fw_d400_path else custom_fw_d400_path
-        cmd = [fw_updater_exe, '-r', '-f', image_file]
+        cmd = [fw_updater_exe, '-r', '-f', image_file, '-s', sn]
         if custom_fw_d400_path:
             # unsiged fw
             cmd.insert(1, '-u')
@@ -230,7 +232,7 @@ fw_version_regex = re.escape( fw_version_regex )
 image_file = find_image_or_exit(product_name, fw_version_regex) if not custom_fw_d400_path else custom_fw_d400_path
 # finding file containing image for FW update
 
-cmd = [fw_updater_exe, '-f', image_file]
+cmd = [fw_updater_exe, '-f', image_file, '-s', sn]
 if custom_fw_d400_path:
     # unsigned fw
     cmd.insert(1, '-u')
