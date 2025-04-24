@@ -244,10 +244,10 @@ devices.query( monitor_changes = False )
 sn_list = devices.all()
 sn_list_size = len(sn_list)
 if sn_list_size == 0:
-    retries = 10
+    retries = 5
     while retries > 0 and sn_list_size == 0:
         retries -= 1
-        time.sleep(3)
+        time.sleep(2)
         devices.query( monitor_changes = False )
         sn_list = devices.all()
         sn_list_size = len(sn_list)
