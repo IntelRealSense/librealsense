@@ -7,9 +7,11 @@
 #include <implot.h> 
 #include <mutex>
 #include <vector>
+#include <GLFW/glfw3.h>
 #include <rsutils/time/periodic-timer.h>
-
-#include "output-model.h"
+#include "rect.h"
+#include <librealsense2/rs.hpp>
+#include <rsutils/concurrency/shared-data-access.h>
 
 namespace rs2
 {
@@ -20,7 +22,8 @@ namespace rs2
             : _name(name),
             _stream_type(stream),
             _show_n_value(show_n_value),
-            _update_timer{ std::chrono::milliseconds(_update_rate) }
+            _update_timer{ std::chrono::milliseconds(_update_rate) },
+            shared_data(_m)
         {
             clear();
         }
@@ -42,6 +45,7 @@ namespace rs2
         const int VECTOR_SIZE = 300;
         std::vector< float > _x_history, _y_history, _z_history, _n_history;
 
+        rsutils::concurrency::shared_data_access shared_data;
         std::mutex _m;
         std::string _name;
 
