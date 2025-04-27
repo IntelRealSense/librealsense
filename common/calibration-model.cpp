@@ -9,6 +9,7 @@
 #include <realsense_imgui.h>
 
 #include "../src/ds/d400/d400-private.h"
+#include "../src/ds/d500/d500-private.h"
 
 
 using namespace rs2;
@@ -62,77 +63,77 @@ void calibration_model::draw_int( std::string name, uint16_t & x, const uint16_t
     ImGui::PopStyleColor();
 }
 
-void calibration_model::draw_float4x4(std::string name, float3x3& feild,
+void calibration_model::draw_float4x4(std::string name, float3x3& field,
                                       const float3x3& original, bool& changed)
 {
     ImGui::SetCursorPosX(10);
     ImGui::Text("%s:", name.c_str()); ImGui::SameLine();
-    ImGui::SetCursorPosX(200);
 
     ImGui::PushItemWidth(120);
-    ImGui::SetCursorPosX(200);
-    draw_float(name + "_XX", feild.x.x, original.x.x, changed);
-    ImGui::SameLine();
-    draw_float(name + "_XY", feild.x.y, original.x.y, changed);
-    ImGui::SameLine();
-    draw_float(name + "_XZ", feild.x.z, original.x.z, changed);
 
     ImGui::SetCursorPosX(200);
-    draw_float(name + "_YX", feild.y.x, original.y.x, changed);
+    draw_float(name + "_XX", field.x.x, original.x.x, changed);
     ImGui::SameLine();
-    draw_float(name + "_YY", feild.y.y, original.y.y, changed);
+    draw_float(name + "_XY", field.x.y, original.x.y, changed);
     ImGui::SameLine();
-    draw_float(name + "_YZ", feild.y.z, original.y.z, changed);
+    draw_float(name + "_XZ", field.x.z, original.x.z, changed);
 
     ImGui::SetCursorPosX(200);
-    draw_float(name + "_ZX", feild.z.x, original.z.x, changed);
+    draw_float(name + "_YX", field.y.x, original.y.x, changed);
     ImGui::SameLine();
-    draw_float(name + "_ZY", feild.z.y, original.z.y, changed);
+    draw_float(name + "_YY", field.y.y, original.y.y, changed);
     ImGui::SameLine();
-    draw_float(name + "_ZZ", feild.z.z, original.z.z, changed);
+    draw_float(name + "_YZ", field.y.z, original.y.z, changed);
+
+    ImGui::SetCursorPosX(200);
+    draw_float(name + "_ZX", field.z.x, original.z.x, changed);
+    ImGui::SameLine();
+    draw_float(name + "_ZY", field.z.y, original.z.y, changed);
+    ImGui::SameLine();
+    draw_float(name + "_ZZ", field.z.z, original.z.z, changed);
 
     ImGui::PopItemWidth();
 
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 }
 
-void calibration_model::draw_intrinsics(std::string name, mini_intrinsics& feild,
+void calibration_model::draw_intrinsics(std::string name, mini_intrinsics& field,
                                        const mini_intrinsics& original, bool& changed)
 {
     ImGui::SetCursorPosX(10);
     ImGui::Text("%s:", name.c_str()); ImGui::SameLine();
-    ImGui::SetCursorPosX(200);
 
     ImGui::PushItemWidth(120);
+
     ImGui::SetCursorPosX(200);
     ImGui::Text("%s:", "ppx"); ImGui::SameLine();
     ImGui::SetCursorPosX(250);
-    draw_float(name + "_ppx", feild.ppx, original.ppx, changed);
+    draw_float(name + "_ppx", field.ppx, original.ppx, changed);
     ImGui::SameLine();
     ImGui::SetCursorPosX(400);
     ImGui::Text("%s:", "ppy"); ImGui::SameLine();
     ImGui::SetCursorPosX(450);
-    draw_float(name + "_ppy", feild.ppy, original.ppy, changed);
+    draw_float(name + "_ppy", field.ppy, original.ppy, changed);
 
     ImGui::SetCursorPosX(200);
     ImGui::Text("%s:", "fx"); ImGui::SameLine();
     ImGui::SetCursorPosX(250);
-    draw_float(name + "_fx", feild.fx, original.fx, changed);
+    draw_float(name + "_fx", field.fx, original.fx, changed);
     ImGui::SameLine();
     ImGui::SetCursorPosX(400);
     ImGui::Text("%s:", "fy"); ImGui::SameLine();
     ImGui::SetCursorPosX(450);
-    draw_float(name + "_fy", feild.fy, original.fy, changed);
+    draw_float(name + "_fy", field.fy, original.fy, changed);
 
     ImGui::SetCursorPosX(200);
     ImGui::Text("%s:", "width"); ImGui::SameLine();
     ImGui::SetCursorPosX(250);
-    draw_int(name + "width", feild.image_width, original.image_width, changed);
+    draw_int(name + "width", field.image_width, original.image_width, changed);
     ImGui::SameLine();
     ImGui::SetCursorPosX(400);
     ImGui::Text("%s:", "height"); ImGui::SameLine();
     ImGui::SetCursorPosX(450);
-    draw_int(name + "height", feild.image_height, original.image_height, changed);
+    draw_int(name + "height", field.image_height, original.image_height, changed);
 
     ImGui::PopItemWidth();
 
@@ -212,7 +213,7 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
                     config_file cf(fn);
                     table->baseline = cf.get("baseline");
 
-                    auto load_float3x4 = [&](std::string name, librealsense::float3x3& m){
+                    auto load_float3x3 = [&](std::string name, librealsense::float3x3& m){
                         m.x.x = cf.get(std::string( rsutils::string::from() << name << ".x.x").c_str());
                         m.x.y = cf.get(std::string( rsutils::string::from() << name << ".x.y").c_str());
                         m.x.z = cf.get(std::string( rsutils::string::from() << name << ".x.z").c_str());
@@ -226,10 +227,10 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
                         m.z.z = cf.get(std::string( rsutils::string::from() << name << ".z.z").c_str());
                     };
 
-                    load_float3x4("intrinsic_left", table->intrinsic_left);
-                    load_float3x4("intrinsic_right", table->intrinsic_right);
-                    load_float3x4("world2left_rot", table->world2left_rot);
-                    load_float3x4("world2right_rot", table->world2right_rot);
+                    load_float3x3("intrinsic_left", table->intrinsic_left);
+                    load_float3x3("intrinsic_right", table->intrinsic_right);
+                    load_float3x3("world2left_rot", table->world2left_rot);
+                    load_float3x3("world2right_rot", table->world2right_rot);
 
                     for (int i = 0; i < librealsense::ds::max_ds_rect_resolutions; i++)
                     {
@@ -264,7 +265,7 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
                     config_file cf(fn);
                     cf.set("baseline", table->baseline);
 
-                    auto save_float3x4 = [&](std::string name, librealsense::float3x3& m){
+                    auto save_float3x3 = [&](std::string name, librealsense::float3x3& m){
                         cf.set(std::string( rsutils::string::from() << name << ".x.x").c_str(), m.x.x);
                         cf.set(std::string( rsutils::string::from() << name << ".x.y").c_str(), m.x.y);
                         cf.set(std::string( rsutils::string::from() << name << ".x.z").c_str(), m.x.z);
@@ -278,10 +279,10 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
                         cf.set(std::string( rsutils::string::from() << name << ".z.z").c_str(), m.z.z);
                     };
 
-                    save_float3x4("intrinsic_left", table->intrinsic_left);
-                    save_float3x4("intrinsic_right", table->intrinsic_right);
-                    save_float3x4("world2left_rot", table->world2left_rot);
-                    save_float3x4("world2right_rot", table->world2right_rot);
+                    save_float3x3("intrinsic_left", table->intrinsic_left);
+                    save_float3x3("intrinsic_right", table->intrinsic_right);
+                    save_float3x3("world2left_rot", table->world2left_rot);
+                    save_float3x3("world2right_rot", table->world2right_rot);
 
                     for (int i = 0; i < librealsense::ds::max_ds_rect_resolutions; i++)
                     {
@@ -437,7 +438,7 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
         }
         if (ImGui::IsItemHovered())
         {
-            RsImGui::CustomTooltip("%s", "Changing calibration will affect depth quality. Changes are persistent.\nThere is an option to get back to factory calibration, but it maybe worse than current calibration\nBefore writing to flash, we strongly recommend to make a file backup");
+            RsImGui::CustomTooltip("%s", "Changing calibration will affect depth quality. Changes are persistent.\nThere is an option to get back to factory calibration, but it may be worse than current calibration\nBefore writing to flash, we strongly recommend to make a file backup");
         }
 
         ImGui::SetCursorScreenPos({ (float)(x0 + w - 230), (float)(y0 + h - 30) });
@@ -494,7 +495,6 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
 
             ImGui::PopStyleColor(2);
         }
-        auto streams = dev.query_sensors()[0].get_active_streams();
         if (changed)
         {
             try
@@ -505,6 +505,7 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
             {
                 try
                 {
+                    auto streams = dev.query_sensors()[0].get_active_streams();
                     dev.query_sensors()[0].close();
                     dev.query_sensors()[0].open(streams);
                     dev.as<rs2::auto_calibrated_device>().set_calibration_table(_calibration);
@@ -572,7 +573,7 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
                     config_file cf(fn);
                     table->baseline = cf.get("baseline");
 
-                    auto load_float3x4 = [&](std::string name, librealsense::float3x3& m){
+                    auto load_float3x3 = [&](std::string name, librealsense::float3x3& m){
                         m.x.x = cf.get(std::string( rsutils::string::from() << name << ".x.x").c_str());
                         m.x.y = cf.get(std::string( rsutils::string::from() << name << ".x.y").c_str());
                         m.x.z = cf.get(std::string( rsutils::string::from() << name << ".x.z").c_str());
@@ -600,8 +601,8 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
                     load_intrinsics( "left_coefficients_table", table->left_coefficients_table.base_instrinsics );
                     load_intrinsics( "right_coefficients_table", table->right_coefficients_table.base_instrinsics );
                     load_intrinsics( "rectified_intrinsics", table->rectified_intrinsics );
-                    load_float3x4( "left_rotation_matrix", table->left_coefficients_table.rotation_matrix );
-                    load_float3x4( "right_rotation_matrix", table->right_coefficients_table.rotation_matrix );
+                    load_float3x3( "left_rotation_matrix", table->left_coefficients_table.rotation_matrix );
+                    load_float3x3( "right_rotation_matrix", table->right_coefficients_table.rotation_matrix );
 
                 }
 
@@ -628,7 +629,7 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
                     config_file cf(fn);
                     cf.set("baseline", table->baseline);
 
-                    auto save_float3x4 = [&](std::string name, librealsense::float3x3& m){
+                    auto save_float3x3 = [&](std::string name, librealsense::float3x3& m){
                         cf.set(std::string( rsutils::string::from() << name << ".x.x").c_str(), m.x.x);
                         cf.set(std::string( rsutils::string::from() << name << ".x.y").c_str(), m.x.y);
                         cf.set(std::string( rsutils::string::from() << name << ".x.z").c_str(), m.x.z);
@@ -656,8 +657,8 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
                     save_intrinsics( "left_coefficients_table", table->left_coefficients_table.base_instrinsics );
                     save_intrinsics( "right_coefficients_table", table->right_coefficients_table.base_instrinsics );
                     save_intrinsics( "rectified_intrinsics", table->rectified_intrinsics );
-                    save_float3x4( "left_rotation_matrix", table->left_coefficients_table.rotation_matrix );
-                    save_float3x4( "right_rotation_matrix", table->right_coefficients_table.rotation_matrix );
+                    save_float3x3( "left_rotation_matrix", table->left_coefficients_table.rotation_matrix );
+                    save_float3x3( "right_rotation_matrix", table->right_coefficients_table.rotation_matrix );
 
                 }
             }
@@ -758,7 +759,7 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
         }
         if (ImGui::IsItemHovered())
         {
-            RsImGui::CustomTooltip("%s", "Changing calibration will affect depth quality. Changes are persistent.\nThere is an option to get back to factory calibration, but it maybe worse than current calibration\nBefore writing to flash, we strongly recommend to make a file backup");
+            RsImGui::CustomTooltip("%s", "Changing calibration will affect depth quality. Changes are persistent.\nThere is an option to get back to factory calibration, but it may be worse than current calibration\nBefore writing to flash, we strongly recommend to make a file backup");
         }
 
         ImGui::SetCursorScreenPos({ (float)(x0 + w - 230), (float)(y0 + h - 30) });
@@ -815,7 +816,6 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
 
             ImGui::PopStyleColor(2);
         }
-        auto streams = dev.query_sensors()[0].get_active_streams();
         if (changed)
         {
             try
@@ -826,6 +826,7 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
             {
                 try
                 {
+                    auto streams = dev.query_sensors()[0].get_active_streams();
                     dev.query_sensors()[0].close();
                     dev.query_sensors()[0].open(streams);
                     dev.as<rs2::auto_calibrated_device>().set_calibration_table(_calibration);
