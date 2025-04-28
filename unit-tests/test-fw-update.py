@@ -173,8 +173,6 @@ log.d( 'found:', device )
 product_line = device.get_info( rs.camera_info.product_line )
 product_name = device.get_info( rs.camera_info.name )
 log.d( 'product line:', product_line )
-sn = device.get_info( rs.camera_info.serial_number )
-print("Device serial number = " + repr(sn))
 ###############################################################################
 #
 
@@ -186,7 +184,7 @@ if device.is_update_device():
     log.d( "recovering device ..." )
     try:
         image_file = find_image_or_exit(product_name) if not custom_fw_d400_path else custom_fw_d400_path
-        cmd = [fw_updater_exe, '-r', '-f', image_file, '-s', sn]
+        cmd = [fw_updater_exe, '-r', '-f', image_file]
         if custom_fw_d400_path:
             # unsiged fw
             cmd.insert(1, '-u')
@@ -232,7 +230,7 @@ fw_version_regex = re.escape( fw_version_regex )
 image_file = find_image_or_exit(product_name, fw_version_regex) if not custom_fw_d400_path else custom_fw_d400_path
 # finding file containing image for FW update
 
-cmd = [fw_updater_exe, '-f', image_file, '-s', sn]
+cmd = [fw_updater_exe, '-f', image_file]
 if custom_fw_d400_path:
     # unsigned fw
     cmd.insert(1, '-u')
@@ -244,20 +242,6 @@ subprocess.run( cmd )   # may throw
 time.sleep(3) # MIPI devices do not re-enumerate so we need to give them some time to restart
 devices.query( monitor_changes = False )
 sn_list = devices.all()
-sn_list_size = len(sn_list)
-if sn_list_size == 0:
-    retries = 5
-    while retries > 0 and sn_list_size == 0:
-        retries -= 1
-        time.sleep(2)
-        devices.query( monitor_changes = False )
-        sn_list = devices.all()
-        sn_list_size = len(sn_list)
-        if sn_list_size == 0:
-            print("Device discovery... Device not found yet - remaining retries: " + repr(retries) )
-        else:
-            print("Device discovery... Device found.")
-
 device = devices.get_first( sn_list ).handle
 current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
 test.check_equal(current_fw_version, bundled_fw_version if not custom_fw_d400_path else custom_fw_d400_version)  
