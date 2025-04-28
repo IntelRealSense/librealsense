@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Any
 
-
+from app.core.auth import get_current_user
 from app.models.option import OptionInfo, OptionUpdate
 from app.services.rs_manager import RealSenseManager
 from app.api.dependencies import get_realsense_manager

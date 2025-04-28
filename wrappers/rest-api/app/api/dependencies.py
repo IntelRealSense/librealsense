@@ -2,7 +2,7 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from typing import Generator
 
-
+from app.core.auth import get_current_user
 from app.services.rs_manager import RealSenseManager
 from app.services.webrtc_manager import WebRTCManager
 from app.services.socketio import sio

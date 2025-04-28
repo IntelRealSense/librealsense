@@ -7,6 +7,8 @@ class DeviceBase(BaseModel):
     firmware_version: Optional[str] = None
     physical_port: Optional[str] = None
 
+class DeviceCreate(DeviceBase):
+    pass
 
 class Device(DeviceBase):
     device_id: str
