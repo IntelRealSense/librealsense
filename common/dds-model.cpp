@@ -99,9 +99,15 @@ bool dds_model::check_DDS_support()
 {
     if( _device.is< rs2::debug_protocol >() )
     {
+        if( _device.supports( RS2_CAMERA_INFO_NAME ) )
+        {
+            std::string name = _device.get_info( RS2_CAMERA_INFO_NAME );
+            if( name.find( "Recovery" ) != std::string::npos )
+                return false; // Recovery devices don't support HWM.
+        }
+
         try
         {
-            // Command may fail, e.g. recovery devices does not support HWM.
             auto dev = debug_protocol( _device );
             auto cmd = dev.build_command( GET_ETH_CONFIG, CURRENT_VALUES );
             auto data = dev.send_and_receive_raw_data( cmd );

@@ -151,7 +151,8 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     , _dds_dev( dev )
 {
     //LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
-    register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name() );
+    std::string suffix = dev->device_info().is_recovery() ? " Recovery" : "";
+    register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name() + suffix );
     register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev->device_info().topic_root() );
     register_info( RS2_CAMERA_INFO_PRODUCT_ID, "DDS" );
 
