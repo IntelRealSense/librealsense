@@ -99,12 +99,19 @@ bool dds_model::check_DDS_support()
 {
     if( _device.is< rs2::debug_protocol >() )
     {
-        auto dev = debug_protocol( _device );
-        auto cmd = dev.build_command( GET_ETH_CONFIG, CURRENT_VALUES );
-        auto data = dev.send_and_receive_raw_data( cmd );
-        int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
-        if( code == GET_ETH_CONFIG )
-            return true;
+        try
+        {
+            // Command may fail, e.g. recovery devices does not support HWM.
+            auto dev = debug_protocol( _device );
+            auto cmd = dev.build_command( GET_ETH_CONFIG, CURRENT_VALUES );
+            auto data = dev.send_and_receive_raw_data( cmd );
+            int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
+            if( code == GET_ETH_CONFIG )
+                return true;
+        }
+        catch( ... )
+        {
+        }
     }
 
     return false;
