@@ -34,7 +34,8 @@ if DEBUG_MODE:
 
 pipeline = rs.pipeline(ctx)
 pipeline_profile = pipeline.start(cfg)
-time.sleep(5)
+pipeline.wait_for_frames()
+time.sleep(2)
 
 def frames_to_image(depth, color, save, display):
     """
@@ -116,7 +117,6 @@ def is_depth_meaningful(save_image=False, show_image=False):
     frames = pipeline.wait_for_frames()
     depth = frames.get_depth_frame()
     color = frames.get_color_frame()
-    now = time.time()
     if not depth:
         log.f("Error getting depth frame")
         return False
