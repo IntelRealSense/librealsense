@@ -1204,7 +1204,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
 
 void frame_drops_dashboard::process_frame(rs2::frame f)
 {
-    write_shared_data([&](){
+    shared_data.write([&](){
         double ts = glfwGetTime();
         if (method == 1) ts = f.get_timestamp() / 1000.f;
         auto it = stream_to_time.find(f.get_profile().unique_id());
@@ -1241,7 +1241,7 @@ void frame_drops_dashboard::process_frame(rs2::frame f)
 
 void frame_drops_dashboard::draw(ux_window& win, rect r)
 {
-    auto hist = read_shared_data<std::deque<int>>([&](){ return drops_history; });
+    auto hist = shared_data.read<std::deque<int>>([&](){ return drops_history; });
     for (int i = 0; i < hist.size(); i++)
     {
         add_point((float)i, (float)hist[i]);
@@ -1277,7 +1277,7 @@ int frame_drops_dashboard::get_height() const
 
 void frame_drops_dashboard::clear(bool full)
 {
-    write_shared_data([&](){
+    shared_data.write([&](){
         stream_to_time.clear();
         last_time = 0;
         *total = 0;
