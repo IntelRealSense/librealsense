@@ -70,6 +70,8 @@ public:
 
     virtual bool contradicts( const stream_profile_interface * a,
                               const std::vector< stream_profile > & others ) const = 0;
+
+    virtual void add_controls() = 0;
 };
 
 
