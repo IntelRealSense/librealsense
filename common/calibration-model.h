@@ -7,6 +7,7 @@
 #include <rsutils/number/float3.h>
 
 namespace librealsense { namespace ds { struct mini_intrinsics; } }
+namespace librealsense { namespace ds { enum class d500_calibration_distortion; } }
 
 namespace rs2
 {
@@ -29,8 +30,11 @@ namespace rs2
     private:
         void draw_float4x4(std::string name, float3x3 & field, const float3x3& original, bool& changed);
         void draw_intrinsics( std::string name, mini_intrinsics & field, const mini_intrinsics & original, bool & changed );
+        void draw_distortion(std::string name, librealsense::ds::d500_calibration_distortion& distortion_model, float(&distortion_coeffs)[13], const float(&original_coeffs)[13],bool& changed);
         void draw_float(std::string name, float& x, const float& orig, bool& changed);
+        void draw_read_only_float(std::string name, float x);
         void draw_int( std::string name, uint16_t & x, const uint16_t & orig, bool & changed );
+        void draw_read_only_int(std::string name, int x);
         void d400_update(ux_window& window, std::string& error_message);
         void d500_update(ux_window& window, std::string& error_message);
 
