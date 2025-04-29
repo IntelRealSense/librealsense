@@ -63,6 +63,20 @@ void calibration_model::draw_int( std::string name, uint16_t & x, const uint16_t
     ImGui::PopStyleColor();
 }
 
+void calibration_model::draw_read_only_int(std::string name, int x)
+{
+    ImGui::BeginDisabled();
+    ImGui::DragInt(("##" + name).c_str(), &x);
+    ImGui::EndDisabled();
+}
+
+void calibration_model::draw_read_only_float(std::string name, float x)
+{
+    ImGui::BeginDisabled();
+    ImGui::DragFloat(("##" + name).c_str(), &x);
+    ImGui::EndDisabled();
+}
+
 void calibration_model::draw_float4x4(std::string name, float3x3& field,
                                       const float3x3& original, bool& changed)
 {
@@ -128,16 +142,74 @@ void calibration_model::draw_intrinsics(std::string name, mini_intrinsics& field
     ImGui::SetCursorPosX(200);
     ImGui::Text("%s:", "width"); ImGui::SameLine();
     ImGui::SetCursorPosX(250);
-    draw_int(name + "width", field.image_width, original.image_width, changed);
+    draw_read_only_int(name + "width", field.image_width );
     ImGui::SameLine();
     ImGui::SetCursorPosX(400);
     ImGui::Text("%s:", "height"); ImGui::SameLine();
     ImGui::SetCursorPosX(450);
-    draw_int(name + "height", field.image_height, original.image_height, changed);
+    draw_read_only_int(name + "height", field.image_height );
 
     ImGui::PopItemWidth();
 
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+}
+
+void calibration_model::draw_distortion(std::string name, librealsense::ds::d500_calibration_distortion& distortion_model, float(&distortion_coeffs)[13], const float(&original_coeffs)[13], bool& changed)
+{
+    const char* distortion_str = "Unknown";
+
+    switch (distortion_model)
+    {
+    case librealsense::ds::d500_calibration_distortion::none:
+        distortion_str = "None";
+        break;
+    case librealsense::ds::d500_calibration_distortion::brown:
+        distortion_str = "Brown";
+        break;
+    case librealsense::ds::d500_calibration_distortion::brown_and_fisheye:
+        distortion_str = "Brown and Fisheye";
+        break;
+    }
+
+    ImGui::PushItemWidth(120);
+
+    ImGui::SetCursorPosX(10);
+    ImGui::Text((name + " Model:").c_str()); ImGui::SameLine();
+    ImGui::SetCursorPosX(200);
+    ImGui::BeginDisabled();
+    ImGui::InputText(("##" + name).c_str(), (char*)distortion_str, 64);
+    ImGui::EndDisabled();
+
+    ImGui::SetCursorPosX(10);
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+    ImGui::Text((name + " Params:").c_str()); ImGui::SameLine();
+
+    ImGui::PopItemWidth();
+
+    ImGui::SetCursorPosX(200);
+    ImGui::PushItemWidth(80);
+
+    const int items_per_column = 5;
+    const float column_width = 20;
+
+    for (int col = 0; col < 3; col++)
+    {
+        ImGui::BeginGroup();
+        int start_idx = col * items_per_column;
+        int end_idx = std::min(start_idx + items_per_column, 13);
+
+        for (int i = start_idx; i < end_idx; i++)
+        {
+            ImGui::Text("[%d]:", i);
+            ImGui::SameLine();
+            draw_float(name + "_" + std::to_string(i), distortion_coeffs[i], original_coeffs[i], changed);
+        }
+        ImGui::EndGroup();
+
+        if (col < 2) ImGui::SameLine(0, column_width);
+    }
+        
+    ImGui::PopItemWidth();
 }
 
 void calibration_model::update(ux_window& window, std::string& error_message)
@@ -364,7 +436,7 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
         ImGui::SetCursorPosX(10);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
-        ImGui::Text("Stereo Baseline(mm):"); ImGui::SameLine();
+        ImGui::Text("Stereo Baseline (mm):"); ImGui::SameLine();
         ImGui::SetCursorPosX(200);
 
         ImGui::PushItemWidth(120);
@@ -571,7 +643,6 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
                 if (auto fn = file_dialog_open(file_dialog_mode::open_file, "Calibration JSON\0*.json\0", nullptr, nullptr))
                 {
                     config_file cf(fn);
-                    table->baseline = cf.get("baseline");
 
                     auto load_float3x3 = [&](std::string name, librealsense::float3x3& m){
                         m.x.x = cf.get(std::string( rsutils::string::from() << name << ".x.x").c_str());
@@ -593,16 +664,21 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
 
                         m.fx = cf.get( std::string( rsutils::string::from() << name << ".fx" ).c_str() );
                         m.fy = cf.get( std::string( rsutils::string::from() << name << ".fy" ).c_str() );
+                    };
 
-                        m.image_width = cf.get( std::string( rsutils::string::from() << name << ".image_width" ).c_str() );
-                        m.image_height = cf.get( std::string( rsutils::string::from() << name << ".image_height" ).c_str() );
+                    auto load_distortion_params = [&](std::string name, float(&distortion_coeffs)[13]) {
+                        for (int i = 0; i < 13; ++i)
+                        {
+                            distortion_coeffs[i] = cf.get(std::string(rsutils::string::from() << name << "." << i ).c_str());
+                        }
                     };
 
                     load_intrinsics( "left_coefficients_table", table->left_coefficients_table.base_instrinsics );
                     load_intrinsics( "right_coefficients_table", table->right_coefficients_table.base_instrinsics );
-                    load_intrinsics( "rectified_intrinsics", table->rectified_intrinsics );
                     load_float3x3( "left_rotation_matrix", table->left_coefficients_table.rotation_matrix );
                     load_float3x3( "right_rotation_matrix", table->right_coefficients_table.rotation_matrix );
+                    load_distortion_params("left_distortion_coeffs", table->left_coefficients_table.distortion_coeffs);
+                    load_distortion_params("right_distortion_coeffs", table->right_coefficients_table.distortion_coeffs);
 
                 }
 
@@ -627,7 +703,6 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
                 if (auto fn = file_dialog_open(file_dialog_mode::save_file, "Calibration JSON\0*.json\0", nullptr, nullptr))
                 {
                     config_file cf(fn);
-                    cf.set("baseline", table->baseline);
 
                     auto save_float3x3 = [&](std::string name, librealsense::float3x3& m){
                         cf.set(std::string( rsutils::string::from() << name << ".x.x").c_str(), m.x.x);
@@ -649,17 +724,21 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
 
                         cf.set( std::string( rsutils::string::from() << name << ".fx" ).c_str(), m.fx );
                         cf.set( std::string( rsutils::string::from() << name << ".fy" ).c_str(), m.fy );
+                    };
 
-                        cf.set( std::string( rsutils::string::from() << name << ".image_width" ).c_str(), m.image_width );
-                        cf.set( std::string( rsutils::string::from() << name << ".image_height" ).c_str(), m.image_height );
+                    auto save_distortion_params = [&](std::string name, float(&distortion_coeffs)[13]) {
+                        for (int i = 0; i < 13; ++i)
+                        {
+                            cf.set(std::string(rsutils::string::from() << name << "." << i).c_str(), distortion_coeffs[i]);
+                        }
                     };
 
                     save_intrinsics( "left_coefficients_table", table->left_coefficients_table.base_instrinsics );
                     save_intrinsics( "right_coefficients_table", table->right_coefficients_table.base_instrinsics );
-                    save_intrinsics( "rectified_intrinsics", table->rectified_intrinsics );
                     save_float3x3( "left_rotation_matrix", table->left_coefficients_table.rotation_matrix );
                     save_float3x3( "right_rotation_matrix", table->right_coefficients_table.rotation_matrix );
-
+                    save_distortion_params("left_distortion_coeffs", table->left_coefficients_table.distortion_coeffs);
+                    save_distortion_params("right_distortion_coeffs", table->right_coefficients_table.distortion_coeffs);
                 }
             }
             catch (const std::exception& ex)
@@ -723,23 +802,46 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
 
         ImGui::BeginChild("##CalibData",ImVec2(w - 15, h - 110), true);
 
+        ImGui::PushItemWidth(120);
+
+        //Baseline
         ImGui::SetCursorPosX(10);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
-        ImGui::Text("Baseline(mm):"); ImGui::SameLine();
+        ImGui::Text("Baseline (mm):"); ImGui::SameLine();
         ImGui::SetCursorPosX(200);
+        draw_read_only_float("Baseline", table->baseline);
 
-        ImGui::PushItemWidth(120);
-        draw_float("Baseline", table->baseline, orig_table->baseline, changed);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-        ImGui::PopItemWidth();
 
+        //Left Camera
         draw_intrinsics( "Left Intrinsics", table->left_coefficients_table.base_instrinsics, orig_table->left_coefficients_table.base_instrinsics, changed );
-        draw_intrinsics( "Right Intrinsics", table->right_coefficients_table.base_instrinsics, orig_table->right_coefficients_table.base_instrinsics, changed );
-        draw_intrinsics( "Rectified Intrinsics", table->rectified_intrinsics, orig_table->rectified_intrinsics, changed );
+        draw_distortion("Left Distortion", table->left_coefficients_table.distortion_model, table->left_coefficients_table.distortion_coeffs, orig_table->left_coefficients_table.distortion_coeffs, changed);
         draw_float4x4( "Left Rotation Matrix", table->left_coefficients_table.rotation_matrix, orig_table->left_coefficients_table.rotation_matrix, changed );
+        
+        //Right Camera
+        draw_intrinsics("Right Intrinsics", table->right_coefficients_table.base_instrinsics, orig_table->right_coefficients_table.base_instrinsics, changed);
+        draw_distortion("Right Distortion", table->right_coefficients_table.distortion_model, table->right_coefficients_table.distortion_coeffs, orig_table->right_coefficients_table.distortion_coeffs, changed);
         draw_float4x4( "Right Rotation Matrix", table->right_coefficients_table.rotation_matrix, orig_table->right_coefficients_table.rotation_matrix, changed );
+        
+        //Rectified image
+        ImGui::BeginDisabled();
+        draw_intrinsics("Rectified Intrinsics", table->rectified_intrinsics, orig_table->rectified_intrinsics, changed);
+        ImGui::EndDisabled();
+
+        ImGui::SetCursorPosX(10);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+        ImGui::Text("Realignment Essential:"); ImGui::SameLine();
+        ImGui::SetCursorPosX(200);
+        draw_read_only_int("Realignment Essential", table->realignment_essential);
+
+        ImGui::SetCursorPosX(10);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+        ImGui::Text("Vertical Shift:"); ImGui::SameLine();
+        ImGui::SetCursorPosX(200);
+        draw_read_only_int("Vertical Shift", table->vertical_shift);
        
+        ImGui::PopItemWidth();
         ImGui::SetCursorPosX(10);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
