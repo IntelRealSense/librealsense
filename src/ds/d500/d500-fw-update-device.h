@@ -20,6 +20,7 @@ namespace librealsense
             std::chrono::seconds timeout_seconds, rs2_update_progress_callback_sptr update_progress_callback) const;
         virtual void dfu_manifest_phase(const platform::rs_usb_messenger& messenger, rs2_update_progress_callback_sptr update_progress_callback) const override;
         float compute_progress(float progress, float start, float end, float threshold) const override;
+        virtual void add_controls() override {};
 
     private:
         std::string parse_serial_number(const std::vector<uint8_t>& buffer) const;

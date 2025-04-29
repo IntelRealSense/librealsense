@@ -89,6 +89,8 @@ public:
     bool device_changed_notifications_on() const { return _device_change_subscription.is_active(); }
 
     format_conversion get_format_conversion() const;
+    
+    virtual void add_controls() override {};
 
 protected:
     int add_sensor(const std::shared_ptr<sensor_interface>& sensor_base);

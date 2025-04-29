@@ -117,18 +117,31 @@ platform_camera::platform_camera( std::shared_ptr< const device_info > const & d
     // For consistent (msec) measurements use "time of arrival" metadata attribute
     color_ep->register_metadata( RS2_FRAME_METADATA_FRAME_TIMESTAMP,
                                  make_uvc_header_parser( &platform::uvc_header::timestamp ) );
+}
 
-    color_ep->try_register_pu( RS2_OPTION_BACKLIGHT_COMPENSATION );
-    color_ep->try_register_pu( RS2_OPTION_BRIGHTNESS );
-    color_ep->try_register_pu( RS2_OPTION_CONTRAST );
-    color_ep->try_register_pu( RS2_OPTION_EXPOSURE );
-    color_ep->try_register_pu( RS2_OPTION_GAMMA );
-    color_ep->try_register_pu( RS2_OPTION_HUE );
-    color_ep->try_register_pu( RS2_OPTION_SATURATION );
-    color_ep->try_register_pu( RS2_OPTION_SHARPNESS );
-    color_ep->try_register_pu( RS2_OPTION_WHITE_BALANCE );
-    color_ep->try_register_pu( RS2_OPTION_ENABLE_AUTO_EXPOSURE );
-    color_ep->try_register_pu( RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE );
+void platform_camera::add_controls()
+{
+    auto const n_sensors = get_sensors_count();
+    for (auto i = 0; i < n_sensors; ++i)
+    {
+        if (auto sensor = dynamic_cast<platform_camera_sensor*>(&(get_sensor(i))))
+        {
+            if (sensor->get_device().get_info(RS2_CAMERA_INFO_NAME) == "Platform Camera")
+            {
+                sensor->try_register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+                sensor->try_register_pu(RS2_OPTION_BRIGHTNESS);
+                sensor->try_register_pu(RS2_OPTION_CONTRAST);
+                sensor->try_register_pu(RS2_OPTION_EXPOSURE);
+                sensor->try_register_pu(RS2_OPTION_GAMMA);
+                sensor->try_register_pu(RS2_OPTION_HUE);
+                sensor->try_register_pu(RS2_OPTION_SATURATION);
+                sensor->try_register_pu(RS2_OPTION_SHARPNESS);
+                sensor->try_register_pu(RS2_OPTION_WHITE_BALANCE);
+                sensor->try_register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+                sensor->try_register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+            }
+        }
+    }
 }
 
 

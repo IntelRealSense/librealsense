@@ -19,6 +19,7 @@
 #include <mutex>
 #include <set>
 #include <regex>
+#include <api.h>
 
 #include <imgui_internal.h>
 
@@ -130,18 +131,43 @@ void add_playback_device( context & ctx,
 // This function is called every frame
 // If between the frames there was an asyncronous connect/disconnect event
 // the function will pick up on this and add the device to the viewer
-bool refresh_devices(std::mutex& m,
+void refresh_devices(std::mutex& m,
     context& ctx,
     device_changes& devices_connection_changes,
     std::vector<device>& current_connected_devices,
+    std::vector<device>& future_initialization_devices,
+    bool allow_future_initialization,
     std::vector<std::pair<std::string, std::string>>& device_names,
     device_models_list& device_models,
     viewer_model& viewer_model,
     std::string& error_message)
 {
+    
     event_information info({}, {});
     if (!devices_connection_changes.try_get_next_changes(info))
-        return false;
+    {
+        if (allow_future_initialization)
+        {
+            auto dev_itr = begin(future_initialization_devices);
+            while (dev_itr != end(future_initialization_devices))
+            {
+                auto dev = *dev_itr;
+                const std::shared_ptr<rs2_device>& device_shared_ptr = dev.get();
+                const rs2_device* p_rs2_device = device_shared_ptr.get();
+
+                auto add_controls_task = [p_rs2_device]() {
+                    p_rs2_device->device->add_controls();
+                };
+
+                std::thread add_controls_thread(add_controls_task);
+                add_controls_thread.detach();
+
+                dev_itr = future_initialization_devices.erase(dev_itr);
+            }
+        }
+
+        return;
+    }
     try
     {
         //Remove disconnected
@@ -218,6 +244,10 @@ bool refresh_devices(std::mutex& m,
                                                 << " was selected as a default device" );
                     added = true;
                 }
+                else if(std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) == "Platform Camera")
+                { 
+                    future_initialization_devices.push_back(dev);
+                }
 
                 if (!initial_refresh)
                 {
@@ -283,7 +313,7 @@ bool refresh_devices(std::mutex& m,
     {
         error_message = "Unknown error";
     }
-    return true;
+    return;
 }
 
 
@@ -317,7 +347,9 @@ int main(int argc, const char** argv) try
     update_viewer_configuration(viewer_model);
 
     std::vector<device> connected_devs;
+    std::vector<device> future_initialization_devices;
     std::mutex m;
+    bool allow_future_initialization = false;
 
 #ifdef BUILD_EASYLOGGINGPP
     std::weak_ptr<notifications_model> notifications = viewer_model.not_model;
@@ -364,7 +396,7 @@ int main(int argc, const char** argv) try
 
     window.on_load = [&]()
     {
-        refresh_devices(m, ctx, devices_connection_changes, connected_devs,
+        refresh_devices(m, ctx, devices_connection_changes, connected_devs, future_initialization_devices, allow_future_initialization,
             device_names, *device_models, viewer_model, error_message);
         return true;
     };
@@ -372,7 +404,7 @@ int main(int argc, const char** argv) try
     // Closing the window
     while (window)
     {
-        auto device_changed = refresh_devices(m, ctx, devices_connection_changes, connected_devs,
+        refresh_devices(m, ctx, devices_connection_changes, connected_devs, future_initialization_devices, allow_future_initialization,
             device_names, *device_models, viewer_model, error_message);
 
         auto output_height = viewer_model.get_output_height();
@@ -504,7 +536,7 @@ int main(int argc, const char** argv) try
 
             ImGui::PopStyleColor();
             ImGui::EndPopup();
-            }
+        }
         ImGui::PopFont();
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
@@ -618,7 +650,8 @@ int main(int argc, const char** argv) try
 
         // Fetch and process frames from queue
         viewer_model.handle_ready_frames(viewer_rect, window, static_cast<int>(device_models->size()), error_message);
-        }
+        allow_future_initialization = true;
+    }
 
     // Stopping post processing filter rendering thread
     viewer_model.ppf.stop();
