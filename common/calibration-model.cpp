@@ -13,6 +13,12 @@
 
 
 using namespace rs2;
+namespace {
+    constexpr float LEFT_ALIGN_LABELS = 10.0f;
+    constexpr float FIRST_COLUMN_LOCATION = 200.0f;
+    constexpr float SECOND_COLUMN_LOCATION = 400.0f;
+    constexpr float INPUT_WIDTH = 120.0f;
+}
 
 calibration_model::calibration_model(rs2::device dev, std::shared_ptr<notifications_model> not_model)
     : dev(dev), _not_model(not_model)
@@ -80,26 +86,26 @@ void calibration_model::draw_read_only_float(std::string name, float x)
 void calibration_model::draw_float4x4(std::string name, float3x3& field,
                                       const float3x3& original, bool& changed)
 {
-    ImGui::SetCursorPosX(10);
+    ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
     ImGui::Text("%s:", name.c_str()); ImGui::SameLine();
 
-    ImGui::PushItemWidth(120);
+    ImGui::PushItemWidth(INPUT_WIDTH);
 
-    ImGui::SetCursorPosX(200);
+    ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
     draw_float(name + "_XX", field.x.x, original.x.x, changed);
     ImGui::SameLine();
     draw_float(name + "_XY", field.x.y, original.x.y, changed);
     ImGui::SameLine();
     draw_float(name + "_XZ", field.x.z, original.x.z, changed);
 
-    ImGui::SetCursorPosX(200);
+    ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
     draw_float(name + "_YX", field.y.x, original.y.x, changed);
     ImGui::SameLine();
     draw_float(name + "_YY", field.y.y, original.y.y, changed);
     ImGui::SameLine();
     draw_float(name + "_YZ", field.y.z, original.y.z, changed);
 
-    ImGui::SetCursorPosX(200);
+    ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
     draw_float(name + "_ZX", field.z.x, original.z.x, changed);
     ImGui::SameLine();
     draw_float(name + "_ZY", field.z.y, original.z.y, changed);
@@ -114,39 +120,39 @@ void calibration_model::draw_float4x4(std::string name, float3x3& field,
 void calibration_model::draw_intrinsics(std::string name, mini_intrinsics& field,
                                        const mini_intrinsics& original, bool& changed)
 {
-    ImGui::SetCursorPosX(10);
+    ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
     ImGui::Text("%s:", name.c_str()); ImGui::SameLine();
 
-    ImGui::PushItemWidth(120);
+    ImGui::PushItemWidth(INPUT_WIDTH);
 
-    ImGui::SetCursorPosX(200);
+    ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
     ImGui::Text("%s:", "ppx"); ImGui::SameLine();
-    ImGui::SetCursorPosX(250);
+    ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION + 50);
     draw_float(name + "_ppx", field.ppx, original.ppx, changed);
     ImGui::SameLine();
-    ImGui::SetCursorPosX(400);
+    ImGui::SetCursorPosX(SECOND_COLUMN_LOCATION);
     ImGui::Text("%s:", "ppy"); ImGui::SameLine();
-    ImGui::SetCursorPosX(450);
+    ImGui::SetCursorPosX(SECOND_COLUMN_LOCATION + 50);
     draw_float(name + "_ppy", field.ppy, original.ppy, changed);
 
-    ImGui::SetCursorPosX(200);
+    ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
     ImGui::Text("%s:", "fx"); ImGui::SameLine();
-    ImGui::SetCursorPosX(250);
+    ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION + 50);
     draw_float(name + "_fx", field.fx, original.fx, changed);
     ImGui::SameLine();
-    ImGui::SetCursorPosX(400);
+    ImGui::SetCursorPosX(SECOND_COLUMN_LOCATION);
     ImGui::Text("%s:", "fy"); ImGui::SameLine();
-    ImGui::SetCursorPosX(450);
+    ImGui::SetCursorPosX(SECOND_COLUMN_LOCATION + 50);
     draw_float(name + "_fy", field.fy, original.fy, changed);
 
-    ImGui::SetCursorPosX(200);
+    ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
     ImGui::Text("%s:", "width"); ImGui::SameLine();
-    ImGui::SetCursorPosX(250);
+    ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION + 50);
     draw_read_only_int(name + "width", field.image_width );
     ImGui::SameLine();
-    ImGui::SetCursorPosX(400);
+    ImGui::SetCursorPosX(SECOND_COLUMN_LOCATION);
     ImGui::Text("%s:", "height"); ImGui::SameLine();
-    ImGui::SetCursorPosX(450);
+    ImGui::SetCursorPosX(SECOND_COLUMN_LOCATION + 50);
     draw_read_only_int(name + "height", field.image_height );
 
     ImGui::PopItemWidth();
@@ -156,7 +162,7 @@ void calibration_model::draw_intrinsics(std::string name, mini_intrinsics& field
 
 void calibration_model::draw_distortion(std::string name, librealsense::ds::d500_calibration_distortion& distortion_model, float(&distortion_coeffs)[13], const float(&original_coeffs)[13], bool& changed)
 {
-    const char* distortion_str = "Unknown";
+    std::string distortion_str = "Unknown";
 
     switch (distortion_model)
     {
@@ -171,22 +177,26 @@ void calibration_model::draw_distortion(std::string name, librealsense::ds::d500
         break;
     }
 
-    ImGui::PushItemWidth(120);
+    ImGui::PushItemWidth(INPUT_WIDTH);
 
-    ImGui::SetCursorPosX(10);
+    ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
     ImGui::Text((name + " Model:").c_str()); ImGui::SameLine();
-    ImGui::SetCursorPosX(200);
+    ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
+
+    // Display distortion model in a read-only InputText (disabled) to align with editable fields
     ImGui::BeginDisabled();
-    ImGui::InputText(("##" + name).c_str(), (char*)distortion_str, 64);
+    char distortion_buf[64]{};
+    strncpy(distortion_buf, distortion_str.c_str(), sizeof(distortion_buf));
+    ImGui::InputText(("##" + name).c_str(), distortion_buf, sizeof(distortion_buf));
     ImGui::EndDisabled();
 
-    ImGui::SetCursorPosX(10);
+    ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
     ImGui::Text((name + " Params:").c_str()); ImGui::SameLine();
 
     ImGui::PopItemWidth();
 
-    ImGui::SetCursorPosX(200);
+    ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
     ImGui::PushItemWidth(80);
 
     const int items_per_column = 5;
@@ -433,13 +443,13 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
 
         ImGui::BeginChild("##CalibData",ImVec2(w - 15, h - 110), true);
 
-        ImGui::SetCursorPosX(10);
+        ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
         ImGui::Text("Stereo Baseline (mm):"); ImGui::SameLine();
-        ImGui::SetCursorPosX(200);
+        ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
 
-        ImGui::PushItemWidth(120);
+        ImGui::PushItemWidth(INPUT_WIDTH);
         draw_float("Baseline", table->baseline, orig_table->baseline, changed);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
         ImGui::PopItemWidth();
@@ -449,11 +459,11 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
         draw_float4x4("World to Left Rotation", table->world2left_rot, orig_table->world2left_rot, changed);
         draw_float4x4("World to Right Rotation", table->world2right_rot, orig_table->world2right_rot, changed);
 
-        ImGui::SetCursorPosX(10);
+        ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
         ImGui::Text("Rectified Resolution:"); ImGui::SameLine();
-        ImGui::SetCursorPosX(200);
+        ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
 
         std::vector<std::string> resolution_names;
         std::vector<const char*> resolution_names_char;
@@ -473,22 +483,22 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
             resolution_names_char.push_back(resolution_names[i].c_str());
         }
 
-        ImGui::PushItemWidth(120);
+        ImGui::PushItemWidth(INPUT_WIDTH);
         ImGui::Combo("##RectifiedResolutions", &selected_resolution, resolution_names_char.data(), int(resolution_names_char.size()));
 
-        ImGui::SetCursorPosX(10);
+        ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
         ImGui::Text("Focal Length:"); ImGui::SameLine();
-        ImGui::SetCursorPosX(200);
+        ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
 
         draw_float("FocalX", table->rect_params[selected_resolution].x, orig_table->rect_params[selected_resolution].x, changed);
         ImGui::SameLine();
         draw_float("FocalY", table->rect_params[selected_resolution].y, orig_table->rect_params[selected_resolution].y, changed);
 
-        ImGui::SetCursorPosX(10);
+        ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
         ImGui::Text("Principal Point:"); ImGui::SameLine();
-        ImGui::SetCursorPosX(200);
+        ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
 
         draw_float("PPX", table->rect_params[selected_resolution].z, orig_table->rect_params[selected_resolution].z, changed);
         ImGui::SameLine();
@@ -802,14 +812,14 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
 
         ImGui::BeginChild("##CalibData",ImVec2(w - 15, h - 110), true);
 
-        ImGui::PushItemWidth(120);
+        ImGui::PushItemWidth(INPUT_WIDTH);
 
         //Baseline
-        ImGui::SetCursorPosX(10);
+        ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
         ImGui::Text("Baseline (mm):"); ImGui::SameLine();
-        ImGui::SetCursorPosX(200);
+        ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
         draw_read_only_float("Baseline", table->baseline);
 
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
@@ -829,23 +839,23 @@ void calibration_model::d500_update( ux_window & window, std::string & error_mes
         draw_intrinsics("Rectified Intrinsics", table->rectified_intrinsics, orig_table->rectified_intrinsics, changed);
         ImGui::EndDisabled();
 
-        ImGui::SetCursorPosX(10);
+        ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
         ImGui::Text("Realignment Essential:"); ImGui::SameLine();
-        ImGui::SetCursorPosX(200);
+        ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
         draw_read_only_int("Realignment Essential", table->realignment_essential);
 
-        ImGui::SetCursorPosX(10);
+        ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
         ImGui::Text("Vertical Shift:"); ImGui::SameLine();
-        ImGui::SetCursorPosX(200);
+        ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
         draw_read_only_int("Vertical Shift", table->vertical_shift);
        
         ImGui::PopItemWidth();
-        ImGui::SetCursorPosX(10);
+        ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
-        ImGui::SetCursorPosX(200);
+        ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
 
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
