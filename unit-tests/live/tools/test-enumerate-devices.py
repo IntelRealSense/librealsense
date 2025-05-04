@@ -19,7 +19,7 @@ if rs_enumerate_devices:
     import subprocess
     run_time_stopwatch = Stopwatch()
     run_time_threshold = 5 if is_dds else 2  # currently, DDS devices take longer time to complete rs_enumerate_devices
-    p = subprocess.run( [rs_enumerate_devices],
+    p = subprocess.run( [rs_enumerate_devices, "--no-dds" if not is_dds else ""],
                     stdout=None,
                     stderr=subprocess.STDOUT,
                     universal_newlines=True,
