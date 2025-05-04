@@ -17,11 +17,11 @@ if __name__ == '__main__':
         print( 'Syntax: unifi [options]' )
         print( '        Control the Unifi Ubiquiti hub' )
         print( 'Options:' )
-        print( '        --reset        Reset the Unifi' )
-        print( '        --status       Get the status of all ports' )
         print( '        --enable=<ports>       Enable <ports>' )
         print( '        --disable=<ports>      Disable <ports>' )
         print( '        --recycle=<ports>      Recycle <ports>' )
+        print( '        --reset        Reset the Unifi' )
+        print( '        --status       Get the status of all ports' )
         print( ' <ports> is a comma-separated list of port numbers, or empty for all ports' )
         sys.exit(2)
     try:

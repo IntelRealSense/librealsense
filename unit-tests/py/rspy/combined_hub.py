@@ -148,3 +148,4 @@ class CombinedHub(device_hub.device_hub):
                 return self.hub_port_to_virtual_port[(name, int(port))]
         return None
 
+    # recycle_ports inherited; uses ports(), disable_ports(), enable_ports()

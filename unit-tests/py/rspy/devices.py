@@ -82,14 +82,9 @@ class Device:
         self._location = None  # might be either usb location or mac address
         try:
             if self._is_dds:
-                self._location = _get_mac_address(dev)
-            elif self._connection_type == "USB":
-                self._location = _get_usb_location(self._physical_port)
-            elif self._connection_type == "GMSL":
-                # GMSL device
-                log.i("GMSL device detected, no location available")
+                self._location = get_mac_address(dev)
             else:
-                raise Exception(f"Unknown connection type: {self._connection_type}")
+                self._location = _get_usb_location(self._physical_port)
         except Exception as e:
             log.e('Failed to get usb location / mac address:', e)
 
@@ -723,7 +718,7 @@ else:
         return port_location
 
 
-def _get_mac_address(dev):
+def get_mac_address(dev):
     GET_ETH_CONFIG_OPCODE = 187
     raw_command = rs.debug_protocol(dev).build_command(GET_ETH_CONFIG_OPCODE,1)
     raw_result = rs.debug_protocol(dev).send_and_receive_raw_data(raw_command)

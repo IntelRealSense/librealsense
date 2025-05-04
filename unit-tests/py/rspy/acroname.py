@@ -139,7 +139,7 @@ class Acroname(device_hub.device_hub):
         :param port: port number;
         :return: True if Acroname enabled this port, False otherwise
         """
-        return ("Disabled" not in self.port_state( port ))
+        return self.port_state( port ) != "Disabled"
 
 
     def port_state(self,  port ):
@@ -191,6 +191,13 @@ class Acroname(device_hub.device_hub):
             res.append("Device Attached")
         return res
 
+        if not (bitmask & 0x1): # Port is disabled by Acroname - last bit off indicates Vbus is off - port is disabled
+            return "Disabled"
+        if bitmask == 11: # Port is enabled but no device was detected
+            return "Disconnected"
+        if bitmask > 100: # Normally we hope it will cover "Device Attached" use cases (Note, can also be turn on when 'USB Error Flag' is on...but we havn't seen that )
+            return "OK"
+        return "Unknown Error ({})".format( bitmask )
 
 
     def enable_ports(self,  ports = None, disable_other_ports = False, sleep_on_change = 0 ):
@@ -208,21 +215,23 @@ class Acroname(device_hub.device_hub):
         for port in self.all_ports():
             #
             if ports is None or port in ports:
-                # log.d( "enabling port", port)
-                action_result = self.hub.usb.setPortEnable( port )
-                if action_result != brainstem.result.Result.NO_ERROR:
-                    result = False
-                    log.e("Failed to enable port", port)
-                else:
-                    changed = True
+                if not self.is_port_enabled( port ):
+                    # log.d( "enabling port", port)
+                    action_result = self.hub.usb.setPortEnable( port )
+                    if action_result != brainstem.result.Result.NO_ERROR:
+                        result = False
+                        log.e("Failed to enable port", port)
+                    else:
+                        changed = True
             #
             elif disable_other_ports:
-                # log.d("disabling port", port)
-                action_result = self.hub.usb.setPortDisable( port )
-                if action_result != brainstem.result.Result.NO_ERROR:
-                    result = False
-                else:
-                    changed = True
+                if self.is_port_enabled( port ):
+                    # log.d("disabling port", port)
+                    action_result = self.hub.usb.setPortDisable( port )
+                    if action_result != brainstem.result.Result.NO_ERROR:
+                        result = False
+                    else:
+                        changed = True
         #
         if changed and sleep_on_change:
             signals.register_signal_handlers()
@@ -243,13 +252,14 @@ class Acroname(device_hub.device_hub):
         log.d(f"Disabling ports {ports if ports is not None else 'all'} on Acroname")
         for port in self.all_ports():
             if ports is None or port in ports:
-                # log.d("disabling port", port)
-                action_result = self.hub.usb.setPortDisable( port )
-                if action_result != brainstem.result.Result.NO_ERROR:
-                    result = False
-                    log.e("Failed to disable port", port)
-                else:
-                    changed = True
+                if self.is_port_enabled( port ):
+                        # log.d("disabling port", port)
+                        action_result = self.hub.usb.setPortDisable( port )
+                        if action_result != brainstem.result.Result.NO_ERROR:
+                            result = False
+                            log.e("Failed to disable port", port)
+                        else:
+                            changed = True
         if changed and sleep_on_change:
             signals.register_signal_handlers()
             import time
