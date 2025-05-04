@@ -1,9 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-import re
 from rspy import log
-import platform
 from abc import ABC, abstractmethod
 
 
@@ -13,6 +11,13 @@ class NoneFoundError( RuntimeError ):
 
 
 class device_hub(ABC):
+    @abstractmethod
+    def get_name(self):
+        """
+        :return: name of the hub
+        """
+        pass
+
     @abstractmethod
     def connect(self, reset = False):
         """
@@ -141,16 +146,25 @@ def _find_active_hub():
     """
     Function finds an available hub to connect to and returns it
     """
+    active_hubs = []
     acroname_hub = _create_acroname()
     if acroname_hub:
-        return acroname_hub
+        active_hubs.append(acroname_hub)
+        pass
 
     ykush_hub = _create_ykush()
     if ykush_hub:
-        return ykush_hub
+        active_hubs.append(ykush_hub)
+
     unifi_hub = _create_unifi()
     if unifi_hub:
-        return unifi_hub
+        active_hubs.append(unifi_hub)
+
+    if len(active_hubs) > 1:
+        return _create_combined_hubs(active_hubs)
+    if len(active_hubs) == 1:
+        return active_hubs[0]
+
     import sys
     log.d('sys.path=', sys.path)
     return None
@@ -191,3 +205,13 @@ def _create_unifi():
         return None
     except BaseException as e:
         return None
+
+def _create_combined_hubs(hub_list):
+    """
+    Function creates a combined hub from the list of hubs
+    :param hub_list: list of hubs
+    :return: combined hub
+    """
+    from rspy import combined_hub
+    return combined_hub.CombinedHub(hub_list)
+

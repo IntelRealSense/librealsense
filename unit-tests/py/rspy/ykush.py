@@ -59,6 +59,11 @@ class Ykush(device_hub.device_hub):
         self._ykush = None
         self.NUM_PORTS = 3
 
+    def get_name(self):
+        """
+        :return: name of the hub
+        """
+        return "YKUSH"
 
     def connect(self, reset = False, serial = None, path = None):
         """
