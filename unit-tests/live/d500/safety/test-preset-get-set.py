@@ -4,6 +4,10 @@
 #test:device D585S
 #test:priority 10
 
+# Add retries as occasionally HKR FW fails during this initialization
+#test:retries 3
+
+
 import pyrealsense2 as rs
 import random
 from rspy import test, log

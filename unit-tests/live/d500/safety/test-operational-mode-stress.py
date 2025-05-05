@@ -3,7 +3,8 @@
 
 #test:device D585S
 
-#test:donotrun:!nightly
+# disabled until HKR FW will be stable
+#test:donotrun
 
 import pyrealsense2 as rs
 from rspy import test, log
