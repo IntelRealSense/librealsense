@@ -180,19 +180,19 @@ void calibration_model::draw_distortion(std::string name, librealsense::ds::d500
     ImGui::PushItemWidth(INPUT_WIDTH);
 
     ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
-    ImGui::Text((name + " Model:").c_str()); ImGui::SameLine();
+    ImGui::Text("%s", (name + " Model:").c_str()); ImGui::SameLine();
     ImGui::SetCursorPosX(FIRST_COLUMN_LOCATION);
 
     // Display distortion model in a read-only InputText (disabled) to align with editable fields
     ImGui::BeginDisabled();
     char distortion_buf[64]{};
-    strncpy(distortion_buf, distortion_str.c_str(), sizeof(distortion_buf));
+    std::snprintf(distortion_buf, sizeof(distortion_buf), "%s", distortion_str.c_str());
     ImGui::InputText(("##" + name).c_str(), distortion_buf, sizeof(distortion_buf));
     ImGui::EndDisabled();
 
     ImGui::SetCursorPosX(LEFT_ALIGN_LABELS);
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-    ImGui::Text((name + " Params:").c_str()); ImGui::SameLine();
+    ImGui::Text("%s", (name + " Params:").c_str()); ImGui::SameLine();
 
     ImGui::PopItemWidth();
 
