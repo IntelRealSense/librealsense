@@ -145,9 +145,9 @@ void dds_sensor_proxy::register_converters()
     {
         std::vector< stream_profile > target_profiles;
         for( int index : jpeg_indexes )
-            target_profiles.push_back( { RS2_FORMAT_MJPEG, RS2_STREAM_COLOR, index } );
-        _formats_converter.register_converter( { { { RS2_FORMAT_MJPEG, RS2_STREAM_COLOR } }, target_profiles,
-                                               []() { return std::make_shared< identity_processing_block >(); } } );
+            target_profiles.push_back( { RS2_FORMAT_RGB8, RS2_STREAM_COLOR, index } );
+        _formats_converter.register_converter( { { RS2_FORMAT_MJPEG, RS2_STREAM_COLOR } }, target_profiles,
+                                               []() { return std::make_shared< mjpeg_converter >( RS2_FORMAT_RGB8 ); } );
     }
 
     // Depth
