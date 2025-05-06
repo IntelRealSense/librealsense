@@ -29,6 +29,7 @@ if rs_enumerate_devices:
     run_time_seconds = run_time_stopwatch.get_elapsed()
     if run_time_seconds > run_time_threshold:
         log.e('Time elapsed too high!', run_time_seconds, ' > ', run_time_threshold)
+    log.d("rs-enumerate-devices completed in:", run_time_seconds, "seconds")
     test.check(run_time_seconds < run_time_threshold)
     run_time_stopwatch.reset()
 else:
