@@ -8,29 +8,17 @@ The list of the supported objects, frameworks, platforms and applications are be
 
 # Objects
 
--  Barcodes, QR Codes, Aruco Markers - well defined objects detected by using RGB camera data and OpenCV. 
+-  Barcodes, QR Codes, Aruco Markers - well defined objects detected by using RGB camera data. 
 
-barcodes   | QR Codes | Aruco Markers |
+Barcodes   | QR Codes | Aruco Markers |
 :------------: |  :----------: | :-------------:  |
-[![barcode](barcode/doc/barcode_camera.gif)](barcode/README.md)  | [![QR Codes](barcode/doc/qrcode_camera.gif)](barcode/README.md)  | [![Aruco](barcode/doc/aruco_camera.gif)](barcode/README.md)  |
+[![Barcode](barcode/doc/barcode_camera.gif)](barcode/README.md)  | [![QR Codes](barcode/doc/qrcode_camera.gif)](barcode/README.md)  | [![Aruco](barcode/doc/aruco_camera.gif)](barcode/README.md)  |
 
--  Planes, Edges, Corners - 3D depth objects detected by using Depth data. 
+-  Planes, Edges, Corners - 3D geometric objects detected using depth camera information. 
 
 Planes | Edges | Corners |
 :------------: |  :----------: | :-------------:  |
-[![Planes](Planes/doc/ezgif.com-animated-gif-maker.gif)](https://github.com/WorkIntel/Projects/blob/main/Planes/README.md)  | [![Edges](https://user-images.githubusercontent.com/32394882/230630901-9d53502a-f3f9-45b6-bf57-027148bb18ad.gif)](https://github.com/WorkIntel/Projects/blob/main/Planes/README.md)  | [![Corners](https://github.com/WorkIntel/Projects/blob/main/Planes/doc/Corner-ezgif.com-video-to-gif-converter.gif)](https://github.com/WorkIntel/Projects/blob/main/Planes/README.md)  |
-
--  General Object Detection - well defined objects detected by using Depth data. 
-
-Object Motion Detection | Object Detection in 2D | 2D Objects using YOLO |
-:------------: |  :----------: | :-------------:  |
-[![Safety](Safety/doc/motion_detection-ezgif.com-video-to-gif-converter.gif)](Safety/README.md)  | [![Object Detection](https://user-images.githubusercontent.com/32394882/230630901-9d53502a-f3f9-45b6-bf57-027148bb18ad.gif)](https://www.stereolabs.com/docs/object-detection)  | [![Yolo](Yolo/doc/object_counting_output-ezgif.com-video-to-gif-converter.gif)](Yolo/README.md)  |
-
--  3D Pose estimation from RGB and Depth data. 
-
-3D Pose Cup | 3D Pose Box | 3D Pose Metal Parts |
-:------------: |  :----------: | :-------------:  |
-[![Pose6D](Pose6D/doc/pose6d-ezgif.com-video-to-gif-converter.gif)](Pose6D/README.md)  | [![Pose6D-M](Pose6D/doc/RecordingMatch2024-08-08102001-ezgif.com-video-to-gif-converter.gif)](Pose6D/README.md)  | [![Pose6D-P](Pose6D/doc/object_0007_out-ezgif.com-video-to-gif-converter.gif)](Pose6D/README.md)  |
+[![Planes](planes/doc/ezgif.com-animated-gif-maker.gif)](planes/README.md)  | [![Edges](https://user-images.githubusercontent.com/32394882/230630901-9d53502a-f3f9-45b6-bf57-027148bb18ad.gif)](planes/README.md)  | [![Corners](https://github.com/WorkIntel/Projects/blob/main/Planes/doc/Corner-ezgif.com-video-to-gif-converter.gif)](planes/README.md)  |
 
 
 # Applications
@@ -44,6 +32,16 @@ Region Detection | Object Counting | Motion Detection |
 VSLAM/Localization | Plane Detection | Body Detection |
 :------------: |  :----------: | :-------------:  |
 [![Camera Control](https://user-images.githubusercontent.com/32394882/230602616-6b57c351-09c4-4aba-bdec-842afcc3b2ea.gif)](https://www.stereolabs.com/docs/video/camera-controls/) | [![Floor Detection](Planes/doc/ezgif.com-animated-gif-maker.gif)](Planes/README.md)  | [![Multi Camera Fusion](https://user-images.githubusercontent.com/32394882/228791106-a5f971d8-8d6f-483b-9f87-7f0f0025b8be.gif)](/fusion) |
+
+
+# Utilities
+
+Low level camera features like exposure, laser power, left and right images are used to connect to Real Sense camera in real time.
+
+OpenCV Like Wrapper | Logger | Visualization |
+:------------: |  :----------: | :-------------:  |
+[![Camera](https://user-images.githubusercontent.com/32394882/229093429-a445e8ae-7109-4995-bc1d-6a27a61bdb60.gif)](utils/README.md) | [![Logger](https://user-images.githubusercontent.com/32394882/230602944-ed61e6dd-e485-4911-8a4c-d6c9e4fab0fd.gif)](utils/README.md) | [![Visual](Safety/doc/motion_detection-ezgif.com-video-to-gif-converter.gif)](utils/README.md) |
+
 
 # Request Camera Feature
 If you want to run the application or object detection on the camera hardware - check this [link](https://docs.google.com/forms/d/e/1FAIpQLSdduDbnrRExDGFQqWAn8pX7jSr8KnwBmwuFOR9dgUabEp0F1A/viewform).
