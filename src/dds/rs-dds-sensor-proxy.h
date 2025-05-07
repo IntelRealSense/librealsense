@@ -94,7 +94,7 @@ public:
     stream_profiles get_active_streams() const override;
 
 protected:
-    void register_basic_converters();
+    void register_converters();
     stream_profiles init_stream_profiles() override;
 
     std::shared_ptr< realdds::dds_video_stream_profile >
