@@ -28,24 +28,16 @@ These functions are reused in other RealSense object detection modules.
 
 -  Display Modes - different image data that could be extracted from the camera. 
 
-Display Image   | Explanations | 
-:------------: |  :----------: | 
-[![RGB](utils/doc/cam_rgb_d.jpg)] | ![Display - Option 0 - simple RGB output with display control on] | 
-:------------: |  :----------: | 
-[![d16](utils/doc/cam_d_3.jpg)] |   ![Display -Option 3 - simple 16  bit data with Left, Right and Depth images stacked as RGB planes] | 
-:------------: |  :----------: | 
-[![sc1](utils/doc/cam_d_5.jpg)] |   ![Display - Option 5 - Depth image mapped to a color space using specific scaling factor to fit 12 bit depth to uint8 range] | 
-:------------: |  :----------: | 
-[![ii2](utils/doc/cam_d_9.jpg)] |   ![Display - Option 9 - Left Right IR images stacked in x axis] | 
-:------------: |  :----------: | 
-[![ii2](utils/doc/cam_e_2.jpg)] |   ![Exposure - Option 2 - reduced exposure value] | 
-:------------: |  :----------: | 
-[![ii2](utils/doc/cam_e_9.jpg)] |   ![Exposure - Option 9 - different exposure value] | 
-:------------: |  :----------: | 
-[![ii2](utils/doc/cam_g_2.jpg)] |   ![Gain - Option 2 - different camera gain value] | 
-:------------: |  :----------: |
-[![ii2](utils/doc/cam_p_0.jpg)] |   ![Projector - Option 0 - turn projector on-off] | 
-:------------: |  :----------: |  
+Display Image   | Mode |  Explanations | 
+:------------: |  :----------: | :----------: | 
+[![RGB](utils/doc/cam_rgb_d.jpg)] | Display - Option 0 | simple RGB output with display control on | 
+[![d16](utils/doc/cam_d_3.jpg)] |   Display -Option 3 | simple 16  bit data with Left, Right and Depth images stacked as RGB planes | 
+[![sc1](utils/doc/cam_d_5.jpg)] |   Display - Option 5 | Depth image mapped to a color space using specific scaling factor to fit 12 bit depth to uint8 range | 
+[![ii2](utils/doc/cam_d_9.jpg)] |   Display - Option 9 | Left Right IR images stacked in x axis | 
+[![ii2](utils/doc/cam_e_2.jpg)] |   Exposure - Option 2 | reduced exposure value | 
+[![ii2](utils/doc/cam_e_9.jpg)] |   Exposure - Option 9 | different exposure value | 
+[![ii2](utils/doc/cam_g_2.jpg)] |   Gain - Option 2 | different camera gain value | 
+[![ii2](utils/doc/cam_p_0.jpg)] |   Projector - Option 0 | turn projector on-off | 
 
 
 # Installation Windows

@@ -42,7 +42,6 @@ It can be used to connect to Real Sense camera in real time. It provides a simpl
 [![RGB](utils/doc/cam_rgb_d.jpg)](utils/README.md) | [![D16](utils/doc/cam_d_3.jpg)](utils/README.md) | [![SC1](utils/doc/cam_d_5.jpg)](utils/README.md) |
 :------------: |  :----------: | :-------------:  |
 [![IRL](utils/doc/cam_d_9.jpg)](utils/README.md) | [![EXPOSURE](utils/doc/cam_e_2.jpg)](utils/README.md) | [![GAIN](utils/doc/cam_g_5.jpg)](utils/README.md) |
-:------------: |  :----------: | :-------------:  |
 [![PWR](utils/doc/cam_p_0.jpg)](utils/README.md) | [![SC2](utils/doc/image_sc2_000.png)](utils/README.md) | [![D16](utils/doc/image_d16_000.png)](utils/README.md) |
 
 
