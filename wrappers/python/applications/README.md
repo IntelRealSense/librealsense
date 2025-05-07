@@ -8,11 +8,11 @@ The list of the supported objects, frameworks, platforms and applications are be
 
 # Objects
 
--  barcodes, QR Codes, Aruco Markers - well defined objects detected by using RGB camera data. 
+-  Barcodes, QR Codes, Aruco Markers - well defined objects detected by using RGB camera data and OpenCV. 
 
 barcodes   | QR Codes | Aruco Markers |
 :------------: |  :----------: | :-------------:  |
-[![barcode](barcode/doc/barcode_camera-ezgif.com-video-to-gif-converter.gif)](./barcode/README.md)  | [![QR Codes](./barcode/doc/qrcode_camera-ezgif.com-video-to-gif-converter.gif)](./barcode/README.md)  | [![Aruco](barcode/doc/aruco_camera-ezgif.com-video-to-gif-converter.gif)](./barcode/README.md)  |
+[![barcode](barcode/doc/barcode_camera.gif)](barcode/README.md)  | [![QR Codes](barcode/doc/qrcode_camera.gif)](barcode/README.md)  | [![Aruco](barcode/doc/aruco_camera.gif)](barcode/README.md)  |
 
 -  Planes, Edges, Corners - 3D depth objects detected by using Depth data. 
 
