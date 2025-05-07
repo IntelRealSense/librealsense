@@ -105,7 +105,7 @@ stream_profiles dds_sensor_proxy::init_stream_profiles()
 void dds_sensor_proxy::register_converters()
 {
     // Some stream types have typicaly more then one stream, indexes must be used to differentiate them and needs to be
-    // set in converter taget profiles. Gather info for such stream types in one loop over all profiles.
+    // set in converter target profiles. Gather info for such stream types in one loop over all profiles.
     std::set< int > y8_indexes;
     std::set< int > y16_indexes;
     std::set< int > jpeg_indexes;
