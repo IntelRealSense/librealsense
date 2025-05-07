@@ -151,12 +151,12 @@ void refresh_devices(std::mutex& m,
             auto dev_itr = begin(future_initialization_devices);
             while (dev_itr != end(future_initialization_devices))
             {
-                auto dev = *dev_itr;
+                auto &dev = *dev_itr;
                 const std::shared_ptr<rs2_device>& device_shared_ptr = dev.get();
                 const rs2_device* p_rs2_device = device_shared_ptr.get();
 
                 auto add_controls_task = [p_rs2_device]() {
-                    p_rs2_device->device->add_controls();
+                    p_rs2_device->device->initialize();
                 };
 
                 std::thread add_controls_thread(add_controls_task);

@@ -90,7 +90,7 @@ public:
 
     format_conversion get_format_conversion() const;
     
-    virtual void add_controls() override {};
+    virtual void initialize() override {};
 
 protected:
     int add_sensor(const std::shared_ptr<sensor_interface>& sensor_base);
