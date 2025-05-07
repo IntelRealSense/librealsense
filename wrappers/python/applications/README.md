@@ -36,7 +36,8 @@ VSLAM/Localization | Plane Detection | Body Detection |
 
 # Utilities
 
-OpenCV Like Camera Wrapper - Low level camera features like exposure, laser power, left and right images are used to connect to Real Sense camera in real time.
+OpenCV Like Camera Wrapper - controls low level camera features like exposure, gain, laser power, provides access to left and right sensor images and additional features. 
+It can be used to connect to Real Sense camera in real time. It provides a simple UI to store videos and images in different formats.
 
 [![RGB](utils/doc/cam_rgb_d.jpg)](utils/README.md) | [![D16](utils/doc/cam_d_3.jpg)](utils/README.md) | [![SC1](utils/doc/cam_d_5.jpg)](utils/README.md) |
 :------------: |  :----------: | :-------------:  |
