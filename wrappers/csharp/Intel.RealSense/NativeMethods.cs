@@ -528,6 +528,9 @@ namespace Intel.RealSense
         internal static extern ContextHandle rs2_create_context(int api_version, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern ContextHandle rs2_create_context_ex(int api_version, [MarshalAs(UnmanagedType.LPStr)] string json_settings, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_delete_context(ContextHandle context);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
