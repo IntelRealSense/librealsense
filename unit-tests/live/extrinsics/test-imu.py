@@ -2,7 +2,8 @@
 # Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 
 #test:device each(D400*)
-#test:device each(D500*)
+#test:device each(D500*) !D555
+# We can enable D555 when RSDEV-3159 is resolved
 
 
 import pyrealsense2 as rs
