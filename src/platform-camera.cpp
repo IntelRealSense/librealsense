@@ -143,7 +143,7 @@ platform_camera::platform_camera( std::shared_ptr< const device_info > const & d
                                  make_uvc_header_parser( &platform::uvc_header::timestamp ) );
 }
 
-void platform_camera::add_controls()
+void platform_camera::initialize()
 {
     auto const n_sensors = get_sensors_count();
     for (auto i = 0; i < n_sensors; ++i)
