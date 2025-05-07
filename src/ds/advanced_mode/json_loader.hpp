@@ -450,6 +450,114 @@ namespace librealsense
         return map;
     }
 
+    std::string controlNameFromId( ControlId id )
+    {
+        auto it = control_id_string_map.find( id );
+        if( it != control_id_string_map.end() )
+        {
+            return it->second;
+        }
+        return "UnknownControl_" + std::to_string( static_cast< int >( id ) );
+    }
+
+    ControlId getControlIdFromString( const std::string & name )
+    {
+        // Build reverse map on first use
+        static const std::unordered_map< std::string, ControlId > string_control_id_map = []()
+        {
+            std::unordered_map< std::string, ControlId > result;
+            for( const auto & pair : control_id_string_map)
+            {
+                result[pair.second] = pair.first;
+            }
+            return result;
+        }();
+
+        auto it = string_control_id_map.find( name );
+        if( it != string_control_id_map.end() )
+        {
+            return it->second;
+        }
+        throw std::invalid_argument( "Unknown control ID: " + name );
+    }
+
+    // Helper function to append a struct to the buffer
+    template<typename T>
+    void appendStruct(std::vector<uint8_t>& buffer, const T& st) {
+        const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&st);
+        buffer.insert(buffer.end(), ptr, ptr + sizeof(T));
+    }
+
+    // Given populated SubPresetHeader and items, build the byte buffer
+    std::vector<uint8_t> serializeSubPreset(
+        const SubPresetHeader& sph,
+        const std::vector<std::pair<ItemHeader, std::vector<Control>>>& items
+    ) {
+        std::vector<uint8_t> buffer;
+        appendStruct(buffer, sph);
+        for (const auto& entry : items) {
+            appendStruct(buffer, entry.first);
+            for (const auto& ctrl : entry.second) {
+                appendStruct(buffer, ctrl);
+            }
+        }
+        return buffer;
+    }
+
+    // Helper to read a struct of type T from buffer at offset
+    template<typename T>
+    T readStruct(const std::vector<uint8_t>& buffer, size_t& offset) {
+        if (offset + sizeof(T) > buffer.size()) {
+            throw std::out_of_range("Buffer too small for struct");
+        }
+        T obj;
+        std::memcpy(&obj, buffer.data() + offset, sizeof(T));
+        offset += sizeof(T);
+        return obj;
+    }
+
+    // Deserialize full SubPreset from byte buffer
+    SubPreset parseSubPreset(const std::vector<uint8_t>& buffer) {
+        size_t offset = 4;  // The command is at the beginning of the buffer
+        SubPreset preset{};
+        if (buffer.size() <= offset) {
+            return preset;
+        }
+
+        // Read header
+        preset.header = readStruct<SubPresetHeader>(buffer, offset);
+        if (preset.header.headerSize != SubPresetHeader::size()) {
+            throw std::runtime_error("Unexpected SubPresetHeader size");
+        }
+
+        // Read items
+        for (uint8_t i = 0; i < preset.header.numOfItems; ++i) {
+            // Read item header
+            ItemHeader ih = readStruct<ItemHeader>(buffer, offset);
+            if (ih.headerSize != ItemHeader::size()) {
+                throw std::runtime_error("Unexpected ItemHeader size");
+            }
+
+            // Read controls for the item
+            std::vector<Control> controls;
+            controls.reserve(ih.numOfControls);
+            for (uint8_t c = 0; c < ih.numOfControls; ++c) {
+                Control ctrl = readStruct<Control>(buffer, offset);
+                controls.push_back(ctrl);
+            }
+
+            preset.items.emplace_back(ih, std::move(controls));
+        }
+
+        // validate that we read exactly buffer size
+        if (offset != buffer.size()) {
+            throw std::runtime_error("Buffer contains extra data");
+        }
+
+        return preset;
+    }
+
+
     inline std::vector<uint8_t> generate_json(const device_interface& dev, const preset& in_preset)
     {
         preset_param_group p = in_preset;
@@ -466,6 +574,33 @@ namespace librealsense
             auto str = f.second->save();
             if (!str.empty()) // Ignored fields return empty string
                 preset_writer.write_param(f.first.c_str(), str);
+        }
+
+        if (!in_preset.sub_preset.items.empty())
+        {
+            json subpreset;
+            auto & sp = in_preset.sub_preset;
+            subpreset["id"]         = std::to_string(sp.header.id);
+            subpreset["iterations"] = std::to_string(sp.header.iterations);
+
+            // build 'items' array of objects
+            for (size_t i = 0; i < sp.items.size(); ++i) {
+                const auto& ih = sp.items[i].first;
+                json item;
+                item["iterations"] = std::to_string(ih.iterations);
+
+                // build 'controls' array for the item
+                for (int c = 0; c < ih.numOfControls; ++c) {
+                    const Control& ctrl = sp.items[i].second[c];
+                    const std::string controlName = controlNameFromId( ControlId( ctrl.controlId ) );
+                    const std::string controlValue = std::to_string( ctrl.controlValue );
+                    
+                    item["controls"].push_back({ { controlName, controlValue } });
+                }
+
+                subpreset["items"].push_back(std::move(item));
+            }
+            preset_writer.write_param( "SubPreset", subpreset );
         }
 
         auto str = preset_writer.to_string();
@@ -494,6 +629,8 @@ namespace librealsense
             auto key = it.key();
             auto value = it.value();
             auto kvp = fields.find(key);
+            if (key == "SubPreset")  // skip the SubPreset block
+                continue;
             if (kvp != fields.end())
             {
                 try
@@ -555,5 +692,46 @@ namespace librealsense
         update_preset_camera_control(in_preset.color_white_balance          , p.color_white_balance);
         update_preset_camera_control(in_preset.color_auto_white_balance     , p.color_auto_white_balance);
         update_preset_camera_control(in_preset.color_power_line_frequency   , p.color_power_line_frequency);
+
+        json j = json::parse(content);
+        auto subpreset = preset_reader.get_subpreset();
+        if (!subpreset.is_null())
+        {
+            SubPreset sp;
+
+            sp.header.headerSize = SubPresetHeader::size();
+            sp.header.id = static_cast<uint8_t>(std::stoi(subpreset.at("id").get<std::string>()));
+            sp.header.iterations = static_cast<uint16_t>(std::stoi(subpreset.at("iterations").get<std::string>()));
+
+            const auto& items = subpreset.at("items");
+            sp.header.numOfItems = static_cast<uint8_t>(items.size());
+
+            for (const auto& item : items) {
+                ItemHeader item_header{};
+                std::vector<Control> item_controls;
+
+                item_header.headerSize = ItemHeader::size();
+                item_header.iterations = static_cast<uint16_t>(std::stoi(item.at("iterations").get<std::string>()));
+
+                const auto& controls = item.at("controls");
+                for (const auto& control : controls) {
+                    // just begin() because the control is a single object
+                    const std::string key = control.begin().key();
+                    const std::string valueStr = control.begin().value().get<std::string>();
+
+                    Control ctrl{};
+                    ctrl.controlId = static_cast<uint8_t>(getControlIdFromString(key));
+                    ctrl.controlValue = static_cast<uint32_t>(std::stoul(valueStr));
+                    item_controls.push_back(ctrl);
+                }
+
+                item_header.numOfControls = static_cast<uint8_t>(item_controls.size());
+
+                sp.items.push_back( { item_header, item_controls } );
+            }
+
+            in_preset.sub_preset = sp;
+        }
+
     }
 }
