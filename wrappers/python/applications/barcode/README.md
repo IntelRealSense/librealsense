@@ -1,4 +1,4 @@
-![](data/show_examples.jpg)
+![](doc/show_examples.jpg)
 
 [![image](https://img.shields.io/pypi/v/scikit-spatial.svg)](https://pypi.python.org/pypi/scikit-spatial)
 [![image](https://anaconda.org/conda-forge/scikit-spatial/badges/version.svg)](https://anaconda.org/conda-forge/scikit-spatial)
@@ -7,12 +7,12 @@
 
 # Introduction
 
-This code provides examples of the using RealSense camera for detection of Image objects.
+This code provides examples of how to detect Barcodes, Aruco Markers and QR Codes using RealSense camera in real time.
 The object detection is based on RGB values of the camera.
 The following objects are supported:
 
--   Barcodes, QR Codes : detected by using  external library
--   ArucoMarkers : using OpenCV
+-   Barcodes, QR Codes : detected by using PyZbar external library
+-   Aruco Markers : using OpenCV
 
 These objects could be integrated in your robotics and video processing pipe line.
 

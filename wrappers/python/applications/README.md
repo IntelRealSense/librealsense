@@ -36,11 +36,15 @@ VSLAM/Localization | Plane Detection | Body Detection |
 
 # Utilities
 
-Low level camera features like exposure, laser power, left and right images are used to connect to Real Sense camera in real time.
+OpenCV Like Camera Wrapper - Low level camera features like exposure, laser power, left and right images are used to connect to Real Sense camera in real time.
 
-OpenCV Like Wrapper | Logger | Visualization |
 :------------: |  :----------: | :-------------:  |
-[![Camera](6a27a61bdb60.gif)](utils/README.md) | [![Logger](d6c9e4fab0fd.gif)](utils/README.md) | [![Visual](Safety/doc/motion_detection-ezgif.com-video-to-gif-converter.gif)](utils/README.md) |
+[![RGB](utils/doc/cam_rgb_d.jpg)](utils/README.md) | [![D16](utils/doc/cam_d_3.jpg)](utils/README.md) | [![SC1](utils/doc/cam_d_5.jpg)](utils/README.md) |
+:------------: |  :----------: | :-------------:  |
+[![IRL](utils/doc/cam_d_9.jpg)](utils/README.md) | [![EXPOSURE](utils/doc/cam_e_2.jpg)](utils/README.md) | [![GAIN](utils/doc/cam_g_2.jpg)](utils/README.md) |
+:------------: |  :----------: | :-------------:  |
+[![PWR](utils/doc/cam_p_0.jpg)](utils/README.md) | [![SC2](utils/doc/image_sc2_000.png)](utils/README.md) | [![D16](utils/doc/image_d16_000.png)](utils/README.md) |
+:------------: |  :----------: | :-------------:  |
 
 
 # Request Camera Feature
@@ -51,9 +55,8 @@ If you want to run the application or object detection on the camera hardware - 
 The following is the check list of supported environments and functionality:
 - Windows
 - Ubuntu
-- Jetson (NVIDIA)
-- Raspeberry PI
-- RealSense AI Engine
+- Jetson (NVIDIA)  - TBD
+- Raspeberry PI    - TBD
 
 # How to Contribute
 
