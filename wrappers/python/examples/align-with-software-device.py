@@ -1,8 +1,8 @@
 ## License: Apache 2.0. See LICENSE file in root directory.
-## Copyright(c) 2025 Intel Corporation. All Rights Reserved.
+## Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #####################################################################################################
-#                                                                                                  ##
-#    Align depth to color with precaptured images in software device                               ##
+#                                                                                             ##
+#    Align depth to color with precaptured images in software device                              ##
 #                                                                                                  ##
 ##  Purpose                                                                                        ##
 ##    This example first captures depth and color images from realsense camera and then            ##
@@ -13,11 +13,10 @@
 ##    2) capture camera depth and color intrinsics and extrinsics                                  ##
 ##    3) capture depth and color images and save into files in npy format                          ##
 ##    4) construct software device from the saved intrinsics, extrinsics, depth and color images   ##
-##    5) align the precaptured depth image to color image                                         ##
+##    5) align the precaptured depth image to to color image                                       ##
 ##                                                                                                 ##
 #####################################################################################################
 
-import logging
 import cv2
 import pyrealsense2 as rs
 import numpy as np
@@ -110,8 +109,8 @@ try:
         i = i +1
 
 except Exception as e:
-    logging.error("An error occurred: %s", e, exc_info=True)
-    exit(1)
+    print(e)
+    pass
 
 ######################## end of first part - capture images from live device #######################################
 
@@ -210,6 +209,7 @@ align = rs.align(align_to)
 # colorizer for depth rendering
 colorizer = rs.colorizer()
 
+# use "Enter", "Spacebar", "p", keys to pause for 5 seconds
 paused = False
 
 # loop through pre-captured frames
@@ -235,6 +235,7 @@ for i in range(0, max_num_frames):
     depth_swframe.domain = rs.timestamp_domain.hardware_clock
     depth_swframe.frame_number = i
     depth_swframe.profile = depth_profile.as_video_stream_profile()
+    depth_swframe.pixels = depth_npy
     depth_swframe.depth_units = depth_scale
     depth_sensor.on_video_frame(depth_swframe)
 
@@ -251,6 +252,7 @@ for i in range(0, max_num_frames):
     color_swframe.domain = rs.timestamp_domain.hardware_clock
     color_swframe.frame_number = i
     color_swframe.profile = color_profile.as_video_stream_profile()
+    color_swframe.pixels = color_npy
     color_sensor.on_video_frame(color_swframe)
     
     # synchronize depth and color, receive as frameset
