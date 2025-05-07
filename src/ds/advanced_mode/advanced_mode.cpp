@@ -458,6 +458,12 @@ namespace librealsense
         }
     }
 
+    void ds_advanced_mode_base::get_subpreset(SubPreset* ptr) const
+    {
+        auto buffer = send_receive(encode_command( ds::GETSUBPRESET ));
+        *ptr = parseSubPreset( buffer );
+    }
+
     void ds_advanced_mode_base::set_depth_control_group(const STDepthControlGroup& val)
     {
         set(val, advanced_mode_traits<STDepthControlGroup>::group);
@@ -778,6 +784,8 @@ namespace librealsense
         get_color_auto_white_balance(&p.color_auto_white_balance);
         get_color_power_line_frequency(&p.color_power_line_frequency);
 
+        get_subpreset(&p.sub_preset);
+
         return p;
     }
 
@@ -786,6 +794,8 @@ namespace librealsense
         set_all_depth( p );
         if( should_set_rgb_preset() )
             set_all_rgb( p );
+        if( should_set_subpreset(p) )
+            set_subpreset( p );
     }
 
     void ds_advanced_mode_base::set_all_depth(const preset& p)
@@ -859,6 +869,21 @@ namespace librealsense
         auto product_line = _depth_sensor.get_device().get_info( rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_LINE );
 
         return product_line != "D500";
+    }
+
+    bool ds_advanced_mode_base::should_set_subpreset(const preset& p)
+    {
+        return p.sub_preset.header.numOfItems > 0;
+    }
+
+    void ds_advanced_mode_base::set_subpreset(const preset& p)
+    {
+        // serialize stuff
+        auto buffer = serializeSubPreset(p.sub_preset.header, p.sub_preset.items);
+        // send to camera
+        command cmd(ds::SETSUBPRESET, static_cast<int>(buffer.size()));
+        cmd.data = buffer;
+        auto res = _hw_monitor->send(cmd);
     }
 
     std::vector<uint8_t> ds_advanced_mode_base::send_receive(const std::vector<uint8_t>& input) const

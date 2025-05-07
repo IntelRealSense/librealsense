@@ -3,6 +3,10 @@
 
 #pragma once
 #include "../../../include/librealsense2/h/rs_advanced_mode_command.h"
+#include <vector>
+#include <unordered_map>
+#include <string>
+#include <cstddef>
 
 namespace librealsense
 {
@@ -96,6 +100,62 @@ namespace librealsense
         bool was_set = false;
     };
 
+#pragma pack(push, 1)
+    // --- SubPreset structs ---
+    struct SubPresetHeader {
+        uint8_t headerSize;
+        uint8_t id;
+        uint16_t iterations;
+        uint8_t numOfItems; // TODO refactor this and all structs according to convention..
+        static constexpr uint8_t size() { return sizeof(SubPresetHeader); }
+    };
+
+    struct ItemHeader {
+        uint8_t headerSize;
+        uint16_t iterations;
+        uint8_t numOfControls;
+        static constexpr uint8_t size() { return sizeof(ItemHeader); }
+    };
+
+    struct Control {
+        uint8_t controlId;
+        uint32_t controlValue;
+        static constexpr uint8_t size() { return sizeof(Control); }
+    };
+
+    struct SubPreset
+    {
+        SubPresetHeader header;
+        std::vector<std::pair<ItemHeader, std::vector<Control>>> items;
+        //std::vector< ItemHeader > items;
+        //std::vector< Control > controls;
+        size_t size() const
+        {
+            size_t size = header.size();
+            for( const auto & item : items )
+            {
+                size += item.first.size();
+                size += item.second.size() * Control::size();
+            }
+            return size;
+        }
+    };
+#pragma pack(pop)
+    typedef enum ControlId
+    {
+        DepthLaserMode   = 0,
+        DepthManExp      = 1,
+        DepthGain        = 2,
+        etMaxNumOfControlsId,
+    } ControlId;
+
+    static const std::unordered_map< ControlId, std::string > control_id_string_map = {
+        { DepthLaserMode,    "DepthLaserMode" },
+        { DepthManExp,       "DepthManExp"    },
+        { DepthGain,         "DepthGain"      },
+    };
+    // -------------
+
     struct preset
     {
         STDepthControlGroup            depth_controls;
@@ -130,6 +190,7 @@ namespace librealsense
         white_balance_control          color_white_balance;
         auto_white_balance_control     color_auto_white_balance;
         power_line_frequency_control   color_power_line_frequency;
+        SubPreset                      sub_preset;
     };
 
     void default_400( preset & p );
