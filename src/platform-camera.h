@@ -19,7 +19,7 @@ public:
 
     virtual rs2_intrinsics get_intrinsics( unsigned int, const stream_profile & ) const { return rs2_intrinsics{}; }
 
-    virtual void add_controls() override;
+    virtual void initialize() override;
 
     std::vector< tagged_profile > get_profiles_tags() const override;
 };

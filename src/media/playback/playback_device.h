@@ -61,7 +61,7 @@ namespace librealsense
 
         bool compress_while_record() const override { return true; }
         bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override { return false; }
-        virtual void add_controls() override {};
+        virtual void initialize() override {};
 
     private:
         void update_time_base(device_serializer::nanoseconds base_timestamp);
