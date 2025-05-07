@@ -53,6 +53,18 @@ namespace Intel.RealSense
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Context"/> class with json_settings.
+        /// 
+        /// </summary>
+        public Context(string json_settings)
+        {
+            object error;
+
+            handle = NativeMethods.rs2_create_context_ex(ApiVersion, json_settings, out error);
+            onDevicesChangedCallback = new rs2_devices_changed_callback(OnDevicesChangedInternal);
+        }
+
+        /// <summary>
         /// Gets the safe handle
         /// </summary>
         /// <exception cref="ObjectDisposedException">Thrown when <see cref="SafeHandle.IsInvalid"/></exception>
