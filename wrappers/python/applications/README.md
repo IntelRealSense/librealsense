@@ -27,11 +27,11 @@ User level applications supported by the Camera software
 
 Region Detection | Object Counting | Motion Detection |
 :------------: |  :----------: | :-------------:  |
-[![Positional Tracking](https://user-images.githubusercontent.com/32394882/229093429-a445e8ae-7109-4995-bc1d-6a27a61bdb60.gif)](https://www.stereolabs.com/docs/positional-tracking/) | [![Global Localization](https://user-images.githubusercontent.com/32394882/230602944-ed61e6dd-e485-4911-8a4c-d6c9e4fab0fd.gif)](/global%20localization) | [![Motion](Safety/doc/motion_detection-ezgif.com-video-to-gif-converter.gif)](Safety/README.md) |
+[![Positional Tracking](bc1d-6a27a61bdb60.gif)](https://www.stereolabs.com/docs/positional-tracking/) | [![Global Localization](d6c9e4fab0fd.gif)](/global%20localization) | [![Motion](video-to-gif-converter.gif)](Safety/README.md) |
 
 VSLAM/Localization | Plane Detection | Body Detection |
 :------------: |  :----------: | :-------------:  |
-[![Camera Control](https://user-images.githubusercontent.com/32394882/230602616-6b57c351-09c4-4aba-bdec-842afcc3b2ea.gif)](https://www.stereolabs.com/docs/video/camera-controls/) | [![Floor Detection](Planes/doc/ezgif.com-animated-gif-maker.gif)](Planes/README.md)  | [![Multi Camera Fusion](https://user-images.githubusercontent.com/32394882/228791106-a5f971d8-8d6f-483b-9f87-7f0f0025b8be.gif)](/fusion) |
+[![Camera Control](842afcc3b2ea.gif)](https://www.stereolabs.com/docs/video/camera-controls/) | [![Floor Detection](Planes/doc/ezgif.com-animated-gif-maker.gif)](planes/README.md)  | [![Multi Camera Fusion](7f0f0025b8be.gif)](fusion) |
 
 
 # Utilities
@@ -40,7 +40,7 @@ Low level camera features like exposure, laser power, left and right images are 
 
 OpenCV Like Wrapper | Logger | Visualization |
 :------------: |  :----------: | :-------------:  |
-[![Camera](https://user-images.githubusercontent.com/32394882/229093429-a445e8ae-7109-4995-bc1d-6a27a61bdb60.gif)](utils/README.md) | [![Logger](https://user-images.githubusercontent.com/32394882/230602944-ed61e6dd-e485-4911-8a4c-d6c9e4fab0fd.gif)](utils/README.md) | [![Visual](Safety/doc/motion_detection-ezgif.com-video-to-gif-converter.gif)](utils/README.md) |
+[![Camera](6a27a61bdb60.gif)](utils/README.md) | [![Logger](d6c9e4fab0fd.gif)](utils/README.md) | [![Visual](Safety/doc/motion_detection-ezgif.com-video-to-gif-converter.gif)](utils/README.md) |
 
 
 # Request Camera Feature
