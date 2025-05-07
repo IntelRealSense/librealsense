@@ -56,9 +56,8 @@ See python file for the usage options.
 
 Display Results   | Mode |  Explanations | 
 :------------: |  :----------: | :----------: | 
-![RGB](doc/noise_measure_stp.gif) | Option s,t,p | simple RGB output with display control on | 
-![d16](doc/noise_measure.gif)  |    Option p | simple 16  bit data with Left, Right and Depth images stacked as RGB planes | 
-![sc1](doc/noise_error_log.jpg) |   Option p only | Depth image mapped to a color space using specific scaling factor to fit 12 bit depth to uint8 range | 
+![RGB](doc/noise_measure_stp.gif) | Option s,t,p | measuring temporal and spatial noise | 
+![d16](doc/noise_measure.gif)  |    Option p | measuring plane fit noise - distance from the fitted plane | 
 
 
 ## Usage
@@ -67,6 +66,25 @@ Display Results   | Mode |  Explanations |
 >>> from test_camera_noise_estimator import NoiseApp
 
 >>> NoiseApp().run()
+
+```
+
+# Logger
+
+Logging tool - a python based logger adapted to measure timing and display print information.
+
+
+Display Results   | Mode |  Explanations | 
+:------------: |  :----------: | :----------: | 
+![sc1](doc/noise_error_log.jpg) |   Option p only | results and error logging | 
+
+
+## Usage
+
+```py
+>>> from logger import log
+
+>>> log.info('Kuku')
 
 ```
 
