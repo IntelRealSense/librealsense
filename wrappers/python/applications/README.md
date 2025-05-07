@@ -51,9 +51,9 @@ Temporal/Spatial ROI | Plane Fit ROI |
 [![STP](utils/doc/noise_measure_stp.gif)](utils/README.md) | [![PFIT](utils/doc/noise_measure.gif)](utils/README.md) |
 
 
-Logger -  to monitor print information, errors and processing time of the applications. 
+Logger -  to monitor and print console information, errors and processing time of the applications. 
 
-| [![LOG](utils/doc/noise_error_log.jpg)](utils/README.md) |
+[![LOG](utils/doc/noise_error_log.jpg)](utils/README.md) 
 
 
 # Request Camera Feature
