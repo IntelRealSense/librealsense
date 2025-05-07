@@ -54,6 +54,8 @@ namespace Intel.RealSense
                 using (var ctx = new Context())
                 {
                     var devices = ctx.QueryDevices();
+                    Console.WriteLine("There are {0} connected RealSense devices.", devices.Count);
+                    if (devices.Count == 0) return;
                     var dev = devices[0];
 
                     Console.WriteLine("\nUsing device 0, an {0}", dev.Info[CameraInfo.Name]);
