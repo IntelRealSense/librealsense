@@ -100,65 +100,61 @@ namespace librealsense
         bool was_set = false;
     };
 
-    namespace hdr_preset
-    {
 #pragma pack(push, 1)
-        // header for the entire HDR control structure
-        struct preset_header {
-            uint8_t header_size;
-            uint8_t id;
-            uint16_t iterations;
-            uint8_t num_of_items;
-            static constexpr uint8_t size() { return sizeof(preset_header); }
-        };
+    // --- SubPreset structs ---
+    struct SubPresetHeader {
+        uint8_t headerSize;
+        uint8_t id;
+        uint16_t iterations;
+        uint8_t numOfItems; // TODO refactor this and all structs according to convention..
+        static constexpr uint8_t size() { return sizeof(SubPresetHeader); }
+    };
 
-        // header for each item
-        struct item_header {
-            uint8_t header_size;
-            uint16_t iterations;
-            uint8_t num_of_controls;
-            static constexpr uint8_t size() { return sizeof(item_header); }
-        };
+    struct ItemHeader {
+        uint8_t headerSize;
+        uint16_t iterations;
+        uint8_t numOfControls;
+        static constexpr uint8_t size() { return sizeof(ItemHeader); }
+    };
 
-        // actual control data for each item
-        struct sub_control {
-            uint8_t control_id;
-            uint32_t control_value;
-            static constexpr uint8_t size() { return sizeof(sub_control); }
-        };
+    struct Control {
+        uint8_t controlId;
+        uint32_t controlValue;
+        static constexpr uint8_t size() { return sizeof(Control); }
+    };
 
-#pragma pack(pop)
-        // HDR control structure that contains multiple items, each with its own controls
-        struct hdr_preset
+    struct SubPreset
+    {
+        SubPresetHeader header;
+        std::vector<std::pair<ItemHeader, std::vector<Control>>> items;
+        //std::vector< ItemHeader > items;
+        //std::vector< Control > controls;
+        size_t size() const
         {
-            preset_header header;
-            std::vector<std::pair<item_header, std::vector<sub_control>>> items;
-            size_t size() const
+            size_t size = header.size();
+            for( const auto & item : items )
             {
-                size_t size = header.size();
-                for (const auto& item : items)
-                {
-                    size += item.first.size();
-                    size += item.second.size() * sub_control::size();
-                }
-                return size;
+                size += item.first.size();
+                size += item.second.size() * Control::size();
             }
-        };
+            return size;
+        }
+    };
+#pragma pack(pop)
+    typedef enum ControlId
+    {
+        DepthLaserMode   = 0,
+        DepthManExp      = 1,
+        DepthGain        = 2,
+        etMaxNumOfControlsId,
+    } ControlId;
 
-        typedef enum control_id
-        {
-            DEPTH_LASER_MODE   = 0,
-            DEPTH_EXPOSURE     = 1,
-            DEPTH_GAIN         = 2,
-            MAX_NUM_OF_CONTROLS_ID,
-        } control_id;
-
-        static const std::unordered_map< control_id, std::string > control_id_string_map = {
-            { DEPTH_LASER_MODE,     "depth-laser-mode"  },
-            { DEPTH_EXPOSURE,       "depth-exposure"    },
-            { DEPTH_GAIN,           "depth-gain"        },
-        };
-    }
+    static const std::unordered_map< ControlId, std::string > control_id_string_map = {
+        { DepthLaserMode,    "DepthLaserMode" },
+        { DepthManExp,       "DepthManExp"    },
+        { DepthGain,         "DepthGain"      },
+    };
+    // -------------
 
     struct preset
     {
@@ -194,7 +190,7 @@ namespace librealsense
         white_balance_control          color_white_balance;
         auto_white_balance_control     color_auto_white_balance;
         power_line_frequency_control   color_power_line_frequency;
-        hdr_preset::hdr_preset         auto_hdr;
+        SubPreset                      sub_preset;
     };
 
     void default_400( preset & p );
