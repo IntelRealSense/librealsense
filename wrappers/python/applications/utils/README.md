@@ -21,7 +21,7 @@ These functions are reused in other RealSense object detection modules.
 # Modules
 
 - opencv_realsense_camera : camera wrapper with multiple internal features exposed like opencv interface 
-- measure_camera_noise    : tool to measure depth camera noise
+- camera_noise_estimator  : tool to measure depth camera noise
 
 
 # RealSense Camera Wrapper
@@ -39,6 +39,36 @@ Display Image   | Mode |  Explanations |
 ![ii2](doc/cam_g_5.jpg) |   Gain - Option 2 | different camera gain value | 
 ![ii2](doc/cam_p_0.jpg) |   Projector - Option 0 | turn projector on-off | 
 
+## Usage
+
+```py
+>>> from opencv_realsense_camera import RealSense
+
+>>> rs_cap = RealSense('rgb')
+
+```
+
+# Camera Noise Estimator
+
+Depth Noise measurement tool - a simple UI to measure noise in the depth data. It supports measurement of the temporal noise per pixel, spatial noise per image ROI and fitted plane noise. In addition, it reports the number/percent of the non valid pixels. The results are visualized and alo printed in the console window. 
+See python file for the usage options.
+
+
+Display Results   | Mode |  Explanations | 
+:------------: |  :----------: | :----------: | 
+![RGB](doc/noise_measure_stp.gif) | Option s,t,p | simple RGB output with display control on | 
+![d16](doc/noise_measure.gif)  |    Option p | simple 16  bit data with Left, Right and Depth images stacked as RGB planes | 
+![sc1](doc/noise_error_log.jpg) |   Option p only | Depth image mapped to a color space using specific scaling factor to fit 12 bit depth to uint8 range | 
+
+
+## Usage
+
+```py
+>>> from test_camera_noise_estimator import NoiseApp
+
+>>> NoiseApp().run()
+
+```
 
 # Installation Windows
 
@@ -60,11 +90,3 @@ You can use Conda, Miniconda or other package managers.
     pip install pyrealsense2-2.55.10.6089-cp310-cp310-win_amd64.whl
 
 
-# Usage
-
-```py
->>> from opencv_realsense_camera import RealSense
-
->>> rs_cap = RealSense('rgb')
-
-```

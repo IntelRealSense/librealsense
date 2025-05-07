@@ -89,3 +89,4 @@ librealsense-log.txt
 *.cxx
 
 .vscode/*
+*.mp4

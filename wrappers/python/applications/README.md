@@ -44,6 +44,11 @@ It can be used to connect to Real Sense camera in real time. It provides a simpl
 [![IRL](utils/doc/cam_d_9.jpg)](utils/README.md) | [![EXPOSURE](utils/doc/cam_e_2.jpg)](utils/README.md) | [![GAIN](utils/doc/cam_g_5.jpg)](utils/README.md) |
 [![PWR](utils/doc/cam_p_0.jpg)](utils/README.md) | [![SC2](utils/doc/image_sc2_000.png)](utils/README.md) | [![D16](utils/doc/image_d16_000.png)](utils/README.md) |
 
+Depth Noise measurement tool - a simple UI to measure noise in the depth data. It supports measurement of the temporal noise per pixel, spatial noise per image ROI and fitted plane noise. In addition, it reports the number/percent of the non valid pixels. The results are visualized and alo printed in the console window. 
+
+Temporal/Spatial ROI | Plane Fit ROI | Logging results |
+:------------: |  :----------: | :-------------:  |
+[![STP](utils/doc/noise_measure_stp.gif)](utils/README.md) | [![PFIT](utils/doc/noise_measure.gif)](utils/README.md) | [![LOG](utils/doc/noise_error_log.jpg)](utils/README.md) |
 
 # Request Camera Feature
 If you want to run the application or object detection on the camera hardware - check this [link](https://docs.google.com/forms/d/e/1FAIpQLSdduDbnrRExDGFQqWAn8pX7jSr8KnwBmwuFOR9dgUabEp0F1A/viewform).
