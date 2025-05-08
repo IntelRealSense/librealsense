@@ -19,7 +19,6 @@ namespace librealsense
         virtual bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
 
         float compute_progress(float progress, float start, float end, float threshold) const override;
-        virtual void initialize() override {};
     private:
         std::string parse_serial_number(const std::vector<uint8_t>& buffer) const;
     };
