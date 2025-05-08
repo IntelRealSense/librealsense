@@ -109,8 +109,8 @@ try:
         i = i +1
 
 except Exception as e:
-    print(e)
-    pass
+    logging.error("An error occurred: %s", e, exc_info=True)
+    exit(1)
 
 ######################## end of first part - capture images from live device #######################################
 
