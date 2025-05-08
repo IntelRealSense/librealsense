@@ -13,7 +13,7 @@
 ##    2) capture camera depth and color intrinsics and extrinsics                                  ##
 ##    3) capture depth and color images and save into files in npy format                          ##
 ##    4) construct software device from the saved intrinsics, extrinsics, depth and color images   ##
-##    5) align the precaptured depth image to to color image                                       ##
+##    5) align the precaptured depth image to color image                                         ##
 ##                                                                                                 ##
 #####################################################################################################
 
