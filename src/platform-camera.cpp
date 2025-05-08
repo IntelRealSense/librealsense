@@ -64,6 +64,30 @@ private:
 
 }  // namespace
 
+void platform_camera::initialize()
+{
+    auto const n_sensors = get_sensors_count();
+    for (auto i = 0; i < n_sensors; ++i)
+    {
+        if (auto sensor = dynamic_cast<platform_camera_sensor*>(&(get_sensor(i))))
+        {
+            if (sensor->get_device().get_info(RS2_CAMERA_INFO_NAME) == "Platform Camera")
+            {
+                sensor->try_register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+                sensor->try_register_pu(RS2_OPTION_BRIGHTNESS);
+                sensor->try_register_pu(RS2_OPTION_CONTRAST);
+                sensor->try_register_pu(RS2_OPTION_EXPOSURE);
+                sensor->try_register_pu(RS2_OPTION_GAMMA);
+                sensor->try_register_pu(RS2_OPTION_HUE);
+                sensor->try_register_pu(RS2_OPTION_SATURATION);
+                sensor->try_register_pu(RS2_OPTION_SHARPNESS);
+                sensor->try_register_pu(RS2_OPTION_WHITE_BALANCE);
+                sensor->try_register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+                sensor->try_register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+            }
+        }
+    }
+}
 
 platform_camera::platform_camera( std::shared_ptr< const device_info > const & dev_info,
                                   const std::vector< platform::uvc_device_info > & uvc_infos,
@@ -117,33 +141,13 @@ platform_camera::platform_camera( std::shared_ptr< const device_info > const & d
     // For consistent (msec) measurements use "time of arrival" metadata attribute
     color_ep->register_metadata( RS2_FRAME_METADATA_FRAME_TIMESTAMP,
                                  make_uvc_header_parser( &platform::uvc_header::timestamp ) );
-}
 
-void platform_camera::initialize()
-{
-    auto const n_sensors = get_sensors_count();
-    for (auto i = 0; i < n_sensors; ++i)
-    {
-        if (auto sensor = dynamic_cast<platform_camera_sensor*>(&(get_sensor(i))))
-        {
-            if (sensor->get_device().get_info(RS2_CAMERA_INFO_NAME) == "Platform Camera")
-            {
-                sensor->try_register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
-                sensor->try_register_pu(RS2_OPTION_BRIGHTNESS);
-                sensor->try_register_pu(RS2_OPTION_CONTRAST);
-                sensor->try_register_pu(RS2_OPTION_EXPOSURE);
-                sensor->try_register_pu(RS2_OPTION_GAMMA);
-                sensor->try_register_pu(RS2_OPTION_HUE);
-                sensor->try_register_pu(RS2_OPTION_SATURATION);
-                sensor->try_register_pu(RS2_OPTION_SHARPNESS);
-                sensor->try_register_pu(RS2_OPTION_WHITE_BALANCE);
-                sensor->try_register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
-                sensor->try_register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
-            }
-        }
-    }
+    // Create a thread to call initialize after a delay
+    std::thread([this]() {
+    std::this_thread::sleep_for(std::chrono::seconds(2)); // Delay for 2 seconds
+    this->initialize();
+    }).detach(); // Detach the thread to let it run independently
 }
-
 
 std::vector< tagged_profile > platform_camera::get_profiles_tags() const
 {
