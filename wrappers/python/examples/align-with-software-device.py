@@ -210,7 +210,6 @@ align = rs.align(align_to)
 # colorizer for depth rendering
 colorizer = rs.colorizer()
 
-# use "Enter", "Spacebar", "p", keys to pause for 5 seconds
 paused = False
 
 # loop through pre-captured frames
