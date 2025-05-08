@@ -1,8 +1,8 @@
 ## License: Apache 2.0. See LICENSE file in root directory.
-## Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+## Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 #####################################################################################################
-#                                                                                             ##
-#    Align depth to color with precaptured images in software device                              ##
+#                                                                                                  ##
+#    Align depth to color with precaptured images in software device                               ##
 #                                                                                                  ##
 ##  Purpose                                                                                        ##
 ##    This example first captures depth and color images from realsense camera and then            ##
@@ -235,7 +235,6 @@ for i in range(0, max_num_frames):
     depth_swframe.domain = rs.timestamp_domain.hardware_clock
     depth_swframe.frame_number = i
     depth_swframe.profile = depth_profile.as_video_stream_profile()
-    depth_swframe.pixels = depth_npy
     depth_swframe.depth_units = depth_scale
     depth_sensor.on_video_frame(depth_swframe)
 
@@ -252,7 +251,6 @@ for i in range(0, max_num_frames):
     color_swframe.domain = rs.timestamp_domain.hardware_clock
     color_swframe.frame_number = i
     color_swframe.profile = color_profile.as_video_stream_profile()
-    color_swframe.pixels = color_npy
     color_sensor.on_video_frame(color_swframe)
     
     # synchronize depth and color, receive as frameset
