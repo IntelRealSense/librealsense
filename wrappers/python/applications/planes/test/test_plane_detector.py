@@ -195,7 +195,7 @@ class DataGen:
 
         elif img_type == 11:
             "chess board"
-            fname = r"C:\Users\udubin\Documents\Code\opencv-4x\samples\data\left04.jpg"
+            fname           = r"C:\Users\udubin\Documents\Code\opencv-4x\samples\data\left04.jpg"
             self.img        = cv.imread(fname)
 
         elif img_type == 12:
@@ -206,26 +206,7 @@ class DataGen:
             self.img = cv.imread(r"C:\Data\Depth\Plane\image_ddd_000.png", cv.IMREAD_GRAYSCALE)
             self.img = cv.resize(self.img , dsize = self.frame_size) 
 
-        elif img_type == 14:
-            self.img = cv.imread(r"C:\Data\Depth\Plane\image_ddd_001.png", cv.IMREAD_GRAYSCALE)  
-            self.img = cv.resize(self.img , dsize = self.frame_size)     
-
-        elif img_type == 15:
-            self.img = cv.imread(r"C:\Data\Depth\Plane\image_ddd_002.png", cv.IMREAD_GRAYSCALE)  
-            self.img = cv.resize(self.img , dsize = self.frame_size)     
-
-        elif img_type == 16:
-            self.img = cv.imread(r"C:\Data\Depth\Plane\image_ddd_003.png", cv.IMREAD_GRAYSCALE)  
-            self.img = cv.resize(self.img , dsize = self.frame_size)   
-
-        elif img_type == 17:
-            self.img = cv.imread(r"C:\Data\Depth\Plane\floor_view_default_Depth_Depth.png", cv.IMREAD_GRAYSCALE)  
-            self.img = cv.resize(self.img , dsize = self.frame_size)          
-
-        elif img_type == 18:
-            self.img = cv.imread(r"C:\Data\Depth\Plane\floor_view_default_corner2_Depth_Depth.png", cv.IMREAD_GRAYSCALE)  
-            self.img = cv.resize(self.img , dsize = self.frame_size)                   
-
+ 
         elif img_type == 21:
             self.img = cv.imread(r"C:\Data\Depth\Plane\image_scl_000.png", cv.IMREAD_GRAYSCALE)  
             self.img = cv.resize(self.img , dsize = self.frame_size)                                     
@@ -265,12 +246,11 @@ class PlaneDetectorDisplay(PlaneDetector):
         self.frame_size     = (1280,720)
         self.img            = None
 
-
     def show_image_with_axis(self, img, poses = []):
-        "draw results"
+        "draw results : axis on the image. poses are list of 6D vectors"
         axis_number = len(poses)
         if axis_number < 1:
-            print('No poses found')
+            log.error('No poses found')
             
         # deal with black and white
         img_show = np.uint8(img) #.copy()
@@ -279,13 +259,9 @@ class PlaneDetectorDisplay(PlaneDetector):
          
         for k in range(axis_number):
             
-            avec    = poses[k][3:6] # orientation in degrees
-            levl    = poses[k][6]   # level
-            #R       = eulerAnglesToRotationMatrix(avec)
-            R       = Rot.from_euler('xyz',avec, degrees = True).as_matrix()
-            rvec, _ = cv.Rodrigues(R)
-            tvec    = np.array(poses[k][:3], dtype = np.float32).reshape(rvec.shape) # center of the patch
-            img_show= draw_axis(img_show, rvec, tvec, self.cam_matrix, self.cam_distort, len = levl)
+            rvec    = poses[k][3:] # orientation in degrees
+            tvec    = poses[k][:3] #np.array(, dtype = np.float32).reshape(rvec.shape) # center of the patch
+            img_show= draw_axis(img_show, rvec, tvec, self.cam_matrix, self.cam_distort, len = 10)
 
         cv.imshow('Image & Axis', img_show)
         log.info('show done')
@@ -322,16 +298,14 @@ class PlaneDetectorDisplay(PlaneDetector):
     def show_points_3d_with_normal(self, img3d, pose = None):
         "display in 3D"
         fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
+        ax  = fig.add_subplot(projection='3d')
 
         xs,ys,zs       = img3d[:,:,0].reshape((-1,1)), img3d[:,:,1].reshape((-1,1)), img3d[:,:,2].reshape((-1,1))
         ax.scatter(xs, ys, zs, marker='.')
         
         if pose is not None:
             pose       = pose.flatten()
-            # R          = Rot.from_euler('zyx',pose[3:6],degrees=True).as_matrix()
-            # vnorm      = R[:,2]*pose[6]
-            vnorm      = pose[3:6].flatten()*pose[6]
+            vnorm      = pose[3:6].flatten()*10
             xa, ya, za = [pose[0], pose[0]+vnorm[0]], [pose[1], pose[1]+vnorm[1]], [pose[2], pose[2]+vnorm[2]]
             ax.plot(xa, ya, za, 'r', label='Normal')
 
@@ -464,40 +438,35 @@ class TestPlaneDetector(unittest.TestCase):
     def test_image_show(self):
         "checking image show"
         d       = DataGen()
+        img     = d.init_image(1)
         p       = PlaneDetectorDisplay()
-        d.init_image(1)
         poses   = [[0,0,100,0,0,45,10]]
-        p.show_image_with_axis(d.img,poses)
-        self.assertFalse(d.img is None)
-
-    def test_chess_pose_detect(self):
-        "understand pose ecomputations"
-        d       = DataGen()
-        p       = PlaneDetectorDisplay()
-        d.init_image(11)
-        poses   = p.detect_pose_in_chessboard()
-        p.show_image_with_axis(d.img, poses)
-        self.assertFalse(p.img is None)     
+        p.show_image_with_axis(img,poses)
+        self.assertFalse(d.img is None)    
 
     def test_init_img3d(self):
         "XYZ point cloud structure init"
-        p = PlaneDetector()
-        p.init_image(1)
-        img3d = p.init_img3d()
+        d       = DataGen()
+        img     = d.init_image(1)
+        p       = PlaneDetectorDisplay()
+        isOk    = p.init_image(img)
+        img3d   = p.init_img3d()
         self.assertFalse(img3d is None)    
 
     def test_compute_img3d(self):
         "XYZ point cloud structure init and compute"
-        p       = PlaneDetector()
-        img     = p.init_image(1)
+        d       = DataGen()
+        img     = d.init_image(1)        
+        p       = PlaneDetectorDisplay()
         img3d   = p.init_img3d(img)
         imgXYZ  = p.compute_img3d(img)
         self.assertFalse(imgXYZ is None)     
 
     def test_show_img3d(self):
         "XYZ point cloud structure init and compute"
-        p       = PlaneDetector()
-        img     = p.init_image(1)
+        d       = DataGen()
+        img     = d.init_image(1)        
+        p       = PlaneDetectorDisplay()
         img3d   = p.init_img3d(img)
         imgXYZ  = p.compute_img3d(img)
         roi     = p.init_roi(1)
@@ -508,19 +477,21 @@ class TestPlaneDetector(unittest.TestCase):
                      
     def test_fit_plane(self):
         "computes normal to the ROI"
-        p       = PlaneDetector()
-        img     = p.init_image(5)
-        img3d   = p.init_img3d(img)
-        imgXYZ  = p.compute_img3d(img)
-        roi     = p.init_roi(2)
-        roip    = p.fit_plane(roi)
-        pose    = p.convert_roi_params_to_pose(roip)
-        p.show_image_with_axis(p.img, pose)
+        d           = DataGen()
+        img         = d.init_image(5)        
+        p           = PlaneDetectorDisplay()
+        img3d       = p.init_img3d(img)
+        imgXYZ      = p.compute_img3d(img)
+        roi         = p.init_roi(2)
+        img_roi     = p.preprocess(img)
+        roim,rois   = p.fit_plane_svd(img_roi)
+        pose        = p.convert_plane_params_to_pose()
+        p.show_image_with_axis(img, pose)
                 
-        x0,y0,x1,y1 = roi
+        x0,y0,x1,y1  = roi
         roiXYZ       = imgXYZ[y0:y1,x0:x1,:]
         p.show_points_3d_with_normal(roiXYZ, pose)
-        self.assertFalse(roip['error'] > 0.01)  
+        self.assertFalse(pose > 0.01)  
 
     def test_fit_plane_fail(self):
         "computes normal to the ROI but the image is bad at this location"
@@ -601,13 +572,12 @@ class TestPlaneDetector(unittest.TestCase):
 def RunTest():
     #unittest.main()
     suite = unittest.TestSuite()
-    suite.addTest(TestPlaneDetector("test_image_show"))
-    #suite.addTest(TestPlaneDetector("test_chess_pose_detect")) # ok
-    #suite.addTest(TestPlaneDetector("test_init_img3d")) # ok
+    #suite.addTest(TestPlaneDetector("test_image_show")) # ok
+    #suite.addTest(TestPlaneDetector("test_init_img3d"))  # ok
     #suite.addTest(TestPlaneDetector("test_compute_img3d")) # ok
-    #suite.addTest(TestPlaneDetector("test_show_img3d")) # 
+    #suite.addTest(TestPlaneDetector("test_show_img3d")) # ok
     
-    #suite.addTest(TestPlaneDetector("test_fit_plane")) # ok
+    suite.addTest(TestPlaneDetector("test_fit_plane")) # ok
     #suite.addTest(TestPlaneDetector("test_fit_planeFail")) # 
     #suite.addTest(TestPlaneDetector("test_fit_plane_depth_image")) #
 
@@ -635,7 +605,7 @@ class PlaneApp:
 
         self.detect_type    = 'P'
         self.show_type      = 'depth' # left, depth
-        self.win_name       = 'Plane Detector (q-quit, a,p,o,r,t)'
+        self.win_name       = 'Plane Detector (q-quit, a,p,o,r)'
 
         cv.namedWindow(self.win_name )
         self.rect_sel       = RectSelector(self.win_name , self.on_rect)
@@ -643,7 +613,7 @@ class PlaneApp:
     def on_rect(self, rect):
         "remember ROI defined by user"
         #self.define_roi(self.frame, rect)
-        tracker             = PlaneDetector() #estimator_type=self.estim_type, estimator_id=estim_ind)
+        tracker             = PlaneDetectorDisplay() #estimator_type=self.estim_type, estimator_id=estim_ind)
         tracker.rect        = rect
         tracker.detect_type = self.detect_type
         self.trackers.append(tracker)        
@@ -729,8 +699,6 @@ class PlaneApp:
                 log.info(f'Detect type : {self.detect_type}')
             elif ch == ord('o'):
                 self.detect_type = 'O'      
-            elif ch == ord('t'):
-                self.detect_type = 'T'  
             elif ch == ord('s'):
                 self.show_type = 'left' if self.show_type == 'depth' else 'depth'      
                 log.info(f'Show type : {self.show_type}')                                    

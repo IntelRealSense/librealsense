@@ -22,8 +22,6 @@ import numpy as np
 import cv2 as cv
 
 
-#from scipy import interpolate 
-
  # importing common Use modules 
 sys.path.append(r'wrappers\python\applications\utils\src')
 from logger import log
@@ -53,7 +51,6 @@ class PlaneDetector:
         self.plane_center   = None     # tvec
         #self.corner_ind     = [0, 10, 40, 50]  # corner of the rectnagle for the projection
         self.rect_3d        = None    # roi but projected on 3D 
-    
 
         # params
         self.MIN_SPLIT_SIZE  = 32
@@ -61,6 +58,17 @@ class PlaneDetector:
 
         # help variable
         self.ang_vec     = np.zeros((3,1))  # help variable
+
+    def init_image(self, img = None):
+        "load image"
+        if img is None:
+            log.info('No image provided')
+            return False
+        
+        self.img            = img
+        h,w                 = img.shape[:2]
+        self.frame_size     = (w,h)
+        return True
 
     def init_roi(self, test_type = 1):
         "load the test case"
@@ -152,33 +160,6 @@ class PlaneDetector:
         self.img_xyz = imgXYZ
         return imgXYZ
 
-    def detect_pose_in_chessboard(self): 
-        # chess board pose extimation
-        criteria    = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-        objp        = np.zeros((6*7,3), np.float32)
-        objp[:,:2]  = np.mgrid[0:7,0:6].T.reshape(-1,2)
-        axis        = np.float32([[3,0,0], [0,3,0], [0,0,-3]]).reshape(-1,3)
-        if len(self.img.shape) > 2:
-            gray        = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY)
-        else:
-            gray        = self.img
-        flags_cv = cv.CALIB_CB_ADAPTIVE_THRESH + cv.CALIB_CB_FAST_CHECK #+ cv.CALIB_CB_NORMALIZE_IMAGE
-        ret, corners = cv.findChessboardCorners(gray, (7,6), flags = flags_cv)
-        #ret, corners = cv.findChessboardCornersSB(gray, (7,6))
-        if ret == True:
-            corners = cv.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
-        else:
-            print('Failed to find points')
-            return np.zeros((1,7))
-            # Find the rotation and translation vectors.
-        ret,rvecs, tvecs = cv.solvePnP(objp, corners, self.cam_matrix, self.cam_distort)
-        # transfer to pose
-        R, _       = cv.Rodrigues(rvecs)
-        avec       = rotationMatrixToEulerAngles(R)
-        pose       = np.hstack((tvecs.flatten(), avec.flatten(), 3))
-        print('Chess pose : ', pose)
-        return [pose]
-    
     def check_error(self, xyz1_mtrx, vnorm):
         "checking the error norm"
         err         = np.dot(xyz1_mtrx, vnorm)
@@ -219,8 +200,6 @@ class PlaneDetector:
         step_size           = np.maximum(1, np.int32(valid_point_num/point_num))
         ii                  = ii[::step_size]
 
-
-
         # plane params - using only valid
         z                   = img_roi[ii]
         xyz_matrix          = self.matrix_dir[ii,:]
@@ -246,27 +225,6 @@ class PlaneDetector:
         #self.plane_center   = xyz_center.flatten()              
 
         return xyz_matrix
-    
-    def convert_roi_params_to_pose(self, roi_params):
-        "converting params to the pose vector"
-        tvec       = roi_params['tvec'].reshape((1,-1))
-        vnorm      = roi_params['vnorm']  # 4x1 vector
-        #rvec       = vnorm[:3].reshape((1,-1))
-        #rvec       = rvec/np.linalg.norm(rvec)
-
-        rvec       = vnorm.flatten() #reshape((-1,1))
-        #rvec[3]    = 0 # kill DC
-        rvec       = rvec/np.linalg.norm(rvec)
-
-        #R           = Rot.from_quat(rvec).as_matrix()
-        #R           = Rot.from_rotvec(rvec).as_matrix()
-        #avec        = Rot.from_matrix(R).as_euler('zyx',degrees=True)
-        #self.ang_vec= avec
-
-        levl        = 0.1*tvec[0,2]
-        pose_norm  = np.hstack((tvec, rvec.reshape((1,-1)),[[levl]]))
-        #log.info('roi to pose')
-        return pose_norm #.flatten()
 
     def convert_plane_params(self, plane_equation):
         "convert plane params to rvec"
@@ -279,7 +237,7 @@ class PlaneDetector:
         normal      = plane_equation #np.array([plane_equation[0], plane_equation[1], plane_equation[2]])
         normal_norm = np.linalg.norm(normal)
         if normal_norm == 0:
-            print("Error: Zero norm for plane normal vector.")
+            log.error("Error: Zero norm for plane normal vector.")
             return None
         normal = normal / normal_norm
 
@@ -300,13 +258,19 @@ class PlaneDetector:
 
         return rvec
 
-    def convert_plane_to_rvec(self, normal):
-        # Convert plane normal to rotation vector
-        z_axis          = np.array([0, 0, 1])
-        rotation_matrix = cv.Rodrigues(np.cross(z_axis, normal))[0]
-        rvec, _         = cv.Rodrigues(rotation_matrix)
-    
-        return rvec  
+    def convert_plane_params_to_pose(self, plane_params = None, plane_center = None):
+        "converting params of the plane to the pose vector"
+
+        plane_params = self.plane_params if plane_params is None else plane_params[:3].flatten()
+        plane_center = self.plane_center if plane_center is None else plane_center[:3].flatten()
+
+        tvec       = plane_center.reshape((1,-1))
+        rvec       = plane_params.reshape((1,-1)) #reshape((-1,1))
+        rvec       = rvec/np.linalg.norm(rvec.flatten())
+
+        pose_norm  = np.hstack((tvec, rvec))
+        #log.info('roi to pose')
+        return pose_norm #.flatten()
 
     def fit_plane_init(self):
         "prepares data for real time fit a*x+b*y+c = z"
@@ -395,30 +359,6 @@ class PlaneDetector:
         #log.info(f'Plane : {self.plane_params}, error {img_std:.3f}, step {step_size}')
         
         return img_mean, img_std  
-
-    def fit_plane(self, roi):
-        "computes normal for the specifric roi and evaluates error"
-
-        # roi converted to points with step size on the grid
-        xyz_matrix  = self.convert_roi_to_points(roi, step_size = 0)
-        
-        # using svd to make the fit
-        tvec        = xyz_matrix[:,:3].mean(axis=0)
-        xyz1_matrix = xyz_matrix - tvec
-        U, S, Vh    = np.linalg.svd(xyz_matrix, full_matrices=True)
-        ii          = np.argmin(S)
-        vnorm       = Vh[ii,:]
-
-        # keep orientation
-        vnorm       = vnorm*np.sign(vnorm[2])
-
-        # checking error
-        err_std     = self.check_error(xyz_matrix, vnorm)
-        log.info('Fit error : %s' %str(err_std))
-
-        # forming output
-        roi_params  = {'roi':roi, 'error': err_std, 'tvec': tvec, 'vnorm':vnorm }                               
-        return roi_params
     
     def fit_plane_with_outliers(self, img_roi):
         "computes normal for the specifric roi and evaluates error. Do it twice to reject outliers"
@@ -603,12 +543,10 @@ class PlaneDetector:
         "finds planes using different algo"
 
         img_roi             = self.preprocess(img)
-        detect_type        = self.detect_type.upper()
+        detect_type         = self.detect_type.upper()
 
-        img_mean, img_std = 0,0
-        if  detect_type == 'T':
-            img_mean, img_std   = self.fit_plane(img_roi)               
-        elif detect_type == 'P':
+        img_mean, img_std   = 0,0             
+        if detect_type == 'P':
             img_mean, img_std   = self.fit_plane_svd(img_roi)  
         elif detect_type == 'O':
             img_mean, img_std   = self.fit_plane_with_outliers(img_roi)  
@@ -621,16 +559,15 @@ class PlaneDetector:
         return True 
 
     def process_frame(self, img):
-        "process the entire image image"
+        "process the entire image and find the planes"
 
-        img_roi = self.preprocess(img)
-        img3d   = self.init_img3d(img_roi)
-        imgXYZ  = self.compute_img3d(img_roi)
-        roip    = self.fit_plane_with_outliers()
-                
-        pose    = self.convert_roi_params_to_pose(roip)
-        self.show_image_with_axis(img_roi, pose)
-        return self.rect
+        img_roi     = self.preprocess(img)
+        img3d       = self.init_img3d(img_roi)
+        imgXYZ      = self.compute_img3d(img_roi)
+        roim,rois   = self.fit_plane_with_outliers(img_roi)
+        pose        = self.convert_plane_params_to_pose()
+
+        return pose
         
 if __name__ == '__main__':
     #print(__doc__)
