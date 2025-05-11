@@ -47,6 +47,7 @@ class PlaneDetector:
         # detector type     
         self.matrix_inv     = None     # holds inverse params of the 
         self.matrix_dir     = None     # direct u,v,1
+        self.matrix_xyz     = None     # direct u,v,1 multiplied by z 
         self.plane_params   = None     # rvec not normalized
         self.plane_center   = None     # tvec
         #self.corner_ind     = [0, 10, 40, 50]  # corner of the rectnagle for the projection
@@ -125,7 +126,7 @@ class PlaneDetector:
 
         #self.img3d = np.stack((u/fx,v/fy,z3d), axis = 2)
         self.img3d      = np.stack((u,v,z3d), axis = 2)
-        self.img_mask    = np.zeros((h,w))
+        self.img_mask   = np.zeros((h,w))
         return self.img3d
     
     def compute_img3d(self, img = None):
@@ -165,66 +166,6 @@ class PlaneDetector:
         err         = np.dot(xyz1_mtrx, vnorm)
         err_std     = err.std()
         return err_std
-    
-    def convert_roi_to_points(self, img_roi, point_num = 30, step_size = 0):
-        "converting roi to pts in XYZ - Nx3 array. point_num - is the target point number"
-        # x1,y1       = self.img_xyz.shape[:2]
-        # roi_area    = x1*y1
-
-        # # reduce size of the grid for speed
-        # if step_size < 1 and roi_area > 100:
-        #     step_size   = np.maximum(1,int(np.sqrt(roi_area)/10))
-
-          
-        # #roi3d       = self.img_xyz[y0:y1:step_size,x0:x1:step_size,:]   
-        # roi3d       = self.img_xyz[::step_size,::step_size,:]           
-        # x,y,z       = roi3d[:,:,0].reshape((-1,1)), roi3d[:,:,1].reshape((-1,1)), roi3d[:,:,2].reshape((-1,1)) 
-        # xyz_matrix  = np.hstack((x,y,z)) 
-        # 
-        
-        # init params of the inverse
-        if self.matrix_inv is None:
-            self.fit_plane_init()  
-
-        n,m                 = img_roi.shape[:2]
-        img_roi             = img_roi.reshape((-1,1))
-        valid_bool          = img_roi > 0
-        valid_bool          = valid_bool.flatten()
-        #log.info(f'Timing : 1')  
-
-        # all non valid
-        ii                  = np.where(valid_bool)
-        valid_point_num     = len(ii)
-        if valid_point_num < 5:
-            return None
-        step_size           = np.maximum(1, np.int32(valid_point_num/point_num))
-        ii                  = ii[::step_size]
-
-        # plane params - using only valid
-        z                   = img_roi[ii]
-        xyz_matrix          = self.matrix_dir[ii,:]
-        xyz_matrix[:,:3]    = xyz_matrix[:,:3]*z  # keep 1 intact
-
-        # update corners of the rect in 3d
-        #self.rect_3d        = self.matrix_dir[self.corner_ind,:]*img_roi[self.corner_ind]
-
-        # substract mean
-        #xyz_center          = xyz_matrix[:,:3].mean(axis=0)
-        #xyz_matrix          = xyz_matrix - xyz_center   
-        #log.info(f'Timing : 2')     
-
-        # mtrx_dir            = np.hstack((self.matrix_dir[valid_bool,0]*z,self.matrix_dir[valid_bool,1]*z,z*0+1))
-        # mtrx_inv            = np.linalg.pinv(mtrx_dir)
-        # #mtrx_inv            = self.matrix_inv[:,valid_bool]
-        # plane_params        = np.dot(mtrx_inv,z)
-
-        # decimate to make it run faster  reduce size of the grid for speed. 1000 pix - 30x30 - step 1, 10000 pix - step=3
-        #roi_area            = n*m
-        #step_size           = int(np.sqrt(roi_area)/7) if roi_area > 1000 else 1  
-
-        #self.plane_center   = xyz_center.flatten()              
-
-        return xyz_matrix
 
     def convert_plane_params(self, plane_equation):
         "convert plane params to rvec"
@@ -304,25 +245,89 @@ class PlaneDetector:
         self.matrix_dir = np.hstack((u,v,u*0+1))
         self.matrix_inv = np.linalg.pinv(self.matrix_dir)
 
-    def fit_plane_svd(self, img_roi):
-        "estimates mean and std of the plane fit"
-        n,m             = img_roi.shape[:2]
-        img_roi         = img_roi.reshape((-1,1))
-        valid_bool      = img_roi > 0
-        valid_bool      = valid_bool.flatten()
-        #log.info(f'Timing : 1')  
+    def convert_roi_to_points(self, img_roi, point_num = 30, step_size = 1):
+        "converting roi to pts in XYZ - Nx3 array. point_num - is the target point number"
+        # x1,y1       = self.img_xyz.shape[:2]
+        # roi_area    = x1*y1
 
+        # # reduce size of the grid for speed
+        # if step_size < 1 and roi_area > 100:
+        #     step_size   = np.maximum(1,int(np.sqrt(roi_area)/10))
+
+          
+        # #roi3d       = self.img_xyz[y0:y1:step_size,x0:x1:step_size,:]   
+        # roi3d       = self.img_xyz[::step_size,::step_size,:]           
+        # x,y,z       = roi3d[:,:,0].reshape((-1,1)), roi3d[:,:,1].reshape((-1,1)), roi3d[:,:,2].reshape((-1,1)) 
+        # xyz_matrix  = np.hstack((x,y,z)) 
+        # 
+        
         # init params of the inverse
         if self.matrix_inv is None:
-            self.fit_plane_init()
+            self.fit_plane_init()  
+
+        n,m                 = img_roi.shape[:2]
+        img_roi             = img_roi.reshape((-1,1))
+        valid_bool          = img_roi > 0
+        valid_bool          = valid_bool.flatten()
+        #log.info(f'Timing : 1')  
+
+        # all non valid
+        ii                  = np.where(valid_bool)[0]
+        valid_point_num     = len(ii)
+        if valid_point_num < 5:
+            return None
+        step_size           = np.maximum(step_size, np.int32(valid_point_num/point_num))
+        ii                  = ii[::step_size]
 
         # plane params - using only valid
-        z                   = img_roi[valid_bool]
-        xyz_matrix          = self.matrix_dir[valid_bool,:]
+        z                   = img_roi[ii]
+        xyz_matrix          = self.matrix_dir[ii,:]
         xyz_matrix[:,:3]    = xyz_matrix[:,:3]*z  # keep 1 intact
 
         # update corners of the rect in 3d
         #self.rect_3d        = self.matrix_dir[self.corner_ind,:]*img_roi[self.corner_ind]
+
+        # substract mean
+        #xyz_center          = xyz_matrix[:,:3].mean(axis=0)
+        #xyz_matrix          = xyz_matrix - xyz_center   
+        #log.info(f'Timing : 2')     
+
+        # mtrx_dir            = np.hstack((self.matrix_dir[valid_bool,0]*z,self.matrix_dir[valid_bool,1]*z,z*0+1))
+        # mtrx_inv            = np.linalg.pinv(mtrx_dir)
+        # #mtrx_inv            = self.matrix_inv[:,valid_bool]
+        # plane_params        = np.dot(mtrx_inv,z)
+
+        # decimate to make it run faster  reduce size of the grid for speed. 1000 pix - 30x30 - step 1, 10000 pix - step=3
+        #roi_area            = n*m
+        #step_size           = int(np.sqrt(roi_area)/7) if roi_area > 1000 else 1  
+
+        #self.plane_center   = xyz_center.flatten()   
+        self.matrix_xyz      = xyz_matrix          
+
+        return xyz_matrix
+
+    def fit_plane_svd(self, img_roi):
+        "estimates mean and std of the plane fit"
+        # n,m             = img_roi.shape[:2]
+        # img_roi         = img_roi.reshape((-1,1))
+        # valid_bool      = img_roi > 0
+        # valid_bool      = valid_bool.flatten()
+        # #log.info(f'Timing : 1')  
+
+        # # init params of the inverse
+        # if self.matrix_inv is None:
+        #     self.fit_plane_init()
+
+        # # plane params - using only valid
+        # z                   = img_roi[valid_bool]
+        # xyz_matrix          = self.matrix_dir[valid_bool,:]
+        # xyz_matrix[:,:3]    = xyz_matrix[:,:3]*z  # keep 1 intact
+
+        # update corners of the rect in 3d
+        #self.rect_3d        = self.matrix_dir[self.corner_ind,:]*img_roi[self.corner_ind]
+
+        # roi converted to points with step size on the grid
+        xyz_matrix          = self.convert_roi_to_points(img_roi, point_num = 1e4, step_size = 1)        
 
         # substract mean
         xyz_center          = xyz_matrix[:,:3].mean(axis=0)
@@ -335,11 +340,11 @@ class PlaneDetector:
         # plane_params        = np.dot(mtrx_inv,z)
 
         # decimate to make it run faster  reduce size of the grid for speed. 1000 pix - 30x30 - step 1, 10000 pix - step=3
-        roi_area            = n*m
-        step_size           = int(np.sqrt(roi_area)/7) if roi_area > 1000 else 1
+        #roi_area            = n*m
+        #step_size           = int(np.sqrt(roi_area)/7) if roi_area > 1000 else 1
         
         # using svd to make the fit
-        U, S, Vh            = np.linalg.svd(xyz_matrix[::step_size,:], full_matrices=True)
+        U, S, Vh            = np.linalg.svd(xyz_matrix, full_matrices=True)
         ii                  = np.argmin(S)
         vnorm               = Vh[ii,:]
         #log.info(f'Timing : 3') 
@@ -349,7 +354,7 @@ class PlaneDetector:
 
         # estimate error
         err                = np.dot(xyz_matrix,plane_params)
-        z_est              = z + err + xyz_center[2]
+        #z_est              = z + err + xyz_center[2]
 
         img_mean           = xyz_center[2] #z_est.mean()
         img_std            = err.std()
@@ -364,7 +369,7 @@ class PlaneDetector:
         "computes normal for the specifric roi and evaluates error. Do it twice to reject outliers"
 
         # roi converted to points with step size on the grid
-        xyz_matrix  = self.convert_roi_to_points(img_roi, point_num = 50, step_size = 0)
+        xyz_matrix  = self.convert_roi_to_points(img_roi, point_num = 250, step_size = 0)
 
         # substract mean
         xyz_center   = xyz_matrix[:,:3].mean(axis=0)
@@ -401,12 +406,12 @@ class PlaneDetector:
         err_std     = err.std()
         log.info('Fit error iteration 2: %s' %str(err_std))    
 
-        # We can convert this flat index to row and column indices
-        row_index, col_index = np.unravel_index(inlier_ind, self.img_mask.shape)
-        self.img_mask[row_index, col_index] = 1    
+        # # We can convert this flat index to row and column indices
+        # row_index, col_index = np.unravel_index(inlier_ind, self.img_mask.shape)
+        # self.img_mask[row_index, col_index] = 1    
 
         img_mean           = tvec[2] #z_est.mean()
-        img_std            = err.std()
+        img_std            = err_std
         self.plane_params  = plane_params[:3].flatten()
         self.plane_center  = tvec.flatten()
 
@@ -414,7 +419,7 @@ class PlaneDetector:
         
         return img_mean, img_std   
     
-    def fit_plane_ransac(self, roi):
+    def fit_plane_ransac(self, img_roi):
         
         """
         Find the best equation for a plane.
@@ -429,14 +434,13 @@ class PlaneDetector:
         """
         log.info('Fit ransac: ...')  
         # roi converted to points with step size on the grid
-        pts            = self.convert_roi_to_points(step_size = 0)
+        xyz_matrix     = self.convert_roi_to_points(img_roi, point_num = 250, step_size = 1)
 
         thresh         = 0.05
-        minPoints      = 100
         maxIteration   = 100
 
         import random
-        n_points        = pts.shape[0]
+        n_points        = xyz_matrix.shape[0]
         best_eq         = []
         best_inliers    = []
 
@@ -444,55 +448,64 @@ class PlaneDetector:
 
             # Samples 3 random points
             id_samples = random.sample(range(0, n_points), 3)
-            pt_samples = pts[id_samples]
+            pt_samples = xyz_matrix[id_samples,:]
 
             # We have to find the plane equation described by those 3 points
             # We find first 2 vectors that are part of this plane
             # A = pt2 - pt1
             # B = pt3 - pt1
 
-            vecA = pt_samples[1, :] - pt_samples[0, :]
-            vecB = pt_samples[2, :] - pt_samples[0, :]
+            vecA        = pt_samples[1, :] - pt_samples[0, :]
+            vecB        = pt_samples[2, :] - pt_samples[0, :]
 
             # Now we compute the cross product of vecA and vecB to get vecC which is normal to the plane
-            vecC = np.cross(vecA, vecB)
+            vecC        = np.cross(vecA, vecB)
 
             # The plane equation will be vecC[0]*x + vecC[1]*y + vecC[0]*z = -k
             # We have to use a point to find k
-            vecC = vecC / np.linalg.norm(vecC)
-            k = -np.sum(np.multiply(vecC, pt_samples[1, :]))
-            plane_eq = [vecC[0], vecC[1], vecC[2], k]
+            vecC        = vecC / np.linalg.norm(vecC)
+            #k           = -np.sum(np.multiply(vecC, pt_samples[1, :]))
+            k           = -np.dot(vecC, pt_samples[1, :])
+            plane_eq    = [vecC[0], vecC[1], vecC[2], k]
 
             # Distance from a point to a plane
             # https://mathworld.wolfram.com/Point-PlaneDistance.html
-            pt_id_inliers = []  # list of inliers ids
-            dist_pt = (
-                plane_eq[0] * pts[:, 0] + plane_eq[1] * pts[:, 1] + plane_eq[2] * pts[:, 2] + plane_eq[3]
-            ) / np.sqrt(plane_eq[0] ** 2 + plane_eq[1] ** 2 + plane_eq[2] ** 2)
+            # pt_id_inliers = []  # list of inliers ids
+            # dist_pt = (
+            #     plane_eq[0] * xyz_matrix[:, 0] + plane_eq[1] * xyz_matrix[:, 1] + plane_eq[2] * xyz_matrix[:, 2] + plane_eq[3]
+            # ) / np.sqrt(plane_eq[0] ** 2 + plane_eq[1] ** 2 + plane_eq[2] ** 2)
+
+            dist_pt            = np.dot(xyz_matrix, vecC) + plane_eq[3]
 
             # Select indexes where distance is biggers than the threshold
-            pt_id_inliers = np.where(np.abs(dist_pt) <= thresh)[0]
+            pt_id_inliers       = np.where(np.abs(dist_pt) <= thresh)[0]
             if len(pt_id_inliers) > len(best_inliers):
-                best_eq = plane_eq
-                best_inliers = pt_id_inliers
+                best_eq         = plane_eq
+                best_inliers    = pt_id_inliers
         
-        self.inliers = best_inliers
-        self.equation = best_eq
+        #self.inliers = best_inliers
+        #self.equation = best_eq
 
         # rtansform to pose output
-        tvec     = pts[best_inliers,:].mean(axis=0)
-        pts_best = pts[best_inliers,:] - tvec
-        vnorm    = np.array(best_eq[:3])
+        #tvec            = xyz_matrix[best_inliers,:].mean(axis=0)
+        #pts_best        = xyz_matrix[best_inliers,:] - tvec
+        tvec            = xyz_matrix.mean(axis=0)
+        pts_best        = xyz_matrix - tvec        
+        vnorm           = np.array(best_eq[:3])
 
         # checking error
-        err         = np.dot(pts_best, vnorm)
-        err_std     = err.std()
+        err             = np.dot(pts_best, vnorm)
+        err_std         = err.std()
         log.info('Fit error ransac: %s' %str(err_std))  
 
-        # forming output
-        roi_params  = {'roi':best_inliers, 'error': err_std, 'tvec': tvec, 'vnorm':vnorm }          
+        img_mean           = tvec[2] #z_est.mean()
+        img_std            = err_std
+        self.plane_params  = vnorm.flatten()
+        self.plane_center  = tvec.flatten()
 
-        return roi_params
+        #log.info(f'Plane : {self.plane_params}, error {img_std:.3f}, step {step_size}')
+        
+        return img_mean, img_std 
     
     def fit_and_split_roi_recursively(self, roi, level = 0):
         # splits ROI on 4 regions and recursevly call 

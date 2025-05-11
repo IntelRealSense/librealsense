@@ -206,7 +206,6 @@ class DataGen:
             self.img = cv.imread(r"wrappers\python\applications\planes\data\image_ddd_000.png", cv.IMREAD_GRAYSCALE)
             #self.img = cv.resize(self.img , dsize = self.frame_size) 
 
- 
         elif img_type == 21:
             self.img = cv.imread(r"C:\Data\Depth\Plane\image_scl_000.png", cv.IMREAD_GRAYSCALE)  
             #self.img = cv.resize(self.img , dsize = self.frame_size)                                     
@@ -300,7 +299,9 @@ class PlaneDetectorDisplay(PlaneDetector):
         fig = plt.figure()
         ax  = fig.add_subplot(projection='3d')
 
-        xs,ys,zs       = img3d[:,:,0].reshape((-1,1)), img3d[:,:,1].reshape((-1,1)), img3d[:,:,2].reshape((-1,1))
+        #xs,ys,zs       = img3d[:,:,0].reshape((-1,1)), img3d[:,:,1].reshape((-1,1)), img3d[:,:,2].reshape((-1,1))
+        
+        xs,ys,zs       = img3d[:,0].reshape((-1,1)), img3d[:,1].reshape((-1,1)), img3d[:,2].reshape((-1,1))
         ax.scatter(xs, ys, zs, marker='.')
         
         if pose is not None:
@@ -475,40 +476,56 @@ class TestPlaneDetector(unittest.TestCase):
         p.show_points_3d_with_normal(roiXYZ)
         self.assertFalse(imgXYZ is None)  
                      
-    def test_fit_plane(self):
+    def test_fit_plane_svd(self):
         "computes normal to the ROI"
         d           = DataGen()
         img         = d.init_image(5)        
         p           = PlaneDetectorDisplay()
-        img3d       = p.init_img3d(img)
-        imgXYZ      = p.compute_img3d(img)
         roi         = p.init_roi(4)
         img_roi     = p.preprocess(img)
         roim,rois   = p.fit_plane_svd(img_roi)
         pose        = p.convert_plane_params_to_pose()
         p.show_image_with_axis(img, pose)
-                
-        x0,y0,x1,y1  = roi
-        roiXYZ       = imgXYZ[y0:y1,x0:x1,:]
-        p.show_points_3d_with_normal(roiXYZ, pose)
-        self.assertFalse(pose > 0.01)         
+        p.show_points_3d_with_normal(p.matrix_xyz, pose)
+        self.assertTrue(pose[0][2] > 0.01)         
 
     def test_fit_plane_depth_image(self):
         "computes normal to the ROI"
         d           = DataGen()
         img         = d.init_image(13)        
         p           = PlaneDetectorDisplay()
-        img3d       = p.init_img3d(img)
-        imgXYZ      = p.compute_img3d(img)
         roi         = p.init_roi(4)
         img_roi     = p.preprocess(img)
         roim,rois   = p.fit_plane_svd(img_roi)
         pose        = p.convert_plane_params_to_pose()
         p.show_image_with_axis(img, pose)
-                
-        x0,y0,x1,y1 = roi
-        roiXYZ      = imgXYZ[y0:y1,x0:x1,:]
-        p.show_points_3d_with_normal(roiXYZ, pose)
+        p.show_points_3d_with_normal(p.matrix_xyz, pose)
+        self.assertTrue(pose[0][2] > 0.01)  
+
+    def test_fit_plane_with_outliers(self):
+        "computes normal to the ROI"
+        d           = DataGen()
+        img         = d.init_image(13)        
+        p           = PlaneDetectorDisplay()
+        roi         = p.init_roi(4)
+        img_roi     = p.preprocess(img)
+        roim,rois   = p.fit_plane_with_outliers(img_roi)
+        pose        = p.convert_plane_params_to_pose()
+        p.show_image_with_axis(img, pose)
+        p.show_points_3d_with_normal(p.matrix_xyz, pose)
+        self.assertTrue(pose[0][2] > 0.01)  
+
+    def test_fit_plane_ransac(self):
+        "computes with ransac"
+        d           = DataGen()
+        img         = d.init_image(6)        
+        p           = PlaneDetectorDisplay()
+        roi         = p.init_roi(4)
+        img_roi     = p.preprocess(img)
+        roim,rois   = p.fit_plane_ransac(img_roi)
+        pose        = p.convert_plane_params_to_pose()
+        p.show_image_with_axis(img, pose)
+        p.show_points_3d_with_normal(p.matrix_xyz, pose)
         self.assertTrue(pose[0][2] > 0.01)  
 
     def test_split_roi(self):
@@ -524,39 +541,7 @@ class TestPlaneDetector(unittest.TestCase):
         p.show_image_with_rois(p.img, roi_list)
 
         for roi_s in roi_list:
-            self.assertFalse(roi_s['error'] > 0.01)
-
-    def test_fit_plane_with_outliers(self):
-        "computes normal to the ROI"
-        p       = PlaneDetector()
-        img     = p.init_image(14)
-        img3d   = p.init_img3d(img)
-        imgXYZ  = p.compute_img3d(img)
-        roi     = p.init_roi(5)
-        roip    = p.fit_plane_with_outliers()
-        pose    = p.convert_roi_params_to_pose(roip)
-        p.show_image_with_axis(p.img, pose)
-                
-        x0,y0,x1,y1 = roi
-        roiXYZ       = imgXYZ[y0:y1,x0:x1,:]
-        p.show_points_3d_with_normal(roiXYZ, pose)
-        self.assertFalse(roip['error'] > 0.09)
-
-    def test_fit_plane_ransac(self):
-        "computes with ransac"
-        p       = PlaneDetector()
-        img     = p.init_image(13)
-        img3d   = p.init_img3d(img)
-        imgXYZ  = p.compute_img3d(img)
-        roi     = p.init_roi(4)
-        roip    = p.fit_plane_ransac(roi)
-        pose    = p.convert_roi_params_to_pose(roip)
-        p.show_image_with_axis(p.img, pose)
-                
-        x0,y0,x1,y1 = roi
-        roiXYZ       = imgXYZ[y0:y1,x0:x1,:]
-        p.show_points_3d_with_normal(roiXYZ, pose)
-        self.assertFalse(roip['error'] > 0.09)                        
+            self.assertFalse(roi_s['error'] > 0.01)                               
 
 #%% Run Test
 def RunTest():
@@ -567,13 +552,14 @@ def RunTest():
     #suite.addTest(TestPlaneDetector("test_compute_img3d")) # ok
     #suite.addTest(TestPlaneDetector("test_show_img3d")) # ok
     
-    #suite.addTest(TestPlaneDetector("test_fit_plane")) # ok
-    suite.addTest(TestPlaneDetector("test_fit_plane_depth_image")) #
-
-    #suite.addTest(TestPlaneDetector("test_split_roi")) 
+    #suite.addTest(TestPlaneDetector("test_fit_plane_svd")) # ok
+    #suite.addTest(TestPlaneDetector("test_fit_plane_depth_image")) #
     #suite.addTest(TestPlaneDetector("test_fit_plane_with_outliers")) 
+    suite.addTest(TestPlaneDetector("test_fit_plane_ransac"))    
+    
+    #suite.addTest(TestPlaneDetector("test_split_roi")) 
+    
 
-    #suite.addTest(TestPlaneDetector("test_fit_plane_ransac")) 
    
     runner = unittest.TextTestRunner()
     runner.run(suite)    
@@ -701,8 +687,8 @@ class PlaneApp:
 if __name__ == '__main__':
     #print(__doc__)
 
-    RunTest()
-    #PlaneApp().run()
+    #RunTest()
+    PlaneApp().run()
 
 
 
