@@ -18,7 +18,7 @@ Barcodes   | QR Codes | Aruco Markers |
 
 Planes | Edges | Corners |
 :------------: |  :----------: | :-------------:  |
-[![Planes](planes/doc/ezgif.com-animated-gif-maker.gif)](planes/README.md)  | [![Edges](45b6-bf57-027148bb18ad.gif)](planes/README.md)  | [![Corners](https://github.com/WorkIntel/Projects/blob/main/Planes/doc/Corner-ezgif.com-video-to-gif-converter.gif)](planes/README.md)  |
+[![Planes](planes/doc/planes_2.gif)](planes/README.md)  | [![Edges](planes/doc/planes_3.gif)](planes/README.md)  | [![Corners](https://github.com/WorkIntel/Projects/blob/main/Planes/doc/Corner-ezgif.com-video-to-gif-converter.gif)](planes/README.md)  |
 
 
 # Applications

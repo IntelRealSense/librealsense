@@ -461,6 +461,9 @@ class PlaneDetector:
             # Now we compute the cross product of vecA and vecB to get vecC which is normal to the plane
             vecC        = np.cross(vecA, vecB)
 
+            # make sure that Z direction is positive
+            vecC        = vecC * np.sign(vecC[2])
+
             # The plane equation will be vecC[0]*x + vecC[1]*y + vecC[0]*z = -k
             # We have to use a point to find k
             vecC        = vecC / np.linalg.norm(vecC)

@@ -14,17 +14,48 @@ The following objects are supported:
 
 These objects could be integrated in your robotics and video processing pipe line.
 
+Plane | Multi Plane | Fast Plane |
+:------------: |  :----------: | :-------------:  |
+[![Planes](planes/doc/planes_2.gif)](planes/README.md)  | [![Edges](planes/doc/planes_3.gif)](planes/README.md)  | [![Corners](hplanes/doc/planes_4.gif)](planes/README.md)  |
+
+
 
 ## Installation Windows
 
-1. install python and virtual environment: similar to barcode
-2. 
+1. Install python 3.10 from Python Release Python 3.10.0 | <https://www.python.org>
+
+2. Create virtual environment. In Windows PowerShell:
+
+    python -m venv <your path>\Envs\planes
+
+3. Activate virtual environment. In Windows CMD shell:
+
+    <your path>\Envs\planes\Scripts\activate.bat
+
+4. Installing realsense driver. For example, download pyrealsense2-2.55.10.6089-cp310-cp310-win_amd64.whl:
+
+    pip install pyrealsense2-2.55.10.6089-cp310-cp310-win_amd64.whl
+
+5. Install opencv and numpy:
+
+    pip install opencv-contrib-python
+
+
 
 ## Usage
+
+Importing the code:
 
 ```py
 >>> from plane_detector import PlaneDetector
 
 >>> pd = PlaneDetector()
+
+```
+
+Running tests:
+
+```py
+>>> python test_plane_detector.py
 
 ```
