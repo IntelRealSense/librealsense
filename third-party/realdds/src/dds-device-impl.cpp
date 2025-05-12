@@ -594,8 +594,16 @@ void dds_device::impl::on_device_header( json const & j, dds_sample const & samp
             std::string const & from_name = ex[0].string_ref();
             std::string const & to_name = ex[1].string_ref();
             //LOG_DEBUG( "[" << debug_name() << "]     ... got extrinsics from " << from_name << " to " << to_name );
-            extrinsics extr = extrinsics::from_json( ex[2] );
-            _extrinsics_map[std::make_pair( from_name, to_name )] = std::make_shared< extrinsics >( extr );
+            try
+            {
+                extrinsics extr = extrinsics::from_json( ex[2] );
+                _extrinsics_map[std::make_pair( from_name, to_name )] = std::make_shared< extrinsics >( extr );
+            }
+            catch( std::exception const & e )
+            {
+                LOG_ERROR( "[" << debug_name() << "] Invalid extrinsics data from " << from_name << " to " << to_name
+                               << ". Error: " << e.what() << ", reading" << ex );
+            }
         }
     }
 
@@ -715,19 +723,27 @@ void dds_device::impl::on_stream_options( json const & j, dds_sample const & sam
     {
         if( auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream ) )
         {
-            std::set< video_intrinsics > intrinsics;
-            if( j_int.is_array() )
+            try
             {
-                // Multiple resolutions are provided, likely from legacy devices from the adapter
-                for( auto & intr : j_int )
-                    intrinsics.insert( video_intrinsics::from_json( intr ) );
+                std::set< video_intrinsics > intrinsics;
+                if( j_int.is_array() )
+                {
+                    // Multiple resolutions are provided, likely from legacy devices from the adapter
+                    for( auto & intr : j_int )
+                        intrinsics.insert( video_intrinsics::from_json( intr ) );
+                }
+                else
+                {
+                    // Single intrinsics that will get scaled
+                    intrinsics.insert( video_intrinsics::from_json( j_int ) );
+                }
+                video_stream->set_intrinsics( intrinsics );
             }
-            else
+            catch( std::exception const & e )
             {
-                // Single intrinsics that will get scaled
-                intrinsics.insert( video_intrinsics::from_json( j_int ) );
+                LOG_ERROR( "[" << debug_name() << "] Invalid intrinsics for stream " << stream->name()
+                               << ". Error: " << e.what() << ", reading" << j_int );
             }
-            video_stream->set_intrinsics( intrinsics );
         }
         else if( auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream >( stream ) )
         {
