@@ -45,7 +45,7 @@ namespace rs2
                     auto it = options_metadata.find( changed_option->id );
                     if( it != options_metadata.end() && ! _destructing ) // Callback runs in different context, check options_metadata still valid
                     {
-                        it->second.value = changed_option;
+                        it->second.update_value( changed_option, *viewer.not_model );
                     }
                 }
             } );
