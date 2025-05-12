@@ -48,7 +48,7 @@ We are using pyzbar and opencv contributed to detect barcodes and aruco markers.
 
 7. Install scipy:
 
-    python -m pip install scipy
+    pip install scipy
 
 8. Install matplotlib:
 
