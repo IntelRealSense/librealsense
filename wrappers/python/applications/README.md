@@ -18,16 +18,7 @@ Barcodes   | QR Codes | Aruco Markers |
 
 Planes | Edges | Corners |
 :------------: |  :----------: | :-------------:  |
-[![Planes](planes/doc/plane_2.gif)](planes/README.md)  | [![Edges](planes/doc/plane_3.gif)](planes/README.md)  | [![Corners](https://github.com/WorkIntel/Projects/blob/main/Planes/doc/Corner-ezgif.com-video-to-gif-converter.gif)](planes/README.md)  |
-
-
-# Applications
-
-User level applications supported by the Camera software
-
-Region Detection | Object Counting | Motion Detection |
-:------------: |  :----------: | :-------------:  |
-[![Positional Tracking](bc1d-6a27a61bdb60.gif)](https://www.stereolabs.com/docs/positional-tracking/) | [![Global Localization](d6c9e4fab0fd.gif)](/global%20localization) | [![Motion](video-to-gif-converter.gif)](Safety/README.md) |
+[![Planes](planes/doc/plane_2.gif)](planes/README.md)  | [![Edges](planes/doc/plane_3.gif)](planes/README.md)  | [![Corners](planes/doc/Corner-ezgif.com-video-to-gif-converter.gif)](planes/README.md)  |
 
 
 
