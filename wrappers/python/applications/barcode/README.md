@@ -8,13 +8,14 @@
 # Introduction
 
 This code provides examples of how to detect Barcodes, Aruco Markers and QR Codes using RealSense camera in real time.
-The object detection is based on RGB values of the camera.
-The following objects are supported:
+The object detection is based on RGB values of the camera. The following objects are supported:
 
 -   Barcodes, QR Codes : detected by using PyZbar external library
 -   Aruco Markers : using OpenCV
 
 These objects could be integrated in your robotics and video processing pipe line.
+Please be aware that /qrcode/aruco detection relies on the libraries in use. 
+Please refer to library limitations if barcode, qrcode or aruco marker are not detected. 
 
 
 # Modules and License
@@ -57,14 +58,14 @@ We are using pyzbar and opencv contributed to detect barcodes and aruco markers.
 # Usage
 
 ```py
->>> from barcode_realsense_detector import test_camera_realsense
->>> test_camera_realsense()  # run the example
+>>> 
+>>> python barcode_realsense_detector.py
 
 ```
 or
 ```py
->>> from aruco_realsense_detector import test_camera
->>> test_camera()  # run the example
+>>> 
+>>> python aruco_realsense_detector.py  # run the example
 
 ```
 
