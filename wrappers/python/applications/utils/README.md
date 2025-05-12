@@ -97,11 +97,11 @@ You can use Conda, Miniconda or other package managers.
 
 2. Create virtual environment. In Windows PowerShell:
 
-    python -m venv <your path>\Envs\utils
+    python -m venv "your path"\Envs\utils
 
 3. Activate virtual environment. In Windows CMD shell:
 
-    <your path>\Envs\utils\Scripts\activate.bat
+    "your path"\Envs\utils\Scripts\activate.bat
 
 4. Installing realsense driver. For example, download pyrealsense2-2.55.10.6089-cp310-cp310-win_amd64.whl:
 

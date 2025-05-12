@@ -26,11 +26,11 @@ Plane | Multi Plane | Fast Plane |
 
 2. Create virtual environment. In Windows PowerShell:
 
-    python -m venv <your path>\Envs\planes
+    python -m venv "your path"\Envs\planes
 
 3. Activate virtual environment. In Windows CMD shell:
 
-    <your path>\Envs\planes\Scripts\activate.bat
+    "your path"\Envs\planes\Scripts\activate.bat
 
 4. Installing realsense driver. For example, download pyrealsense2-2.55.10.6089-cp310-cp310-win_amd64.whl:
 

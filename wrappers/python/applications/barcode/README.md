@@ -29,11 +29,11 @@ We are using pyzbar and opencv contributed to detect barcodes and aruco markers.
 
 2. Create virtual environment. In Windows PowerShell:
 
-    python -m venv <your path>\Envs\barcode
+    python -m venv "your path"\Envs\barcode
 
 3. Activate virtual environment. In Windows CMD shell:
 
-    <your path>\Envs\barcode\Scripts\activate.bat
+    "your path"\Envs\barcode\Scripts\activate.bat
 
 4. Installing realsense python wrapper for librealsense SDK. For example, download pyrealsense2-2.55.10.6089-cp310-cp310-win_amd64.whl (the latest : ![link](https://github.com/IntelRealSense/librealsense/releases/download/v2.56.3/pyrealsense2-2.56.3.7838-cp310-cp310-win_amd64_beta.whl)):
 
