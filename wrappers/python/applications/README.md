@@ -29,9 +29,7 @@ Region Detection | Object Counting | Motion Detection |
 :------------: |  :----------: | :-------------:  |
 [![Positional Tracking](bc1d-6a27a61bdb60.gif)](https://www.stereolabs.com/docs/positional-tracking/) | [![Global Localization](d6c9e4fab0fd.gif)](/global%20localization) | [![Motion](video-to-gif-converter.gif)](Safety/README.md) |
 
-VSLAM/Localization | Plane Detection | Body Detection |
-:------------: |  :----------: | :-------------:  |
-[![Camera Control](842afcc3b2ea.gif)](https://www.stereolabs.com/docs/video/camera-controls/) | [![Floor Detection](Planes/doc/ezgif.com-animated-gif-maker.gif)](planes/README.md)  | [![Multi Camera Fusion](7f0f0025b8be.gif)](fusion) |
+
 
 
 # Utilities
