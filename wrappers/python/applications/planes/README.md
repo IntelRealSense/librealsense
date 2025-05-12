@@ -16,7 +16,7 @@ These objects could be integrated in your robotics and video processing pipe lin
 
 Plane | Multi Plane | Fast Plane |
 :------------: |  :----------: | :-------------:  |
-[![Planes](planes/doc/plane_2.gif)](planes/README.md)  | [![Edges](planes/doc/plane_3.gif)](planes/README.md)  | [![Corners](hplanes/doc/plane_4.gif)](planes/README.md)  |
+[![Planes](doc/plane_2.gif)](planes/README.md)  | [![Edges](doc/plane_3.gif)](planes/README.md)  | [![Corners](doc/plane_4.gif)](planes/README.md)  |
 
 
 
