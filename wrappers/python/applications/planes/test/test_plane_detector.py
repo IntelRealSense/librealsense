@@ -570,7 +570,7 @@ class PlaneApp:
     def __init__(self):
         self.cap            = RealSense() #
         self.cap.set_display_mode('d16')
-        self.cap.set_exposure(1000)
+        #self.cap.set_exposure(1000)
         self.frame          = None
         self.rect           = None
         self.paused         = False
