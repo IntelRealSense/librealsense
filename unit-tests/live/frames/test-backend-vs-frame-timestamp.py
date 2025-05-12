@@ -1,10 +1,10 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2025 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 # test:device D400* !D457
 
 import pyrealsense2 as rs
-from rspy import test, log
+from rspy import test
 import time
 
 dev, _ = test.find_first_device_or_exit()
@@ -23,7 +23,7 @@ def check_backend_ts_greater_than_frame_ts(frame):
     backend_ts = frame.get_frame_metadata(rs.frame_metadata_value.backend_timestamp)
     delta = backend_ts - frame_ts
     if not test.check(delta > 0):
-        log.e("frame_ts = " + repr(frame_ts) + ", backend_ts = " + repr(backend_ts) + ", delta = " + repr(delta) + ", this should be positive")
+        print("frame_ts = " + repr(frame_ts) + ", backend_ts = " + repr(backend_ts) + ", delta = " + repr(delta) + ", this should be positive")
 
 
 ######################### DEPTH SENSOR ######################################################
@@ -35,7 +35,7 @@ with test.closure("Set Depth stream time domain to Global"):
     test.check_equal(int(depth_sensor.get_option(rs.option.global_time_enabled)), 1)
 
 #############################################################################################
-with test.closure("Get Depth frame timestamp and compare it to backend timestamp"):
+with test.closure("Get Depth frame timestamp and compare it to sensor timestamp"):
     depth_profile = next(p for p in
                          depth_sensor.profiles if p.fps() == fps
                          and p.stream_type() == rs.stream.depth
@@ -74,7 +74,7 @@ with test.closure("Set Color stream time domain to HW"):
     test.check_equal(int(color_sensor.get_option(rs.option.global_time_enabled)), 1)
 
 #############################################################################################
-with test.closure("Get Color frame timestamp and compare it to backend timestamp"):
+with test.closure("Get Color frame timestamp and compare it to sensor timestamp"):
     color_profile = next(p for p in
                          color_sensor.profiles if p.fps() == fps
                          and p.stream_type() == rs.stream.color
