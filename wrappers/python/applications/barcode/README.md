@@ -34,7 +34,7 @@ We are using pyzbar and opencv contributed to detect barcodes and aruco markers.
 
     <your path>\Envs\barcode\Scripts\activate.bat
 
-4. Installing realsense python wrapper for librealsense SDK. For example, download pyrealsense2-2.55.10.6089-cp310-cp310-win_amd64.whl (for example ![link](https://github.com/IntelRealSense/librealsense/releases/download/v2.56.3/pyrealsense2-2.56.3.7838-cp310-cp310-win_amd64_beta.whl)):
+4. Installing realsense python wrapper for librealsense SDK. For example, download pyrealsense2-2.55.10.6089-cp310-cp310-win_amd64.whl (for example <https://github.com/IntelRealSense/librealsense/releases/download/v2.56.3/pyrealsense2-2.56.3.7838-cp310-cp310-win_amd64_beta.whl>):
 
     pip install pyrealsense2-2.55.10.6089-cp310-cp310-win_amd64.whl
 
