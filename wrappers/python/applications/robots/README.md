@@ -16,12 +16,15 @@ This code could be integrated in your robotics and video processing pipe line.
 
 
 The dataset:
+
 :------------: |  :----------: | :-------------:  |
 [![a](data/calibration_hand_eye/calib_robot_0001.jpg)](README.md)  | [![b](data/calibration_hand_eye/calib_robot_001.jpg)](README.md)  | [![c](data/calibration_hand_eye/calib_robot_0002.jpg)](README.md)  |
 [![a](data/calibration_hand_eye/calib_robot_0003.jpg)](README.md)  | [![b](data/calibration_hand_eye/calib_robot_004.jpg)](README.md)  | [![c](data/calibration_hand_eye/calib_robot_0005.jpg)](README.md)  |
 [![a](data/calibration_hand_eye/calib_robot_0007.jpg)](README.md)  | [![b](data/calibration_hand_eye/calib_robot_008.jpg)](README.md)  | [![c](data/calibration_hand_eye/calib_robot_0009.jpg)](README.md)  |
 
 Json file that describes robot arm positions for each image above is here (data/calibration_hand_eye/camera_robot_calibration.json) and looks like this:
+
+```json
 
 {"imageName": "calib_robot_0001.jpg", "robotPose": [127.763,355.406,5.45674,-0.1392,-3.05356,-0.138536]},     
 {"imageName": "calib_robot_0002.jpg", "robotPose": [131.589,356.447,5.63756,-0.005102,-3.0533,-0.133261]}, 
@@ -36,6 +39,7 @@ Json file that describes robot arm positions for each image above is here (data/
 {"imageName": "calib_robot_0011.jpg", "robotPose": [124.967,356.443,6.52796,-0.000734,3.13673,0.13713]}, 
 
 
+```
 
 ## Installation Windows/Ubuntu
 
