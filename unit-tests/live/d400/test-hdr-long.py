@@ -66,6 +66,24 @@ def safe_start_pipe(pipe, cfg, max_retries=10):
     log.e("Failed to start the pipeline after maximum retries.")
     return False
 
+def retry_on_exception(func, max_retries=10):
+    """
+    Runs a function and retries it up to max_retries times if an exception is caught.
+
+    :param func: The function to execute.
+    :param max_retries: Maximum number of retries in case of exceptions.
+    :param args: Positional arguments to pass to the function.
+    :param kwargs: Keyword arguments to pass to the function.
+    :return: The result of the function if successful, or None if all retries fail.
+    """
+    for attempt in range(max_retries):
+        try:
+            return func()
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed with exception: {e}")
+    print("Failed to execute the function after maximum retries.")
+    return None
+
 # HDR CONFIGURATION TESTS
 with test.closure("HDR Config - default config"):
     device, ctx = test.find_first_device_or_exit()
@@ -144,9 +162,7 @@ def hdr_streaming_default_config():
         pipe.start(cfg)
 
         for iteration in range(1, 100):
-            data = safe_wait_for_frames(pipe)
-            if data is None:    
-                test.fail("wait_for_frames failure, despite 10 retries")
+            data = pipe.wait_for_frames()
             out_depth_frame = data.get_depth_frame()
             if iteration < 3:
                 continue
@@ -182,19 +198,17 @@ def hdr_running_restart_hdr_at_restream():
         cfg = rs.config()
         cfg.enable_stream(rs.stream.depth)
         pipe = rs.pipeline(ctx)
-        if not safe_start_pipe(pipe, cfg):
-            test.fail("Failed to start the pipeline after maximum retries.")
+        pipe.start(cfg)
+
         depth_sensor.set_option(rs.option.hdr_enabled, 1)
         test.check(depth_sensor.get_option(rs.option.hdr_enabled) == 1)
 
         for i in range(10):
-            data = safe_wait_for_frames(pipe)
-            if data is None:
-                test.fail("wait_for_frames failure, despite 10 retries")
+            data = pipe.wait_for_frames()
+
         test.check(depth_sensor.get_option(rs.option.hdr_enabled) == 1)
         pipe.stop()
-        if not safe_start_pipe(pipe, cfg):
-            test.fail("Failed to start the pipeline after maximum retries.")
+        pipe.start(cfg)
         test.check(depth_sensor.get_option(rs.option.hdr_enabled) == 1)
         pipe.stop()
         depth_sensor.set_option(rs.option.hdr_enabled, 0)  # disable hdr before next tests
@@ -229,9 +243,7 @@ def check_hdr_frame_counter(pipe, num_of_frames, merging_filter):
     """
     prev_depth_counter = -1
     for i in range(num_of_frames):
-        data = safe_wait_for_frames(pipe)
-        if data is None:
-            test.fail("wait_for_frames failure, despite 10 retries")
+        data = pipe.wait_for_frames()
         # get depth frame data
         depth_frame = data.get_depth_frame()
         if not depth_frame.supports_frame_metadata(rs.frame_metadata_value.frame_counter):
@@ -343,9 +355,7 @@ def check_sequence_id(pipe):
     seq_id_check_ir = True
     checks_ok = 0
     while checks_ok < 50:
-        data = safe_wait_for_frames(pipe)
-        if data is None:
-            test.fail("wait_for_frames failure, despite 10 retries")
+        data = pipe.wait_for_frames()
         if iterations_for_preparation > 0:
             iterations_for_preparation -= 1
             continue
@@ -379,8 +389,7 @@ def hdr_streaming_checking_sequence_id():
         cfg.enable_stream(rs.stream.depth)
         cfg.enable_stream(rs.stream.infrared, 1)
         pipe = rs.pipeline(ctx)
-        if not safe_start_pipe(pipe, cfg):
-            test.fail("Failed to start the pipeline after maximum retries.")
+        pipe.start(cfg)
 
         depth_sensor.set_option(rs.option.hdr_enabled, 1)
         test.check(depth_sensor.get_option(rs.option.hdr_enabled) == 1)
@@ -409,9 +418,7 @@ def emitter_on_off_check_sequence_id():
         cfg.enable_stream(rs.stream.depth)
         cfg.enable_stream(rs.stream.infrared, 1)
         pipe = rs.pipeline(ctx)
-        if not safe_start_pipe(pipe, cfg):
-            test.fail("Failed to start the pipeline after maximum retries.")
-
+        pipe.start(cfg)
 
         depth_sensor.set_option(rs.option.emitter_on_off, 1)
         test.check(depth_sensor.get_option(rs.option.emitter_on_off) == 1)
@@ -441,9 +448,7 @@ def hdr_merge_discard_merged_frame():
         cfg = rs.config()
         cfg.enable_stream(rs.stream.depth)
         pipe = rs.pipeline(ctx)
-        if not safe_start_pipe(pipe, cfg):
-            test.fail("Failed to start the pipeline after maximum retries.")
-
+        pipe.start(cfg)
 
         # initializing the merging filter
         merging_filter = rs.hdr_merge()
@@ -471,8 +476,7 @@ def hdr_merge_discard_merged_frame():
         if test.check(at_least_one_frame_supported_seq_id):
             test.check(first_series_last_merged_ts != -1)
             test.check(depth_sensor.get_option(rs.option.hdr_enabled) == 1)
-            if not safe_start_pipe(pipe, cfg):
-                test.fail("Failed to start the pipeline after maximum retries.")
+            pipe.start(cfg)
 
             for i in range(0, 10):
                 data = pipe.wait_for_frames()
@@ -518,8 +522,7 @@ def hdr_start_stop_recover_manual_exposure_and_gain():
         cfg = rs.config()
         cfg.enable_stream(rs.stream.depth)
         pipe = rs.pipeline(ctx)
-        if not safe_start_pipe(pipe, cfg):
-            test.fail("Failed to start the pipeline after maximum retries.")
+        pipe.start(cfg)
 
 
 
@@ -527,9 +530,7 @@ def hdr_start_stop_recover_manual_exposure_and_gain():
         iteration_to_check_after_disable = iteration_for_disable + 5  # Was 2, aligned to validation KPI's [DSO-18682]
         for iteration in range(1, 70):
 
-            data = safe_wait_for_frames(pipe)
-            if data is None:
-                test.fail("wait_for_frames failure, despite 10 retries")
+            data = pipe.wait_for_frames()
 
             out_depth_frame = data.get_depth_frame()
 
@@ -624,13 +625,10 @@ def hdr_streaming_set_locked_options():
         cfg = rs.config()
         cfg.enable_stream(rs.stream.depth)
         pipe = rs.pipeline(ctx)
-        if not safe_start_pipe(pipe, cfg):
-            test.fail("Failed to start the pipeline after maximum retries.")
+        pipe.start(cfg)
 
         for iteration in range(1, 50):
-            data = safe_wait_for_frames(pipe)
-            if data is None:
-                test.fail("wait_for_frames failure, despite 10 retries")
+            data = pipe.wait_for_frames()
 
             if iteration == 20:
                 # the following calls should not be performed and should send a LOG_WARNING
@@ -673,8 +671,7 @@ def hdr_streaming_enable_runtime_exposure_update():
         cfg.enable_stream(rs.stream.depth)
         cfg.enable_stream(rs.stream.infrared, 1)
         pipe = rs.pipeline(ctx)
-        if not safe_start_pipe(pipe, cfg):
-            test.fail("Failed to start the pipeline after maximum retries.")
+        pipe.start(cfg)
 
         #change exposure and gain for seq id 1
         depth_sensor.set_option(rs.option.sequence_id, 1)  # seq id 1 is expected to be the default value
