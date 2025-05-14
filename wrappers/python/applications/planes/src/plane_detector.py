@@ -40,9 +40,8 @@ class PlaneDetector:
 
         self.img3d          = None # contains x,y and depth plains
         self.img_xyz        = None  # comntains X,Y,Z information after depth image to XYZ transform
-        self.img_mask       = None  # which pixels belongs to which cluster
+        self.img_mask       = None  # which pixels belongs to the plain
         self.rect           = None  # roi  
-
 
         # detector type     
         self.matrix_inv     = None     # holds inverse params of the 
@@ -62,13 +61,12 @@ class PlaneDetector:
 
     def init_image(self, img = None):
         "load image"
-        if img is None:
-            log.info('No image provided')
-            return False
+
         
         self.img            = img
         h,w                 = img.shape[:2]
         self.frame_size     = (w,h)
+        self.img_mask       = np.zeros((h,w))
         return True
 
     def init_roi(self, test_type = 1):
@@ -86,8 +84,15 @@ class PlaneDetector:
             roi = [200,120,440,360] # xlu, ylu, xrb, yrb            
         return roi    
 
-    def preprocess(self, img):
+    def preprocess(self, img = None):
         "image preprocessing - extracts roi and converts from uint8 to float using log function"
+        if img is None:
+            log.info('No image provided')
+            return False        
+
+        if self.img_mask is None:
+            ret = self.init_image(img)
+
         if self.rect is None: # use entire image
             self.rect = self.init_roi(4)
             
@@ -432,7 +437,7 @@ class PlaneDetector:
         - `self.inliers`: points from the dataset considered inliers
 
         """
-        log.info('Fit ransac: ...')  
+        #log.info('Fit ransac: ...')  
         # roi converted to points with step size on the grid
         xyz_matrix     = self.convert_roi_to_points(img_roi, point_num = 250, step_size = 1)
 
@@ -460,13 +465,18 @@ class PlaneDetector:
 
             # Now we compute the cross product of vecA and vecB to get vecC which is normal to the plane
             vecC        = np.cross(vecA, vecB)
+            vecC_norm   = np.linalg.norm(vecC)
+
+            # protect from the close spaced points
+            if vecC_norm < 10e-6:
+                continue
 
             # make sure that Z direction is positive
             vecC        = vecC * np.sign(vecC[2])
 
             # The plane equation will be vecC[0]*x + vecC[1]*y + vecC[0]*z = -k
             # We have to use a point to find k
-            vecC        = vecC / np.linalg.norm(vecC)
+            vecC        = vecC / vecC_norm
             #k           = -np.sum(np.multiply(vecC, pt_samples[1, :]))
             k           = -np.dot(vecC, pt_samples[1, :])
             plane_eq    = [vecC[0], vecC[1], vecC[2], k]
@@ -510,6 +520,48 @@ class PlaneDetector:
         
         return img_mean, img_std 
     
+    def fit_plane_ransac_and_grow(self, img_full):
+        
+        """
+        Find the best equation for a plane of the predefined ROI and then grow the ROI
+        """
+        img_roi                     = self.preprocess(img_full)
+        img_mean, img_std           = self.fit_plane_ransac(img_roi) 
+
+        # make sure that mask is not empty
+        x0, y0, x1, y1              = self.rect
+        self.img_mask[y0:y1,x0:x1]  = 1
+
+        # grow the mask
+        y,x                         = np.where(self.img_mask > 0.7)
+        y_min, y_max                = y.min(), y.max()
+        x_min, x_max                = x.min(), x.max()
+        y_min, y_max                = np.maximum(0,y_min-1), np.minimum(self.img_mask.shape[0],y_max+1)
+        x_min, x_max                = np.maximum(0,x_min-1), np.minimum(self.img_mask.shape[1],x_max+1)
+
+        # extract ROI
+        img_roi                     = img_full[y_min:y_max,x_min:x_max].astype(np.float32)
+        xyz_matrix                  = self.convert_roi_to_points(img_roi, point_num = 250, step_size = 1)
+
+        # check against the plane
+        vecC                        = self.plane_params[:3]
+        dist_pt                     = np.dot(xyz_matrix, vecC) + self.plane_params[3]
+
+        # Select indexes where distance is biggers than the threshold
+        thresh                      = 0.05
+        err                         = np.abs(dist_pt)
+        yi,xi                       = np.where( err <= thresh)
+        yi,xi                       = yi + y_min, xi + x_min       
+
+
+        # output
+        img_std                    = err.std()
+        img_mean                   = xyz_matrix.mean(axis=0)[2]
+
+
+        return img_mean, img_std 
+        
+
     def fit_and_split_roi_recursively(self, roi, level = 0):
         # splits ROI on 4 regions and recursevly call 
         x0,y0,x1,y1     = roi
