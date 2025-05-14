@@ -18,9 +18,9 @@ This code could be integrated in your robotics and video processing pipe line.
 The dataset:
 
 :------------: |  :----------: | :-------------:  |
-[(data/calibration_hand_eye/calib_robot_0001.jpg)]  | [![b](data/calibration_hand_eye/calib_robot_001.jpg)](README.md)  | [![c](data/calibration_hand_eye/calib_robot_0002.jpg)](README.md)  |
-[![a](data/calibration_hand_eye/calib_robot_0003.jpg)](README.md)  | [![b](data/calibration_hand_eye/calib_robot_004.jpg)](README.md)  | [![c](data/calibration_hand_eye/calib_robot_0005.jpg)](README.md)  |
-[![a](data/calibration_hand_eye/calib_robot_0007.jpg)](README.md)  | [![b](data/calibration_hand_eye/calib_robot_008.jpg)](README.md)  | [![c](data/calibration_hand_eye/calib_robot_0009.jpg)](README.md)  |
+!(data/calibration_hand_eye/calib_robot_0001.jpg) | !(data/calibration_hand_eye/calib_robot_001.jpg) | !(data/calibration_hand_eye/calib_robot_0002.jpg) |
+!(data/calibration_hand_eye/calib_robot_0003.jpg) | !(data/calibration_hand_eye/calib_robot_004.jpg) | !(data/calibration_hand_eye/calib_robot_0005.jpg) |
+!(data/calibration_hand_eye/calib_robot_0006.jpg) | !(data/calibration_hand_eye/calib_robot_007.jpg) | !(data/calibration_hand_eye/calib_robot_0008.jpg) |
 
 Json file that describes robot arm positions for each image above is here (data/calibration_hand_eye/camera_robot_calibration.json) and looks like this:
 
