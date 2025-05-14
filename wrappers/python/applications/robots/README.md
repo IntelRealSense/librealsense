@@ -18,7 +18,7 @@ This code could be integrated in your robotics and video processing pipe line.
 The dataset:
 
 :------------: |  :----------: | :-------------:  |
-[![a](data/calibration_hand_eye/calib_robot_0001.jpg)](README.md)  | [![b](data/calibration_hand_eye/calib_robot_001.jpg)](README.md)  | [![c](data/calibration_hand_eye/calib_robot_0002.jpg)](README.md)  |
+[(data/calibration_hand_eye/calib_robot_0001.jpg)]  | [![b](data/calibration_hand_eye/calib_robot_001.jpg)](README.md)  | [![c](data/calibration_hand_eye/calib_robot_0002.jpg)](README.md)  |
 [![a](data/calibration_hand_eye/calib_robot_0003.jpg)](README.md)  | [![b](data/calibration_hand_eye/calib_robot_004.jpg)](README.md)  | [![c](data/calibration_hand_eye/calib_robot_0005.jpg)](README.md)  |
 [![a](data/calibration_hand_eye/calib_robot_0007.jpg)](README.md)  | [![b](data/calibration_hand_eye/calib_robot_008.jpg)](README.md)  | [![c](data/calibration_hand_eye/calib_robot_0009.jpg)](README.md)  |
 
