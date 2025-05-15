@@ -30,60 +30,6 @@ def retry_on_exception(func, max_retries=10):
     print("Failed to execute the function after maximum retries.")
     return None
 
-def safe_wait_for_frames(pipe, max_retries=10):
-    """
-    Attempts to call pipe.wait_for_frames() with retry logic in case of exceptions.
-
-    :param pipe: The pipeline object to call wait_for_frames on.
-    :param max_retries: Maximum number of retries in case of exceptions.
-    :return: The frameset data if successful, or None if all retries fail.
-    """
-    for attempt in range(max_retries):
-        try:
-            return pipe.wait_for_frames()
-        except Exception as e:
-            log.d(f"Attempt {attempt + 1} failed with exception: {e}")
-            time.sleep(0.1)  # Optional: small delay before retrying
-    log.e("Failed to retrieve frames after maximum retries.")
-    return None
-
-def safe_start_pipe(pipe, cfg, max_retries=10):
-    """
-    Attempts to call pipe.start(cfg) with retry logic in case of exceptions.
-
-    :param pipe: The pipeline object to start.
-    :param cfg: The configuration object to use for starting the pipeline.
-    :param max_retries: Maximum number of retries in case of exceptions.
-    :return: True if successful, False if all retries fail.
-    """
-    for attempt in range(max_retries):
-        try:
-            pipe.start(cfg)
-            return True
-        except Exception as e:
-            log.d(f"Attempt {attempt + 1} to start the pipeline failed with exception: {e}")
-            time.sleep(0.1)  # Optional: small delay before retrying
-    log.e("Failed to start the pipeline after maximum retries.")
-    return False
-
-def retry_on_exception(func, max_retries=10):
-    """
-    Runs a function and retries it up to max_retries times if an exception is caught.
-
-    :param func: The function to execute.
-    :param max_retries: Maximum number of retries in case of exceptions.
-    :param args: Positional arguments to pass to the function.
-    :param kwargs: Keyword arguments to pass to the function.
-    :return: The result of the function if successful, or None if all retries fail.
-    """
-    for attempt in range(max_retries):
-        try:
-            return func()
-        except Exception as e:
-            print(f"Attempt {attempt + 1} failed with exception: {e}")
-    print("Failed to execute the function after maximum retries.")
-    return None
-
 # HDR CONFIGURATION TESTS
 with test.closure("HDR Config - default config"):
     device, ctx = test.find_first_device_or_exit()
