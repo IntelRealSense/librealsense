@@ -18,10 +18,12 @@ This code could be integrated in your robotics and video processing pipe line.
 The dataset:
 
 
-| Robot pose    |  Robot pose  | Robot pose      |
+| Robot pose and image    |  Robot pose and image   | Robot pose  and image  |
 |:------------: |  :----------: | :-------------: |
-[![example](data/calibration_hand_eye/calib_robot_0001.jpg)] | [![example](data/calibration_hand_eye/calib_robot_001.jpg)] | [![example](data/calibration_hand_eye/calib_robot_0002.jpg)] |
+![example](data/calibration_hand_eye/calib_robot_0001.jpg) | ![example](data/calibration_hand_eye/calib_robot_001.jpg) | ![example](data/calibration_hand_eye/calib_robot_0002.jpg) |
+|:------------: |  :----------: | :-------------: |
 ![example](data/calibration_hand_eye/calib_robot_0003.jpg) | ![example](data/calibration_hand_eye/calib_robot_004.jpg) | ![example](data/calibration_hand_eye/calib_robot_0005.jpg) |
+|:------------: |  :----------: | :-------------: |
 ![example](data/calibration_hand_eye/calib_robot_0006.jpg) | ![example](data/calibration_hand_eye/calib_robot_007.jpg) | ![example](data/calibration_hand_eye/calib_robot_0008.jpg) |
 
 Json file that describes robot arm positions for each image above is here (data/calibration_hand_eye/camera_robot_calibration.json) and looks like this:
