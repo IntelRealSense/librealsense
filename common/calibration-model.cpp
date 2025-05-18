@@ -536,7 +536,8 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
         }
         ImGui::SameLine();
 
-        if (_accept)
+        auto streams = dev.query_sensors()[0].get_active_streams();
+        if (_accept && streams.size())
         {
             if (ImGui::Button(u8"\uF2DB  Write Table", ImVec2(120, 25)))
             {
@@ -572,7 +573,7 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
             ImGui::Button(u8"\uF2DB  Write Table", ImVec2(120, 25));
             if (ImGui::IsItemHovered())
             {
-                RsImGui::CustomTooltip("%s", "Write selected calibration table to the device. For advanced users");
+                RsImGui::CustomTooltip("%s", "Write selected calibration table to the device. Requires Stereo Module to be on. For advanced users");
             }
 
             ImGui::PopStyleColor(2);
@@ -587,7 +588,6 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
             {
                 try
                 {
-                    auto streams = dev.query_sensors()[0].get_active_streams();
                     dev.query_sensors()[0].close();
                     dev.query_sensors()[0].open(streams);
                     dev.as<rs2::auto_calibrated_device>().set_calibration_table(_calibration);
