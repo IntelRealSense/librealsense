@@ -1146,7 +1146,13 @@ namespace librealsense
         auto in = reinterpret_cast< const uint16_t * >( source );
         auto out = reinterpret_cast< uint16_t * >( dest[0] );
 
+        // Time measurments on Jetson yielded better results for the non-CUDA version
+    //#ifdef RS2_USE_CUDA
+        //if( rsutils::rs2_is_gpu_available() )
+        //    rscuda::uyvy_to_yuyv_cuda_helper( in, out, width * height );
+    //#else
         for( size_t i = 0; i < width * height; ++i )
             out[i] = ( ( in[i] >> 8 ) & 0x00FF ) | ( ( in[i] << 8 ) & 0xFF00 );
+    //#endif
     }
 }
