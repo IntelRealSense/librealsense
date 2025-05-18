@@ -4,7 +4,7 @@ project(RealSenseVinoFaceExample)
 
 
 # OpenCV is required here
-if(NOT DEFINED OpenCV_DIR  OR  NOT IS_DIRECTORY ${OpenCV_DIR})
+if(NOT DEFINED OpenCV_DIR)
 	set(OpenCV_DIR "" CACHE PATH "The path to the OpenCV Toolkit build directory")
 	message( FATAL_ERROR "OpenVINO examples require OpenCV; specify OpenCV_DIR" )
 endif()
