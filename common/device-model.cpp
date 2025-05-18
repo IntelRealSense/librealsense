@@ -2199,8 +2199,13 @@ namespace rs2
     {
         for( const auto & sub : subdevices )
         {
-            if (sub->s->is<color_sensor>() && sub->streaming)
-                return true;
+            if( ! sub.get()->streaming )
+                continue;
+
+            auto profiles = sub->get_selected_profiles();
+            for( const auto & profile : profiles )
+                if( profile.stream_type() == RS2_STREAM_COLOR )
+                    return true;
         }
         return false;
     }
@@ -3074,8 +3079,8 @@ namespace rs2
     {
         bool has_autocalib = false;
 
-        bool color_streaming = is_color_streaming();
-        ImGuiSelectableFlags avoid_selection_flag = (color_streaming) ? ImGuiSelectableFlags_Disabled : 0;
+        bool rgb_streaming = is_color_streaming();
+        ImGuiSelectableFlags avoid_selection_flag = (rgb_streaming) ? ImGuiSelectableFlags_Disabled : 0;
 
         for (auto&& sub : subdevices)
         {
