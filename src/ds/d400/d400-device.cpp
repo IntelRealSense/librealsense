@@ -47,6 +47,8 @@ using rsutils::type::fourcc;
 #include <src/ds/features/auto-exposure-limit-feature.h>
 #include <src/ds/features/gain-limit-feature.h>
 
+#include <src/context.h> // D436 - remove when removing avoidance of updating FW via viewer
+
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
 #else
@@ -111,6 +113,9 @@ namespace librealsense
 
     void d400_device::enter_update_state() const
     {
+        if (_pid == ds::RS436_PID && !get_context()->get_settings().nested("enable-d436-fw-update").default_value(false))
+            throw std::runtime_error("D436 FW cannot be updated at this stage.");
+
         _ds_device_common->enter_update_state();
     }
 
