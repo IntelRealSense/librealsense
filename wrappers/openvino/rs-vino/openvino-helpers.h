@@ -152,9 +152,6 @@ namespace openvino_helpers
     /*
         Allow manipulation of a face bounding box so as to make additional face analytic networks more
         effective.
-
-        For example, a face may not include the hair. though, may find the hair very
-        important for proper classification!
     */
     inline cv::Rect adjust_face_bbox(
         cv::Rect const & r,
