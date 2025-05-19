@@ -151,7 +151,8 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     , _dds_dev( dev )
 {
     //LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
-    register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name() );
+    std::string suffix = dev->device_info().is_recovery() ? " Recovery" : "";
+    register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name() + suffix );
     register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev->device_info().topic_root() );
     register_info( RS2_CAMERA_INFO_PRODUCT_ID, "DDS" );
 
@@ -311,10 +312,14 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
         // The get_stream_profiles() call will initialize the profiles (calling dds_sensor_proxy::init_stream_profiles())
         for( auto & profile : sensor_proxy->get_stream_profiles() )
         {
-            auto & source_profiles = sensor_proxy->_formats_converter.get_source_profiles_from_target( profile );
-            if( source_profiles.size() != 1 )
-                LOG_ERROR( "More than one source profile available for [" << profile << "]: " << source_profiles );
-            auto source_profile = source_profiles[0];
+            auto source_profile = profile;
+            if( get_format_conversion() != format_conversion::raw )
+            {
+                auto & source_profiles = sensor_proxy->_formats_converter.get_source_profiles_from_target( profile );
+                if( source_profiles.size() != 1 )
+                    LOG_ERROR( "More than one source profile available for [" << profile << "]: " << source_profiles );
+                auto source_profile = source_profiles[0];
+            }
 
             sid_index type_and_index( source_profile->get_stream_type(), source_profile->get_stream_index() );
             const auto & it = sensor_info.type_and_index_to_dds_stream_sidx.find( type_and_index );

@@ -18,6 +18,7 @@ import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.ProductLine;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.Sensor;
+import com.intel.realsense.camera.RecordingActivity;
 import com.intel.realsense.librealsense.StreamProfile;
 import com.intel.realsense.librealsense.VideoStreamProfile;
 
@@ -42,6 +43,7 @@ public class Streamer {
     private final Listener mListener;
 
     private Pipeline mPipeline;
+    private String mRecordFilePath;
 
     public Streamer(Context context, boolean loadConfig, Listener listener){
         mContext = context;
@@ -80,7 +82,7 @@ public class Streamer {
         }
     }
 
-    private int configStream(Config config){
+    private int configStream(Config config) {
         int numStreams = 0;
         config.disableAllStreams();
 
@@ -132,9 +134,13 @@ public class Streamer {
         try(Config config = new Config()){
             boolean defaultConfig = true;
 
+            //Enable recording to file if a path is provided
+            if(mRecordFilePath != null)
+                config.enableRecordToFile(mRecordFilePath);
             if(mLoadConfig) {
                 if (configStream(config) > 0)
                     defaultConfig = false;
+
             }
             if(mListener != null)
                 mListener.config(config);
@@ -166,6 +172,10 @@ public class Streamer {
                 }
             }
         }
+    }
+    public void setRecordFilePath(String path){
+        Log.d(TAG, "setRecordFilePath: entry, path: " + path);
+        mRecordFilePath = path;
     }
 
     public synchronized void start() throws Exception {

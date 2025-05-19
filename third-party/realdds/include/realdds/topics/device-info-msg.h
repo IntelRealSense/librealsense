@@ -25,6 +25,8 @@ public:
     rsutils::json const & to_json() const;
     static device_info from_json( rsutils::json const & );
 
+    bool is_recovery() const;
+
     // Substring of information already stored in the device-info that can be used to print the device 'name'.
     // (mostly for use with debug messages)
     rsutils::string::slice debug_name() const;

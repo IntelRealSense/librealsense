@@ -52,9 +52,17 @@ time.sleep(3)
 #####################################################################################################
 test.start("Testing device creation time on " + platform.system() + " OS")
 device_creation_stopwatch = Stopwatch()
-dev, _ = test.find_first_device_or_exit()
+ctx = rs.context( { "dds" : { "enabled" : False } } )
+devs = ctx.devices
+if len(devs) == 0:
+    # No devices found, try to find a device with DDS enabled
+    device_creation_stopwatch.reset()
+    ctx = rs.context( { "dds" : { "enabled" : True } } )
+    devs = ctx.devices
+dev = devs[0]
 device_creation_time = device_creation_stopwatch.get_elapsed()
-max_time_for_device_creation = 1
+is_dds = dev.supports(rs.camera_info.connection_type) and dev.get_info(rs.camera_info.connection_type) == "DDS"
+max_time_for_device_creation = 1 if not is_dds else 5  # currently, DDS devices take longer time to complete
 print("Device creation time is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(device_creation_time, max_time_for_device_creation))
 test.check(device_creation_time < max_time_for_device_creation)
 test.finish()

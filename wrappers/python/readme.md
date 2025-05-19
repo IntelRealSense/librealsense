@@ -107,7 +107,7 @@ try:
                 if 0 < dist and dist < 1:
                     coverage[x//10] += 1
 
-            if y%20 is 19:
+            if y%20 == 19:
                 line = ""
                 for c in coverage:
                     line += " .:nhBXWW"[c//25]

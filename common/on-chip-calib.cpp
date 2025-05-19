@@ -940,6 +940,14 @@ namespace rs2
 
     void on_chip_calib_manager::calibrate()
     {
+        auto exposure = _sub->s->get_option( RS2_OPTION_EXPOSURE );
+        if( exposure > 15500 )
+        {
+            throw std::runtime_error( "Exposure value is limiting the fps,\n"
+                                        "for the algorithm to be able to converge,\n"
+                                        "please reduce exposure value."  ); 
+        }
+
         int occ_timeout_ms = 9000;
         if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
@@ -2096,13 +2104,6 @@ namespace rs2
                 if (ImGui::IsItemHovered())
                     RsImGui::CustomTooltip("%s", "Calculate ground truth for the specific target");
 
-                ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 30) });
-                bool assistance = (get_manager().host_assistance != 0);
-                if (ImGui::Checkbox("Host Assistance", &assistance))
-                    get_manager().host_assistance = (assistance ? 1 : 0);
-                if (ImGui::IsItemHovered())
-                    RsImGui::CustomTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
-
                 std::string button_name = rsutils::string::from() << "Calibrate" << "##tare" << index;
 
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 28) });
@@ -2191,11 +2192,6 @@ namespace rs2
                 //if (ImGui::IsItemHovered())
                 //    RsImGui::CustomTooltip("%s", "On-Chip Calibration Extended");
 
-                ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 31) });
-                bool assistance = (get_manager().host_assistance != 0);
-                ImGui::Checkbox("Host Assistance", &assistance);
-                if (ImGui::IsItemHovered())
-                    RsImGui::CustomTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
 
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));

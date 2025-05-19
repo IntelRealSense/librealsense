@@ -31,6 +31,15 @@
 
 using rsutils::json;
 
+std::condition_variable cv;
+std::mutex mutex;
+std::string selected_serial_number;
+
+rs2::device new_device;
+rs2::update_device new_fw_update_device;
+
+bool done = false;
+
 std::vector<uint8_t> read_fw_file(std::string file_path)
 {
     std::vector<uint8_t> rv;
@@ -143,7 +152,38 @@ void list_devices( rs2::context ctx )
     }
 }
 
-int write_fw_to_mipi_device( const rs2::device & dev, const std::vector< uint8_t > & fw_image )
+
+void waiting_for_device_to_reconnect(rs2::context& ctx, rs2::cli::value<std::string>& serial_number_arg)
+{
+    std::cout << std::endl << "Waiting for device to reconnect..." << std::endl;
+    std::unique_lock<std::mutex> lk(mutex);
+    cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return !done || new_device; });
+
+    if (done)
+    {
+        auto devs = ctx.query_devices();
+        for (auto&& d : devs)
+        {
+            auto sn = d.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "unknown";
+            if (serial_number_arg.isSet() && sn != selected_serial_number)
+                continue;
+
+            if(smcu_arg.isSet())
+            {
+                auto smcu_fw_version = d.supports(RS2_CAMERA_INFO_SMCU_FW_VERSION) ? d.get_info(RS2_CAMERA_INFO_SMCU_FW_VERSION) : "unknown";
+                std::cout << std::endl << "Device " << sn << " Safety MCU successfully updated to: " << smcu_fw_version << std::endl;
+            }
+            else
+            {
+                auto fw = d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ? d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "unknown";
+                std::cout << std::endl << "Device " << sn << " successfully updated to FW: " << fw << std::endl;
+		    }
+        }
+    }
+
+}
+
+int write_fw_to_mipi_device( rs2::context& ctx, rs2::cli::value<std::string>& serial_number_arg, const rs2::device & dev, const std::vector< uint8_t > & fw_image )
 {
     // Write firmware to appropriate file descriptor
     std::cout << std::endl << "Update can take up to 2 minutes" << std::endl;
@@ -190,6 +230,10 @@ int write_fw_to_mipi_device( const rs2::device & dev, const std::vector< uint8_t
         return EXIT_FAILURE;
     }
     std::cout << std::endl << "Firmware update done" << std::endl;
+    
+    done = true;
+    
+    waiting_for_device_to_reconnect(ctx, serial_number_arg);
 
     return EXIT_SUCCESS;
 }
@@ -209,15 +253,6 @@ bool is_mipi_device( const rs2::device & dev )
 int main( int argc, char ** argv )
 try
 {
-    std::condition_variable cv;
-    std::mutex mutex;
-    std::string selected_serial_number;
-
-    rs2::device new_device;
-    rs2::update_device new_fw_update_device;
-
-    bool done = false;
-
     using rs2::cli;
     cli cmd( "librealsense rs-fw-update tool" );
 
@@ -490,25 +525,28 @@ try
                 //     return EXIT_FAILURE;
                 // }
 
-                return write_fw_to_mipi_device( d, fw_image );
+                return write_fw_to_mipi_device(ctx, serial_number_arg, d, fw_image );
             }
 
             if( unsigned_arg.isSet() )
             {
-                std::cout << std::endl << "Firmware update started. Please don't disconnect device!" << std::endl << std::endl;
+            
+                std::cout << std::endl << "Unsigned Firmware update started. Please don't disconnect device!" << std::endl << std::endl;
 
                 if( ISATTY( FILENO( stdout ) ) )
                 {
                     d.as<rs2::updatable>().update_unsigned( fw_image, [&]( const float progress )
                         {
-                            printf( "\rFirmware update progress: %d[%%]", (int)( progress * 100 ) );
+                            printf( "\rUnsigned Firmware update progress: %d[%%]", (int)( progress * 100 ) );
                             std::cout.flush();
                         } );
                 }
                 else
                     d.as<rs2::updatable>().update_unsigned( fw_image, [&]( const float progress ) {} );
 
-                std::cout << std::endl << std::endl << "Firmware update done" << std::endl;
+                std::cout << std::endl << std::endl << "Unsigned Firmware update done" << std::endl;
+                
+                done = true;
             }
             else
             {
@@ -581,31 +619,8 @@ try
         return EXIT_FAILURE;
     }
 
-    std::cout << std::endl << "Waiting for device to reconnect..." << std::endl;
-    std::unique_lock<std::mutex> lk(mutex);
-    cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return !done || new_device; });
+    waiting_for_device_to_reconnect(ctx, serial_number_arg);
 
-    if (done)
-    {
-        auto devs = ctx.query_devices();
-        for (auto&& d : devs)
-        {
-            auto sn = d.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "unknown";
-            if (serial_number_arg.isSet() && sn != selected_serial_number)
-                continue;
-
-            if(smcu_arg.isSet())
-            {
-                auto smcu_fw_version = d.supports(RS2_CAMERA_INFO_SMCU_FW_VERSION) ? d.get_info(RS2_CAMERA_INFO_SMCU_FW_VERSION) : "unknown";
-                std::cout << std::endl << "Device " << sn << " Safety MCU successfully updated to: " << smcu_fw_version << std::endl;
-            }
-            else
-            {
-                auto fw = d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ? d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "unknown";
-                std::cout << std::endl << "Device " << sn << " successfully updated to FW: " << fw << std::endl;
-            }
-        }
-    }
 
     return EXIT_SUCCESS;
 }
