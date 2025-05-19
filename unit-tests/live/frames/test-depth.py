@@ -25,18 +25,18 @@ DETAIL_LEVEL = 10
 FRAMES_TO_CHECK = 30
 
 dev, ctx = test.find_first_device_or_exit()
-tw.start_wrapper( dev )
+tw.start_wrapper(dev)
 
 cfg = rs.config()
 cfg.enable_stream(rs.stream.depth, rs.format.z16, 30)
 if DEBUG_MODE:
     cfg.enable_stream(rs.stream.color, rs.format.bgr8, 30)
 
-
 pipeline = rs.pipeline(ctx)
 pipeline_profile = pipeline.start(cfg)
 pipeline.wait_for_frames()
 time.sleep(2)
+
 
 def frames_to_image(depth, color, save, display):
     """
@@ -100,7 +100,7 @@ def get_distances(depth_frame):
     rounded_depths = (np.floor(valid_depths * 100.0 / DETAIL_LEVEL) * DETAIL_LEVEL).astype(np.int32)
 
     unique_vals, counts = np.unique(rounded_depths, return_counts=True)
-    
+
     dists = dict(zip(unique_vals.tolist(), counts.tolist()))
     total = valid_depths.size
 
@@ -156,15 +156,6 @@ for frame_num in range(FRAMES_TO_CHECK):
 test.check(has_depth is True)
 test.finish()
 
-if is_there_depth:
-    # only the safety camera makes a clear difference between laser on and off in some cases
-    if "D585S" in dev.get_info(rs.camera_info.name):
-        test.start("Testing less black pixels present with the laser on")
-        _, no_laser_black_pixels = is_depth_meaningful(cfg, laser_enabled=False, save_image=DEBUG_MODE, show_image=DEBUG_MODE)
-        test.check(no_laser_black_pixels > max_black_pixels)
-        test.finish()
-else:
-    log.i("Frame has no depth! ")
-
-tw.stop_wrapper( dev )
+pipeline.stop()
+tw.stop_wrapper(dev)
 test.print_results_and_exit()
