@@ -263,8 +263,10 @@ namespace librealsense
         {
             const auto actual_struct = reinterpret_cast< const extended_fw_log_binary * >( raw->logs_buffer.data() );
             if( num_of_params != actual_struct->number_of_params )
-                throw librealsense::invalid_value_exception( rsutils::string::from() << "Expecting " << num_of_params
-                                                             << " parameters, received " << actual_struct->number_of_params );
+                LOG_INFO( rsutils::string::from() << "Expecting " << num_of_params << " parameters, received "
+                                                  << actual_struct->number_of_params );
+            if( num_of_params > actual_struct->number_of_params )
+                num_of_params = actual_struct->number_of_params;
 
             if( num_of_params > 0 )
             {
