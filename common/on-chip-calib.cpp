@@ -2194,8 +2194,10 @@ namespace rs2
 
                 if( get_manager().get_device_model().is_color_streaming() )
                 {
-                    update_state = RS2_CALIB_STATE_FAILED;
-                    _error_message = "Turn off RGB Camera streaming before using on-chip calibration.";
+                    dismiss(false);
+                    ImGui::PopStyleColor(7);
+                    ImGui::PopFont();
+                    throw std::runtime_error("Turn off \"RGB Camera\" streaming before using on-chip calibration.");
                 }
                 else 
                 {
@@ -2332,17 +2334,9 @@ namespace rs2
                         ImGui::Text("%s", (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB ? "OCC FL calibraton cannot work with this camera!" : "OCC Extended calibraton cannot work with this camera!"));
                     }
                 }
-                else if( get_manager().get_device_model().is_color_streaming() )
-                {
-                    ImGui::PushTextWrapPos( 0.0f );
-                    ImGui::Text( "%s", _error_message.c_str() );
-                    ImGui::PopTextWrapPos();
-                }
                 else
                 {
-                    ImGui::PushTextWrapPos(0.0f);
                     ImGui::Text("%s", _error_message.c_str());
-                    ImGui::PopTextWrapPos();
 
                     auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
 
