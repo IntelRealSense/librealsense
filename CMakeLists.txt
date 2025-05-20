@@ -59,6 +59,14 @@ if(BUILD_ASAN)
   target_compile_options(${LRS_TARGET} PRIVATE -fsanitize=address -g)
 endif()
 
+if (!WIN32)
+    add_compile_options(-fsanitize=address,undefined,vptr,leak -g)
+    #add_link_options(-fsanitize=address,undefined,vptr,leak)
+    set(SANITIZER_FLAGS "-fsanitize=address,undefined,vptr,leak")
+    add_compile_options(${SANITIZER_FLAGS} -g)
+    set_target_properties(${LRS_TARGET} PROPERTIES LINK_FLAGS "${SANITIZER_FLAGS}")
+endif()
+
 config_cxx_flags()
 
 # set library version
