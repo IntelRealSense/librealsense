@@ -2205,39 +2205,30 @@ namespace rs2
                 //if (ImGui::IsItemHovered())
                 //    RsImGui::CustomTooltip("%s", "On-Chip Calibration Extended");
 
-                if( get_manager().get_device_model().is_color_streaming() )
+
+                auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
+                ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+
+                std::string button_name = rsutils::string::from() << "Calibrate" << "##self" << index;
+
+                ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 28) });
+                if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                 {
-                    dismiss(false);
-                    ImGui::PopStyleColor(7);
-                    ImGui::PopFont();
-                    throw std::runtime_error("Turn off \"RGB Camera\" streaming before using on-chip calibration.");
+                    get_manager().restore_workspace([this](std::function<void()> a) { a(); });
+                    get_manager().reset();
+                    get_manager().retry_times = 0;
+                    auto _this = shared_from_this();
+                    auto invoke = [_this](std::function<void()> action) {_this->invoke(action);};
+                    get_manager().start(invoke);
+                    update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
+                    enable_dismiss = false;
                 }
-                else 
-                {
-                    auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
-                    ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
 
-                    std::string button_name = rsutils::string::from() << "Calibrate" << "##self" << index;
+                ImGui::PopStyleColor(2);
 
-                    ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 28) });
-                    if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
-                    {
-                        get_manager().restore_workspace([this](std::function<void()> a) { a(); });
-                        get_manager().reset();
-                        get_manager().retry_times = 0;
-                        auto _this = shared_from_this();
-                        auto invoke = [_this](std::function<void()> action) {_this->invoke(action); };
-                        get_manager().start(invoke);
-                        update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
-                        enable_dismiss = false;
-                    }
-
-                    ImGui::PopStyleColor(2);
-
-                    if (ImGui::IsItemHovered())
-                        RsImGui::CustomTooltip("%s", "Begin On-Chip Calibration");
-                }
+                if (ImGui::IsItemHovered())
+                    RsImGui::CustomTooltip("%s", "Begin On-Chip Calibration");
             }
             else if (update_state == RS2_CALIB_STATE_FL_INPUT)
             {
