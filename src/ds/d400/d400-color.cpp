@@ -64,16 +64,16 @@ namespace librealsense
         // except for D405, in which the color is part of the depth unit
         // and it will then been found in end point 0 (the depth's one)
         auto color_devs_info_mi3 = filter_by_mi(group.uvc_devices, 3);
-        if (color_devs_info_mi3.size() == 1 || ds::RS457_PID == _pid)
+        if (color_devs_info_mi3.size() == 1 || _is_mipi_device)
         {
             // means color end point in part of a separate color sensor (e.g. D435)
-            if (ds::RS457_PID == _pid)
+            if (_is_mipi_device)
                 color_devs_info = group.uvc_devices;
             else
                 color_devs_info = color_devs_info_mi3;
             std::unique_ptr< frame_timestamp_reader > d400_timestamp_reader_backup( new ds_timestamp_reader() );
             frame_timestamp_reader* timestamp_reader_from_metadata;
-            if (ds::RS457_PID != _pid)
+            if (!_is_mipi_device)
                 timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata(std::move(d400_timestamp_reader_backup));
             else
                 timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata_mipi_color(std::move(d400_timestamp_reader_backup));
@@ -82,7 +82,7 @@ namespace librealsense
 
             auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
             platform::uvc_device_info info;
-            if (ds::RS457_PID == _pid)
+            if (_is_mipi_device)
                 info = color_devs_info[1];
             else
                 info = color_devs_info.front();
@@ -148,7 +148,7 @@ namespace librealsense
         register_color_features();
         register_options();
 
-        if (_pid != ds::RS457_PID)
+        if (!_is_mipi_device)
         {
             register_metadata(color_ep);
         }
@@ -165,7 +165,7 @@ namespace librealsense
     {
         auto& color_ep = get_color_sensor();
 
-        if (!val_in_range(_pid, { ds::RS457_PID }))
+        if (!_is_mipi_device)
         {
             _ds_color_common->register_color_options();
             color_ep.register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
@@ -182,7 +182,7 @@ namespace librealsense
         if (_separate_color)
         {
             // Currently disabled for certain sensors
-            if (!val_in_range(_pid, { ds::RS457_PID}))
+            if (!_is_mipi_device)
             {
                 color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
             }
@@ -199,7 +199,7 @@ namespace librealsense
         }
 
         // Currently disabled for certain sensors
-        if (!val_in_range(_pid, { ds::RS457_PID }))
+        if (!_is_mipi_device)
         {
             color_ep.register_pu(RS2_OPTION_HUE);
         }
@@ -245,7 +245,7 @@ namespace librealsense
         // attributes of md_rgb_control
         auto raw_color_ep = get_raw_color_sensor();
 
-        if (_pid != ds::RS457_PID)
+        if (!_is_mipi_device)
         {
             color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
             color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));

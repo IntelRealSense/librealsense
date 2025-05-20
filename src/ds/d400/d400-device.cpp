@@ -523,7 +523,7 @@ namespace librealsense
 
         std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
         frame_timestamp_reader* timestamp_reader_from_metadata;
-        if (all_device_infos.front().pid != RS457_PID && all_device_infos.front().pid != RS430_GMSL_PID)
+        if (!val_in_range(all_device_infos.front().pid, { RS457_PID, RS430_GMSL_PID, RS415_GMSL_PID }))
             timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata(std::move(timestamp_reader_backup));
         else
             timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata_mipi(std::move(timestamp_reader_backup));
@@ -571,8 +571,8 @@ namespace librealsense
 
         auto raw_sensor = get_raw_depth_sensor();
         _pid = group.uvc_devices.front().pid;
-        // to be changed for D457
-        bool mipi_sensor = (RS457_PID == _pid || RS430_GMSL_PID == _pid);
+
+        _is_mipi_device = val_in_range(_pid, { RS457_PID, RS430_GMSL_PID, RS415_GMSL_PID });
 
         _color_calib_table_raw = [this]()
         {
@@ -588,7 +588,7 @@ namespace librealsense
         }
         else
         {
-            if( ! mipi_sensor )
+            if( !_is_mipi_device)
                 _hw_monitor = std::make_shared< hw_monitor >(
                     std::make_shared< locked_transfer >(
                         get_backend()->create_usb_device( group.usb_devices.front() ),
@@ -597,7 +597,7 @@ namespace librealsense
         set_hw_monitor_for_auto_calib(_hw_monitor);
 
 
-        _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor, (mipi_sensor) ? true : false);
+        _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor, (_is_mipi_device) ? true : false);
         
 
         // Define Left-to-Right extrinsics calculation (lazy)
@@ -660,28 +660,16 @@ namespace librealsense
                     usb_type_str = usb_spec_names.at(_usb_mode);
                 else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
                     usb_modality = false;
-            }
+            }            
 
-            if (!mipi_sensor)
+            if (!_is_mipi_device)
             {
                 depth_sensor.register_processing_block(
                     { {RS2_FORMAT_Y8I} },
                     { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
                     []() { return std::make_shared<y8i_to_y8y8>(); }
                 ); // L+R
-            }
-            else
-            {
-                depth_sensor.register_processing_block(
-                    { {RS2_FORMAT_Y8I} },
-                    { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
-                    []() { return std::make_shared<y8i_to_y8y8_mipi>(); }
-                ); // L+R
-            }
-            
 
-            if (!mipi_sensor)
-            {
                 depth_sensor.register_processing_block(
                     { RS2_FORMAT_Y12I },
                     { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
@@ -690,6 +678,12 @@ namespace librealsense
             }
             else
             {
+                depth_sensor.register_processing_block(
+                    { {RS2_FORMAT_Y8I} },
+                    { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
+                    []() { return std::make_shared<y8i_to_y8y8_mipi>(); }
+                ); // L+R
+
                  depth_sensor.register_processing_block(
                     { RS2_FORMAT_Y12I },
                     { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
@@ -719,7 +713,7 @@ namespace librealsense
             //if hw_monitor was created by usb replace it with xu
             // D400_IMU will remain using USB interface due to HW limitations
             {
-                if (_pid == ds::RS457_PID || _pid == ds::RS430_GMSL_PID)
+                if (_is_mipi_device)
                 {
                     depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                         std::make_shared<asic_temperature_option_mipi>(_hw_monitor,
@@ -940,7 +934,7 @@ namespace librealsense
                 }
             }
 
-            if (!val_in_range(_pid, { ds::RS457_PID, RS430_GMSL_PID }))
+            if (!_is_mipi_device)
             {
                 depth_sensor.register_option( RS2_OPTION_STEREO_BASELINE,
                                               std::make_shared< const_value_option >(
@@ -974,7 +968,7 @@ namespace librealsense
 
         
         // REGISTER METADATA
-        if (!mipi_sensor)
+        if (!_is_mipi_device)
         {
             register_metadata(depth_sensor, hdr_firmware_version);
         }
@@ -1023,7 +1017,7 @@ namespace librealsense
         firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
         auto pid = get_pid();
 
-        if( ( pid == ds::RS457_PID || pid == ds::RS455_PID || pid == ds::RS430_GMSL_PID ) && fw_ver >= firmware_version( 5, 14, 0, 0 ) )
+        if( (_is_mipi_device || pid == ds::RS455_PID) && fw_ver >= firmware_version( 5, 14, 0, 0 ) )
             register_feature( std::make_shared< emitter_frequency_feature >( get_depth_sensor() ) );
 
         if( fw_ver >= firmware_version( 5, 11, 9, 0 ) )
@@ -1034,7 +1028,7 @@ namespace librealsense
 
         register_feature( std::make_shared< auto_exposure_roi_feature >( get_depth_sensor(), _hw_monitor ) );
 
-        if( pid != ds::RS457_PID && pid != ds::RS415_PID && pid != ds::RS430_GMSL_PID && fw_ver >= firmware_version( 5, 12, 10, 11 ) )
+        if( !_is_mipi_device && fw_ver >= firmware_version( 5, 12, 10, 11 ) )
         {
             register_feature(
                 std::make_shared< auto_exposure_limit_feature >( get_depth_sensor(), d400_device::_hw_monitor ) );

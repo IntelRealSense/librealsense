@@ -118,6 +118,7 @@ namespace librealsense
 
         std::shared_ptr<auto_gain_limit_option> _gain_limit_value_control;
         std::shared_ptr<auto_exposure_limit_option> _ae_limit_value_control;
+        bool _is_mipi_device;
     };
 
     class ds5u_device : public d400_device
