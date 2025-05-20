@@ -208,8 +208,7 @@ namespace librealsense
         };
     };
 
-    // monochrome not implemented for this device
-    class rs415_gmsl_device :
+    class rs415_gmsl_device : public d400_nonmonochrome,
         public d400_active,
         public d400_color,
         public ds_advanced_mode_base,
@@ -220,6 +219,7 @@ namespace librealsense
             : device(dev_info, register_device_notifications)
             , backend_device(dev_info, register_device_notifications)
             , d400_device(dev_info)
+            , d400_nonmonochrome(dev_info)
             , d400_active(dev_info)
             , d400_color(dev_info)
             , ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor())

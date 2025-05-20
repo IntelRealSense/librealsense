@@ -660,7 +660,7 @@ namespace librealsense
                     usb_type_str = usb_spec_names.at(_usb_mode);
                 else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
                     usb_modality = false;
-            }
+            }            
 
             if (!_is_mipi_device)
             {
