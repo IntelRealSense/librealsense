@@ -536,7 +536,17 @@ void calibration_model::d400_update(ux_window& window, std::string& error_messag
         }
         ImGui::SameLine();
 
-        auto streams = dev.first<rs2::depth_sensor>().get_active_streams();
+        rs2::sensor depth_sensor;
+        try 
+        {
+            depth_sensor = dev.first<rs2::depth_sensor>();
+        }
+        catch (const std::exception& ex)
+        {
+            error_message = ex.what();
+            ImGui::CloseCurrentPopup();
+        }
+        auto streams = depth_sensor.get_active_streams();
         if (_accept && streams.size())
         {
             if (ImGui::Button(u8"\uF2DB  Write Table", ImVec2(120, 25)))
