@@ -262,7 +262,6 @@ try
     cli::flag unsigned_arg('u', "unsigned", "Update unsigned firmware, available only for unlocked cameras");
     cli::value<std::string> backup_arg('b', "backup", "path", "", "Create a backup to the camera flash and saved it to the given path");
     cli::value<std::string> file_arg('f', "file", "path", "", "Path of the firmware image file");
-    cli::value<std::string> smcu_arg('m', "smcu", "path", "", "Path of the safety MCU image file");
     cli::value<std::string> serial_number_arg('s', "serial_number", "string", "", "The serial number of the device to be update, this is mandatory if more than one device is connected");
 
     cmd.default_log_level(RS2_LOG_SEVERITY_WARN);
@@ -270,7 +269,6 @@ try
     cmd.add(recover_arg);
     cmd.add(unsigned_arg);
     cmd.add(file_arg);
-    cmd.add(smcu_arg);
     cmd.add(serial_number_arg);
     cmd.add(backup_arg);
 
@@ -278,7 +276,7 @@ try
     rs2::context ctx(settings.dump());
 
     if (!list_devices_arg.isSet() && !recover_arg.isSet() && !unsigned_arg.isSet() &&
-        !backup_arg.isSet() && !file_arg.isSet() && !serial_number_arg.isSet() && !smcu_arg.isSet())
+        !backup_arg.isSet() && !file_arg.isSet() && !serial_number_arg.isSet())
     {
         std::cout << std::endl << "Nothing to do, run again with -h for help" << std::endl;
         list_devices(ctx);
@@ -291,16 +289,9 @@ try
         return EXIT_SUCCESS;
     }
 
-    if (!file_arg.isSet() && !backup_arg.isSet() && !smcu_arg.isSet())
+    if (!file_arg.isSet() && !backup_arg.isSet())
     {
         std::cout << std::endl << "Nothing to do, run again with -h for help" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    if (file_arg.isSet() && smcu_arg.isSet())
-    {
-        std::cout << std::endl << "Can't DFU both firmware and smcu at the same time." << std::endl;
-        std::cout << "Recommended flow: first run firmware DFU, then SMCU DFU." << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -585,27 +576,6 @@ try
                 done = true;
                 break;
             }
-        }
-        else if (smcu_arg.isSet()) // SMCU DFU
-        {
-            std::vector<uint8_t> smcu_image = read_firmware_data(smcu_arg.isSet(), smcu_arg.getValue());
-
-            std::cout << std::endl << "Updating device Safety MCU:" << std::endl;
-            print_device_info(d);
-
-            auto upd = d.as<rs2::updatable>();
-            upd.enter_update_safety_mcu_state();
-
-            std::unique_lock<std::mutex> lk(mutex);
-            if (!cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return new_fw_update_device; }))
-            {
-                std::cout << std::endl << "Failed to locate a device in FW update mode" << std::endl;
-                return EXIT_FAILURE;
-            }
-
-            update(new_fw_update_device, smcu_image);
-            done = true;
-            break;
         }
     }
 
