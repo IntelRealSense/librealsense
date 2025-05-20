@@ -166,7 +166,7 @@ namespace librealsense
             {RS435_RGB_PID, "5.8.15.0" },
             {RS405U_PID, "5.8.15.0" },
             {RS435I_PID, "5.12.7.100" },
-            {RS436_PID, "5.16.3.3" },  // TODO - update final required FW version
+            {RS436_PID, "5.18.5.0" },  // TODO - update final required FW version
             {RS416_PID, "5.8.15.0" },
             {RS430I_PID, "5.8.15.0" },
             {RS416_RGB_PID, "5.8.15.0" },
