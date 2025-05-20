@@ -2192,6 +2192,16 @@ namespace rs2
         });
     }
 
+    bool rs2::device_model::is_color_streaming() const
+    {
+        for( const auto & sub : subdevices )
+        {
+            if (sub->s->is<color_sensor>() && sub->streaming)
+                return true;
+        }
+        return false;
+    }
+
     void device_model::draw_controls(float panel_width, float panel_height,
         ux_window& window,
         std::string& error_message,
@@ -3060,6 +3070,10 @@ namespace rs2
         std::string& error_message)
     {
         bool has_autocalib = false;
+
+        bool color_streaming = is_color_streaming();
+        ImGuiSelectableFlags avoid_selection_flag = (color_streaming) ? ImGuiSelectableFlags_Disabled : 0;
+
         for (auto&& sub : subdevices)
         {
             if (sub->supports_on_chip_calib() && !has_autocalib)
@@ -3073,7 +3087,7 @@ namespace rs2
                 bool disable_fl_cal = (((device_pid == "0B5C") || show_disclaimer) &&
                     (!starts_with(device_usb_type, "3."))); // D410/D15/D455@USB2
 
-                if (ImGui::Selectable("On-Chip Calibration"))
+                if (ImGui::Selectable("On-Chip Calibration", false , avoid_selection_flag))
                 {
                     try
                     {
@@ -3167,7 +3181,7 @@ namespace rs2
                 if (ImGui::IsItemHovered())
                     RsImGui::CustomTooltip("Focal length calibration is used to adjust camera focal length with specific target.");
 
-                if (ImGui::Selectable("Tare Calibration"))
+                if (ImGui::Selectable("Tare Calibration", false, avoid_selection_flag))
                 {
                     try
                     {
