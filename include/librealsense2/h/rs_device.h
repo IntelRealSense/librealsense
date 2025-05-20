@@ -275,13 +275,6 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* fw_image
 void rs2_enter_update_state(const rs2_device* device, rs2_error** error);
 
 /**
-* Enter the device to update state, this will cause the updatable device to disconnect and reconnect as update device.
-* \param[in]  device     Device to update Safety MCU 
-* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs2_enter_update_safety_mcu_state(const rs2_device* device, rs2_error** error);
-
-/**
 * This will improve the depth noise.
 * \param[in] json_content       Json string to configure regular speed on chip calibration parameters:
                                     {

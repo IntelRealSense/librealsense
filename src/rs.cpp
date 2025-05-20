@@ -3694,24 +3694,6 @@ void rs2_enter_update_state(const rs2_device* device, rs2_error** error) BEGIN_A
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-void rs2_enter_update_safety_mcu_state(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(device);
-
-    if (device->device->supports_info(RS2_CAMERA_INFO_PRODUCT_ID))
-    {
-        std::string pid = device->device->get_info(RS2_CAMERA_INFO_PRODUCT_ID).c_str();
-        if (pid != "0B6B")
-            throw std::runtime_error("this device does not support safety mcu update");
-    }
-
-    auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
-    if (!fwud)
-        throw std::runtime_error("this device does not support safety mcu update");
-    fwud->enter_update_safety_mcu_state();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device)
-
 const rs2_raw_data_buffer * rs2_run_on_chip_calibration_cpp( rs2_device * device,
                                                              const void * json_content,
                                                              int content_size,
