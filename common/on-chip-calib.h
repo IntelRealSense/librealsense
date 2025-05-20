@@ -122,8 +122,6 @@ namespace rs2
         void stop_viewer();
         void reset_device() { _dev.hardware_reset(); }
 
-        const device_model& get_device_model() const { return _model; }
-
     private:
         void save_laser_emitter_state();
         void save_thermal_loop_state();

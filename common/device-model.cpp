@@ -3181,7 +3181,7 @@ namespace rs2
                 if (ImGui::IsItemHovered())
                     RsImGui::CustomTooltip("Focal length calibration is used to adjust camera focal length with specific target.");
 
-                if (ImGui::Selectable("Tare Calibration"))
+                if (ImGui::Selectable("Tare Calibration", false, avoid_selection_flag))
                 {
                     try
                     {
