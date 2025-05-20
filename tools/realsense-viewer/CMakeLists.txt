@@ -124,8 +124,6 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
         ../../wrappers/openvino/rs-vino/base-detection.h
         ../../wrappers/openvino/rs-vino/object-detection.cpp
         ../../wrappers/openvino/rs-vino/object-detection.h
-        ../../wrappers/openvino/rs-vino/age-gender-detection.cpp
-        ../../wrappers/openvino/rs-vino/age-gender-detection.h
         ../../wrappers/openvino/rs-vino/detected-object.cpp
         ../../wrappers/openvino/rs-vino/detected-object.h
         ../../wrappers/openvino/rs-vino/openvino-helpers.h
@@ -149,15 +147,11 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
     dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
     dl_vino_model( "face-detection-adas-0001.bin"            "1625f05ada1d8e78e36856def7124f78cd0a6c2a" )
     dl_vino_model( "face-detection-adas-0001.xml"            "11c36f6e4488b2f5437ccff9f330d02545087ab3" )
-    dl_vino_model( "age-gender-recognition-retail-0013.bin"  "206f6e97e53cd600fcac7d31e1c56accbbe461b9" )
-    dl_vino_model( "age-gender-recognition-retail-0013.xml"  "2654d7f1638d575b8d1886f8128deae2ea79ee55" )
     else()
     # Newer model files with IRv10, 2020.1 and later
     dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
     dl_vino_model( "face-detection-adas-0001.bin"  "065e9015297c7adbc650ebfc17176477cd0a4279" )
     dl_vino_model( "face-detection-adas-0001.xml"  "331be642a248213f586ec1d1b71c223435a437e3" )
-    dl_vino_model( "age-gender-recognition-retail-0013.bin"  "206f6e97e53cd600fcac7d31e1c56accbbe461b9" )
-    dl_vino_model( "age-gender-recognition-retail-0013.xml"  "36bde5d4d42d29515abe871f69097ffcf4ff6414" )
     endif()
 
     list(APPEND DELAYED

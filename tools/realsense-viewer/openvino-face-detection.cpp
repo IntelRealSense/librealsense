@@ -7,7 +7,6 @@
 #include "post-processing-worker-filter.h"
 
 #include <rs-vino/object-detection.h>
-#include <rs-vino/age-gender-detection.h>
 #include <rs-vino/detected-object.h>
 #include <cv-helpers.hpp>
 
@@ -19,45 +18,17 @@ namespace openvino = InferenceEngine;
 */
 class detected_face : public openvino_helpers::detected_object
 {
-    float _age;
-    float _male_score, _female_score;  // cumulative - see update_gender()
-
 public:
     using ptr = std::shared_ptr< detected_face >;
 
     explicit detected_face( size_t id,
         cv::Rect const& location,
-        float male_prob,
-        float age,
         cv::Rect const& depth_location = cv::Rect{},
         float intensity = 1,
         float depth = 0 )
         : detected_object( id, std::string(), location, depth_location, intensity, depth )
-        , _age( age )
-        , _male_score( male_prob > 0.5f ? male_prob - 0.5f : 0.f )
-        , _female_score( male_prob > 0.5f ? 0.f : 0.5f - male_prob )
     {
-    }
-
-    void update_age( float value )
-    {
-        _age = (_age == -1) ? value : 0.95f * _age + 0.05f * value;
-    }
-    
-    void update_gender( float value )
-    {
-        if( value >= 0 )
-        {
-            if( value > 0.5 )
-                _male_score += value - 0.5f;
-            else
-                _female_score += 0.5f - value;
-        }
-    }
-
-    int get_age() const { return static_cast< int >( std::floor( _age + 0.5f )); }
-    bool is_male() const { return( _male_score > _female_score ); }
-    bool is_female() const { return !is_male(); }
+    }   
 };
 
 
@@ -67,7 +38,6 @@ class openvino_face_detection : public post_processing_worker_filter
 {
     InferenceEngine::Core _ie;
     openvino_helpers::object_detection _face_detector;
-    openvino_helpers::age_gender_detection _age_detector;
     openvino_helpers::detected_objects _faces;
     size_t _id = 0;
 
@@ -83,11 +53,6 @@ public:
         , _face_detector(
             "face-detection-adas-0001.xml",
             0.5,    // Probability threshold
-            false ) // Not async
-        /*
-        */
-        , _age_detector(
-            "age-gender-recognition-retail-0013.xml",
             false ) // Not async
     {
     }
@@ -117,7 +82,6 @@ private:
 #endif
 
         _face_detector.load_into( _ie, device_name);
-        _age_detector.load_into( _ie, device_name);
     }
 
     /*
@@ -293,14 +257,7 @@ private:
                         cv::Mat face_image = image(
                             openvino_helpers::adjust_face_bbox( rect, 1.4f )
                                 & cv::Rect( 0, 0, image.cols, image.rows ) );
-                        _age_detector.enqueue( face_image );
-                        _age_detector.submit_request();
-                        _age_detector.wait();
-                        auto age_gender = _age_detector[0];
-                        age = age_gender.age;
-                        maleProb = age_gender.maleProb;
-                        // Note: we may want to update the gender/age for each frame, as it may change...
-                        face = std::make_shared< detected_face >( _id++, rect, maleProb, age, depth_rect, intensity, depth );
+                        face = std::make_shared< detected_face >( _id++, rect, depth_rect, intensity, depth );
                     }
                     else
                     {
@@ -330,7 +287,7 @@ private:
                 }
                 objects.emplace_back(
                     face->get_id(),
-                    rsutils::string::from() << (face->is_male() ? u8"\uF183" : u8"\uF182") << "  " << face->get_age(),
+                    rsutils::string::from(),
                     normalized_color_bbox,
                     normalized_depth_bbox,
                     face->get_depth()
