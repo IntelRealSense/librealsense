@@ -869,6 +869,7 @@ namespace librealsense
             const uint8_t GVD_PID_OFFSET    = 4;
 
             const uint8_t GVD_PID_D430_GMSL = 0x0F;
+            const uint8_t GVD_PID_D415_GMSL = 0x00;
             const uint8_t GVD_PID_D457      = 0x12;
 
             // device PID
@@ -919,6 +920,10 @@ namespace librealsense
 
                         case(GVD_PID_D430_GMSL):
                             device_pid = 0xABCE;
+                            break;
+
+                        case(GVD_PID_D415_GMSL):
+                            device_pid = 0xABCF;
                             break;
 
                         default:
