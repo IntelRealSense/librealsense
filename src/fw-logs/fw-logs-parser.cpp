@@ -50,7 +50,7 @@ namespace librealsense
             std::string path = fw_logs_xml_helper::get_source_parser_file_path( source.first, definitions_xml );
             if( ! path.empty() )
             {
-                fw_logs_formatting_options format_options = get_formatting_options_from_file( path );
+                fw_logs_formatting_options format_options = get_formating_options_from_file( path );
                 // Initialize all modules to use source definitions. Can be overriden later per module.
                 for( int i = 0; i < fw_logs::max_modules; ++i )
                     _source_and_module_to_formatting_options[{ source.first, i }] = format_options;
@@ -60,7 +60,7 @@ namespace librealsense
             for( auto & module : module_files )
             {
                 // Override with module specific definitions.
-                fw_logs_formatting_options format_options = get_formatting_options_from_file( module.second );
+                fw_logs_formatting_options format_options = get_formating_options_from_file( module.second );
                 _source_and_module_to_formatting_options[{ source.first, module.first }] = format_options;
             }
         }
@@ -164,7 +164,7 @@ namespace librealsense
             if( num_of_sources != 1 )
             {
                 throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                             << "FW logs parser expect one formatting options, have "
+                                                             << "FW logs parser expect one formating options, have "
                                                              << num_of_sources );
             }
             return _source_and_module_to_formatting_options.begin()->second;
@@ -188,7 +188,7 @@ namespace librealsense
             return fw_logs::fw_logs_severity_to_rs2_log_severity( severity );
         }
 
-        fw_logs_formatting_options fw_logs_parser::get_formatting_options_from_file( std::string path )
+        fw_logs_formatting_options fw_logs_parser::get_formating_options_from_file( std::string path )
         {
             std::ifstream f( path.c_str() );
             if( f.good() )
@@ -376,7 +376,7 @@ namespace librealsense
             else
             {
                 LOG_WARNING( rsutils::string::from() << "Source " << _source_id_to_name[source_id]
-                             << " doesn't have an xml file path, can't validate version" );
+                             << "doesn't have an xml file path, can't validate version" );
             }
         }
     }
