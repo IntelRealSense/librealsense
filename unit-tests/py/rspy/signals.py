@@ -4,7 +4,8 @@
 from rspy import log
 import sys, signal
 
-signal_handler = None
+signal_handler = lambda: log.d("Signal handler not set")
+
 
 def register_signal_handlers(on_signal=None):
     def handle_abort(signum, _):
@@ -14,7 +15,7 @@ def register_signal_handlers(on_signal=None):
         sys.exit(1)
 
     global signal_handler
-    if signal_handler is None:
-        signal_handler = on_signal
-    signal.signal(signal.SIGTERM, handle_abort) # for when aborting via Jenkins
-    signal.signal(signal.SIGINT, handle_abort) # for Ctrl+C
+    signal_handler = on_signal or signal_handler
+
+    signal.signal(signal.SIGTERM, handle_abort)  # for when aborting via Jenkins
+    signal.signal(signal.SIGINT, handle_abort)  # for Ctrl+C
