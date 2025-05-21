@@ -2,6 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 from rspy import log
+from rspy import signals
 from abc import ABC, abstractmethod
 
 
@@ -24,13 +25,6 @@ class device_hub(ABC):
             return wrapper
 
         return attr  # Return non-methods or special methods as-is
-
-    @abstractmethod
-    def get_name(self):
-        """
-        :return: name of the hub
-        """
-        pass
 
     @abstractmethod
     def get_name(self):
