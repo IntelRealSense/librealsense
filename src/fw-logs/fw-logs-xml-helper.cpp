@@ -63,6 +63,21 @@ int get_id_attribute( const xml_node<> * node )
                                                  << "Can't find attribute 'id' in node " << tag );
 }
 
+std::string get_path_attribute( const xml_node<> * node )
+{
+    for( xml_attribute<> * attribute = node->first_attribute(); attribute; attribute = attribute->next_attribute() )
+    {
+        std::string attr( attribute->name(), attribute->name() + attribute->name_size() );
+        if( attr.compare( "Path" ) == 0 )
+        {
+            std::string path( attribute->value(), attribute->value() + attribute->value_size() );
+            return path;
+        }
+    }
+
+    return {};
+}
+
 std::string get_name_attribute( const xml_node<> * node )
 {
     for( xml_attribute<> * attribute = node->first_attribute(); attribute; attribute = attribute->next_attribute() )
@@ -105,15 +120,7 @@ std::string get_file_path( const xml_node<> * source_node )
         std::string tag( node->name(), node->name() + node->name_size() );
         if( tag.compare( "File" ) == 0 )
         {
-            for( xml_attribute<> * attribute = node->first_attribute(); attribute; attribute = attribute->next_attribute() )
-            {
-                std::string attr( attribute->name(), attribute->name() + attribute->name_size() );
-                if( attr.compare( "Path" ) == 0 )
-                {
-                    std::string path( attribute->value(), attribute->value() + attribute->value_size() );
-                    return path;
-                }
-            }
+            return get_path_attribute( node );
         }
     }
 
@@ -150,12 +157,37 @@ std::string fw_logs_xml_helper::get_source_parser_file_path( int source_id, cons
     xml_node<> * source_node = get_source_node( source_id, &document );
 
     std::string path = get_file_path( source_node );
+    // Path is optional for source, can exist per module.
     if( path.empty() )
-        throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                     << "Did not find File 'Path' attribute for source " << source_id );
+        LOG_DEBUG( rsutils::string::from() << "Did not find File 'Path' attribute for source " << source_id );
 
     return path;
 }
+
+
+std::map< int, std::string >
+fw_logs_xml_helper::get_source_module_overriding_file_path( int source_id, const std::string & definitions_xml )
+{
+    std::vector< char > buffer = string_to_char_buffer( definitions_xml );
+    xml_document<> document;
+    load_external_xml( &document, buffer );
+    xml_node<> * source_node = get_source_node( source_id, &document );
+
+    std::map< int, std::string > module_id_path;
+    for( xml_node<> * node = source_node->first_node(); node; node = node->next_sibling() )
+    {
+        std::string tag( node->name(), node->name() + node->name_size() );
+        if( tag.compare( "Module" ) == 0 )
+        {
+            std::string path = get_path_attribute( node );
+            if( ! path.empty() )
+                module_id_path.insert( { get_id_attribute( node ), path } );
+        }
+    }
+
+    return module_id_path;
+}
+
 
 int get_verbosity_attribute( const xml_node<> * node )
 {
