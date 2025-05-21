@@ -2,7 +2,8 @@
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 # test:device:jetson D457
-# test:donotrun:!jetson 
+# test:donotrun:!jetson
+# test:retries 3
 
 import pyrealsense2 as rs
 from rspy import test

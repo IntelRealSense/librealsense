@@ -56,6 +56,12 @@ class Acroname(device_hub.device_hub):
         self.hub = None
         self.all_hubs = None
 
+    def get_name(self):
+        """
+        :return: name of the hub
+        """
+        return 'Acroname'
+
     def connect(self,  reset = False, req_spec = None ):
         """
         Connect to the hub. Raises RuntimeError on failure
@@ -133,7 +139,6 @@ class Acroname(device_hub.device_hub):
         :param port: port number;
         :return: True if Acroname enabled this port, False otherwise
         """
-
         return self.port_state( port ) != "Disabled"
 
 
@@ -166,7 +171,7 @@ class Acroname(device_hub.device_hub):
         24:31 |  Reserved
         """
 
-        if bitmask == 0: # Port is disabled by Acroname
+        if not (bitmask & 0x1): # Port is disabled by Acroname - last bit off indicates Vbus is off - port is disabled
             return "Disabled"
         if bitmask == 11: # Port is enabled but no device was detected
             return "Disconnected"
@@ -189,7 +194,7 @@ class Acroname(device_hub.device_hub):
             #
             if ports is None or port in ports:
                 if not self.is_port_enabled( port ):
-                    #log.d( "enabling port", port)
+                    # log.d( "enabling port", port)
                     action_result = self.hub.usb.setPortEnable( port )
                     if action_result != brainstem.result.Result.NO_ERROR:
                         result = False
@@ -199,7 +204,7 @@ class Acroname(device_hub.device_hub):
             #
             elif disable_other_ports:
                 if self.is_port_enabled( port ):
-                    #log.d("disabling port", port)
+                    # log.d("disabling port", port)
                     action_result = self.hub.usb.setPortDisable( port )
                     if action_result != brainstem.result.Result.NO_ERROR:
                         result = False
@@ -224,7 +229,7 @@ class Acroname(device_hub.device_hub):
         for port in self.all_ports():
             if ports is None or port in ports:
                 if self.is_port_enabled( port ):
-                        #log.d("disabling port", port)
+                        # log.d("disabling port", port)
                         action_result = self.hub.usb.setPortDisable( port )
                         if action_result != brainstem.result.Result.NO_ERROR:
                             result = False

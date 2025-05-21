@@ -44,6 +44,8 @@ void dds_stream_base::init_profiles( dds_stream_profiles const & profiles, size_
     {
         check_profile( profile );
         profile->init_stream( self );
+        if( auto vsp = std::dynamic_pointer_cast< dds_video_stream_profile >( profile ) )
+            _compressed = vsp->is_compressed_encoding();
     }
 
     _profiles = profiles;

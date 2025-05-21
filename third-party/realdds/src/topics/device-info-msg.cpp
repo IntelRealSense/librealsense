@@ -73,6 +73,12 @@ void device_info::set_serial_number( std::string const & v )
 }
 
 
+bool device_info::is_recovery() const
+{
+    return _json.nested( key::recovery, &rsutils::json::is_boolean ).default_value( false );
+}
+
+
 rsutils::string::slice device_info::debug_name() const
 {
     return device_name_from_root( topic_root() );

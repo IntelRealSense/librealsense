@@ -23,7 +23,6 @@ class dds_option;
 class dds_video_stream_profile;
 class dds_motion_stream_profile;
 namespace topics {
-class image_msg;
 class imu_msg;
 }  // namespace topics
 }  // namespace realdds
@@ -95,7 +94,7 @@ public:
     stream_profiles get_active_streams() const override;
 
 protected:
-    void register_basic_converters();
+    void register_converters();
     stream_profiles init_stream_profiles() override;
 
     std::shared_ptr< realdds::dds_video_stream_profile >
@@ -104,7 +103,8 @@ protected:
     std::shared_ptr< realdds::dds_motion_stream_profile >
     find_profile( sid_index sidx, realdds::dds_motion_stream_profile const & profile ) const;
 
-    void handle_video_data( realdds::topics::image_msg &&,
+    void handle_video_data( std::vector< uint8_t > &&,
+                            realdds::dds_time &&,
                             realdds::dds_sample &&,
                             const std::shared_ptr< stream_profile_interface > &,
                             streaming_impl & streaming );

@@ -8,16 +8,15 @@ plugins {
      * see Applying external plugins with same version to subprojects.
      */
 
-    id 'com.android.application' version '8.1.4' apply false
-    id 'com.android.library' version '8.1.4' apply false
-    id 'org.jetbrains.kotlin.android' version '1.8.20' apply false
+    id 'com.android.application' version '8.9.1' apply false
+    id 'com.android.library' version '8.9.1' apply false
+    id 'org.jetbrains.kotlin.android' version '2.0.21' apply false
 }
 
 ext {
-    defaultCompileSdkVersion = 33
-    defaultTargetSdkVersion = 33
-    //defaultMinSdkVersion = 19
-    defaultMinSdkVersion = 23
+    defaultCompileSdkVersion = 35
+    defaultTargetSdkVersion = 35
+    defaultMinSdkVersion = 24
 
     appcompatVersion = '1.6.1'
     constraintlayoutVersion = '2.1.4'

@@ -5,13 +5,16 @@ plugins {
 android {
     namespace 'com.intel.realsense.camera'
     compileSdk defaultCompileSdkVersion
-
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
     defaultConfig {
         applicationId "com.intel.realsense.camera"
         minSdk defaultMinSdkVersion
         targetSdk defaultTargetSdkVersion
-        versionCode 5
-        versionName "0.0.5"
+        versionCode 6
+        versionName "0.0.6"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     buildTypes {
@@ -20,6 +23,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
 }
 
 def getFwVersion(String productLine) {
