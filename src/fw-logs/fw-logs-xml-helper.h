@@ -25,6 +25,9 @@ namespace librealsense
             // Returns parser options file path of the requested source
             static std::string get_source_parser_file_path( int source_id, const std::string & definitions_xml );
 
+            // Returns a mapping of source module IDs to an options file path if exists.
+            static std::map< int, std::string > get_source_module_overriding_file_path( int source_id, const std::string & definitions_xml );
+
             // Returns a mapping of source module IDs to their requested verbosity level.
             static std::map< int, int > get_source_module_verbosity( int source_id, const std::string & definitions_xml );
 

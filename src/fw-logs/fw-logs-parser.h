@@ -53,11 +53,13 @@ namespace librealsense
                                            size_t num_of_params,
                                            structured_binary_data * structured ) const;
 
-            virtual const fw_logs_formatting_options & get_format_options_ref( int source_id ) const;
+            virtual const fw_logs_formatting_options & get_format_options( int source_id, int module_id ) const;
             virtual std::string get_source_name( int source_id ) const;
             virtual rs2_log_severity parse_severity( uint32_t severity ) const;
             
-            std::map< int, fw_logs_formatting_options > _source_to_formatting_options;
+            fw_logs_formatting_options get_formating_options_from_file( std::string path );
+
+            std::map< std::pair< int, int >, fw_logs_formatting_options > _source_and_module_to_formatting_options;
             std::map< int, std::string > _source_id_to_name;
         };
 
@@ -86,7 +88,7 @@ namespace librealsense
                                    size_t num_of_params,
                                    structured_binary_data * structured ) const override;
 
-            const fw_logs_formatting_options & get_format_options_ref( int source_id ) const override;
+            const fw_logs_formatting_options & get_format_options( int source_id, int module_id ) const override;
             std::string get_source_name( int source_id ) const override;
             rs2_log_severity parse_severity( uint32_t severity ) const override;
 
