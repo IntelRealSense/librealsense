@@ -223,6 +223,34 @@ __global__ void kernel_unpack_yuy2_bgra8_cuda(const uint8_t * src, uint8_t *dst,
     }
 }
 
+__global__ void kernel_uyvy_to_yuyv_cuda(uint16_t* src, uint16_t* dst, int count)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (i >= count)
+        return;
+
+    dst[i] = ( ( src[i] >> 8 ) & 0x00FF ) | ( ( src[i] << 8 ) & 0xFF00 );
+}
+
+void rscuda::uyvy_to_yuyv_cuda_helper(const uint16_t* src, uint16_t* dst, int count)
+{
+    int numBlocks = count / RS2_CUDA_THREADS_PER_BLOCK;
+    auto d_src = alloc_dev<uint16_t>(count);
+    auto d_dst = alloc_dev<uint16_t>(count);
+
+    auto result = cudaMemcpy(d_src.get(), src, count * sizeof(uint16_t), cudaMemcpyHostToDevice);
+    assert(result == cudaSuccess);
+
+    kernel_uyvy_to_yuyv_cuda <<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK >>>(d_src.get(), d_dst.get(), count);
+    cudaStreamSynchronize(0);
+
+    result = cudaGetLastError();
+    assert(result == cudaSuccess);
+
+    result = cudaMemcpy(dst, d_dst.get(), count * sizeof(uint16_t), cudaMemcpyDeviceToHost);
+    assert(result == cudaSuccess);
+}
 
 void rscuda::unpack_yuy2_cuda_helper(const uint8_t* h_src, uint8_t* h_dst, int n, rs2_format format)
 {

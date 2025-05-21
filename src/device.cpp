@@ -194,7 +194,7 @@ void device::register_stream_to_extrinsic_group(const stream_interface& stream, 
     }
 }
 
-std::vector<rs2_format> device::map_supported_color_formats(rs2_format source_format)
+std::vector< rs2_format > device::map_supported_color_formats( rs2_format source_format, bool should_map_source_format )
 {
     // Mapping from source color format to all of the compatible target color formats.
 
@@ -202,15 +202,17 @@ std::vector<rs2_format> device::map_supported_color_formats(rs2_format source_fo
     switch (source_format)
     {
     case RS2_FORMAT_YUYV:
-        target_formats.push_back(RS2_FORMAT_YUYV);
         target_formats.push_back(RS2_FORMAT_Y8);
         break;
     case RS2_FORMAT_UYVY:
-        target_formats.push_back(RS2_FORMAT_UYVY);
         break;
     default:
         LOG_ERROR("Format is not supported for mapping");
     }
+
+    if( should_map_source_format )
+        target_formats.push_back( source_format );
+
     return target_formats;
 }
 
