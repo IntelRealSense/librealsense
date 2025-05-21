@@ -8,7 +8,7 @@ See documentation for brainstem here:
 https://acroname.com/reference/api/python/index.html
 """
 
-from rspy import log, device_hub
+from rspy import log, device_hub, signals
 import time
 import platform, re
 
@@ -212,6 +212,7 @@ class Acroname(device_hub.device_hub):
                         changed = True
         #
         if changed and sleep_on_change:
+            signals.register_signal_handlers()
             import time
             time.sleep( sleep_on_change )
         #
@@ -237,6 +238,7 @@ class Acroname(device_hub.device_hub):
                         else:
                             changed = True
         if changed and sleep_on_change:
+            signals.register_signal_handlers()
             import time
             time.sleep( sleep_on_change )
         #

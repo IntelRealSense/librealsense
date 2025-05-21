@@ -10,6 +10,7 @@ current_dir = os.path.dirname( os.path.abspath( __file__ ) )
 sys.path.append( os.path.join( current_dir, 'py' ))
 
 from rspy import log, file, repo, libci
+from rspy.signals import register_signal_handlers
 
 # Python's default list of paths to look for modules includes user-intalled. We want
 # to avoid those to take only the pyrealsense2 we actually compiled!
@@ -494,6 +495,18 @@ def test_wrapper( test, configuration=None, repetition=1, serial_numbers=None ):
 
     return False
 
+
+def close_hubs():
+    #
+    # Disconnect from the hub -- if we don't it might crash on Linux...
+    # Before that we close all ports, no need for cameras to stay on between LibCI runs
+    if not list_only and not only_not_live:
+        if devices.hub and devices.hub.is_connected():
+            log.d("disconnecting from hub(s)")
+            devices.hub.disable_ports()
+            devices.wait_until_all_ports_disabled()
+            devices.hub.disconnect()
+
 # Run all tests
 try:
     list_only = list_tags or list_tests
@@ -504,6 +517,7 @@ try:
         if pyrs:
             sys.path.insert( 1, pyrs_path )  # Make sure we pick up the right pyrealsense2!
         from rspy import devices
+        register_signal_handlers(close_hubs)
         disable_dds = "dds" not in context
         devices.query( hub_reset = hub_reset, disable_dds=disable_dds ) #resets the device
         devices.map_unknown_ports()
@@ -623,6 +637,7 @@ try:
                     except RuntimeError as e:
                         log.w( log.red + test.name + log.reset + ': ' + str( e ) )
                     else:
+                        register_signal_handlers()
                         test_ok = test_wrapper( test, configuration, repetition, serial_numbers ) and test_ok
                     finally:
                         log.debug_unindent()
@@ -663,13 +678,6 @@ try:
         log.out( str( n_tests ) + ' unit-test(s) completed successfully' + log.clear_eos )
 #
 finally:
-    #
-    # Disconnect from the hub -- if we don't it might crash on Linux...
-    # Before that we close all ports, no need for cameras to stay on between LibCI runs
-    if not list_only and not only_not_live:
-        if devices.hub and devices.hub.is_connected():
-            devices.hub.disable_ports()
-            devices.wait_until_all_ports_disabled()
-            devices.hub.disconnect()
+    close_hubs()
 #
 sys.exit( 0 )
