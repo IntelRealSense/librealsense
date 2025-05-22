@@ -153,7 +153,7 @@ void list_devices(rs2::context ctx)
 }
 
 
-void waiting_for_device_to_reconnect(rs2::context& ctx, rs2::cli::value<std::string>& serial_number_arg, rs2::cli::value<std::string>& smcu_arg)
+void waiting_for_device_to_reconnect(rs2::context& ctx, rs2::cli::value<std::string>& serial_number_arg)
 {
     std::cout << std::endl << "Waiting for device to reconnect..." << std::endl;
     std::unique_lock<std::mutex> lk(mutex);
@@ -168,22 +168,14 @@ void waiting_for_device_to_reconnect(rs2::context& ctx, rs2::cli::value<std::str
             if (serial_number_arg.isSet() && sn != selected_serial_number)
                 continue;
 
-            if (smcu_arg.isSet())
-            {
-                auto smcu_fw_version = d.supports(RS2_CAMERA_INFO_SMCU_FW_VERSION) ? d.get_info(RS2_CAMERA_INFO_SMCU_FW_VERSION) : "unknown";
-                std::cout << std::endl << "Device " << sn << " Safety MCU successfully updated to: " << smcu_fw_version << std::endl;
-            }
-            else
-            {
-                auto fw = d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ? d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "unknown";
-                std::cout << std::endl << "Device " << sn << " successfully updated to FW: " << fw << std::endl;
-            }
+            auto fw = d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ? d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "unknown";
+            std::cout << std::endl << "Device " << sn << " successfully updated to FW: " << fw << std::endl;
         }
     }
 
 }
 
-int write_fw_to_mipi_device(rs2::context& ctx, rs2::cli::value<std::string>& serial_number_arg, rs2::cli::value<std::string>& smcu_arg,
+int write_fw_to_mipi_device(rs2::context& ctx, rs2::cli::value<std::string>& serial_number_arg,
     const rs2::device& dev, const std::vector< uint8_t >& fw_image)
 {
     // Write firmware to appropriate file descriptor
@@ -234,7 +226,7 @@ int write_fw_to_mipi_device(rs2::context& ctx, rs2::cli::value<std::string>& ser
 
     done = true;
 
-    waiting_for_device_to_reconnect(ctx, serial_number_arg, smcu_arg);
+    waiting_for_device_to_reconnect(ctx, serial_number_arg);
 
     return EXIT_SUCCESS;
 }
@@ -517,7 +509,7 @@ try
                 //     return EXIT_FAILURE;
                 // }
 
-                return write_fw_to_mipi_device(ctx, serial_number_arg, smcu_arg, d, fw_image);
+                return write_fw_to_mipi_device(ctx, serial_number_arg, d, fw_image);
             }
 
             if (unsigned_arg.isSet())
@@ -590,7 +582,7 @@ try
         return EXIT_FAILURE;
     }
 
-    waiting_for_device_to_reconnect(ctx, serial_number_arg, smcu_arg);
+    waiting_for_device_to_reconnect(ctx, serial_number_arg);
 
 
     return EXIT_SUCCESS;
