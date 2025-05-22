@@ -106,6 +106,9 @@ namespace rs2
         config_file::instance().set_nested_default(configurations::dds::enable_dds, false);
         config_file::instance().set_nested_default(configurations::dds::domain_id, 0);
         
+        // Since we have seen on severan laptops models that using GLSL for processing cause a memory leak Decided to disable it by default
+        // Users can still enable it if they wish
+        config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
 #ifdef __APPLE__
 
         config_file::instance().set_default(configurations::performance::font_oversample, 2);
@@ -114,7 +117,7 @@ namespace rs2
         // On Mac-OS, mixing OpenGL 2 with OpenGL 3 is not supported by the driver
         // while this can be worked-around, this will take more development time,
         // so for now Macs should not use the GLSL stuff
-        config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
+        //config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
         config_file::instance().set_default(configurations::performance::glsl_for_rendering, false);
 #else
         auto vendor = (const char*)glGetString(GL_VENDOR);
@@ -144,7 +147,7 @@ namespace rs2
             config_file::instance().set_default(configurations::performance::font_oversample, 2);
             config_file::instance().set_default(configurations::performance::enable_msaa, false);
             config_file::instance().set_default(configurations::performance::msaa_samples, 2);
-            config_file::instance().set_default(configurations::performance::glsl_for_processing, true);
+            //config_file::instance().set_default(configurations::performance::glsl_for_processing, true);
             config_file::instance().set_default(configurations::performance::glsl_for_rendering, true);
             config_file::instance().set_default(configurations::viewer::shading_mode, 2);
         }
@@ -154,7 +157,7 @@ namespace rs2
             config_file::instance().set_default(configurations::performance::font_oversample, 1);
             config_file::instance().set_default(configurations::performance::enable_msaa, false);
             config_file::instance().set_default(configurations::performance::msaa_samples, 2);
-            config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
+            //config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
             config_file::instance().set_default(configurations::performance::glsl_for_rendering, false);
             config_file::instance().set_default(configurations::viewer::shading_mode, 0);
         }
