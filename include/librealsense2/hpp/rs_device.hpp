@@ -238,13 +238,6 @@ namespace rs2
             error::handle(e);
         }
 
-        void enter_update_safety_mcu_state() const
-        {
-            rs2_error* e = nullptr;
-            rs2_enter_update_safety_mcu_state(_dev.get(), &e);
-            error::handle(e);
-        }
-
         // Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be
         // loaded back to the device, but it does contain all calibration and device information."
         std::vector<uint8_t> create_flash_backup() const

@@ -380,8 +380,6 @@ namespace rs2
             json_loading_func json_loading = [](std::function<void()> load) {load(); },
             bool draw_device_outline = true);
         void handle_hardware_events(const std::string& serialized_data);
-        void safety_mcu_update(std::vector<uint8_t> data, 
-            viewer_model& viewer, std::string& error_message);
         void begin_update(std::vector<uint8_t> data,
             viewer_model& viewer, std::string& error_message);
         void begin_update_unsigned(viewer_model& viewer, std::string& error_message);

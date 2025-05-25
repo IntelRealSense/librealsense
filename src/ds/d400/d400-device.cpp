@@ -111,7 +111,12 @@ namespace librealsense
 
     void d400_device::enter_update_state() const
     {
-        _ds_device_common->enter_update_state();
+        // preparing HWM command
+        command cmd(ds::DFU);
+        cmd.param1 = 1;
+        cmd.require_response = false;
+
+        _ds_device_common->enter_update_state(cmd);
     }
 
     std::vector<uint8_t> d400_device::backup_flash( rs2_update_progress_callback_sptr callback )

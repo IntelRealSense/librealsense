@@ -63,7 +63,6 @@ namespace librealsense
         virtual double get_device_time_ms() override;
 
         void enter_update_state() const override;
-        void enter_update_safety_mcu_state() const override{}
         std::vector<uint8_t> backup_flash( rs2_update_progress_callback_sptr callback) override;
         void update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode) override;
         bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
