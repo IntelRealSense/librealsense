@@ -148,28 +148,6 @@ namespace rs2
         open_issue(ss.str());
     }
 
-    template <typename T>
-    std::string safe_call(T t)
-    {
-        try
-        {
-            t();
-            return "";
-        }
-        catch (const error& e)
-        {
-            return error_to_string(e);
-        }
-        catch (const std::exception& e)
-        {
-            return e.what();
-        }
-        catch (...)
-        {
-            return "Unknown error occurred";
-        }
-    }
-
     std::pair<std::string, std::string> get_device_name(const device& dev)
     {
         // retrieve device name

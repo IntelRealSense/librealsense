@@ -70,6 +70,29 @@ namespace rs2
 
     void open_issue(const device_models_list& devices);
 
+    template <typename T>
+    std::string safe_call(T t)
+    {
+        try
+        {
+            t();
+            return "";
+        }
+        catch (const error& e)
+        {
+            return error_to_string(e);
+        }
+        catch (const std::exception& e)
+        {
+            return e.what();
+        }
+        catch (...)
+        {
+            return "Unknown error occurred";
+        }
+    }
+
+
     struct textual_icon
     {
         explicit constexpr textual_icon(const char(&unicode_icon)[4]) :

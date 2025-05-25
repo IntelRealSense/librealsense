@@ -457,7 +457,7 @@ namespace librealsense
         {
             return it->second;
         }
-        return "UnknownControl_" + std::to_string( static_cast< int >( id ) );
+        throw std::invalid_argument("Error: Incorrect buffer! controlName NOT found! (" + std::to_string(id) + ")");
     }
 
     ControlId getControlIdFromString( const std::string & name )
@@ -478,7 +478,7 @@ namespace librealsense
         {
             return it->second;
         }
-        throw std::invalid_argument( "Unknown control ID: " + name );
+        throw std::invalid_argument("Error: Incorrect control name: \"" + name + "\"");
     }
 
     // Helper function to append a struct to the buffer
@@ -693,18 +693,23 @@ namespace librealsense
         update_preset_camera_control(in_preset.color_auto_white_balance     , p.color_auto_white_balance);
         update_preset_camera_control(in_preset.color_power_line_frequency   , p.color_power_line_frequency);
 
-        json j = json::parse(content);
         auto subpreset = preset_reader.get_subpreset();
         if (!subpreset.is_null())
         {
             SubPreset sp;
 
             sp.header.headerSize = SubPresetHeader::size();
-            sp.header.id = static_cast<uint8_t>(std::stoi(subpreset.at("id").get<std::string>()));
-            sp.header.iterations = static_cast<uint16_t>(std::stoi(subpreset.at("iterations").get<std::string>()));
+            auto id = std::stoi(subpreset.at("id").get<std::string>());
+            if( id < 0 || id > 0xF )
+                throw std::invalid_argument("Error: Incorrect subpreset id: \"" + std::to_string(id) + "\"" + ", valid range <0:15>");
+            sp.header.id = static_cast<uint8_t>(id);
+
+            auto iterations = std::stoi( subpreset.at( "iterations" ).get< std::string >() );
+            if( iterations < 0 || iterations > 0xFFFF )
+                throw std::invalid_argument("Error: Incorrect number of iterations: \"" + std::to_string(iterations) + "\"" + ", valid range <1:ffff>, 0 - for infinite");
+            sp.header.iterations = static_cast<uint16_t>(iterations);
 
             const auto& items = subpreset.at("items");
-            sp.header.numOfItems = static_cast<uint8_t>(items.size());
 
             for (const auto& item : items) {
                 ItemHeader item_header{};
@@ -717,11 +722,11 @@ namespace librealsense
                 for (const auto& control : controls) {
                     // just begin() because the control is a single object
                     const std::string key = control.begin().key();
-                    const std::string valueStr = control.begin().value().get<std::string>();
+                    const std::string value = control.begin().value().get<std::string>();
 
                     Control ctrl{};
-                    ctrl.controlId = static_cast<uint8_t>(getControlIdFromString(key));
-                    ctrl.controlValue = static_cast<uint32_t>(std::stoul(valueStr));
+                    ctrl.controlId = static_cast<uint8_t>(getControlIdFromString(key)); // will throw if not found
+                    ctrl.controlValue = static_cast<uint32_t>(std::stoul(value));
                     item_controls.push_back(ctrl);
                 }
 
@@ -729,6 +734,11 @@ namespace librealsense
 
                 sp.items.push_back( { item_header, item_controls } );
             }
+
+            auto num_of_items = sp.items.size();
+            if( num_of_items == 0 || num_of_items > 0xFF ) // TODO: limit is 6 frames?
+                throw std::invalid_argument( "Error: Incorrect number of items: \"" + std::to_string( num_of_items ) + "\"" + ", valid range <1:255>" );
+            sp.header.numOfItems = static_cast< uint8_t >( num_of_items );
 
             in_preset.sub_preset = sp;
         }
