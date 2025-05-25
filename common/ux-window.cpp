@@ -105,6 +105,7 @@ namespace rs2
 
         config_file::instance().set_nested_default(configurations::dds::enable_dds, false);
         config_file::instance().set_nested_default(configurations::dds::domain_id, 0);
+        
 #ifdef __APPLE__
 
         config_file::instance().set_default(configurations::performance::font_oversample, 2);
@@ -158,6 +159,10 @@ namespace rs2
             config_file::instance().set_default(configurations::viewer::shading_mode, 0);
         }
 #endif
+
+        // Since we have seen on several laptops models that using GLSL for processing cause a memory leak decided to disable it by default
+        // Users can still enable it if they wish
+        config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
     }
 
     void ux_window::reload()
