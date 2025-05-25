@@ -8,6 +8,8 @@
 #include <imgui_internal.h>
 #include "device-model.h"
 #include "subdevice-model.h"
+#include <os.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 
 namespace rs2
 {
@@ -129,6 +131,40 @@ bool option_model::draw( std::string & error_message,
             if( ImGui::IsItemHovered() )
                 RsImGui::CustomTooltip( "Select custom region of interest for the auto-exposure "
                                    "algorithm\nClick the button, then draw a rect on the frame" );
+        }
+
+        if (opt == RS2_OPTION_HDR_ENABLED)
+        {
+            auto disable_hdr_load = value_as_float() > 0;  // if HDR is enabled, we can't load a new config
+            // draw a button to load the HDR configuration from JSON
+            ImGui::SameLine(0, 10);
+            std::string button_label = "Load HDR";
+            std::string caption = rsutils::string::from() << "Load HDR config from JSON##" << button_label;
+            RsImGui::RsImButton([&]() {
+                if (ImGui::Button(caption.c_str(), { 75, 0 }))
+                {
+                    dev->_options_invalidated = true;
+                    auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON | PRESET)\0*.json;*.preset\0", NULL, NULL);
+                    //ret = "C:\\Users\\aviaavra\\Downloads\\SubPresetTool-master\\SubPresetTool-master\\BadJson.json";
+                    if (ret)
+                    {
+                        std::ifstream file(ret);
+                        if (!file.good())
+                        {
+                            throw std::runtime_error(rsutils::string::from() << "Failed to read configuration file:\n\"" << ret
+                                << "\"\n");
+                        }
+                        std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+                        
+                        error_message = safe_call([&]() { 
+                            dev->dev.as<serializable_device>().load_json(str); 
+
+                            LOG_INFO("HDR config loaded from JSON file: " << ret);
+                            dev->_options_invalidated = true;
+                            });
+                    }
+                }
+            }, disable_hdr_load ); 
         }
     }
 
