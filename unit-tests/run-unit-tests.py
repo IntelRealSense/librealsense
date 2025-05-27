@@ -668,9 +668,8 @@ try:
                 print( t.name )
     #
     else:
-        n_errors = log.n_errors()
-        if n_errors:
-            log.out( log.red + str( n_errors ) + log.reset, 'of', n_tests, 'test(s)',
+        if failed_tests:
+            log.out( log.red + str( len(failed_tests) ) + log.reset, 'of', n_tests, 'test(s)',
                      log.red + 'failed!' + log.reset + log.clear_eos )
             log.d( 'Failed tests:\n    ' + '\n    '.join( [test.name for test in failed_tests] ))
             sys.exit( 1 )
