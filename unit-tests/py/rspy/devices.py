@@ -728,7 +728,7 @@ def _get_mac_address(dev):
     raw_command = rs.debug_protocol(dev).build_command(GET_ETH_CONFIG_OPCODE,1)
     raw_result = rs.debug_protocol(dev).send_and_receive_raw_data(raw_command)
     if raw_result[0] == GET_ETH_CONFIG_OPCODE: # success
-        return ":".join([hex(num)[2:] for num in raw_result[52:58]]) # bytes for the MAC address
+        return ":".join([f"{num:02x}" for num in raw_result[52:58]]) # bytes for the MAC address
 
     return None
 
