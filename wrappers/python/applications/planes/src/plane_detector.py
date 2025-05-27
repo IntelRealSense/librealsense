@@ -20,6 +20,7 @@ Install :
 import sys 
 import numpy as np
 import cv2 as cv
+import random
 
 
  # importing common Use modules 
@@ -46,7 +47,8 @@ class PlaneDetector:
         # detector type     
         self.matrix_inv     = None     # holds inverse params of the 
         self.matrix_dir     = None     # direct u,v,1
-        self.matrix_xyz     = None     # direct u,v,1 multiplied by z 
+        self.matrix_xyz     = None     # direct u,v,1 multiplied by z  
+        self.matrix_index   = None     # index of the points in the original image     
         self.plane_params   = None     # rvec not normalized
         self.plane_center   = None     # tvec
         #self.corner_ind     = [0, 10, 40, 50]  # corner of the rectnagle for the projection
@@ -55,6 +57,9 @@ class PlaneDetector:
         # params
         self.MIN_SPLIT_SIZE  = 32
         self.MIN_STD_ERROR   = 0.01
+
+        # color for the mask
+        self.color_mask     = (0,255,0) # green
 
         # help variable
         self.ang_vec     = np.zeros((3,1))  # help variable
@@ -95,6 +100,10 @@ class PlaneDetector:
 
         if self.rect is None: # use entire image
             self.rect = self.init_roi(4)
+
+        # init params of the inverse
+        if self.matrix_dir is None:
+            self.fit_plane_init()              
             
         x0, y0, x1, y1  = self.rect
         if len(img.shape) > 2:
@@ -223,6 +232,38 @@ class PlaneDetector:
         self.cam_matrix   = np.array([[650,0,self.frame_size[0]/2],[0,650,self.frame_size[1]/2],[0,0,1]], dtype = np.float32)
         self.cam_distort  = np.array([0,0,0,0,0],dtype = np.float32)
 
+        x0,y0,x1,y1     = 0,0,self.frame_size[1],self.frame_size[0] #self.rect 
+        h,w             = y1-y0, x1-x0
+        x_grid          = np.arange(x0, x1, 1)
+        y_grid          = np.arange(y0, y1, 1)
+        x, y            = np.meshgrid(x_grid, y_grid)  
+
+        # remember corner indexes for reprojection [0 .... h*(w-1))
+        #                                           .        .
+        #                                           h ......h*w-1]
+        #self.corner_ind = [0, h,  h*w-1, h*(w-1), 0]
+        #h2,w2           = h>>1, w>>1
+        #self.rect_3d    = [[-w,-h,0],[w,-h,0],[w,h,0],[-w,h,0],[-w,-h,0]]
+
+        # camera coordinates
+        xy              = np.hstack((x.reshape(-1,1),y.reshape(-1,1)))
+        xy              = np.expand_dims(xy, axis=1).astype(np.float32)
+        xy_undistorted  = cv.undistortPoints(xy, self.cam_matrix, self.cam_distort)
+
+        u               = xy_undistorted[:,0,0].reshape((h,w)).reshape(-1,1)
+        v               = xy_undistorted[:,0,1].reshape((h,w)).reshape(-1,1)
+
+        # check
+        #u, v            = u*self.cam_matrix[0,0], v*self.cam_matrix[1,1]
+
+        self.matrix_dir = np.hstack((u,v,u*0+1))
+        #self.matrix_inv = np.linalg.pinv(self.matrix_dir)
+
+    def fit_plane_init_old(self):
+        "prepares data for real time fit a*x+b*y+c = z"
+        self.cam_matrix   = np.array([[650,0,self.frame_size[0]/2],[0,650,self.frame_size[1]/2],[0,0,1]], dtype = np.float32)
+        self.cam_distort  = np.array([0,0,0,0,0],dtype = np.float32)
+
         x0,y0,x1,y1     = self.rect 
         h,w             = y1-y0, x1-x0
         x_grid          = np.arange(x0, x1, 1)
@@ -250,7 +291,50 @@ class PlaneDetector:
         self.matrix_dir = np.hstack((u,v,u*0+1))
         self.matrix_inv = np.linalg.pinv(self.matrix_dir)
 
-    def convert_roi_to_points(self, img_roi, point_num = 30, step_size = 1):
+    def convert_roi_to_points(self, img, point_num = 30, step_size = 1, roi_rect = None):
+        "converting roi to pts in XYZ - Nx3 array. point_num - is the target point number"
+
+        # init params of the inverse
+        if self.matrix_dir is None:
+            self.fit_plane_init()  
+
+        # deal iwth different rect options
+        roi_rect            = self.rect if roi_rect is None else roi_rect
+
+        # extract roi - must be compatible with image dimensions
+        n,m                 = img.shape[:2]
+        img_roi_mask        = np.zeros((n,m), dtype = np.bool_)
+        x0, y0, x1, y1      = roi_rect
+        img_roi_mask[y0:y1,x0:x1] = 1   
+        valid_bool          = img_roi_mask > 0
+        valid_bool          = valid_bool.flatten()
+        #log.info(f'Timing : 1')  
+
+        # rect to show
+        h,w                 = y1-y0, x1-x0
+        self.rect_3d       = [[-w,-h,0],[w,-h,0],[w,h,0],[-w,h,0],[-w,-h,0]]
+
+        # all non valid
+        ii                  = np.where(valid_bool)[0]
+        valid_point_num     = len(ii)
+        if valid_point_num < 5:
+            return None
+        step_size           = np.maximum(step_size, np.int32(valid_point_num/point_num))
+        ii                  = ii[::step_size]
+
+        # plane params - using only valid
+        z                   = img.flat[ii].reshape((-1,1))
+        xyz_matrix          = self.matrix_dir[ii,:]
+        xyz_matrix[:,:3]    = xyz_matrix[:,:3]*z  # keep 1 intact
+
+        #self.plane_center   = xyz_center.flatten()   
+        self.matrix_xyz      = xyz_matrix   
+        self.matrix_index    = ii    
+
+        return xyz_matrix
+
+
+    def convert_roi_to_points_old(self, img_roi, point_num = 30, step_size = 1):
         "converting roi to pts in XYZ - Nx3 array. point_num - is the target point number"
         # x1,y1       = self.img_xyz.shape[:2]
         # roi_area    = x1*y1
@@ -267,8 +351,10 @@ class PlaneDetector:
         # 
         
         # init params of the inverse
-        if self.matrix_inv is None:
-            self.fit_plane_init()  
+        if self.matrix_dir is None:
+            self.fit_plane_init_old()  
+
+        # extract roi 
 
         n,m                 = img_roi.shape[:2]
         img_roi             = img_roi.reshape((-1,1))
@@ -291,7 +377,10 @@ class PlaneDetector:
 
         # update corners of the rect in 3d
         #self.rect_3d        = self.matrix_dir[self.corner_ind,:]*img_roi[self.corner_ind]
-
+        # rect to show
+        x0, y0, x1, y1      = self.rect
+        h,w                 = y1-y0, x1-x0
+        self.rect_3d        = [[-w,-h,0],[w,-h,0],[w,h,0],[-w,h,0],[-w,-h,0]]
         # substract mean
         #xyz_center          = xyz_matrix[:,:3].mean(axis=0)
         #xyz_matrix          = xyz_matrix - xyz_center   
@@ -332,7 +421,8 @@ class PlaneDetector:
         #self.rect_3d        = self.matrix_dir[self.corner_ind,:]*img_roi[self.corner_ind]
 
         # roi converted to points with step size on the grid
-        xyz_matrix          = self.convert_roi_to_points(img_roi, point_num = 1e4, step_size = 1)        
+        #xyz_matrix          = self.convert_roi_to_points(img_roi, point_num = 1e4, step_size = 1)    
+        xyz_matrix          = self.convert_roi_to_points_old(img_roi, point_num = 1e4, step_size = 1)        
 
         # substract mean
         xyz_center          = xyz_matrix[:,:3].mean(axis=0)
@@ -374,7 +464,7 @@ class PlaneDetector:
         "computes normal for the specifric roi and evaluates error. Do it twice to reject outliers"
 
         # roi converted to points with step size on the grid
-        xyz_matrix  = self.convert_roi_to_points(img_roi, point_num = 250, step_size = 0)
+        xyz_matrix  = self.convert_roi_to_points_old(img_roi, point_num = 250, step_size = 0)
 
         # substract mean
         xyz_center   = xyz_matrix[:,:3].mean(axis=0)
@@ -439,12 +529,16 @@ class PlaneDetector:
         """
         #log.info('Fit ransac: ...')  
         # roi converted to points with step size on the grid
+        #xyz_matrix     = self.convert_roi_to_points_old(img_roi, point_num = 250, step_size = 1)
         xyz_matrix     = self.convert_roi_to_points(img_roi, point_num = 250, step_size = 1)
+        if xyz_matrix is None:
+            log.error('No points in the ROI')
+            return 0, 0
 
-        thresh         = 0.05
+        thresh         = 1.05
         maxIteration   = 100
 
-        import random
+
         n_points        = xyz_matrix.shape[0]
         best_eq         = []
         best_inliers    = []
@@ -525,8 +619,12 @@ class PlaneDetector:
         """
         Find the best equation for a plane of the predefined ROI and then grow the ROI
         """
-        img_roi                     = self.preprocess(img_full)
-        img_mean, img_std           = self.fit_plane_ransac(img_roi) 
+        h,w                         = img_full.shape[:2]
+        # start from the original ROI
+        if self.img_mask is None:
+            isOk                        = self.init_image(img_full)
+
+        img_mean, img_std           = self.fit_plane_ransac(img_full) 
 
         # make sure that mask is not empty
         x0, y0, x1, y1              = self.rect
@@ -540,28 +638,44 @@ class PlaneDetector:
         x_min, x_max                = np.maximum(0,x_min-1), np.minimum(self.img_mask.shape[1],x_max+1)
 
         # extract ROI
-        img_roi                     = img_full[y_min:y_max,x_min:x_max].astype(np.float32)
-        xyz_matrix                  = self.convert_roi_to_points(img_roi, point_num = 250, step_size = 1)
+        roi_rect                    = [x_min, y_min, x_max, y_max]
+        #img_roi                     = img_full[y_min:y_max,x_min:x_max].astype(np.float32)
+        xyz_matrix                  = self.convert_roi_to_points(img_full, point_num = 5000, step_size = 1, roi_rect = roi_rect)
 
-        # check against the plane
+        # check against the plane : do not substract plane.center from all the points
         vecC                        = self.plane_params[:3]
-        dist_pt                     = np.dot(xyz_matrix, vecC) + self.plane_params[3]
+        dist_offset                 = np.dot(self.plane_center, vecC) 
+        dist_pt                     = np.dot(xyz_matrix, vecC) - dist_offset
 
         # Select indexes where distance is biggers than the threshold
-        thresh                      = 0.05
+        thresh                      = 1.5
         err                         = np.abs(dist_pt)
-        yi,xi                       = np.where( err <= thresh)
-        yi,xi                       = yi + y_min, xi + x_min       
+        i2                          = np.where( err <= thresh)[0]
 
+        
+        # transfer xi,yi coordinates to the original image index
+        ii                          = self.matrix_index[i2] # convert to 2D index
+
+        # # Convert 2D index to flat index:
+        # row, col = 2, 1
+        # flat_index = np.ravel_multi_index((row, col), arr.shape)  # flat_index = 9
+
+        # # Convert flat index back to 2D index:
+        # row, col = np.unravel_index(flat_index, arr.shape)  # (2, 1)
+
+        self.img_mask.flat[ii]      = self.img_mask.flat[ii] + 0.1*(1 - self.img_mask.flat[ii])
+
+
+        # position in 2d array
+        # unravel_index(a.argmax(), a.shape)   
 
         # output
         img_std                    = err.std()
-        img_mean                   = xyz_matrix.mean(axis=0)[2]
+        img_mean                   = xyz_matrix[i2].mean(axis=0)[2]
 
 
         return img_mean, img_std 
         
-
     def fit_and_split_roi_recursively(self, roi, level = 0):
         # splits ROI on 4 regions and recursevly call 
         x0,y0,x1,y1     = roi
@@ -615,11 +729,15 @@ class PlaneDetector:
 
         img_mean, img_std   = 0,0             
         if detect_type == 'P':
-            img_mean, img_std   = self.fit_plane_svd(img_roi)  
+            img_mean, img_std   = self.fit_plane_svd(img)  
         elif detect_type == 'O':
-            img_mean, img_std   = self.fit_plane_with_outliers(img_roi)  
+            img_mean, img_std   = self.fit_plane_svd(img_roi)  
+            #img_mean, img_std   = self.fit_plane_with_outliers(img_roi)  
         elif detect_type == 'R':
-            img_mean, img_std   = self.fit_plane_ransac(img_roi)              
+            img_mean, img_std   = self.fit_plane_ransac(img) 
+        elif detect_type == 'G':
+            img_mean, img_std   = self.fit_plane_ransac_and_grow(img)                
+                      
             
         #log.debug(f'camera noise           - roi mean : {img_mean}')
         self.img_mean       = img_mean        # final measurements per frame

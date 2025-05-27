@@ -236,7 +236,7 @@ class DataGen:
         img  = self.init_image(1)
         roi  = self.init_roi(1)      
 
-#%% Main
+#%% Adds display functionality to the PlaneDetector
 class PlaneDetectorDisplay(PlaneDetector):
     def __init__(self, detect_type='p'):
         super().__init__(detect_type)
@@ -379,7 +379,7 @@ class PlaneDetectorDisplay(PlaneDetector):
             return vis
         
         x0, y0, x1, y1 = self.rect
-        txt = f'{self.detect_type}:{err_mean:.2f}-{err_std:.3f}'
+        txt = f'{self.detect_type}:{err_mean:.2f}:{err_std:.3f}'
         if self.detect_type == 'F':
             txt = f'{self.detect_type}:{self.img_fill:.2f} %'
         vis = draw_str(vis,(x0,y0-10),txt)
@@ -420,6 +420,21 @@ class PlaneDetectorDisplay(PlaneDetector):
     
         return vis 
 
+    def show_mask(self, img):
+        "draw image mask"
+
+        # deal with black and white
+        img_show = img #np.uint8(img) #.copy()
+        if len(img.shape) < 3:
+            img_show = cv.applyColorMap(img_show, cv.COLORMAP_JET)
+
+        if not np.all(self.img_mask.shape[:2] == img_show.shape[:2]):
+            log.error('mask and image size are not equal')
+            return img_show
+        
+        img_show[self.img_mask == 1] = self.color_mask
+        return img_show
+
     def show_scene(self, vis):
         "draw ROI and Info"
 
@@ -428,6 +443,8 @@ class PlaneDetectorDisplay(PlaneDetector):
 
         vis = self.show_rect_and_axis_projected(vis)
         vis = self.show_text(vis)
+
+        vis = self.show_mask(vis)
 
         return vis  
         
@@ -570,7 +587,7 @@ class PlaneApp:
     def __init__(self):
         self.cap            = RealSense() #
         self.cap.set_display_mode('d16')
-        #self.cap.set_exposure(1000)
+        self.cap.set_exposure(5000)
         self.frame          = None
         self.rect           = None
         self.paused         = False
@@ -580,7 +597,7 @@ class PlaneApp:
 
         self.detect_type    = 'P'
         self.show_type      = 'depth' # left, depth
-        self.win_name       = 'Plane Detector (q-quit, a,p,o,r)'
+        self.win_name       = 'Plane Detector (q-quit, c-clear, a,r,p,o,g,s)'
 
         cv.namedWindow(self.win_name )
         self.rect_sel       = RectSelector(self.win_name , self.on_rect)
@@ -667,13 +684,19 @@ class PlaneApp:
                 self.paused = not self.paused
             elif ch == ord('a'):
                 self.detect_type = 'A' 
+                log.info(f'Detect type : {self.detect_type}')
             elif ch == ord('r'):
                 self.detect_type = 'R'  
+                log.info(f'Detect type : {self.detect_type}')
             elif ch == ord('p'):
                 self.detect_type = 'P'  
                 log.info(f'Detect type : {self.detect_type}')
             elif ch == ord('o'):
-                self.detect_type = 'O'      
+                self.detect_type = 'O'  
+                log.info(f'Detect type : {self.detect_type}') 
+            elif ch == ord('g'):
+                self.detect_type = 'G'    
+                log.info(f'Detect type : {self.detect_type}')                
             elif ch == ord('s'):
                 self.show_type = 'left' if self.show_type == 'depth' else 'depth'      
                 log.info(f'Show type : {self.show_type}')                                    

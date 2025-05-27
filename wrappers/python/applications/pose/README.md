@@ -17,14 +17,14 @@ The camera calibration parameters are known. If the camera position is also know
 
 # 6 DoF Pose Estimation
 
--  Display Modes - different image data that could be extracted from the camera. 
+Examples of the pose estimation utilities. 
 
-Example Image   | Mode |  Explanations | 
+Example Image   | Type |  Explanations | 
 :------------: |  :----------: | :----------: | 
-![RGB](doc/chess.gif) | Chess Board |  RGB based chess board pose estimation | 
-![d16](doc/cam_d_3.jpg) |   Aruco Marker | Aruco marker detection and pose estimation | 
-![sc1](doc/pose6d-cup.gif) |   Known Object | cup detection and pose estimation |
-![sc1](doc/pose6d-matchbox.gif) |   Known Object | a match box detection and pose estimation |
+![detecting chess board](doc/chess.gif) | Chess Board |  RGB based chess board pose estimation | 
+![aruco martker pose](doc/cam_d_3.jpg) |   Aruco Marker | Aruco marker detection and pose estimation | 
+![a general object pose](doc/pose6d-cup.gif) |   Known Object | cup detection and pose estimation |
+![a general object pose](doc/pose6d-matchbox.gif) |   Known Object | a match box detection and pose estimation |
 
 # Modules and License
 
