@@ -103,7 +103,7 @@ class PlaneDetector:
 
         # init params of the inverse
         if self.matrix_dir is None:
-            self.fit_plane_init()              
+            self.fit_plane_init_old()              
             
         x0, y0, x1, y1  = self.rect
         if len(img.shape) > 2:
@@ -232,7 +232,7 @@ class PlaneDetector:
         self.cam_matrix   = np.array([[650,0,self.frame_size[0]/2],[0,650,self.frame_size[1]/2],[0,0,1]], dtype = np.float32)
         self.cam_distort  = np.array([0,0,0,0,0],dtype = np.float32)
 
-        x0,y0,x1,y1     = 0,0,self.frame_size[1],self.frame_size[0] #self.rect 
+        x0,y0,x1,y1     = 0,0,self.frame_size[0],self.frame_size[1] #self.rect 
         h,w             = y1-y0, x1-x0
         x_grid          = np.arange(x0, x1, 1)
         y_grid          = np.arange(y0, y1, 1)
@@ -295,27 +295,46 @@ class PlaneDetector:
         "converting roi to pts in XYZ - Nx3 array. point_num - is the target point number"
 
         # init params of the inverse
-        if self.matrix_dir is None:
+        if self.matrix_xyz is None:  # do not use mtrix_dir - initialized before
             self.fit_plane_init()  
 
         # deal iwth different rect options
         roi_rect            = self.rect if roi_rect is None else roi_rect
+        x0, y0, x1, y1      = roi_rect
+
+        # make rectangle 
+        h,w                 = y1-y0, x1-x0        
+        self.rect_3d        = [[-w,-h,0],[w,-h,0],[w,h,0],[-w,h,0],[-w,-h,0]]
 
         # extract roi - must be compatible with image dimensions
-        n,m                 = img.shape[:2]
-        img_roi_mask        = np.zeros((n,m), dtype = np.bool_)
-        x0, y0, x1, y1      = roi_rect
-        img_roi_mask[y0:y1,x0:x1] = 1   
-        valid_bool          = img_roi_mask > 0
-        valid_bool          = valid_bool.flatten()
+        # n,m                 = img.shape[:2]
+        # img_roi_mask        = np.zeros((n,m), dtype = np.bool_)
+        # img_roi_mask[y0:y1,x0:x1] = True  
+        # valid_bool          = img_roi_mask > 0 & img > 0
+
+        # check if roi is valid
+        x_grid              = np.arange(x0, x1, 1)
+        y_grid              = np.arange(y0, y1, 1)
+        x, y                = np.meshgrid(x_grid, y_grid) 
+        flat_indices        = np.ravel_multi_index((y, x), img.shape[:2]).reshape((-1,1))         
+
+        # valid under mask
+        #valid_bool          = img.flat[flat_indices] > 0        
+        #ii                  = flat_indices[valid_bool]
+        img_roi             = img[y0:y1,x0:x1].astype(np.float32).reshape((-1,1)) 
+        valid_bool          = img_roi > 0 # valid pixels in the roi
+        ii                  = np.flatnonzero(valid_bool)
+  
+        #valid_bool          = valid_bool.flatten()
         #log.info(f'Timing : 1')  
 
         # rect to show
-        h,w                 = y1-y0, x1-x0
-        self.rect_3d       = [[-w,-h,0],[w,-h,0],[w,h,0],[-w,h,0],[-w,-h,0]]
+        #h,w                 = y1-y0, x1-x0
+        #self.rect_3d       = [[-w,-h,0],[w,-h,0],[w,h,0],[-w,h,0],[-w,-h,0]]
 
         # all non valid
-        ii                  = np.where(valid_bool)[0]
+        #ii                  = np.where(valid_bool)[0]
+   
         valid_point_num     = len(ii)
         if valid_point_num < 5:
             return None
@@ -323,13 +342,15 @@ class PlaneDetector:
         ii                  = ii[::step_size]
 
         # plane params - using only valid
-        z                   = img.flat[ii].reshape((-1,1))
-        xyz_matrix          = self.matrix_dir[ii,:]
+        #z                   = img.flat[ii].reshape((-1,1))
+        z                   = img_roi[ii].reshape((-1,1))
+        jj                  = flat_indices[ii].flatten()
+        xyz_matrix          = self.matrix_dir[jj,:]
         xyz_matrix[:,:3]    = xyz_matrix[:,:3]*z  # keep 1 intact
 
         #self.plane_center   = xyz_center.flatten()   
         self.matrix_xyz      = xyz_matrix   
-        self.matrix_index    = ii    
+        self.matrix_index    = jj    
 
         return xyz_matrix
 
@@ -402,6 +423,49 @@ class PlaneDetector:
 
     def fit_plane_svd(self, img_roi):
         "estimates mean and std of the plane fit"
+
+        # roi converted to points with step size on the grid
+        xyz_matrix          = self.convert_roi_to_points(img_roi, point_num = 250, step_size = 1)    
+        #xyz_matrix          = self.convert_roi_to_points_old(img_roi, point_num = 1e4, step_size = 1)        
+
+        # substract mean
+        xyz_center          = xyz_matrix[:,:3].mean(axis=0)
+        xyz_matrix          = xyz_matrix - xyz_center   
+        #log.info(f'Timing : 2')     
+
+        # mtrx_dir            = np.hstack((self.matrix_dir[valid_bool,0]*z,self.matrix_dir[valid_bool,1]*z,z*0+1))
+        # mtrx_inv            = np.linalg.pinv(mtrx_dir)
+        # #mtrx_inv            = self.matrix_inv[:,valid_bool]
+        # plane_params        = np.dot(mtrx_inv,z)
+
+        # decimate to make it run faster  reduce size of the grid for speed. 1000 pix - 30x30 - step 1, 10000 pix - step=3
+        #roi_area            = n*m
+        #step_size           = int(np.sqrt(roi_area)/7) if roi_area > 1000 else 1
+        
+        # using svd to make the fit
+        U, S, Vh            = np.linalg.svd(xyz_matrix, full_matrices=True)
+        ii                  = np.argmin(S)
+        vnorm               = Vh[ii,:]
+        #log.info(f'Timing : 3') 
+
+        # keep orientation
+        plane_params       = vnorm*np.sign(vnorm[2])
+
+        # estimate error
+        err                = np.dot(xyz_matrix,plane_params)
+        #z_est              = z + err + xyz_center[2]
+
+        img_mean           = xyz_center[2] #z_est.mean()
+        img_std            = err.std()
+        self.plane_params  = plane_params[:3].flatten()
+        self.plane_center  = xyz_center.flatten()
+
+        #log.info(f'Plane : {self.plane_params}, error {img_std:.3f}, step {step_size}')
+        
+        return img_mean, img_std  
+    
+    def fit_plane_svd_old(self, img_roi):
+        "estimates mean and std of the plane fit"
         # n,m             = img_roi.shape[:2]
         # img_roi         = img_roi.reshape((-1,1))
         # valid_bool      = img_roi > 0
@@ -459,7 +523,7 @@ class PlaneDetector:
         #log.info(f'Plane : {self.plane_params}, error {img_std:.3f}, step {step_size}')
         
         return img_mean, img_std  
-    
+        
     def fit_plane_with_outliers(self, img_roi):
         "computes normal for the specifric roi and evaluates error. Do it twice to reject outliers"
 
@@ -529,8 +593,8 @@ class PlaneDetector:
         """
         #log.info('Fit ransac: ...')  
         # roi converted to points with step size on the grid
-        #xyz_matrix     = self.convert_roi_to_points_old(img_roi, point_num = 250, step_size = 1)
-        xyz_matrix     = self.convert_roi_to_points(img_roi, point_num = 250, step_size = 1)
+        xyz_matrix     = self.convert_roi_to_points_old(img_roi, point_num = 250, step_size = 1)
+        #xyz_matrix     = self.convert_roi_to_points(img_roi, point_num = 250, step_size = 1)
         if xyz_matrix is None:
             log.error('No points in the ROI')
             return 0, 0
@@ -731,10 +795,10 @@ class PlaneDetector:
         if detect_type == 'P':
             img_mean, img_std   = self.fit_plane_svd(img)  
         elif detect_type == 'O':
-            img_mean, img_std   = self.fit_plane_svd(img_roi)  
+            img_mean, img_std   = self.fit_plane_svd_old(img_roi)  
             #img_mean, img_std   = self.fit_plane_with_outliers(img_roi)  
         elif detect_type == 'R':
-            img_mean, img_std   = self.fit_plane_ransac(img) 
+            img_mean, img_std   = self.fit_plane_ransac(img_roi) 
         elif detect_type == 'G':
             img_mean, img_std   = self.fit_plane_ransac_and_grow(img)                
                       

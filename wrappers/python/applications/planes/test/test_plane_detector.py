@@ -424,7 +424,7 @@ class PlaneDetectorDisplay(PlaneDetector):
         "draw image mask"
 
         # deal with black and white
-        img_show = img #np.uint8(img) #.copy()
+        img_show = np.uint8(img) #.copy()
         if len(img.shape) < 3:
             img_show = cv.applyColorMap(img_show, cv.COLORMAP_JET)
 
