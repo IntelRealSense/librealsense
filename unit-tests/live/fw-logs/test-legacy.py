@@ -50,7 +50,7 @@ with test.closure( 'Load unsupported definitions file' ):
         definitions = f.read()
     logger.init_parser( definitions )
     logger.get_firmware_log( raw_message ) # Get a log entry from the camera with unknown content
-    test.check_throws( lambda: logger.parse_log( raw_message, parsed_message ), RuntimeError, 'FW logs parser expect one formating options, have 2' )
+    test.check_throws( lambda: logger.parse_log( raw_message, parsed_message ), RuntimeError, 'FW logs parser expect one formatting options, have 2' )
     
 with test.closure( 'Load supported definitions file' ):
     # Events based on real events file, representing logs we are most likely to receive
