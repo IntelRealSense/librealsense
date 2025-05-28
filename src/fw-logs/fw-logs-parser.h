@@ -57,7 +57,7 @@ namespace librealsense
             virtual std::string get_source_name( int source_id ) const;
             virtual rs2_log_severity parse_severity( uint32_t severity ) const;
             
-            fw_logs_formatting_options get_formating_options_from_file( std::string path );
+            fw_logs_formatting_options get_formatting_options_from_file( std::string path );
 
             std::map< std::pair< int, int >, fw_logs_formatting_options > _source_and_module_to_formatting_options;
             std::map< int, std::string > _source_id_to_name;
