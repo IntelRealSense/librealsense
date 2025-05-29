@@ -84,10 +84,11 @@ namespace librealsense
         // register pre-processing
         std::shared_ptr<enable_motion_correction> mm_correct_opt = nullptr;
 
+        auto mm_calib = _ds_motion_common->get_calib_handler();
         //  Motion intrinsic calibration presents is a prerequisite for motion correction.
         try
         {
-            if (_mm_calib)
+            if (mm_calib)
             {
                 mm_correct_opt = std::make_shared<enable_motion_correction>(motion_ep.get(),
                     option_range{ 0, 1, 1, 1 });
@@ -101,8 +102,8 @@ namespace librealsense
         motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL}, {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            [&, high_accuracy, mm_correct_opt, gyro_scale_factor]()
-            { return std::make_shared< motion_to_accel_gyro >( _mm_calib, mm_correct_opt, gyro_scale_factor, high_accuracy );
+            [&, mm_calib, high_accuracy, mm_correct_opt, gyro_scale_factor]()
+            { return std::make_shared< motion_to_accel_gyro >( mm_calib, mm_correct_opt, gyro_scale_factor, high_accuracy );
         });
 
         return motion_ep;
