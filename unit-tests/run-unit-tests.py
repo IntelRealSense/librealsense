@@ -48,6 +48,7 @@ def usage():
     print( '        --no-exceptions      Do not load the LibCI/exceptions.specs file' )
     print( '        --context <>         The context to use for test configuration' )
     print( '        --repeat <#>         Repeat each test <#> times' )
+    print( '        --retry <#>          Retry each test <#> times (unless test specified more)' )
     print( '        --config <>          Ignore test configurations; use the one provided' )
     print( '        --device <>          Run only on the specified devices; ignore any test that does not match (implies --live)' )
     print( '        --no-reset           Do not try to reset any devices, with or without a hub' )
@@ -81,7 +82,7 @@ else:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
-                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset', 'hub-reset',
+                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'retry=', 'config=', 'no-reset', 'hub-reset',
                                           'rslog', 'skip-disconnected', 'live', 'not-live', 'device=', 'test-dir=','skip-regex=','custom-fw-d400='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
@@ -94,6 +95,7 @@ list_tests = False
 no_exceptions = False
 context = []
 repeat = 1
+retries = 0
 forced_configurations = None
 device_set = None
 no_reset = False
@@ -132,6 +134,11 @@ for opt, arg in opts:
             log.e( "--repeat must be a number greater than 0" )
             usage()
         repeat = int(arg)
+    elif opt == '--retry':
+        if not arg.isnumeric()  or  int(arg) < 0:
+            log.e( "--retry must be a number greater than or equal to 0" )
+            usage()
+        retries = int(arg)
     elif opt == '--config':
         forced_configurations = [[arg]]
     elif opt == '--device':
@@ -478,9 +485,10 @@ def test_wrapper_( test, configuration=None, repetition=1, curr_retry=0, max_ret
 
 
 def test_wrapper( test, configuration=None, repetition=1, serial_numbers=None ):
-    global n_tests
+    global n_tests, retries
     n_tests += 1
-    for retry in range( test.config.retries + 1 ):
+    retry_count = max(test.config.retries, retries)
+    for retry in range( retry_count + 1 ):
         if retry:
             if log.is_debug_on():
                 log.debug_unindent()  # just to make it stand out a little more
@@ -490,7 +498,7 @@ def test_wrapper( test, configuration=None, repetition=1, serial_numbers=None ):
                 time.sleep(1)  # small pause between tries
             else:
                 devices.enable_only( serial_numbers, recycle=True )
-        if test_wrapper_( test, configuration, repetition, retry, test.config.retries, serial_numbers ):
+        if test_wrapper_( test, configuration, repetition, retry, retry_count, serial_numbers ):
             return True
 
     return False
