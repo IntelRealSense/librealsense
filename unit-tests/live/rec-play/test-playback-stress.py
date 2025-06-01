@@ -42,13 +42,11 @@ for i in range(number_of_iterations):
             sensor.start( frame_callback )
 
         # We allow 10 seconds to each iteration to verify the playback_stopped event.
-        timeout = 15
-        number_of_statuses = 2
-        psv.wait_for_status_changes(number_of_statuses,timeout);
+        time.sleep(10)
         
         statuses = psv.get_statuses()
         # we expect to get start and then stop
-        test.check_equal(number_of_statuses, len(statuses))
+        test.check_equal(2, len(statuses))
         test.check_equal(statuses[0], rs.playback_status.playing)
         test.check_equal(statuses[1], rs.playback_status.stopped)
 
