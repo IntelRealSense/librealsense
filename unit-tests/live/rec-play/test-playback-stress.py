@@ -10,10 +10,10 @@ from playback_helper import PlaybackStatusVerifier
 import time
 
 # repo.build
-file_name = os.path.join(repo.build, 'unit-tests', 'recordings', 'all_combinations_depth_color.bag' )
+file_name = os.path.join('C:/src/librealsense/build', 'unit-tests', 'recordings', 'all_combinations_depth_color.bag' )
 log.d( 'deadlock file:', file_name )
 frames_in_bag_file = 64
-number_of_iterations = 250
+number_of_iterations = 2500
 
 frames_count = 0
 
@@ -27,7 +27,7 @@ test.start( "Playback stress test" )
 log.d( "Playing back: " + file_name )
 for i in range(number_of_iterations):
     try:
-        log.d("Test - Starting iteration # " , i)
+        print ("Test - Starting iteration # " , i)
         ctx = rs.context()
         dev = ctx.load_device( file_name )
         psv = PlaybackStatusVerifier( dev );
@@ -42,11 +42,13 @@ for i in range(number_of_iterations):
             sensor.start( frame_callback )
 
         # We allow 10 seconds to each iteration to verify the playback_stopped event.
-        time.sleep(10)
+        timeout = 15
+        number_of_statuses = 2
+        psv.wait_for_status_changes(number_of_statuses,timeout);
         
         statuses = psv.get_statuses()
         # we expect to get start and then stop
-        test.check_equal(2, len(statuses))
+        test.check_equal(number_of_statuses, len(statuses))
         test.check_equal(statuses[0], rs.playback_status.playing)
         test.check_equal(statuses[1], rs.playback_status.stopped)
 
