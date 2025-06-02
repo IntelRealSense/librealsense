@@ -69,5 +69,20 @@ class PlaybackStatusVerifier:
                     'Multiple status changes detected, expecting a single change, got '+ str( self._status_changes_cnt - status_changes_cnt ) +
                         ' changes, consider lowering the sample interval' )
 
+    def wait_for_status_changes( self, counter, timeout, sample_interval=0.01 ):
+        wait_for_event_timer = Timer(timeout)
+        wait_for_event_timer.start()
+        required_status_detected = False
+        log.d('timeout set to', timeout, '[sec]')
+        while not wait_for_event_timer.has_expired():
+            if counter == self._status_changes_cnt:
+                required_status_detected = True
+                break
+            time.sleep( sample_interval )
+        test.check(required_status_detected, description='Check failed, Timeout on waiting for ')
+
+    def reset_status_changes_cnt(self):
+        self._status_changes_cnt = 0
+
     def get_statuses(self):
         return self._statuses
