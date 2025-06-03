@@ -80,6 +80,7 @@ namespace librealsense
             std::string to_string() const { return _root.dump(4); }
 
             void write_param(const std::string& key, const json& value);
+            void write_root_param(const std::string& key, const json& value);
 
         protected:
             void write_schema();
