@@ -600,7 +600,7 @@ namespace librealsense
 
                 subpreset["items"].push_back(std::move(item));
             }
-            preset_writer.write_param( "SubPreset", subpreset );
+            preset_writer.write_root_param("SubPreset", subpreset);
         }
 
         auto str = preset_writer.to_string();
