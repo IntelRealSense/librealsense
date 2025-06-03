@@ -37,7 +37,6 @@ namespace librealsense
         std::shared_ptr<stream_interface> _gyro_stream;
 
         uint16_t _pid;    // product PID
-        std::shared_ptr<mm_calib_handler>        _mm_calib;
         optional_value<uint8_t> _motion_module_device_idx;
     };
 
