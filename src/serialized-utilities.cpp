@@ -179,5 +179,10 @@ void json_preset_writer::write_param(const std::string& key, const json& value)
     (*_parameters)[key] = value;
 }
 
+void json_preset_writer::write_root_param(const std::string& key, const json& value)
+{
+    _root[key] = value;
+}
+
 }  // namespace serialized_utilities
 }  // namespace librealsense
