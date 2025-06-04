@@ -23,7 +23,7 @@ with test.closure( 'test empty XML' ):
     except RuntimeError as e:
         test.check_exception( e, RuntimeError, "Cannot find XML root" )
 
-with test.closure( 'test root not Format' ):
+with test.closure( 'test root is not Format' ):
     xml = """<Source id="0" Name="test" />"""
     try:
         logger.init_parser( xml )
@@ -235,6 +235,19 @@ with test.closure( 'test verbosity level' ):
         test.check_exception( e, RuntimeError, "Illegal verbosity TEST. Expecting NONE, VERBOSE, DEBUG, INFO, WARNING, ERROR or FATAL" )
 
 # Test after version verification, so event xml files will be ready with correct version.
+with test.closure( 'test module events file' ):        
+    xml = """<Format>
+               <Source id="0" Name="test" >
+                 <File Path="events.xml" />
+                 <Module id="0" verbosity="0" Path="events.xml" />
+               </Source>
+               <Source id="1" Name="test" >
+                 <File Path="events2.xml" />
+                 <Module id="0" verbosity="0" />
+               </Source>
+             </Format>"""
+    test.check( logger.init_parser( xml ) )
+    
 with test.closure( 'test live log messages received' ):
     # Number is OK (range not checked)
     xml = """<Format>
