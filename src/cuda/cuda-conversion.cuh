@@ -33,6 +33,7 @@ namespace rscuda
     template<class SOURCE>
     void y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, const SOURCE * source);
     void unpack_yuy2_cuda_helper(const uint8_t* src, uint8_t* dst, int n, rs2_format format);
+    void uyvy_to_yuyv_cuda_helper(const uint16_t* src, uint16_t* dst, int n);
     
     template<rs2_format FORMAT> void unpack_yuy2_cuda(uint8_t * const d[], const uint8_t * s, int n)
     {

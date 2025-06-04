@@ -153,6 +153,8 @@ namespace librealsense
         inline std::shared_ptr<stream_interface> get_accel_stream() const { return _accel_stream; }
         inline std::shared_ptr<stream_interface> get_gyro_stream() const { return _gyro_stream; }
 
+        inline std::shared_ptr<mm_calib_handler> get_calib_handler() const {return _mm_calib;}
+
     private:
         std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(synthetic_sensor* ep,
             const platform::extension_unit* fisheye_xu);

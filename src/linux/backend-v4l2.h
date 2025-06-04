@@ -474,6 +474,11 @@ namespace librealsense
             std::vector<std::shared_ptr<buffer>> _md_buffers;
         };
 
+
+        const uint16_t D457_PID      = 0xABCD;
+        const uint16_t D430_GMSL_PID = 0xABCE;
+        const uint16_t D415_GMSL_PID = 0xABCF;
+
         // D457 Development. To be merged into underlying class
         class v4l_mipi_device : public v4l_uvc_meta_device
         {
