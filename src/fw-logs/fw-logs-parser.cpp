@@ -17,7 +17,6 @@ namespace librealsense
     {
     
         fw_logs_parser::fw_logs_parser( const std::string & definitions_xml )
-            : _source_to_formatting_options()
         {
             // The definitions XML should contain entries for all log sources.
             // For each source it lists parser options file path and (optional) module verbosity level.
@@ -40,7 +39,8 @@ namespace librealsense
                 _source_id_to_name[0] = "";
                 std::string xml_contents( definitions_xml );
                 fw_logs_formatting_options format_options( std::move( xml_contents ) );
-                _source_to_formatting_options[0] = format_options;
+                for( int i = 0; i < fw_logs::max_modules; ++i )
+                    _source_and_module_to_formatting_options[{ 0, i }] = format_options;
             }
         }
 
@@ -48,16 +48,21 @@ namespace librealsense
                                                                    const std::string & definitions_xml )
         {
             std::string path = fw_logs_xml_helper::get_source_parser_file_path( source.first, definitions_xml );
-            std::ifstream f( path.c_str() );
-            if( f.good() )
+            if( ! path.empty() )
             {
-                std::string xml_contents;
-                xml_contents.append( std::istreambuf_iterator< char >( f ), std::istreambuf_iterator< char >() );
-                fw_logs_formatting_options format_options( std::move( xml_contents ) );
-                _source_to_formatting_options[source.first] = format_options;
+                fw_logs_formatting_options format_options = get_formatting_options_from_file( path );
+                // Initialize all modules to use source definitions. Can be overriden later per module.
+                for( int i = 0; i < fw_logs::max_modules; ++i )
+                    _source_and_module_to_formatting_options[{ source.first, i }] = format_options;
             }
-            else
-                throw librealsense::invalid_value_exception( rsutils::string::from() << "Can't open file " << path );
+
+            auto module_files = fw_logs_xml_helper::get_source_module_overriding_file_path( source.first, definitions_xml );
+            for( auto & module : module_files )
+            {
+                // Override with module specific definitions.
+                fw_logs_formatting_options format_options = get_formatting_options_from_file( module.second );
+                _source_and_module_to_formatting_options[{ source.first, module.first }] = format_options;
+            }
         }
 
         fw_log_data fw_logs_parser::parse_fw_log( const fw_logs_binary_data * fw_log_msg )
@@ -71,7 +76,8 @@ namespace librealsense
             structured_binary_data structured = structure_common_data( fw_log_msg );
             structure_timestamp( fw_log_msg, &structured );
 
-            const fw_logs_formatting_options & formatting = get_format_options_ref( structured.source_id );
+            const fw_logs_formatting_options & formatting = get_format_options( structured.source_id,
+                                                                                structured.module_id );
 
             kvp event_data = formatting.get_event_data( structured.event_id );
             structure_params( fw_log_msg, event_data.first, &structured );
@@ -152,28 +158,49 @@ namespace librealsense
             structured->params_blob.insert( structured->params_blob.end(), blob_start, blob_start + params_size_bytes );
         }
 
-        const fw_logs_formatting_options & fw_logs_parser::get_format_options_ref( int source_id ) const
+        const fw_logs_formatting_options & fw_logs_parser::get_format_options( int source_id, int module_id ) const
         {
-            if( _source_to_formatting_options.size() != 1 )
+            auto num_of_sources = _source_and_module_to_formatting_options.size() / fw_logs::max_modules; // Since looping on max_modules in initialization
+            if( num_of_sources != 1 )
+            {
                 throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                             << "FW logs parser expect one formating options, have "
-                                                             << _source_to_formatting_options.size() );
-            return _source_to_formatting_options.begin()->second;
+                                                             << "FW logs parser expect one formatting options, have "
+                                                             << num_of_sources );
+            }
+            return _source_and_module_to_formatting_options.begin()->second;
         }
 
         std::string fw_logs_parser::get_source_name( int source_id ) const
         {
-            if( _source_to_formatting_options.size() != 1 )
+            auto num_of_sources = _source_and_module_to_formatting_options.size() / fw_logs::max_modules; // Since looping on max_modules in initialization
+            if( num_of_sources != 1 )
+            {
                 throw librealsense::invalid_value_exception( rsutils::string::from()
                                                              << "FW logs parser expect one formating options, have "
-                                                             << _source_to_formatting_options.size() );
+                                                             << num_of_sources );
+            }
             // FW logs had threads, only extended format have source
-            return _source_to_formatting_options.begin()->second.get_thread_name( source_id );
+            return _source_and_module_to_formatting_options.begin()->second.get_thread_name( source_id );
         }
 
         rs2_log_severity fw_logs_parser::parse_severity( uint32_t severity ) const
         {
             return fw_logs::fw_logs_severity_to_rs2_log_severity( severity );
+        }
+
+        fw_logs_formatting_options fw_logs_parser::get_formatting_options_from_file( std::string path )
+        {
+            std::ifstream f( path.c_str() );
+            if( f.good() )
+            {
+                std::string xml_contents;
+                xml_contents.append( std::istreambuf_iterator< char >( f ), std::istreambuf_iterator< char >() );
+                f.close();
+
+                return fw_logs_formatting_options( std::move( xml_contents ) );
+            }
+            else
+                throw librealsense::invalid_value_exception( rsutils::string::from() << "Can't open file " << path );
         }
 
         extended_fw_logs_parser::extended_fw_logs_parser( const std::string & definitions_xml,
@@ -263,8 +290,10 @@ namespace librealsense
         {
             const auto actual_struct = reinterpret_cast< const extended_fw_log_binary * >( raw->logs_buffer.data() );
             if( num_of_params != actual_struct->number_of_params )
-                throw librealsense::invalid_value_exception( rsutils::string::from() << "Expecting " << num_of_params
-                                                             << " parameters, received " << actual_struct->number_of_params );
+                LOG_INFO( rsutils::string::from() << "Expecting " << num_of_params << " parameters, received "
+                                                  << actual_struct->number_of_params );
+            if( num_of_params > actual_struct->number_of_params )
+                num_of_params = actual_struct->number_of_params;
 
             if( num_of_params > 0 )
             {
@@ -294,10 +323,11 @@ namespace librealsense
             }
         }
 
-        const fw_logs_formatting_options & extended_fw_logs_parser::get_format_options_ref( int source_id ) const
+        const fw_logs_formatting_options & extended_fw_logs_parser::get_format_options( int source_id,
+                                                                                        int module_id ) const
         {
-            auto iter = _source_to_formatting_options.find( source_id );
-            if( iter != _source_to_formatting_options.end() )
+            auto iter = _source_and_module_to_formatting_options.find( { source_id, module_id } );
+            if( iter != _source_and_module_to_formatting_options.end() )
                 return iter->second;
 
             throw librealsense::invalid_value_exception( rsutils::string::from()
@@ -324,20 +354,30 @@ namespace librealsense
                                                                const std::string & definitions_xml )
         {
             std::string path = fw_logs_xml_helper::get_source_parser_file_path( source_id, definitions_xml );
-            std::ifstream f( path.c_str() );
-            if( f.good() )
+            if( ! path.empty() )
             {
-                std::string xml_contents;
-                xml_contents.append( std::istreambuf_iterator< char >( f ), std::istreambuf_iterator< char >() );
-                std::string file_version = fw_logs_xml_helper::get_file_version( xml_contents );
-                if( expected_version != file_version )
+                std::ifstream f( path.c_str() );
+                if( f.good() )
+                {
+                    std::string xml_contents;
+                    xml_contents.append( std::istreambuf_iterator< char >( f ), std::istreambuf_iterator< char >() );
+                    std::string file_version = fw_logs_xml_helper::get_file_version( xml_contents );
+                    if( expected_version != file_version )
+                        throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                                     << "Source " << _source_id_to_name[source_id]
+                                                                     << " expected version " << expected_version
+                                                                     << " but xml file version is " << file_version );
+                    f.close();
+                }
+                else
                     throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                                 << "Source " << _source_id_to_name[source_id]
-                                                                 << " expected version " << expected_version
-                                                                 << " but xml file version is " << file_version );
+                                                                 << "Can't open file " << path );
             }
             else
-                throw librealsense::invalid_value_exception( rsutils::string::from() << "Can't open file " << path );
+            {
+                LOG_WARNING( rsutils::string::from() << "Source " << _source_id_to_name[source_id]
+                             << " doesn't have an xml file path, can't validate version" );
+            }
         }
     }
 }

@@ -2,6 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 from rspy import log
+from rspy import signals
 from abc import ABC, abstractmethod
 
 
@@ -11,6 +12,20 @@ class NoneFoundError( RuntimeError ):
 
 
 class device_hub(ABC):
+    def __getattribute__(self, name):
+        attr = super().__getattribute__(name)
+
+        # some hubs override / clear signals, this is used to re-register them, only for methods for now
+        if callable(attr) and not name.startswith('__'):
+            def wrapper(*args, **kwargs):
+                result = attr(*args, **kwargs)
+                signals.register_signal_handlers()
+                return result
+
+            return wrapper
+
+        return attr  # Return non-methods or special methods as-is
+
     @abstractmethod
     def get_name(self):
         """

@@ -45,12 +45,12 @@ jobs:
     steps:
 
       - name: setup ROS environment
-        uses: ros-tooling/setup-ros@a6ce30ecca1e5dcc10ae5e6a44fe2169115bf852 #v0.7
+        uses: ros-tooling/setup-ros@87aeba050fd62d0ee5d5fdf4b6c9f847892ea864 #v0.7.13
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
 
       - name: build librealsense ROS 2
-        uses: ros-tooling/action-ros-ci@0c87ffc035492b66c9afb9159ca9664fb0b513e1 #v0.3
+        uses: ros-tooling/action-ros-ci@1ff2c804b4c2383146d8cd8444dfda64ab4bf7ac #v0.4.3
         with:
           import-token: ${{ secrets.GITHUB_TOKEN }}
           target-ros2-distro: ${{ matrix.ros_distribution }}

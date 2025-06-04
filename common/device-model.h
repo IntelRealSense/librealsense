@@ -167,7 +167,7 @@ namespace rs2
         namespace performance
         {
             static const char* glsl_for_rendering{ "performance.glsl_for_rendering.v2" };
-            static const char* glsl_for_processing{ "performance.glsl_for_processing.v2" };
+            static const char* glsl_for_processing{ "performance.glsl_for_processing.v3" };
             static const char* enable_msaa{ "performance.msaa" };
             static const char* msaa_samples{ "performance.msaa_samples" };
             static const char* show_fps{ "performance.show_fps" };
@@ -395,6 +395,7 @@ namespace rs2
         std::shared_ptr<syncer_model> syncer;
         std::shared_ptr<rs2::asynchronous_syncer> dev_syncer;
         bool is_streaming() const;
+        bool is_color_streaming() const;
         bool metadata_supported = false;
         bool get_curr_advanced_controls = true;
         device dev;

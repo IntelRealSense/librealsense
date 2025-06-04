@@ -1428,6 +1428,10 @@ namespace rs2
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_UVMAPPING_CALIB || action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
             stop_viewer(invoke);
 
+        if( action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_TARE_CALIB )
+            if( _model.is_color_streaming() )
+                throw std::runtime_error( "Turn off RGB Camera streaming before calibrating." );
+
         update_last_used();
 
         if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_FL_CALIB)
