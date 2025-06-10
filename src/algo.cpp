@@ -4,6 +4,7 @@
 #include "algo.h"
 #include "option.h"
 #include "core/video-frame.h"
+#include <algorithm>
 
 using namespace librealsense;
 
