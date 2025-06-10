@@ -79,10 +79,7 @@ class PlaybackStatusVerifier:
                 required_status_detected = True
                 break
             time.sleep( sample_interval )
-        test.check(required_status_detected, description='Check failed, Timeout on waiting for ')
-
-    def reset_status_changes_cnt(self):
-        self._status_changes_cnt = 0
+        test.check(required_status_detected, description='Check failed, Timeout on waiting for status change')
 
     def get_statuses(self):
         return self._statuses
