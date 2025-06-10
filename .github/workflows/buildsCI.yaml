@@ -24,7 +24,7 @@ jobs:
 
   #--------------------------------------------------------------------------------
   Win_SH_EX_CfU:  # Windows, shared, with Examples & Tools, and Check for Updates
-    runs-on: windows-2019
+    runs-on: windows-2025
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
@@ -55,7 +55,7 @@ jobs:
         cd ${{env.WIN_BUILD_DIR}}
         pwd
         ls        
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true
 
     - name: Build
       # Build your program with the given configuration
@@ -66,7 +66,7 @@ jobs:
 
   #--------------------------------------------------------------------------------
   Win_SH_EX_No_Logs:  # Windows, shared, with Examples & Tools, no EasyLogging and no Check for Updates
-    runs-on: windows-2019
+    runs-on: windows-2025
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
@@ -97,7 +97,7 @@ jobs:
         cd ${{env.WIN_BUILD_DIR}}
         pwd
         ls        
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=false -DBUILD_EASYLOGGINGPP=false
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=false -DBUILD_EASYLOGGINGPP=false
 
     - name: Build
       # Build your program with the given configuration
@@ -108,7 +108,7 @@ jobs:
         
   #--------------------------------------------------------------------------------
   Win_ST_Py_CI:  # Windows, Static, Python, Tools, libCI with executables
-    runs-on: windows-2019
+    runs-on: windows-2025
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
@@ -141,7 +141,7 @@ jobs:
       run: |        
         LRS_SRC_DIR=$(pwd)
         cd ${{env.WIN_BUILD_DIR}}
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=true -DUNIT_TESTS_ARGS="--not-live --context=windows" -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=false -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true 
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=true -DUNIT_TESTS_ARGS="--not-live --context=windows" -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=false -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true 
 
     - name: Build
       # Build your program with the given configuration
@@ -161,14 +161,14 @@ jobs:
       run: |
         mkdir ${{env.WIN_BUILD_DIR}}/rs-all-client
         cd ${{env.WIN_BUILD_DIR}}/rs-all-client
-        cmake $GITHUB_WORKSPACE/.github/workflows/rs-all-client -G "Visual Studio 16 2019"
+        cmake $GITHUB_WORKSPACE/.github/workflows/rs-all-client -G "Visual Studio 17 2022"
         cmake --build . --config Release -- -m
         ./Release/rs-all-client
 
 
   #--------------------------------------------------------------------------------
   Win_SH_Py_DDS_CI:  # Windows, Shared, Python, Tools, DDS, libCI without executables
-    runs-on: windows-2019
+    runs-on: windows-2025
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
@@ -199,7 +199,7 @@ jobs:
       run: |        
         LRS_SRC_DIR=$(pwd)   
         cd ${{env.WIN_BUILD_DIR}}
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true 
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true 
 
     - name: Build
       # Build your program with the given configuration
@@ -217,7 +217,7 @@ jobs:
 
 #--------------------------------------------------------------------------------
   Win_SH_Py_DDS_SEC:  # Windows, Shared, Python, Tools, DDS, additional security checks
-    runs-on: windows-2019
+    runs-on: windows-2025
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@v4
@@ -248,7 +248,7 @@ jobs:
       run: |        
         LRS_SRC_DIR=$(pwd)   
         cd ${{env.WIN_BUILD_DIR}}
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DENABLE_SECURITY_FLAGS=true
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DENABLE_SECURITY_FLAGS=true
 
     - name: Build
       # Build your program with the given configuration
@@ -260,7 +260,7 @@ jobs:
 
   #--------------------------------------------------------------------------------
   Win_SH_Py_RSUSB_Csharp:  # Windows, Shared, Python, RSUSB backend, C# bindings
-    runs-on: windows-2019
+    runs-on: windows-2025
     timeout-minutes: 60
       
     steps:
@@ -291,7 +291,7 @@ jobs:
       run: |   
         LRS_SRC_DIR=$(pwd)
         cd ${{env.WIN_BUILD_DIR}}
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DCHECK_FOR_UPDATES=false -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DFORCE_RSUSB_BACKEND=true -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5"
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DCHECK_FOR_UPDATES=false -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DFORCE_RSUSB_BACKEND=true -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5"
 
     - name: Build
       # Build your program with the given configuration
