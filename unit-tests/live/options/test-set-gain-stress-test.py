@@ -2,6 +2,7 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 # test:device each(D400*)
+# test:device each(D500*)
 # test:donotrun:!nightly
 
 import pyrealsense2 as rs
