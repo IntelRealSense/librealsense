@@ -16,7 +16,7 @@ dev = None
 device_removed = False
 device_added = False
 MAX_ENUM_TIME_D400 = 5 # [sec]
-MAX_ENUM_TIME_D500 = 18 # [sec]
+MAX_ENUM_TIME_D500 = 15 # [sec]
 
 def device_changed( info ):
     global dev, device_removed, device_added
@@ -30,11 +30,14 @@ def device_changed( info ):
             log.out( "Device addition detected at: ", time.perf_counter())
             device_added = True
 
-def get_max_enum_rime_by_device( dev ):
+def get_max_enum_time_by_device( dev ):
     if dev.get_info( rs.camera_info.product_line ) == "D400":
-        return MAX_ENUM_TIME_D400;
+        return MAX_ENUM_TIME_D400
     elif dev.get_info( rs.camera_info.product_line ) == "D500":
-        return MAX_ENUM_TIME_D500;
+        if dev.get_info( rs.camera_info.connection_type) == "DDS":
+            print(18)
+            return MAX_ENUM_TIME_D500 + 3  # some extra time for discovery and initialization for DDS
+        return MAX_ENUM_TIME_D500
     return 0;
 
 ################################################################################################
@@ -44,7 +47,7 @@ test.start( "HW reset to enumeration time" )
 dev, ctx = test.find_first_device_or_exit()
 ctx.set_devices_changed_callback( device_changed )
 
-max_dev_enum_time = get_max_enum_rime_by_device( dev )
+max_dev_enum_time = get_max_enum_time_by_device( dev )
 time.sleep(1)
 log.out( "Sending HW-reset command" )
 enumeration_sw = Stopwatch() # we know we add the device removal time, but it shouldn't take long
