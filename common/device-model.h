@@ -402,7 +402,7 @@ namespace rs2
         std::vector<std::string> restarting_device_info;
         std::set<std::string> advanced_mode_settings_file_names;
         std::string selected_file_preset;
-
+        bool show_advanced_mode_popup = false;
         std::vector<std::shared_ptr<notification_model>> related_notifications;
 
     private:
