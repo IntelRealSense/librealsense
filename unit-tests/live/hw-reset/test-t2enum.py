@@ -2,6 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 # test:device each(D400*) !D457  # D457 device is known for HW reset issues..
+# test:device each(D500*)
 
 import pyrealsense2 as rs
 from rspy import test, log
@@ -15,6 +16,7 @@ dev = None
 device_removed = False
 device_added = False
 MAX_ENUM_TIME_D400 = 5 # [sec]
+MAX_ENUM_TIME_D500 = 18 # [sec]
 
 def device_changed( info ):
     global dev, device_removed, device_added
@@ -31,6 +33,8 @@ def device_changed( info ):
 def get_max_enum_rime_by_device( dev ):
     if dev.get_info( rs.camera_info.product_line ) == "D400":
         return MAX_ENUM_TIME_D400;
+    elif dev.get_info( rs.camera_info.product_line ) == "D500":
+        return MAX_ENUM_TIME_D500;
     return 0;
 
 ################################################################################################
@@ -57,7 +61,8 @@ while not t.has_expired():
 test.check( device_removed and not t.has_expired() ) # verifying we are not timed out
 
 log.out( "Pending for device addition" )
-t.start()
+buffer = 5 # we add 5 seconds so if the test pass the creteria by a short amount of time we can print it
+t = Timer( max_dev_enum_time + buffer )
 r_2_e_time = 0 # reset to enumeration time
 while not t.has_expired():
     if ( device_added ):
@@ -67,7 +72,11 @@ while not t.has_expired():
 
 test.check( device_added )
 test.check( r_2_e_time < max_dev_enum_time )
-log.d( "Enumeration time took", r_2_e_time, "[sec]" )
+
+if r_2_e_time:
+  log.d( "Enumeration time took", r_2_e_time, "[sec]" )
+else:
+  log.e( "Enumeration did not occur in ", max_dev_enum_time + buffer, "[sec]" )
 
 test.finish()
 
