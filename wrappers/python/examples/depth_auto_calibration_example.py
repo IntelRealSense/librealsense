@@ -68,6 +68,13 @@ def main(arguments=None):
             print('The script is designed to run with USB3 connection type.')
             print('In order to enable it with USB2.1 mode the fps rates for the Focal Length and Ground Truth calculation stages should be re-adjusted')
             sys.exit(1)
+    # 3. Advanced mode should be enabled
+    #    Some calibrations require changing of advanced mode presets (depends on calibration parameters/type)
+    am_device = rs.rs400_advanced_mode(device)
+    if not am_device or not am_device.is_enabled():
+        print('Camera "Advanced Mode" must be enabled before calibrating.')
+        sys.exit(1)
+        # To enable Advanced Mode use "am_device.toggle_advanced_mode(True)". Note - causes the camera to reset (set options will return to default)
 
 
     # prepare device

@@ -1390,13 +1390,13 @@ namespace librealsense
         rs2_rs400_visual_preset old_preset = { RS2_RS400_VISUAL_PRESET_DEFAULT };
 
         auto advanced_mode = dynamic_cast<ds_advanced_mode_base*>(this);
-        if (advanced_mode)
-        {
-            old_preset = (rs2_rs400_visual_preset)(int)advanced_mode->_preset_opt->query();
-            if (old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
-                old_preset_values = advanced_mode->get_all();
-            advanced_mode->_preset_opt->set(RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
-        }
+        if( !advanced_mode || !advanced_mode->is_enabled() )
+            throw librealsense::wrong_api_call_sequence_exception( "Camera \"Advanced Mode\" must be enabled before running this calibration" );
+
+        old_preset = (rs2_rs400_visual_preset)(int)advanced_mode->_preset_opt->query();
+        if (old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
+            old_preset_values = advanced_mode->get_all();
+        advanced_mode->_preset_opt->set(RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
 
         std::shared_ptr<ds_advanced_mode_base> recover_preset(advanced_mode, [old_preset, advanced_mode, old_preset_values](ds_advanced_mode_base* adv)
         {
@@ -1415,14 +1415,14 @@ namespace librealsense
     void auto_calibrated::change_preset_and_stay()
     {
         auto advanced_mode = dynamic_cast<ds_advanced_mode_base*>(this);
-        if (advanced_mode)
-        {
-            _old_preset = (rs2_rs400_visual_preset)(int)advanced_mode->_preset_opt->query();
-            if (_old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
-                _old_preset_values = advanced_mode->get_all();
-            advanced_mode->_preset_opt->set(RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
-            _preset_change = true;
-        }
+        if( ! advanced_mode || ! advanced_mode->is_enabled() )
+            throw librealsense::wrong_api_call_sequence_exception( "Camera \"Advanced Mode\" must be enabled before running this calibration" );
+
+        _old_preset = (rs2_rs400_visual_preset)(int)advanced_mode->_preset_opt->query();
+        if (_old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
+            _old_preset_values = advanced_mode->get_all();
+        advanced_mode->_preset_opt->set(RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
+        _preset_change = true;
     }
 
     void auto_calibrated::restore_preset()
