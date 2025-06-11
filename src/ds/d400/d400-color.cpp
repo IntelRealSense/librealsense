@@ -255,8 +255,14 @@ namespace librealsense
             auto uvc_dev = raw_color_ep->get_uvc_device();
             if (uvc_dev->is_platform_jetson())
             {
-                // Work-around for discrepancy between the RGB YUYV descriptor and the parser . Use UYUV parser instead
-                color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
+                // Work-around for discrepancy between the RGB YUYV descriptor and the parser. Use UYUV parser instead.
+                // Bytes are reveiced swapped, so YUYV format is received as UYVY.
+                color_ep.register_processing_block( processing_block_factory::create_pbf_vector< uyvy_converter >( RS2_FORMAT_YUYV,
+                                                                                                                   map_supported_color_formats( RS2_FORMAT_YUYV, false ),
+                                                                                                                   RS2_STREAM_COLOR ) );
+                color_ep.register_processing_block( { { RS2_FORMAT_YUYV } },
+                                                    { { RS2_FORMAT_YUYV, RS2_STREAM_COLOR } },
+                                                    []() { return std::make_shared< uyvy_to_yuyv >(); } );
             }
             else
             {
