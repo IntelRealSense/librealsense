@@ -2,7 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 # test:device D400*
-#test:device D555
+# test:device each(D555)
 # This test checks streaming y16 profile
 
 import time
