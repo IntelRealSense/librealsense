@@ -51,8 +51,8 @@ namespace librealsense
             // return only the parameters section
             json get_params() const { return *_parameters; };
 
-            // return only the subpreset section
-            json get_subpreset() const { return *_subpreset; };
+            // return only the hdr-preset section
+            json get_hdr_preset() const { return *_hdr_preset; };
                 
         protected:
             device_info read_device_info() const;
@@ -63,7 +63,7 @@ namespace librealsense
             int _schema_version;
             json _root;
             json *_parameters;
-            json *_subpreset;
+            json *_hdr_preset;
         };
 
         class json_preset_writer

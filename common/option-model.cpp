@@ -9,7 +9,6 @@
 #include "device-model.h"
 #include "subdevice-model.h"
 #include <os.h>
-#include <rsutils/easylogging/easyloggingpp.h>
 
 namespace rs2
 {
@@ -133,10 +132,11 @@ bool option_model::draw( std::string & error_message,
                                    "algorithm\nClick the button, then draw a rect on the frame" );
         }
 
-        if (opt == RS2_OPTION_HDR_ENABLED)
+#if true
+        if (opt == RS2_OPTION_HDR_ENABLED) // TODO: enable this when the auto-hdr feature is fully implemented, currently works via the load/save preset buttons at the top of the viewer - make sure to disable HDR before loading!
         {
             auto disable_hdr_load = value_as_float() > 0;  // if HDR is enabled, we can't load a new config
-            // draw a button to load the HDR configuration from JSON
+
             ImGui::SameLine(0, 10);
             std::string button_label = "Load HDR";
             std::string caption = rsutils::string::from() << "Load HDR config from JSON##" << button_label;
@@ -145,7 +145,7 @@ bool option_model::draw( std::string & error_message,
                 {
                     dev->_options_invalidated = true;
                     auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON | PRESET)\0*.json;*.preset\0", NULL, NULL);
-                    //ret = "C:\\Users\\aviaavra\\Downloads\\SubPresetTool-master\\SubPresetTool-master\\BadJson.json";
+
                     if (ret)
                     {
                         std::ifstream file(ret);
@@ -159,13 +159,14 @@ bool option_model::draw( std::string & error_message,
                         error_message = safe_call([&]() { 
                             dev->dev.as<serializable_device>().load_json(str); 
 
-                            LOG_INFO("HDR config loaded from JSON file: " << ret);
+                            model.add_log( rsutils::string::from() << "HDR config loaded from JSON file: " << ret, RS2_LOG_SEVERITY_INFO);
                             dev->_options_invalidated = true;
                             });
                     }
                 }
             }, disable_hdr_load ); 
         }
+#endif
     }
 
     return res;
