@@ -178,7 +178,7 @@ namespace librealsense
         void get_color_white_balance(white_balance_control* ptr) const;
         void get_color_auto_white_balance(auto_white_balance_control* ptr) const;
         void get_color_power_line_frequency(power_line_frequency_control* ptr) const;
-        void get_subpreset(SubPreset* ptr) const;
+        void get_hdr_preset(hdr_preset::hdr_preset* ptr) const;
 
         void set_laser_power(const laser_power_control& val);
         void set_laser_state(const laser_state_control& val);
@@ -216,8 +216,8 @@ namespace librealsense
         void set_all_depth( const preset & p );
         void set_all_rgb( const preset & p );
         bool should_set_rgb_preset() const;
-        bool should_set_subpreset(const preset& p);
-        void set_subpreset(const preset& p);
+        bool should_set_hdr_preset(const preset& p);
+        void set_hdr_preset(const preset& p);
 
         std::vector<uint8_t> send_receive(const std::vector<uint8_t>& input) const;
 
