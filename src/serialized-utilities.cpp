@@ -23,7 +23,7 @@ json_preset_reader::json_preset_reader( const std::string & json_content ) : _pa
     {
         _parameters = &_root;
     }
-    _subpreset = &_root["SubPreset"];
+    _hdr_preset = &_root["hdr-preset"];
 }
 
 device_info json_preset_reader::read_device_info() const

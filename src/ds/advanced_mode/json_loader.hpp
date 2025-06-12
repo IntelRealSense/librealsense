@@ -450,23 +450,23 @@ namespace librealsense
         return map;
     }
 
-    std::string controlNameFromId( ControlId id )
+    std::string control_name_from_id( hdr_preset::control_id id )
     {
-        auto it = control_id_string_map.find( id );
-        if( it != control_id_string_map.end() )
+        auto it = hdr_preset::control_id_string_map.find( id );
+        if( it != hdr_preset::control_id_string_map.end() )
         {
             return it->second;
         }
-        throw std::invalid_argument("Error: Incorrect buffer! controlName NOT found! (" + std::to_string(id) + ")");
+        throw std::invalid_argument("Error: Incorrect buffer! control ID NOT found! (" + std::to_string(id) + ")");
     }
 
-    ControlId getControlIdFromString( const std::string & name )
+    hdr_preset::control_id get_control_id_from_string( const std::string & name )
     {
         // Build reverse map on first use
-        static const std::unordered_map< std::string, ControlId > string_control_id_map = []()
+        static const std::unordered_map< std::string, hdr_preset::control_id > string_control_id_map = []()
         {
-            std::unordered_map< std::string, ControlId > result;
-            for( const auto & pair : control_id_string_map)
+            std::unordered_map< std::string, hdr_preset::control_id > result;
+            for( const auto & pair : hdr_preset::control_id_string_map)
             {
                 result[pair.second] = pair.first;
             }
@@ -483,22 +483,22 @@ namespace librealsense
 
     // Helper function to append a struct to the buffer
     template<typename T>
-    void appendStruct(std::vector<uint8_t>& buffer, const T& st) {
+    void append_struct(std::vector<uint8_t>& buffer, const T& st) {
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&st);
         buffer.insert(buffer.end(), ptr, ptr + sizeof(T));
     }
 
-    // Given populated SubPresetHeader and items, build the byte buffer
-    std::vector<uint8_t> serializeSubPreset(
-        const SubPresetHeader& sph,
-        const std::vector<std::pair<ItemHeader, std::vector<Control>>>& items
+    // Given header and items, build the byte buffer
+    std::vector<uint8_t> serialize_hdr_preset(
+        const  hdr_preset::preset_header& header,
+        const std::vector<std::pair<hdr_preset::item_header, std::vector<hdr_preset::sub_control>>>& items
     ) {
         std::vector<uint8_t> buffer;
-        appendStruct(buffer, sph);
+        append_struct(buffer, header);
         for (const auto& entry : items) {
-            appendStruct(buffer, entry.first);
+            append_struct(buffer, entry.first);
             for (const auto& ctrl : entry.second) {
-                appendStruct(buffer, ctrl);
+                append_struct(buffer, ctrl);
             }
         }
         return buffer;
@@ -506,7 +506,7 @@ namespace librealsense
 
     // Helper to read a struct of type T from buffer at offset
     template<typename T>
-    T readStruct(const std::vector<uint8_t>& buffer, size_t& offset) {
+    T read_struct(const std::vector<uint8_t>& buffer, size_t& offset) {
         if (offset + sizeof(T) > buffer.size()) {
             throw std::out_of_range("Buffer too small for struct");
         }
@@ -516,37 +516,37 @@ namespace librealsense
         return obj;
     }
 
-    // Deserialize full SubPreset from byte buffer
-    SubPreset parseSubPreset(const std::vector<uint8_t>& buffer) {
+    // Deserialize full hdr_preset from byte buffer
+    hdr_preset::hdr_preset parse_hdr_preset(const std::vector<uint8_t>& buffer) {
         size_t offset = 4;  // The command is at the beginning of the buffer
-        SubPreset preset{};
+        hdr_preset::hdr_preset _hdr_preset{};
         if (buffer.size() <= offset) {
-            return preset;
+            return _hdr_preset;
         }
 
         // Read header
-        preset.header = readStruct<SubPresetHeader>(buffer, offset);
-        if (preset.header.headerSize != SubPresetHeader::size()) {
-            throw std::runtime_error("Unexpected SubPresetHeader size");
+        _hdr_preset.header = read_struct<hdr_preset::preset_header>(buffer, offset);
+        if (_hdr_preset.header.header_size != hdr_preset::preset_header::size()) {
+            throw std::runtime_error("Unexpected header size");
         }
 
         // Read items
-        for (uint8_t i = 0; i < preset.header.numOfItems; ++i) {
+        for (uint8_t i = 0; i < _hdr_preset.header.num_of_items; ++i) {
             // Read item header
-            ItemHeader ih = readStruct<ItemHeader>(buffer, offset);
-            if (ih.headerSize != ItemHeader::size()) {
-                throw std::runtime_error("Unexpected ItemHeader size");
+            hdr_preset::item_header ih = read_struct<hdr_preset::item_header>(buffer, offset);
+            if (ih.header_size != hdr_preset::item_header::size()) {
+                throw std::runtime_error("Unexpected item_header size");
             }
 
             // Read controls for the item
-            std::vector<Control> controls;
-            controls.reserve(ih.numOfControls);
-            for (uint8_t c = 0; c < ih.numOfControls; ++c) {
-                Control ctrl = readStruct<Control>(buffer, offset);
+            std::vector<hdr_preset::sub_control> controls;
+            controls.reserve(ih.num_of_controls);
+            for (uint8_t c = 0; c < ih.num_of_controls; ++c) {
+                hdr_preset::sub_control ctrl = read_struct<hdr_preset::sub_control>(buffer, offset);
                 controls.push_back(ctrl);
             }
 
-            preset.items.emplace_back(ih, std::move(controls));
+            _hdr_preset.items.emplace_back(ih, std::move(controls));
         }
 
         // validate that we read exactly buffer size
@@ -554,7 +554,7 @@ namespace librealsense
             throw std::runtime_error("Buffer contains extra data");
         }
 
-        return preset;
+        return _hdr_preset;
     }
 
 
@@ -576,31 +576,31 @@ namespace librealsense
                 preset_writer.write_param(f.first.c_str(), str);
         }
 
-        if (!in_preset.sub_preset.items.empty())
+        if (!in_preset.auto_hdr.items.empty())
         {
-            json subpreset;
-            auto & sp = in_preset.sub_preset;
-            subpreset["id"]         = std::to_string(sp.header.id);
-            subpreset["iterations"] = std::to_string(sp.header.iterations);
+            json hdr_preset;
+            auto & auto_hdr = in_preset.auto_hdr;
+            hdr_preset["id"]         = std::to_string(auto_hdr.header.id);
+            hdr_preset["iterations"] = std::to_string(auto_hdr.header.iterations);
 
             // build 'items' array of objects
-            for (size_t i = 0; i < sp.items.size(); ++i) {
-                const auto& ih = sp.items[i].first;
+            for (size_t i = 0; i < auto_hdr.items.size(); ++i) {
+                const auto& ih = auto_hdr.items[i].first;
                 json item;
                 item["iterations"] = std::to_string(ih.iterations);
 
                 // build 'controls' array for the item
-                for (int c = 0; c < ih.numOfControls; ++c) {
-                    const Control& ctrl = sp.items[i].second[c];
-                    const std::string controlName = controlNameFromId( ControlId( ctrl.controlId ) );
-                    const std::string controlValue = std::to_string( ctrl.controlValue );
+                for (int c = 0; c < ih.num_of_controls; ++c) {
+                    const hdr_preset::sub_control& ctrl = auto_hdr.items[i].second[c];
+                    const std::string control_name = control_name_from_id( hdr_preset::control_id( ctrl.control_id ) );
+                    const std::string control_value = std::to_string( ctrl.control_value );
                     
-                    item["controls"].push_back({ { controlName, controlValue } });
+                    item["controls"].push_back({ { control_name, control_value } });
                 }
 
-                subpreset["items"].push_back(std::move(item));
+                hdr_preset["items"].push_back(std::move(item));
             }
-            preset_writer.write_root_param("SubPreset", subpreset);
+            preset_writer.write_root_param("hdr-preset", hdr_preset); // in the JSON, the HDR control is stored under "hdr-preset"
         }
 
         auto str = preset_writer.to_string();
@@ -629,7 +629,7 @@ namespace librealsense
             auto key = it.key();
             auto value = it.value();
             auto kvp = fields.find(key);
-            if (key == "SubPreset")  // skip the SubPreset block
+            if (key == "hdr-preset")  // skip the hdr-preset block
                 continue;
             if (kvp != fields.end())
             {
@@ -693,29 +693,29 @@ namespace librealsense
         update_preset_camera_control(in_preset.color_auto_white_balance     , p.color_auto_white_balance);
         update_preset_camera_control(in_preset.color_power_line_frequency   , p.color_power_line_frequency);
 
-        auto subpreset = preset_reader.get_subpreset();
-        if (!subpreset.is_null())
+        auto hdr_preset_from_json = preset_reader.get_hdr_preset();  // hdr-preset block
+        if (!hdr_preset_from_json.is_null())
         {
-            SubPreset sp;
+            hdr_preset::hdr_preset auto_hdr;
 
-            sp.header.headerSize = SubPresetHeader::size();
-            auto id = std::stoi(subpreset.at("id").get<std::string>());
+            auto_hdr.header.header_size = hdr_preset::preset_header::size();
+            auto id = std::stoi(hdr_preset_from_json.at("id").get<std::string>());
             if( id < 0 || id > 0xF )
-                throw std::invalid_argument("Error: Incorrect subpreset id: \"" + std::to_string(id) + "\"" + ", valid range <0:15>");
-            sp.header.id = static_cast<uint8_t>(id);
+                throw std::invalid_argument("Error: Incorrect hdr_preset id: \"" + std::to_string(id) + "\"" + ", valid range <0:15>");
+            auto_hdr.header.id = static_cast<uint8_t>(id);
 
-            auto iterations = std::stoi( subpreset.at( "iterations" ).get< std::string >() );
+            auto iterations = std::stoi(hdr_preset_from_json.at( "iterations" ).get< std::string >() );
             if( iterations < 0 || iterations > 0xFFFF )
                 throw std::invalid_argument("Error: Incorrect number of iterations: \"" + std::to_string(iterations) + "\"" + ", valid range <1:ffff>, 0 - for infinite");
-            sp.header.iterations = static_cast<uint16_t>(iterations);
+            auto_hdr.header.iterations = static_cast<uint16_t>(iterations);
 
-            const auto& items = subpreset.at("items");
+            const auto& items = hdr_preset_from_json.at("items");
 
             for (const auto& item : items) {
-                ItemHeader item_header{};
-                std::vector<Control> item_controls;
+                hdr_preset::item_header item_header{};
+                std::vector<hdr_preset::sub_control> item_controls;
 
-                item_header.headerSize = ItemHeader::size();
+                item_header.header_size = hdr_preset::item_header::size();
                 item_header.iterations = static_cast<uint16_t>(std::stoi(item.at("iterations").get<std::string>()));
 
                 const auto& controls = item.at("controls");
@@ -724,23 +724,23 @@ namespace librealsense
                     const std::string key = control.begin().key();
                     const std::string value = control.begin().value().get<std::string>();
 
-                    Control ctrl{};
-                    ctrl.controlId = static_cast<uint8_t>(getControlIdFromString(key)); // will throw if not found
-                    ctrl.controlValue = static_cast<uint32_t>(std::stoul(value));
+                    hdr_preset::sub_control ctrl{};
+                    ctrl.control_id = static_cast<uint8_t>(get_control_id_from_string(key)); // will throw if not found
+                    ctrl.control_value = static_cast<uint32_t>(std::stoul(value));
                     item_controls.push_back(ctrl);
                 }
 
-                item_header.numOfControls = static_cast<uint8_t>(item_controls.size());
+                item_header.num_of_controls = static_cast<uint8_t>(item_controls.size());
 
-                sp.items.push_back( { item_header, item_controls } );
+                auto_hdr.items.push_back( { item_header, item_controls } );
             }
 
-            auto num_of_items = sp.items.size();
-            if( num_of_items == 0 || num_of_items > 0xFF ) // TODO: limit is 6 frames?
-                throw std::invalid_argument( "Error: Incorrect number of items: \"" + std::to_string( num_of_items ) + "\"" + ", valid range <1:255>" );
-            sp.header.numOfItems = static_cast< uint8_t >( num_of_items );
+            auto num_of_items = auto_hdr.items.size();
+            if (num_of_items < 2 || num_of_items > 6)
+                throw std::invalid_argument( "Error: Incorrect number of items: \"" + std::to_string( num_of_items ) + "\"" + ", valid range <2:6>" );
+            auto_hdr.header.num_of_items = static_cast< uint8_t >( num_of_items );
 
-            in_preset.sub_preset = sp;
+            in_preset.auto_hdr = auto_hdr;
         }
 
     }
