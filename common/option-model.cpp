@@ -132,7 +132,7 @@ bool option_model::draw( std::string & error_message,
                                    "algorithm\nClick the button, then draw a rect on the frame" );
         }
 
-#if true
+#if defined(AUTO_HDR)
         if (opt == RS2_OPTION_HDR_ENABLED) // TODO: enable this when the auto-hdr feature is fully implemented, currently works via the load/save preset buttons at the top of the viewer - make sure to disable HDR before loading!
         {
             auto disable_hdr_load = value_as_float() > 0;  // if HDR is enabled, we can't load a new config
