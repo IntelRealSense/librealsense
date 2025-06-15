@@ -425,14 +425,14 @@ namespace rs2
         std::vector<std::string> restarting_device_info;
         std::set<std::string> advanced_mode_settings_file_names;
         std::string selected_file_preset;
-        bool show_advanced_mode_popup = false;
+
         std::vector<std::shared_ptr<notification_model>> related_notifications;
 
     private:
         // This class is in charge of camera accuracy health window parameters,
         // Needed as a member for reseting the window memory on device disconnection.
 
-
+        bool show_advanced_mode_popup = false;
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
         int draw_playback_controls(ux_window& window, ImFont* font, viewer_model& view);
