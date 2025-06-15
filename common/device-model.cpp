@@ -1302,7 +1302,6 @@ namespace rs2
             RsImGui::CustomTooltip("%s", "Click for more");
             window.link_hovered();
         }
-        static bool keep_showing_advanced_mode_modal = false;
         bool open_calibration_ui = false;
         if (ImGui::BeginPopup(label.c_str()))
         {
@@ -1320,7 +1319,7 @@ namespace rs2
                     bool selected = is_advanced_mode_enabled;
                     if (ImGui::MenuItem("Advanced Mode", nullptr, &selected))
                     {
-                        keep_showing_advanced_mode_modal = true;
+                        show_advanced_mode_popup = true;
                     }
 
                     ImGui::Separator();
@@ -1435,14 +1434,14 @@ namespace rs2
         }
 
 
-        if (keep_showing_advanced_mode_modal)
+        if (show_advanced_mode_popup)
         {
             const bool is_advanced_mode_enabled = dev.as<advanced_mode>().is_enabled();
             std::string msg = rsutils::string::from()
                            << "\t\tAre you sure you want to "
                            << ( is_advanced_mode_enabled ? "turn off Advanced mode" : "turn on Advanced mode" )
                            << "\t\t";
-            keep_showing_advanced_mode_modal = prompt_toggle_advanced_mode(!is_advanced_mode_enabled, msg, restarting_device_info, viewer, window, error_message);
+            show_advanced_mode_popup = prompt_toggle_advanced_mode(!is_advanced_mode_enabled, msg, restarting_device_info, viewer, window, error_message);
         }
 
         _calib_model.update(window, error_message);
