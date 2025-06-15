@@ -458,6 +458,12 @@ namespace librealsense
         }
     }
 
+    void ds_advanced_mode_base::get_hdr_preset(hdr_preset::hdr_preset* ptr) const
+    {
+        auto buffer = send_receive(encode_command( ds::GETSUBPRESET ));
+        *ptr = parse_hdr_preset( buffer );
+    }
+
     void ds_advanced_mode_base::set_depth_control_group(const STDepthControlGroup& val)
     {
         set(val, advanced_mode_traits<STDepthControlGroup>::group);
@@ -778,6 +784,8 @@ namespace librealsense
         get_color_auto_white_balance(&p.color_auto_white_balance);
         get_color_power_line_frequency(&p.color_power_line_frequency);
 
+        get_hdr_preset(&p.auto_hdr);
+
         return p;
     }
 
@@ -786,6 +794,8 @@ namespace librealsense
         set_all_depth( p );
         if( should_set_rgb_preset() )
             set_all_rgb( p );
+        if( should_set_hdr_preset(p) )
+            set_hdr_preset( p );
     }
 
     void ds_advanced_mode_base::set_all_depth(const preset& p)
@@ -859,6 +869,20 @@ namespace librealsense
         auto product_line = _depth_sensor.get_device().get_info( rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_LINE );
 
         return product_line != "D500";
+    }
+
+    bool ds_advanced_mode_base::should_set_hdr_preset(const preset& p)
+    {
+        return p.auto_hdr.header.num_of_items > 0;
+    }
+
+    void ds_advanced_mode_base::set_hdr_preset(const preset& p)
+    {
+        // serialize the hdr_preset and send it
+        auto buffer = serialize_hdr_preset(p.auto_hdr.header, p.auto_hdr.items);
+        command cmd(ds::SETSUBPRESET, static_cast<int>(buffer.size()));
+        cmd.data = buffer;
+        auto res = _hw_monitor->send(cmd);
     }
 
     std::vector<uint8_t> ds_advanced_mode_base::send_receive(const std::vector<uint8_t>& input) const
