@@ -1,11 +1,14 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 
+import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # to allow running this script directly
+sys.path.append(parent_dir)
 from rspy import log
 import time
 import platform, re
 from rspy import device_hub
-import os
 
 if __name__ == '__main__':
     import os, sys, getopt
@@ -198,7 +201,7 @@ class UniFiSwitch(device_hub.device_hub):
             ports = self.all_ports()
 
         if disable_other_ports:
-            other_ports = set(self.all_ports()) - set(ports)
+            other_ports = set(self.all_ports()) - set([int(p) for p in ports])
             self.disable_ports(list(other_ports), sleep_on_change)
 
         if not ports:  # ports is []
