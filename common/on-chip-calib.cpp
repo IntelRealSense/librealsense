@@ -283,11 +283,18 @@ namespace rs2
             _sub->ui.selected_format_id.clear();
             _sub->ui.selected_format_id[_uid] = 0;
 
-            _sub->ui.selected_shared_fps_id = 0; // For Ground Truth default is the lowest common FPS for USB2/# compatibility
             // Select FPS value
+            auto fps = 30;
+            if (_sub->dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+            {
+                std::string desc = _sub->dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+                if (!starts_with(desc, "3."))
+                    fps = 6; //USB2 bandwidth limitation for 720P
+            }
+            _sub->ui.selected_shared_fps_id = 0; // If requested FPS is not found use lowest common FPS for USB2 compatibility (sorted lowest first)
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
             {
-                if (_sub->shared_fps_values[i] == 0)
+                if (_sub->shared_fps_values[i] == fps)
                     _sub->ui.selected_shared_fps_id = i;
             }
 
