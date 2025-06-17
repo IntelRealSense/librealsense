@@ -947,12 +947,14 @@ namespace rs2
 
     void on_chip_calib_manager::calibrate()
     {
-        auto exposure = _sub->s->get_option( RS2_OPTION_EXPOSURE );
-        if( exposure > 15500 )
+        // High exposure values might limit high FPS calibrations, issue warning to the user
+        auto auto_exposure = _sub->s->supports( RS2_OPTION_ENABLE_AUTO_EXPOSURE ) && _sub->s->get_option( RS2_OPTION_ENABLE_AUTO_EXPOSURE );
+        auto exposure = _sub->s->get_option( RS2_OPTION_EXPOSURE ); // Currently all camera models support exposure option (D400 and D500)
+        if( !auto_exposure && exposure > 15500 )
         {
             throw std::runtime_error( "Exposure value is limiting the fps,\n"
-                                        "for the algorithm to be able to converge,\n"
-                                        "please reduce exposure value."  ); 
+                                      "for the algorithm to be able to converge,\n"
+                                      "please reduce exposure value." ); 
         }
 
         int occ_timeout_ms = 9000;
