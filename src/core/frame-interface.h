@@ -5,7 +5,7 @@
 #include <librealsense2/h/rs_frame.h>
 #include <memory>
 #include <iosfwd>
-
+#include <cstdint>
 
 namespace librealsense {
 
