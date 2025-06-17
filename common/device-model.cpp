@@ -178,19 +178,31 @@ namespace rs2
 
     device_model::~device_model()
     {
+        try
         {
-            std::lock_guard<std::mutex> lock(dev_mutex);
-            for (auto&& n : related_notifications) n->dismiss(false);
+            {
+                std::lock_guard<std::mutex> lock(dev_mutex);
+                for (auto&& n : related_notifications) n->dismiss(false);
 
-            _updates->set_device_status(*_updates_profile, false);
+                _updates->set_device_status(*_updates_profile, false);
 
-            stopping = true;
+                stopping = true;
+            }
+
+            if (check_for_device_updates_thread.joinable())
+            {
+                LOG_DEBUG("Waiting for device updates thread to finish...");
+                check_for_device_updates_thread.join();
+                LOG_DEBUG("Device updates thread joined");
+            }
         }
-
-        if (check_for_device_updates_thread.joinable())
+        catch (const std::exception& e)
         {
-            LOG_INFO( "Waiting for device updates thread to finish..." );
-            check_for_device_updates_thread.join();
+            LOG_ERROR(rsutils::string::from() << "Exception in device_model destructor: " << e.what());
+        }
+        catch (...)
+        {
+            LOG_ERROR("Unknown exception in device_model destructor");
         }
     }
 
@@ -204,7 +216,7 @@ namespace rs2
 
         // 'notification_type_is_displayed()' is used to detect if fw_update notification is on to avoid displaying it during FW update process when
         // the device enters recovery mode
-        std::lock_guard<std::mutex> lock(dev_mutex); // locking to fix a bug where the destructor was called, destroying dev and casuing access violation on this thread
+        std::lock_guard<std::mutex> lock(dev_mutex); // locking to fix a bug where the destructor was called, destroying dev and causing access violation on this thread
         if (stopping) return false;
 
         if( ! not_model->notification_type_is_displayed< fw_update_notification_model >()
