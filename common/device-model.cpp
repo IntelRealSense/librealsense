@@ -178,9 +178,32 @@ namespace rs2
 
     device_model::~device_model()
     {
-        for (auto&& n : related_notifications) n->dismiss(false);
+        try
+        {
+            {
+                std::lock_guard<std::mutex> lock(dev_mutex);
+                for (auto&& n : related_notifications) n->dismiss(false);
 
-        _updates->set_device_status(*_updates_profile, false);
+                _updates->set_device_status(*_updates_profile, false);
+
+                stopping = true;
+            }
+
+            if (check_for_device_updates_thread.joinable())
+            {
+                LOG_DEBUG("Waiting for device updates thread to finish...");
+                check_for_device_updates_thread.join();
+                LOG_DEBUG("Device updates thread joined");
+            }
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR(rsutils::string::from() << "Exception in device_model destructor: " << e.what());
+        }
+        catch (...)
+        {
+            LOG_ERROR("Unknown exception in device_model destructor");
+        }
     }
 
     bool device_model::check_for_bundled_fw_update(const rs2::context &ctx, std::shared_ptr<notifications_model> not_model , bool reset_delay )
@@ -193,6 +216,9 @@ namespace rs2
 
         // 'notification_type_is_displayed()' is used to detect if fw_update notification is on to avoid displaying it during FW update process when
         // the device enters recovery mode
+        std::lock_guard<std::mutex> lock(dev_mutex); // locking to fix a bug where the destructor was called, destroying dev and causing access violation on this thread
+        if (stopping) return false;
+
         if( ! not_model->notification_type_is_displayed< fw_update_notification_model >()
             && ( dev.is< updatable >() || dev.is< update_device >() ) )
         {
@@ -1021,7 +1047,7 @@ namespace rs2
             _updates_profile );
         std::weak_ptr< notifications_model > notification_model_protected( viewer.not_model );
         const context & ctx( viewer.ctx );
-        std::thread check_for_device_updates_thread( [ctx,
+        check_for_device_updates_thread = std::thread( [ctx,
                                                       updates_model_protected,
                                                       notification_model_protected,
                                                       this,
@@ -1168,7 +1194,6 @@ namespace rs2
             }
         } );
 
-        check_for_device_updates_thread.detach();
     }
 
     float device_model::draw_device_panel(float panel_width,
