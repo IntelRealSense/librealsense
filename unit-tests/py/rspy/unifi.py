@@ -197,6 +197,8 @@ class UniFiSwitch(device_hub.device_hub):
         return out
 
     def enable_ports(self, ports=None, disable_other_ports=False, sleep_on_change=0):
+        log.d(f"Enabling ports {ports if ports is not None else 'all'} on Unifi Switch"
+              f"{', disabling other ports' if disable_other_ports else ''}")
         if ports is None:
             ports = self.all_ports()
 
@@ -215,6 +217,7 @@ class UniFiSwitch(device_hub.device_hub):
         return True
 
     def disable_ports(self, ports=None, sleep_on_change=0):
+        log.d(f"Disabling ports {ports if ports is not None else 'all'} on Unifi Switch")
         if ports is None:
             ports = self.all_ports()
 
