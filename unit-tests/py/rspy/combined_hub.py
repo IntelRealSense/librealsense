@@ -127,7 +127,6 @@ class CombinedHub(device_hub.device_hub):
 
         success = True
         for name, hub in self.hubs.items():
-            log.d("Disabling ports on hub", name, ":", targets[name])
             ok = hub.disable_ports(targets[name], sleep_on_change)
             success = success and ok
         return success

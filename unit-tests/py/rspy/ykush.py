@@ -128,6 +128,8 @@ class Ykush(device_hub.device_hub):
         """
         result = True
         changed = False
+        log.d(f"Enabling ports {ports if ports is not None else 'all'} on YKUSH"
+              f"{', disabling other ports' if disable_other_ports else ''}")
         for port in self.all_ports():
             if ports is None or port in ports:
                 if not self.is_port_enabled( port ):
@@ -160,6 +162,7 @@ class Ykush(device_hub.device_hub):
         """
         result = True
         changed = False
+        log.d(f"Disabling ports {ports if ports is not None else 'all'} on YKUSH")
         for port in self.all_ports():
             if ports is None or port in ports:
                 if self.is_port_enabled( port ):
