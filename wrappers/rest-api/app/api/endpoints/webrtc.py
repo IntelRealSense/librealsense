@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Path
 from typing import List, Dict, Any
 
-from app.core.auth import get_current_user
+
 from app.models.webrtc import WebRTCOffer, WebRTCAnswer, WebRTCStatus, ICECandidate
 from app.services.webrtc_manager import WebRTCManager
 from app.api.dependencies import get_webrtc_manager
