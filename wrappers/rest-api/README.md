@@ -46,6 +46,8 @@ It simplifies remote control and data streaming from RealSense devices by handli
 ## Missing Features
 * Not all SDK capabilities are yet supported(e.g. Texture Mapping, Post processing filters,...)
 
+**All endpoints and supported features are documented and available for interactive exploration at the `/docs` endpoint using the built-in OpenAPI (Swagger) UI.**
+
 ## Installation
 
 
