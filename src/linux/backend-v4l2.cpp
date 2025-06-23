@@ -159,30 +159,24 @@ namespace librealsense
 {
     namespace platform
     {
-        std::recursive_mutex named_mutex::_init_mutex;
-        std::map<std::string, std::recursive_mutex> named_mutex::_dev_mutex;
-        std::map<std::string, int> named_mutex::_dev_mutex_cnt;
-
         named_mutex::named_mutex(const std::string& device_path, unsigned timeout)
             : _device_path(device_path),
               _timeout(timeout), // TODO: try to lock with timeout
-              _fildes(-1),
-              _object_lock_counter(0)
+              _fildes( open( _device_path.c_str(), O_RDWR, 0 ) ),
+              _lock_counter(0)
         {
-            _init_mutex.lock();
-            _dev_mutex[_device_path];   // insert a mutex for _device_path
-            if (_dev_mutex_cnt.find(_device_path) == _dev_mutex_cnt.end())
-            {
-                _dev_mutex_cnt[_device_path] = 0;
-            }
-            _init_mutex.unlock();
+            if( _fildes < 0)
+                throw linux_backend_exception( rsutils::string::from() << __FUNCTION__ << ": Cannot open '" << _device_path );
         }
 
         named_mutex::~named_mutex()
         {
             try
             {
-                unlock();
+                if( lockf( _fildes, F_TEST, 0 ) == 0 ) // Unlocked or locked by this process
+                    unlock(); // Will unlock if needed
+
+                close( _fildes );
             }
             catch(...)
             {
@@ -192,94 +186,40 @@ namespace librealsense
 
         void named_mutex::lock()
         {
-            std::lock_guard<std::mutex> lock(_mutex);
-            acquire();
+            if( _lock_counter.fetch_add( 1 ) == 0 )
+            {
+                auto ret = lockf( _fildes, F_LOCK, 0 );
+                if( 0 != ret )
+                {
+                    _lock_counter.fetch_add( -1 );
+                    throw linux_backend_exception( rsutils::string::from() << __FUNCTION__ << ": Acquire failed" );
+                }
+            }
         }
 
         void named_mutex::unlock()
         {
-            std::lock_guard<std::mutex> lock(_mutex);
-            release();
+            if( _lock_counter.fetch_add( -1 ) == 1 )
+            {
+                auto ret = lockf( _fildes, F_ULOCK, 0 );
+                if( 0 != ret )
+                    throw linux_backend_exception( "lockf(...) failed" );
+            }
         }
 
         bool named_mutex::try_lock()
         {
-            std::lock_guard<std::mutex> lock(_mutex);
-            if (-1 == _fildes)
+            if( _lock_counter.fetch_add( 1 ) == 0 )
             {
-                _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
-                if(_fildes < 0)
+                auto ret = lockf( _fildes, F_LOCK, 0 );
+                if( 0 != ret )
+                {
+                    _lock_counter.fetch_add( -1 );
                     return false;
+                }
             }
-
-            auto ret = lockf(_fildes, F_TLOCK, 0);
-            if (ret != 0)
-                return false;
 
             return true;
-        }
-
-        void named_mutex::acquire()
-        {
-            _dev_mutex[_device_path].lock();
-            _dev_mutex_cnt[_device_path] += 1;  //Advance counters even if throws because catch calls release()
-            _object_lock_counter += 1;
-            if (_dev_mutex_cnt[_device_path] == 1)
-            {
-                if (-1 == _fildes)
-                {
-                    _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
-                    if(0 > _fildes)
-                    {
-                        release();
-                        throw linux_backend_exception(rsutils::string::from() << __FUNCTION__ << ": Cannot open '" << _device_path);
-                    }
-                }
-
-                auto ret = lockf(_fildes, F_LOCK, 0);
-                if (0 != ret)
-                {
-                    release();
-                    throw linux_backend_exception(rsutils::string::from() <<  __FUNCTION__ << ": Acquire failed");
-                }
-            }
-        }
-
-        void named_mutex::release()
-        {
-            _object_lock_counter -= 1;
-            if (_object_lock_counter < 0)
-            {
-                _object_lock_counter = 0;
-                return;
-            }
-            _dev_mutex_cnt[_device_path] -= 1;
-            std::string err_msg;
-            if (_dev_mutex_cnt[_device_path] < 0)
-            {
-                _dev_mutex_cnt[_device_path] = 0;
-                throw linux_backend_exception(rsutils::string::from() << "Error: _dev_mutex_cnt[" << _device_path << "] < 0");
-            }
-
-            if ((_dev_mutex_cnt[_device_path] == 0) && (-1 != _fildes))
-            {
-                auto ret = lockf(_fildes, F_ULOCK, 0);
-                if (0 != ret)
-                    err_msg = "lockf(...) failed";
-                else
-                {
-                    ret = close(_fildes);
-                    if (0 != ret)
-                        err_msg = "close(...) failed";
-                    else
-                        _fildes = -1;
-                }
-            }
-            _dev_mutex[_device_path].unlock();
-
-            if (!err_msg.empty())
-                throw linux_backend_exception(err_msg);
-            
         }
 
         static int xioctl(int fh, unsigned long request, void *arg)
