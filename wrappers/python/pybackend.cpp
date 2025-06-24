@@ -14,7 +14,8 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
-#include <librealsense2/h/rs_option.h>
+#include <src/core/options-container.h>
+#include <rsutils/json.h>
 #include "core/info.h"   // Workaround for the missing DLL_EXPORT template
 #include "../src/backend.h"
 #include <src/core/time-service.h>
@@ -471,6 +472,10 @@ PYBIND11_MODULE(NAME, m) {
 }
 
 // Workaroud for failure to export template <typename T> class recordable
+void librealsense::option::create_snapshot(std::shared_ptr<option>& snapshot) const {}
+rsutils::json option::get_value() const noexcept { return nlohmann::json(); }
+rs2_option_type option::get_value_type() const noexcept { return static_cast<rs2_option_type>(0); }
+void option::set_value(rsutils::json) {}
 void librealsense::info_container::create_snapshot(std::shared_ptr<librealsense::info_interface> &) const {}
 void librealsense::info_container::register_info(rs2_camera_info info, const std::string& val){}
 void librealsense::info_container::update_info(rs2_camera_info info, const std::string& val) {}
