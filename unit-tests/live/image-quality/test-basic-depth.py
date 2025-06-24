@@ -10,6 +10,7 @@ import time
 
 NUM_FRAMES = 10 # Number of frames to check
 DEPTH_TOLERANCE = 0.05  # Acceptable deviation from expected depth in meters
+FRAMES_PASS_THRESHOLD =0.8 # Percentage of frames that needs to pass
 
 # Known pixel positions and expected depth values (in meters)
 depth_points = {
@@ -27,6 +28,7 @@ try:
     cfg = rs.config()
     cfg.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
     profile = pipeline.start(cfg)
+    frames = pipeline.wait_for_frames()
     time.sleep(2)
 
     depth_sensor = profile.get_device().first_depth_sensor()
@@ -51,8 +53,8 @@ try:
             else:
                 log.d(f"Frame {i} - {point_name} at ({x},{y}): {depth_value:.3f}m ≠ {expected_depth:.3f}m")
 
-    # Check that each point passed in at least 80% of the frames
-    min_passes = int(NUM_FRAMES * 0.8)
+    # Check that each point passed the threshold
+    min_passes = int(NUM_FRAMES * FRAMES_PASS_THRESHOLD)
     for point_name, count in depth_passes.items():
         log.i(f"{point_name.title()} passed in {count}/{NUM_FRAMES} frames")
         test.check(count >= min_passes)
@@ -60,6 +62,6 @@ try:
 except Exception as e:
     test.unexpected_exception(e)
 
-test.finish()
 pipeline.stop()
+test.finish()
 test.print_results_and_exit()
