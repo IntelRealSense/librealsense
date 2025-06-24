@@ -97,12 +97,12 @@ if(${FORCE_RSUSB_BACKEND})
         ../../src/hid/hid-device.cpp
         ../../src/hid/hid-device.h
     )
-if(APPLE)
-    list(APPEND RAW_RS
-        ../../third-party/hidapi/hidapi.cpp
-        ../../third-party/hidapi/hidapi.h
-    )
-endif()
+    if(APPLE)
+        list(APPEND RAW_RS
+            ../../third-party/hidapi/hidapi.cpp
+            ../../third-party/hidapi/hidapi.h
+        )
+    endif()
 endif()
 
 if(${BUILD_EASYLOGGINGPP})
@@ -127,55 +127,55 @@ if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
 endif()
 
 if( BUILD_LEGACY_PYBACKEND )
-pybind11_add_module(pybackend2 SHARED ${RAW_RS})
+    pybind11_add_module(pybackend2 SHARED ${RAW_RS})
 
-if(USE_EXTERNAL_USB)
-    add_dependencies(pybackend2 libusb)
-endif()
-target_link_libraries(pybackend2 PRIVATE rsutils usb ${CMAKE_THREAD_LIBS_INIT})
-set_target_properties(pybackend2 PROPERTIES
-                        VERSION     ${REALSENSE_VERSION_STRING}
-                        SOVERSION   ${REALSENSE_VERSION_MAJOR})
-set_target_properties( pybackend2
-    PROPERTIES
-        FOLDER Library/Python
-    )
-target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/include)
-
-if(${FORCE_RSUSB_BACKEND})
-if(APPLE)
-    target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/third-party/hidapi/)
-endif()
-endif()
-
-if(${BACKEND} STREQUAL RS2_USE_V4L2_BACKEND)
-    if(UDEV_FOUND)
-        target_sources( pybackend2
-            PRIVATE
-                ../../src/linux/udev-device-watcher.cpp
-                ../../src/linux/udev-device-watcher.h
-            )
-        target_link_libraries( pybackend2 PRIVATE udev )
-        target_compile_definitions( pybackend2 PRIVATE -DUSING_UDEV )
+    if(USE_EXTERNAL_USB)
+        add_dependencies(pybackend2 libusb)
     endif()
-endif()
+    target_link_libraries(pybackend2 PRIVATE rsutils usb ${CMAKE_THREAD_LIBS_INIT})
+    set_target_properties(pybackend2 PROPERTIES
+                            VERSION     ${REALSENSE_VERSION_STRING}
+                            SOVERSION   ${REALSENSE_VERSION_MAJOR})
+    set_target_properties( pybackend2
+        PROPERTIES
+            FOLDER Library/Python
+        )
+    target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-install(TARGETS pybackend2 pyrealsense2
-    EXPORT pyrealsense2Targets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}
-    ARCHIVE DESTINATION ${PYTHON_INSTALL_DIR}
-)
+    if(${FORCE_RSUSB_BACKEND})
+        if(APPLE)
+            target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/third-party/hidapi/)
+        endif()
+    endif()
 
-target_include_directories(pybackend2 PRIVATE ../../src)
+    if(${BACKEND} STREQUAL RS2_USE_V4L2_BACKEND)
+        if(UDEV_FOUND)
+            target_sources( pybackend2
+                PRIVATE
+                    ../../src/linux/udev-device-watcher.cpp
+                    ../../src/linux/udev-device-watcher.h
+                )
+            target_link_libraries( pybackend2 PRIVATE udev )
+            target_compile_definitions( pybackend2 PRIVATE -DUSING_UDEV )
+        endif()
+    endif()
+
+    install(TARGETS pybackend2 pyrealsense2
+        EXPORT pyrealsense2Targets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}
+        ARCHIVE DESTINATION ${PYTHON_INSTALL_DIR}
+    )
+
+    target_include_directories(pybackend2 PRIVATE ../../src)
 
 else() # not BUILD_LEGACY_PYBACKEND
 
-install(TARGETS pyrealsense2
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}
-    ARCHIVE DESTINATION ${PYTHON_INSTALL_DIR}
-)
+    install(TARGETS pyrealsense2
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}
+        ARCHIVE DESTINATION ${PYTHON_INSTALL_DIR}
+    )
 
 endif()  # BUILD_LEGACY_PYBACKEND
 
