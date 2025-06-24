@@ -45,7 +45,6 @@ set(RAW_RS
     ../../src/frame.cpp
     ../../src/environment.cpp
     ../../src/to-string.cpp
-    ../../src/core/options-container.cpp
     ../../src/core/options-registry.cpp
 )
 
