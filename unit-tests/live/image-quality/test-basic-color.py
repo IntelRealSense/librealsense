@@ -10,6 +10,7 @@ import time
 
 NUM_FRAMES = 10 # Number of frames to check
 COLOR_TOLERANCE = 20 # Acceptable per-channel deviation in RGB values
+FRAMES_PASS_THRESHOLD =0.8 # Percentage of frames that needs to pass
 
 # Known pixel positions and expected RGB values
 color_points = {
@@ -30,6 +31,7 @@ try:
     cfg = rs.config()
     cfg.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
     pipeline_profile = pipeline.start(cfg)
+    frames = pipeline.wait_for_frames()
     time.sleep(2)
 
     color_match_count = {name: 0 for name in color_points}
@@ -47,8 +49,8 @@ try:
             else:
                 log.d(f"Frame {i} - {color} at ({x},{y}): {pixel} ≠ {expected_rgb}")
 
-    # Check that each color passed in at least 80% of the frames
-    min_passes = int(NUM_FRAMES * 0.8)
+    # Check per-color pass threshold
+    min_passes = int(NUM_FRAMES * FRAMES_PASS_THRESHOLD)
     for color_name, count in color_match_count.items():
         log.i(f"{color_name.title()} passed in {count}/{NUM_FRAMES} frames")
         test.check(count >= min_passes)
@@ -56,6 +58,6 @@ try:
 except Exception as e:
     test.unexpected_exception(e)
 
-test.finish()
 pipeline.stop()
+test.finish()
 test.print_results_and_exit()
