@@ -173,9 +173,9 @@ namespace librealsense
         {
             try
             {
-                if( lockf( _fildes, F_TEST, 0 ) == 0 ) // Unlocked or locked by this process
-                    unlock(); // Will unlock if needed
-
+                // OFD lock will automatically release if locked only when file description closes (not file descriptor)
+                // If process was forked or cloned and unlock() was not properly called after a lock() then file will
+                // remain locked for the child process
                 close( _fildes );
             }
             catch(...)
@@ -188,11 +188,24 @@ namespace librealsense
         {
             if( _lock_counter.fetch_add( 1 ) == 0 )
             {
-                auto ret = lockf( _fildes, F_LOCK, 0 );
+                // Using OFD locks to synchronize both interprocess and interthread.
+                // flock() is not good if we have multiple instances of the same device. i.e.
+                //     auto devs = context.query_devices();
+                //     auto dev1 = devs[0];
+                //     auto dev2 = devs[0];
+                // Closing file descriptor for one instance will unlock file for other instances.
+                // Note - OFD locks are linux standart not POSIX.
+                flock fl;
+                memset(&fl, 0, sizeof(fl));
+                fl.l_whence = SEEK_CUR;
+                fl.l_start = 0;
+                fl.l_len = 1;
+                fl.l_type = F_WRLCK;
+                auto ret = fcntl( _fildes, F_OFD_SETLKW, &fl);
                 if( 0 != ret )
                 {
                     _lock_counter.fetch_add( -1 );
-                    throw linux_backend_exception( rsutils::string::from() << __FUNCTION__ << ": Acquire failed" );
+                    throw linux_backend_exception( rsutils::string::from() << __FUNCTION__ << ": locking failed" );
                 }
             }
         }
@@ -201,9 +214,15 @@ namespace librealsense
         {
             if( _lock_counter.fetch_add( -1 ) == 1 )
             {
-                auto ret = lockf( _fildes, F_ULOCK, 0 );
+                flock fl;
+                memset(&fl, 0, sizeof(fl));
+                fl.l_whence = SEEK_CUR;
+                fl.l_start = 0;
+                fl.l_len = 1;
+                fl.l_type = F_UNLCK;
+                auto ret = fcntl( _fildes, F_OFD_SETLKW, &fl);
                 if( 0 != ret )
-                    throw linux_backend_exception( "lockf(...) failed" );
+                    throw linux_backend_exception( rsutils::string::from() << __FUNCTION__ << ": unlocking failed" );
             }
         }
 
@@ -211,8 +230,14 @@ namespace librealsense
         {
             if( _lock_counter.fetch_add( 1 ) == 0 )
             {
-                auto ret = lockf( _fildes, F_LOCK, 0 );
-                if( 0 != ret )
+                flock fl;
+                memset(&fl, 0, sizeof(fl));
+                fl.l_whence = SEEK_CUR;
+                fl.l_start = 0;
+                fl.l_len = 1;
+                fl.l_type = F_WRLCK;
+                auto ret = fcntl( _fildes, F_OFD_SETLK, &fl);
+                if( 0 != ret && errno == EAGAIN)
                 {
                     _lock_counter.fetch_add( -1 );
                     return false;
