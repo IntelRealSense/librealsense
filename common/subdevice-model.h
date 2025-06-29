@@ -28,7 +28,7 @@
 #include <rsutils/time/periodic-timer.h>
 #include <rsutils/number/stabilized-value.h>
 #include "option-model.h"
-
+#include "hdr-model.h"
 namespace rs2
 {
     std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec);
@@ -207,6 +207,7 @@ namespace rs2
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
 
         bool uvmapping_calib_full = false;
+        hdr_model _hdr_model;
 
     private:
         bool draw_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1);

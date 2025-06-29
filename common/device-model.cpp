@@ -1433,6 +1433,13 @@ namespace rs2
                         }
                     }
                 }
+
+                for( auto & sub : subdevices )
+                {
+                    if( sub->_hdr_model.supports_HDR() )
+                        sub->_hdr_model.render_hdr_config_window( window, error_message );
+                }
+
                 ImGuiSelectableFlags is_streaming_flag = (is_streaming) ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None;
                 if( _dds_model.supports_DDS() )
                 {
@@ -1470,6 +1477,10 @@ namespace rs2
         }
 
         _calib_model.update(window, error_message);
+
+        for( auto & sub : subdevices )
+            sub->_hdr_model.render_hdr_config_window( window, error_message );
+
         if( _dds_model.supports_DDS() )
         {
             _dds_model.render_dds_config_window( window, error_message );

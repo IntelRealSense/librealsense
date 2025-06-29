@@ -105,7 +105,9 @@ namespace rs2
         y411(std::make_shared<rs2::gl::y411_decoder>()),
         viewer(viewer),
         detected_objects(device_detected_objects),
+        _hdr_model( dev ),
         _destructing( false )
+        
     {
         supported_options = s->get_supported_options();
         restore_processing_block("colorizer", depth_colorizer);

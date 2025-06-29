@@ -132,41 +132,39 @@ bool option_model::draw( std::string & error_message,
                                    "algorithm\nClick the button, then draw a rect on the frame" );
         }
 
-#if defined(AUTO_HDR)
-        if (opt == RS2_OPTION_HDR_ENABLED) // TODO: enable this when the auto-hdr feature is fully implemented, currently works via the load/save preset buttons at the top of the viewer - make sure to disable HDR before loading!
+        if( opt == RS2_OPTION_HDR_ENABLED )
         {
-            auto disable_hdr_load = value_as_float() > 0;  // if HDR is enabled, we can't load a new config
+            auto disable_hdr_config = value_as_float() > 0;  // if HDR is enabled, we can't modify config
+            ImGui::SameLine( 0, 10 );
 
-            ImGui::SameLine(0, 10);
-            std::string button_label = "Load HDR";
-            std::string caption = rsutils::string::from() << "Load HDR config from JSON##" << button_label;
-            RsImGui::RsImButton([&]() {
-                if (ImGui::Button(caption.c_str(), { 75, 0 }))
+            std::string button_label = "HDR Config";
+            std::string caption = rsutils::string::from() << "Open HDR Configuration##" << button_label;
+
+            RsImGui::RsImButton(
+                [&]()
                 {
-                    dev->_options_invalidated = true;
-                    auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON | PRESET)\0*.json;*.preset\0", NULL, NULL);
-
-                    if (ret)
+                    if( ImGui::Button( caption.c_str(), { 85, 0 } ) )
                     {
-                        std::ifstream file(ret);
-                        if (!file.good())
+                        try
                         {
-                            throw std::runtime_error(rsutils::string::from() << "Failed to read configuration file:\n\"" << ret
-                                << "\"\n");
+                            dev->_hdr_model.open_hdr_tool_window();
                         }
-                        std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-                        
-                        error_message = safe_call([&]() { 
-                            dev->dev.as<serializable_device>().load_json(str); 
-
-                            model.add_log( rsutils::string::from() << "HDR config loaded from JSON file: " << ret, RS2_LOG_SEVERITY_INFO);
-                            dev->_options_invalidated = true;
-                            });
+                        catch( const std::exception & e )
+                        {
+                            error_message = rsutils::string::from() << "Failed to open HDR configuration: " << e.what();
+                        }
                     }
-                }
-            }, disable_hdr_load ); 
+                },
+                disable_hdr_config );
+
+            if( ImGui::IsItemHovered() )
+            {
+                RsImGui::CustomTooltip( "%s",
+                                        disable_hdr_config ? "Disable HDR to modify configuration"
+                                                           : "Open HDR configuration window" );
+            }
         }
-#endif
+    
     }
 
     return res;
