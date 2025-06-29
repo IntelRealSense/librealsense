@@ -59,7 +59,7 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_LIST_DIR}/post-processing-filters.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/dds-model.h"
     "${CMAKE_CURRENT_LIST_DIR}/dds-model.cpp"
-	"${CMAKE_CURRENT_LIST_DIR}/hdr-model.h"
+    "${CMAKE_CURRENT_LIST_DIR}/hdr-model.h"
     "${CMAKE_CURRENT_LIST_DIR}/hdr-model.cpp"
     )
 
