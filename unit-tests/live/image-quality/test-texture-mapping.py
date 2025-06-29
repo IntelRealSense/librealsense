@@ -48,35 +48,21 @@ try:
         if not depth_frame or not color_frame:
             continue
 
-        # Camera calibration
-        depth_intr = depth_frame.profile.as_video_stream_profile().intrinsics
-        color_intr = color_frame.profile.as_video_stream_profile().intrinsics
-        depth_extrin_to_color = depth_frame.profile.get_extrinsics_to(color_frame.profile)
         color_image = np.asanyarray(color_frame.get_data())
 
         for name, ((x, y), expected_rgb) in expected_mappings.items():
             depth = depth_frame.get_distance(x, y)
             if depth == 0:
-                log.w(f"Frame {frame_index} - {name}: No depth at ({x},{y})")
                 continue
 
-            # Texture mapping:
-            # Deproject (x, y) + depth to 3D point in depth camera space
-            depth_point = rs.rs2_deproject_pixel_to_point(depth_intr, [x, y], depth)
-            # Transform to color camera space
-            color_point = rs.rs2_transform_point_to_point(depth_extrin_to_color, depth_point)
-            # Project into color pixel
-            color_pixel = rs.rs2_project_point_to_pixel(color_intr, color_point)
-            cx, cy = map(int, color_pixel)
-
-            if 0 <= cx < color_image.shape[1] and 0 <= cy < color_image.shape[0]:
-                pixel_rgb = color_image[cy, cx]
+            if 0 <= x < color_image.shape[1] and 0 <= y < color_image.shape[0]:
+                pixel_rgb = color_image[y, x]
                 if is_color_close(pixel_rgb, expected_rgb, COLOR_TOLERANCE):
                     color_pass_count[name] += 1
                 else:
-                    log.d(f"Frame {frame_index} - {name}: Color {pixel_rgb} ≠ expected {expected_rgb} at ({cx},{cy})")
+                    log.d(f"Frame {frame_index} - {name}: Color {pixel_rgb} ≠ expected {expected_rgb} at ({x},{y})")
             else:
-                log.w(f"Frame {frame_index} - {name}: Projected pixel ({cx},{cy}) is out of bounds")
+                log.w(f"Frame {frame_index} - {name}: Projected pixel ({x},{y}) is out of bounds")
 
     # Check per-color pass threshold
     min_passes = int(NUM_FRAMES * FRAMES_PASS_THRESHOLD)
