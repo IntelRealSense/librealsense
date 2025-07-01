@@ -184,6 +184,10 @@ int write_fw_to_mipi_device( rs2::context& ctx, rs2::cli::value<std::string>& se
     if( fw_path_in_device )
     {
         auto upd = dev.as<rs2::updatable>();
+        if ( !upd )
+        {
+            throw std::runtime_error("Device could not be used as updatable device");
+        }
         // checking compatibility bewtween firmware and device
         if( !upd.check_firmware_compatibility( fw_image ) )
         {
@@ -541,6 +545,11 @@ try
             else
             {
                 auto upd = d.as<rs2::updatable>();
+
+                if ( !upd )
+                {
+                    throw std::runtime_error("Device could not be used as updatable device");
+                }
                 // checking compatibility bewtween firmware and device
                 if( !upd.check_firmware_compatibility( fw_image ) )
                 {
