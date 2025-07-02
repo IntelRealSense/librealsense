@@ -143,7 +143,7 @@ namespace librealsense
         }
         bool result = ( firmware_version( fw_version ) >= firmware_version( it->second ) );
         if( ! result )
-            LOG_ERROR( "Firmware version isn't compatible" << fw_version );
+            LOG_ERROR( "Firmware version isn't compatible " << fw_version );
 
         return result;
     }

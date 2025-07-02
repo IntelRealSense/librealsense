@@ -183,6 +183,21 @@ int write_fw_to_mipi_device( rs2::context& ctx, rs2::cli::value<std::string>& se
                                                                                          } );
     if( fw_path_in_device )
     {
+        auto upd = dev.as<rs2::updatable>();
+        if ( !upd )
+        {
+            throw std::runtime_error("Device could not be used as updatable device");
+        }
+        // checking compatibility bewtween firmware and device
+        if( !upd.check_firmware_compatibility( fw_image ) )
+        {
+            std::stringstream ss;
+            ss << "This firmware version is not compatible with ";
+            ss << dev.get_info( RS2_CAMERA_INFO_NAME ) << std::endl;
+            std::cout << std::endl << ss.str() << std::endl;
+            return EXIT_FAILURE;
+        }
+
         bool flush_done = false;
         std::thread show_progress_thread(
             [&flush_done]()
@@ -194,6 +209,7 @@ int write_fw_to_mipi_device( rs2::context& ctx, rs2::cli::value<std::string>& se
                     std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
                 }
             } );
+
         try
         {
             fw_path_in_device.write( reinterpret_cast< const char * >( fw_image.data() ), fw_image.size() );
@@ -529,6 +545,11 @@ try
             else
             {
                 auto upd = d.as<rs2::updatable>();
+
+                if ( !upd )
+                {
+                    throw std::runtime_error("Device could not be used as updatable device");
+                }
                 // checking compatibility bewtween firmware and device
                 if( !upd.check_firmware_compatibility( fw_image ) )
                 {
