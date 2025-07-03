@@ -168,7 +168,7 @@ namespace librealsense
                         }
                         catch (...)
                         {
-                            if (i < retries - 1) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                            if (j < retries - 1) std::this_thread::sleep_for(std::chrono::milliseconds(100));
                             else throw;
                         }
                     }
