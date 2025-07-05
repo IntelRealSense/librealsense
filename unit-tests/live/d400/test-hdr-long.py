@@ -471,7 +471,6 @@ def hdr_start_stop_recover_manual_exposure_and_gain():
         pipe.start(cfg)
 
 
-
         iteration_for_disable = 50
         iteration_to_check_after_disable = iteration_for_disable + 5  # Was 2, aligned to validation KPI's [DSO-18682]
         for iteration in range(1, 70):
