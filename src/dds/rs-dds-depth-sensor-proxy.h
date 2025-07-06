@@ -27,6 +27,8 @@ public:
     float get_depth_scale() const override;
     float get_stereo_baseline_mm() const override;
 
+    bool extend_to( rs2_extension, void ** ptr ) override;  // extendable_interface
+
 protected:
     void add_no_metadata( frame *, streaming_impl & ) override;
     void add_frame_metadata( frame *, rsutils::json const & md, streaming_impl & ) override;
