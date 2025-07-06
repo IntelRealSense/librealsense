@@ -186,8 +186,10 @@ if device.is_update_device():
         image_file = find_image_or_exit(product_name) if not custom_fw_d400_path else custom_fw_d400_path
         cmd = [fw_updater_exe, '-r', '-f', image_file]
         if custom_fw_d400_path:
-            # unsiged fw
-            cmd.insert(1, '-u')
+            # Add '-u' only if the path doesn't include 'signed'
+            if 'signed' not in custom_fw_d400_path.lower():
+                cmd.insert(1, '-u')
+
         log.d( 'running:', cmd )
         subprocess.run( cmd )
         recovered = True
