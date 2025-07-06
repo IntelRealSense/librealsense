@@ -166,7 +166,7 @@ namespace librealsense
               _lock_counter(0)
         {
             if( _fildes < 0)
-                throw linux_backend_exception( rsutils::string::from() << __FUNCTION__ << ": Cannot open '" << _device_path );
+                throw linux_backend_exception( rsutils::string::from() << __FUNCTION__ << ": Cannot open '" << _device_path << "'" );
         }
 
         named_mutex::~named_mutex()
@@ -195,13 +195,13 @@ namespace librealsense
                 //     auto dev2 = devs[0];
                 // Closing file descriptor for one instance will unlock file for other instances.
                 // Note - OFD locks are linux standart not POSIX.
-                flock fl;
-                memset(&fl, 0, sizeof(fl));
-                fl.l_whence = SEEK_CUR;
+                struct flock fl;
+                memset( &fl, 0, sizeof( fl ) );
+                fl.l_whence = SEEK_SET;
                 fl.l_start = 0;
-                fl.l_len = 1;
+                fl.l_len = 0; // Lock the entire file
                 fl.l_type = F_WRLCK;
-                auto ret = fcntl( _fildes, F_OFD_SETLKW, &fl);
+                auto ret = fcntl( _fildes, F_OFD_SETLKW, &fl );
                 if( 0 != ret )
                 {
                     _lock_counter.fetch_add( -1 );
@@ -214,13 +214,13 @@ namespace librealsense
         {
             if( _lock_counter.fetch_add( -1 ) == 1 )
             {
-                flock fl;
-                memset(&fl, 0, sizeof(fl));
-                fl.l_whence = SEEK_CUR;
+                struct flock fl;
+                memset( &fl, 0, sizeof( fl ) );
+                fl.l_whence = SEEK_SET;
                 fl.l_start = 0;
-                fl.l_len = 1;
+                fl.l_len = 0;
                 fl.l_type = F_UNLCK;
-                auto ret = fcntl( _fildes, F_OFD_SETLKW, &fl);
+                auto ret = fcntl( _fildes, F_OFD_SETLKW, &fl );
                 if( 0 != ret )
                     throw linux_backend_exception( rsutils::string::from() << __FUNCTION__ << ": unlocking failed" );
             }
@@ -230,13 +230,13 @@ namespace librealsense
         {
             if( _lock_counter.fetch_add( 1 ) == 0 )
             {
-                flock fl;
-                memset(&fl, 0, sizeof(fl));
-                fl.l_whence = SEEK_CUR;
+                struct flock fl;
+                memset( &fl, 0, sizeof( fl ) );
+                fl.l_whence = SEEK_SET;
                 fl.l_start = 0;
-                fl.l_len = 1;
+                fl.l_len = 0; // Lock the entire file
                 fl.l_type = F_WRLCK;
-                auto ret = fcntl( _fildes, F_OFD_SETLK, &fl);
+                auto ret = fcntl( _fildes, F_OFD_SETLK, &fl );
                 if( 0 != ret && errno == EAGAIN)
                 {
                     _lock_counter.fetch_add( -1 );

@@ -2,6 +2,7 @@
 # Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 
 # test:device each(D400*)
+# test:donotrun:!nightly
 
 import pyrealsense2 as rs
 from rspy import log, repo, test
@@ -9,11 +10,8 @@ import threading
 import time
 
 # This test objective is to check the locking mechanism on UVC devices (MIPI classes extend UVC).
-# HWMC lock the device and are also "invoke_power"ed so we use lots of them with several threads trying to send commands symultaneously.
+# HWMC lock the device and are also "invoke_power"ed so we use lots of them with several threads trying to send commands simultaneously.
 # We set visual preset as internally it issues many commands - PU, XU and HWM.
-
-if log.is_debug_on():
-    rs.log_to_console( rs.log_severity.debug )
     
 def change_presets( dev, index, delay ):
     depth_sensor = dev.first_depth_sensor()
@@ -54,7 +52,7 @@ with test.closure( 'Run threads' ):
         t.start()
 
 with test.closure( 'Issue GVD commands in the middle' ):
-    raw_command = rs.debug_protocol( devices[0] ).build_command( 0x10 ) # 0x10 is GVD opdoce
+    raw_command = rs.debug_protocol( devices[0] ).build_command( 0x10 ) # 0x10 is GVD opcode
     for i in range( 10 ):
         log.d( "Sending GVD commands" )
         for j in range( len( devices ) ):
