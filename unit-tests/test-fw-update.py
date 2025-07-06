@@ -234,8 +234,9 @@ image_file = find_image_or_exit(product_name, fw_version_regex) if not custom_fw
 
 cmd = [fw_updater_exe, '-f', image_file]
 if custom_fw_d400_path:
-    # unsigned fw
-    cmd.insert(1, '-u')
+    # Add '-u' only if the path doesn't include 'signed'
+    if 'signed' not in custom_fw_d400_path.lower():
+        cmd.insert(1, '-u')
 log.d( 'running:', cmd )
 sys.stdout.flush()
 subprocess.run( cmd )   # may throw
