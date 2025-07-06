@@ -160,6 +160,8 @@ def perform_fps_test(sensor_profiles_arr, streams_combinations):
             expected_fps_dict = get_expected_fps_dict(partial_dict)
             log.d(get_test_details_str(partial_dict))
             fps_dict = measure_fps(partial_dict)
+            log.i("Expected: ", expected_fps_dict)
+            log.i("Got: ", fps_dict)
             test.check(check_fps_dict(fps_dict, expected_fps_dict))
 
 
