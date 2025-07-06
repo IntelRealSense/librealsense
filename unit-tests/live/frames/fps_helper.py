@@ -157,6 +157,7 @@ def perform_fps_test(sensor_profiles_arr, streams_combinations):
     for streams_to_test in streams_combinations:
         partial_dict = get_dict_for_streams(sensor_profiles_arr, streams_to_test)
         with test.closure("Testing", get_tested_profiles_string(partial_dict)):
+            log.i(partial_dict)
             expected_fps_dict = get_expected_fps_dict(partial_dict)
             log.d(get_test_details_str(partial_dict))
             fps_dict = measure_fps(partial_dict)
