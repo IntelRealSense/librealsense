@@ -138,7 +138,7 @@ bool option_model::draw( std::string & error_message,
             ImGui::SameLine( 0, 10 );
 
             std::string button_label = "HDR Config";
-            std::string caption = rsutils::string::from() << "Open HDR Configuration##" << button_label;
+            std::string caption = rsutils::string::from() << "HDR Config##" << button_label;
 
             RsImGui::RsImButton(
                 [&]()
@@ -147,7 +147,7 @@ bool option_model::draw( std::string & error_message,
                     {
                         try
                         {
-                            dev->_hdr_model.open_hdr_tool_window();
+                            dev->open_hdr_config_tool_window();
                         }
                         catch( const std::exception & e )
                         {
@@ -156,13 +156,6 @@ bool option_model::draw( std::string & error_message,
                     }
                 },
                 disable_hdr_config );
-
-            if( ImGui::IsItemHovered() )
-            {
-                RsImGui::CustomTooltip( "%s",
-                                        disable_hdr_config ? "Disable HDR to modify configuration"
-                                                           : "Open HDR configuration window" );
-            }
         }
     
     }

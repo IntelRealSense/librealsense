@@ -1436,8 +1436,8 @@ namespace rs2
 
                 for( auto & sub : subdevices )
                 {
-                    if( sub->_hdr_model.supports_HDR() )
-                        sub->_hdr_model.render_hdr_config_window( window, error_message );
+                    if( sub->supports_hdr() )
+                        sub->render_hdr_config_window( window, error_message );
                 }
 
                 ImGuiSelectableFlags is_streaming_flag = (is_streaming) ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None;
@@ -1479,7 +1479,7 @@ namespace rs2
         _calib_model.update(window, error_message);
 
         for( auto & sub : subdevices )
-            sub->_hdr_model.render_hdr_config_window( window, error_message );
+            sub->render_hdr_config_window( window, error_message );
 
         if( _dds_model.supports_DDS() )
         {

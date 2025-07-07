@@ -139,6 +139,9 @@ namespace rs2
         }
 
         bool is_depth_calibration_profile() const;
+        bool supports_hdr();
+        void open_hdr_config_tool_window();
+        void render_hdr_config_window( ux_window & window, std::string & error_message );
 
         viewer_model& viewer;
         std::function<void()> on_frame = [] {};
@@ -207,7 +210,6 @@ namespace rs2
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
 
         bool uvmapping_calib_full = false;
-        hdr_model _hdr_model;
 
     private:
         bool draw_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1);
@@ -229,5 +231,6 @@ namespace rs2
         const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
         const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters
         std::atomic_bool _destructing;
+        hdr_model _hdr_model;
     };
 }

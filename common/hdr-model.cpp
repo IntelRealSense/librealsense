@@ -16,15 +16,13 @@ using rsutils::json;
 
 namespace rs2 {
 hdr_config::control_item::control_item()
-    : DepthGain( 1 )
-    , DepthManExp( 1 )
-
+    : control_item( 1, 1 )
 {
 }
 
 hdr_config::control_item::control_item( int gain, int exp )
-    : DepthGain( gain )
-    , DepthManExp( exp )
+    : depth_gain( gain )
+    , depth_man_exp( exp )
 {
 }
 
@@ -33,7 +31,7 @@ hdr_config::preset_item::preset_item()
 {
 }
 
-hdr_config::sub_preset::sub_preset()
+hdr_config::hdr_preset::hdr_preset()
     : id( "0" )
     , iterations( 0 )
 {
@@ -43,11 +41,11 @@ std::string hdr_config::to_json() const
 {
     json j;
     auto & hp = j["hdr-preset"];
-    hp["id"] = SubPreset.id;
-    hp["iterations"] = std::to_string( SubPreset.iterations );
+    hp["id"] = _hdr_preset.id;
+    hp["iterations"] = std::to_string( _hdr_preset.iterations );
 
     hp["items"] = json::array();
-    for( auto const & item : SubPreset.items )
+    for( auto const & item : _hdr_preset.items )
     {
         json item_j;
         item_j["iterations"] = std::to_string( item.iterations );
@@ -57,9 +55,9 @@ std::string hdr_config::to_json() const
         {
             auto const & ctrl = item.controls[0];
             json gain_j;
-            gain_j["depth-gain"] = std::to_string( ctrl.DepthGain );
+            gain_j["depth-gain"] = std::to_string( ctrl.depth_gain );
             json exp_j;
-            exp_j["depth-exposure"] = std::to_string( ctrl.DepthManExp );
+            exp_j["depth-exposure"] = std::to_string( ctrl.depth_man_exp );
             item_j["controls"].push_back( gain_j );
             item_j["controls"].push_back( exp_j );
         }
@@ -76,10 +74,10 @@ void hdr_config::from_json( const std::string & json_str )
         throw std::runtime_error( "Missing hdr-preset" );
 
     auto & hp = j["hdr-preset"];
-    SubPreset.id = hp.value( "id", "0" );
-    SubPreset.iterations = std::stoi( hp.value( "iterations", "0" ) );
+    _hdr_preset.id = hp.value( "id", "0" );
+    _hdr_preset.iterations = std::stoi( hp.value( "iterations", "0" ) );
 
-    SubPreset.items.clear();
+    _hdr_preset.items.clear();
     for( auto & item_j : hp["items"] )
     {
         preset_item item;
@@ -90,13 +88,13 @@ void hdr_config::from_json( const std::string & json_str )
         {
             control_item ctrl;
             if( ctrls[0].contains( "depth-gain" ) )
-                ctrl.DepthGain = std::stoi( ctrls[0]["depth-gain"].get< std::string >() );
+                ctrl.depth_gain = std::stoi( ctrls[0]["depth-gain"].get< std::string >() );
             if( ctrls[1].contains( "depth-exposure" ) )
-                ctrl.DepthManExp = std::stoi( ctrls[1]["depth-exposure"].get< std::string >() );
+                ctrl.depth_man_exp = std::stoi( ctrls[1]["depth-exposure"].get< std::string >() );
 
             item.controls.push_back( ctrl );
         }
-        SubPreset.items.push_back( std::move( item ) );
+        _hdr_preset.items.push_back( std::move( item ) );
     }
 }
 
@@ -132,8 +130,8 @@ bool hdr_model::check_HDR_support()
 
 void hdr_model::initialize_default_config()
 {
-    _default_config.SubPreset.id = "0";
-    _default_config.SubPreset.iterations = 0;
+    _default_config._hdr_preset.id = "0";
+    _default_config._hdr_preset.iterations = 0;
 
     const std::vector< std::pair< int, int > > defaults
         = { { 1, 1 }, { 32, 1000 }, { 128, 100000 }, { 2, 2 }, { 232, 200 }, { 2128, 20000 } };
@@ -142,7 +140,7 @@ void hdr_model::initialize_default_config()
         hdr_config::preset_item it;
         it.iterations = 1;
         it.controls.emplace_back( p.first, p.second );
-        _default_config.SubPreset.items.push_back( it );
+        _default_config._hdr_preset.items.push_back( it );
     }
 }
 
@@ -184,16 +182,16 @@ void hdr_model::render_control_item( hdr_config::control_item & control, int /*i
     ImGui::Text( "Depth Gain:" );
     ImGui::SameLine();
     ImGui::SetNextItemWidth( 100 );
-    int g = control.DepthGain;
+    int g = control.depth_gain;
     if( ImGui::InputInt( "##gain", &g ) )
-        control.DepthGain = std::max( 1, std::min( g, 16384 ) );
+        control.depth_gain = std::max( 1, std::min( g, 16384 ) );
 
     ImGui::Text( "Depth Exposure:" );
     ImGui::SameLine();
-    ImGui::SetNextItemWidth( 100 );
-    int e = control.DepthManExp;
+    ImGui::SetNextItemWidth( 140 );
+    int e = control.depth_man_exp;
     if( ImGui::InputInt( "##exp", &e ) )
-        control.DepthManExp = std::max( 1, std::min( e, 200000 ) );
+        control.depth_man_exp = std::max( 1, std::min( e, 200000 ) );
 
     ImGui::PopID();
 }
@@ -201,7 +199,7 @@ void hdr_model::render_control_item( hdr_config::control_item & control, int /*i
 void hdr_model::render_preset_item( hdr_config::preset_item & item, int idx )
 {
     ImGui::PushID( idx );
-    std::string hdr = "Preset Item " + std::to_string( idx + 1 );
+    std::string hdr = "Frame " + std::to_string( idx + 1 );
     if( ImGui::CollapsingHeader( hdr.c_str() ) )
     {
         ImGui::Text( "Iterations:" );
@@ -235,71 +233,69 @@ void hdr_model::render_hdr_config_window( ux_window & window, std::string & erro
         ImGui::TextColored( { 1, 0.3f, 0.3f, 1 }, "%s", error_message.c_str() );
     ImGui::Separator();
 
-    // SubPreset config
-    if( ImGui::CollapsingHeader( "SubPreset Configuration" ) )
-    {
-        ImGui::Text( "Preset ID:" );
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth( 150 );
-        char buf[32];
-        strncpy( buf, _changed_config.SubPreset.id.c_str(), 31 );
-        buf[31] = '\0';
-        if( ImGui::InputText( "##id", buf, 32 ) )
-            _changed_config.SubPreset.id = buf;
+    ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.5f, 1.0f ), "SubPreset Configuration" );
+    ImGui::Separator();
 
-        ImGui::Text( "Global Iterations:" );
-        ImGui::SameLine();
-        int gi = _changed_config.SubPreset.iterations;
-        ImGui::SetNextItemWidth( 150 );
-        if( ImGui::InputInt( "##gi", &gi ) )
-            _changed_config.SubPreset.iterations = std::max( 0, gi );
-    }
+    ImGui::Text( "Preset ID:" );
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth( 150 );
+    char buf[32];
+    strncpy( buf, _changed_config._hdr_preset.id.c_str(), 31 );
+    buf[31] = '\0';
+    if( ImGui::InputText( "##id", buf, 32 ) )
+        _changed_config._hdr_preset.id = buf;
 
-    // Preset Items
-    if( ImGui::CollapsingHeader( "Preset Items", ImGuiTreeNodeFlags_DefaultOpen ) )
-    {
-        for( size_t i = 0; i < _changed_config.SubPreset.items.size(); ++i )
-            render_preset_item( _changed_config.SubPreset.items[i], int( i ) );
-    }
+    ImGui::Text( "Global Iterations:" );
+    ImGui::SameLine();
+    int gi = _changed_config._hdr_preset.iterations;
+    ImGui::SetNextItemWidth( 150 );
+    if( ImGui::InputInt( "##gi", &gi ) )
+        _changed_config._hdr_preset.iterations = std::max( 0, gi );
 
-    // Load/Save JSON Configuration
-    if( ImGui::CollapsingHeader( "Load/Save Configuration" ) )
+    ImGui::Spacing();
+    ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.5f, 1.0f ), "Preset Items" );
+    ImGui::Separator();
+
+    for( size_t i = 0; i < _changed_config._hdr_preset.items.size(); ++i )
+        render_preset_item( _changed_config._hdr_preset.items[i], int( i ) );
+
+    ImGui::Spacing();
+    ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.5f, 1.0f ), "Load/Save Configuration" );
+    ImGui::Separator();
+
+    if( ImGui::Button( "Load from File" ) )
     {
-        if( ImGui::Button( "Load from File" ) )
+        auto ret = file_dialog_open( open_file, "JavaScript Object Notation (JSON)\0*.json\0", nullptr, nullptr );
+        if( ret )
         {
-            auto ret = file_dialog_open( open_file, "JavaScript Object Notation (JSON)\0*.json\0", nullptr, nullptr );
-            if( ret )
+            try
             {
-                try
-                {
-                    load_hdr_config_from_file( ret );
-                }
-                catch( const std::exception & e )
-                {
-                    error_message = e.what();
-                }
+                load_hdr_config_from_file( ret );
             }
-        }
-        ImGui::SameLine();
-        if( ImGui::Button( "Save to File" ) )
-        {
-            auto ret = file_dialog_open( save_file, "JavaScript Object Notation (JSON)\0*.json\0", nullptr, nullptr );
-            if( ret )
+            catch( const std::exception & e )
             {
-                try
-                {
-                    save_hdr_config_to_file( ret );
-                }
-                catch( const std::exception & e )
-                {
-                    error_message = e.what();
-                }
+                error_message = e.what();
             }
         }
     }
+    ImGui::SameLine();
+    if( ImGui::Button( "Save to File" ) )
+    {
+        auto ret = file_dialog_open( save_file, "JavaScript Object Notation (JSON)\0*.json\0", nullptr, nullptr );
+        if( ret )
+        {
+            try
+            {
+                save_hdr_config_to_file( ret );
+            }
+            catch( const std::exception & e )
+            {
+                error_message = e.what();
+            }
+        }
+    }
 
-     ImGui::Separator();
-
+    ImGui::Separator();
     ImGui::PushStyleVar( ImGuiStyleVar_FrameRounding, 4.0f );
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 8, 4 ) );
 

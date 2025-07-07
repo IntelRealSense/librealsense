@@ -15,8 +15,8 @@ struct hdr_config
 {
     struct control_item
     {
-        int DepthGain;
-        int DepthManExp;
+        int depth_gain;
+        int depth_man_exp;
 
         control_item();
         control_item( int gain, int exp );
@@ -30,16 +30,16 @@ struct hdr_config
         preset_item();
     };
 
-    struct sub_preset
+    struct hdr_preset
     {
         std::string id;
         int iterations;
         std::vector< preset_item > items;
 
-        sub_preset();
+        hdr_preset();
     };
 
-    sub_preset SubPreset;
+    hdr_preset _hdr_preset;
 
     std::string to_json() const;
     void from_json( const std::string & json_str );
