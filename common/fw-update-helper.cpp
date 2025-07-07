@@ -148,13 +148,7 @@ namespace rs2
             }
         }
         log("Burning Signed Firmware on MIPI device");
-        if (!is_mipi_recovery)
-        {
-            // Enter DFU mode
-            auto device_debug = _dev.as<rs2::debug_protocol>();
-            uint32_t dfu_opcode = 0x1e;
-            device_debug.build_command(dfu_opcode, 1);
-        }
+
         _progress = 30;
         rs2_camera_info _dfu_port_info = (is_mipi_recovery)?(RS2_CAMERA_INFO_PHYSICAL_PORT):(RS2_CAMERA_INFO_DFU_DEVICE_PATH);
         // Write signed firmware to appropriate file descriptor
