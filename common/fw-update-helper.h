@@ -35,6 +35,9 @@ namespace rs2
             std::function<bool()> action, std::function<void()> cleanup,
             std::chrono::system_clock::duration delta);
 
+        void backup_fimware(updatable& upd, int& next_progress, const std::string& serial);
+        void switch_device_to_recovery_mode(updatable& upd, const std::string& serial, update_device& dfu, std::function<void()> cleanup);
+
         std::weak_ptr<notifications_model> _not_model;
         device _dev;
         context _ctx;
