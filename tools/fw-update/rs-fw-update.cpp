@@ -198,11 +198,11 @@ int write_fw_to_mipi_device( rs2::context& ctx, rs2::cli::value<std::string>& se
             return EXIT_FAILURE;
         }
 
-        bool flush_done = false;
+        bool burn_done = false;
         std::thread show_progress_thread(
-            [&flush_done]()
+            [&burn_done]()
             {
-                for( int i = 0; i < 101 && ! flush_done; ++i ) // Show percentage [0-100]
+                for( int i = 0; i < 101 && !burn_done; ++i ) // Show percentage [0-100]
                 {
                     printf( "%d%%\r", i );
                     std::cout.flush();
@@ -218,7 +218,7 @@ int write_fw_to_mipi_device( rs2::context& ctx, rs2::cli::value<std::string>& se
         {
             // Nothing to do, file goodbit is false
         }
-        flush_done = true;
+        burn_done = true;
         show_progress_thread.join();
         printf( "    \r" ); // Delete progress, as it is not accurate, don't leave 85% when writing done
         if( ! fw_path_in_device.good() )
@@ -513,12 +513,6 @@ try
             // If device is D457 connected by MIPI connector
             if( is_mipi_device( d ) && !unsigned_arg.isSet())
             {
-                // if( unsigned_arg.isSet() )
-                // {
-                //     std::cout << std::endl << "Only signed FW is currently supported for MIPI devices" << std::endl;
-                //     return EXIT_FAILURE;
-                // }
-
                 return write_fw_to_mipi_device(ctx, serial_number_arg, d, fw_image );
             }
 
