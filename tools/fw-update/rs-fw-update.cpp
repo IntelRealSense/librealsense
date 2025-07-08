@@ -358,7 +358,30 @@ try
             } );
             std::cout << std::endl << "Recovering device: " << std::endl;
             print_device_info( recovery_device );
-            update( recovery_device, fw_image );
+
+            if (unsigned_arg.isSet())
+            {
+                std::cout << std::endl << "Unsigned Firmware update started. Please don't disconnect device!" << std::endl << std::endl;
+                if (ISATTY(FILENO(stdout)))
+                {
+                    recovery_device.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress)
+                    {
+                        printf("\rUnsigned Firmware update progress: %d[%%]", (int)(progress * 100));
+                        std::cout.flush();
+                    });
+                }
+                else
+                {
+                    recovery_device.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress) {});
+                }
+                std::cout << std::endl << std::endl << "Unsigned Firmware update done" << std::endl;
+            }
+            else
+            {
+                update(recovery_device, fw_image);
+            }
+
+            // update( recovery_device, fw_image );
             std::cout << "Waiting for new device..." << std::endl;
             if (!d457_recovery_device)
             {
