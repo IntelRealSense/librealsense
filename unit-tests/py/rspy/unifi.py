@@ -225,6 +225,8 @@ class UniFiSwitch(device_hub.device_hub):
             log.w("Attempted to disable a non-poe port! ignoring.")
             ports = [port for port in ports if port in self.POE_PORTS]
 
+        if not ports:  # ports is []
+            return True
         ports_str = ','.join(map(str, ports))
         cmd = f"swctrl poe set off id {ports_str}"
         self._run_command(cmd)
