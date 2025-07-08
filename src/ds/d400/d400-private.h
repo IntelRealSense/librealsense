@@ -178,7 +178,7 @@ namespace librealsense
             {RS405_PID, "5.12.11.8" },
             {RS455_PID, "5.13.0.50" },
             {RS457_PID, "5.16.8.0" },
-            {RS400_MIPI_RECOVERY_PID, "5.16.0.1" },
+            {RS400_MIPI_RECOVERY_PID, "5.16.8.0" },
             {RS430_GMSL_PID, "5.16.8.0" },
             {RS415_GMSL_PID, "5.17.0.2" }
         };
