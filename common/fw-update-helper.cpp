@@ -181,7 +181,7 @@ namespace rs2
         _dev.hardware_reset();
     }
 
-    void firmware_update_manager::backup_fimware(updatable& upd, int& next_progress, const std::string& serial)
+    void firmware_update_manager::backup_firmware(updatable& upd, int& next_progress, const std::string& serial)
     {
         log("Trying to back-up camera flash memory");
 
@@ -340,7 +340,7 @@ namespace rs2
                 }
             }
 
-            backup_fimware(upd, next_progress, serial);
+            backup_firmware(upd, next_progress, serial);
 
             next_progress = static_cast<int>(_progress) + 10;
 
