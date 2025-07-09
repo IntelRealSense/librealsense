@@ -24,7 +24,7 @@ endif()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-add_library(${PROJECT_NAME} STATIC
+add_library(${PROJECT_NAME}
     ${AllSources}
     ${HEADER_FILES_ROSBAG}
     ${SOURCE_FILES_ROSBAG}
