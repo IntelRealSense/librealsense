@@ -8,6 +8,7 @@ add_library( ${PROJECT_NAME} "" )
 #target_link_libraries( ${PROJECT_NAME} PUBLIC nlohmann_json )
 target_compile_features( ${PROJECT_NAME} PUBLIC cxx_std_14 )
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER Library )
+set_target_properties( ${PROJECT_NAME} PROPERTIES VERSION ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
 
 target_include_directories( ${PROJECT_NAME}
     PUBLIC
