@@ -183,13 +183,9 @@ recovered = False
 if device.is_update_device():
     log.d( "recovering device ..." )
     try:
-        image_file = find_image_or_exit(product_name) if not custom_fw_d400_path else custom_fw_d400_path
+        # always flash signed fw when device on recovery befre flashing anything else
+        image_file = find_image_or_exit(product_name)
         cmd = [fw_updater_exe, '-r', '-f', image_file]
-        if custom_fw_d400_path:
-            # Add '-u' only if the path doesn't include 'signed'
-            if 'signed' not in custom_fw_d400_path.lower():
-                cmd.insert(1, '-u')
-
         log.d( 'running:', cmd )
         subprocess.run( cmd )
         recovered = True
