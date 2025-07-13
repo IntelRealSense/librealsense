@@ -28,7 +28,7 @@
 #include <rsutils/time/periodic-timer.h>
 #include <rsutils/number/stabilized-value.h>
 #include "option-model.h"
-#include "hdr-model.h"
+
 namespace rs2
 {
     std::vector<const char*> get_string_pointers(const std::vector<std::string>& vec);
@@ -76,7 +76,8 @@ namespace rs2
     public:
         void populate_options( const std::string & opt_base_label, bool * options_invalidated, std::string & error_message );
 
-        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer, bool new_device_connected = true);
+        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer, 
+            device_model* model, bool new_device_connected = true);
         ~subdevice_model();
 
         bool is_there_common_fps();
@@ -139,9 +140,6 @@ namespace rs2
         }
 
         bool is_depth_calibration_profile() const;
-        bool supports_hdr();
-        void open_hdr_config_tool_window();
-        void render_hdr_config_window( ux_window & window, std::string & error_message );
 
         viewer_model& viewer;
         std::function<void()> on_frame = [] {};
@@ -210,6 +208,7 @@ namespace rs2
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
 
         bool uvmapping_calib_full = false;
+        device_model* model;
 
     private:
         bool draw_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1);
@@ -231,6 +230,5 @@ namespace rs2
         const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
         const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters
         std::atomic_bool _destructing;
-        hdr_model _hdr_model;
     };
 }

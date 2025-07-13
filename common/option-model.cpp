@@ -147,7 +147,7 @@ bool option_model::draw( std::string & error_message,
                     {
                         try
                         {
-                            dev->open_hdr_config_tool_window();
+                            dev->model->open_hdr_config_tool_window();
                         }
                         catch( const std::exception & e )
                         {

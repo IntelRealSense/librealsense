@@ -24,7 +24,7 @@ struct hdr_config
 
     struct preset_item
     {
-        int iterations;
+        int iterations;  // current item will be applied for this many iterations
         std::vector< control_item > controls;
 
         preset_item();
@@ -33,7 +33,7 @@ struct hdr_config
     struct hdr_preset
     {
         std::string id;
-        int iterations;
+        int iterations;  // the preset will be applied for this many iterations, if 0 it will be infinite
         std::vector< preset_item > items;
 
         hdr_preset();

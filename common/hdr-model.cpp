@@ -219,111 +219,131 @@ void hdr_model::render_preset_item( hdr_config::preset_item & item, int idx )
 
 void hdr_model::render_hdr_config_window( ux_window & window, std::string & error_message )
 {
-    if( ! _window_open || ! _hdr_supported )
-        return;
-
-    ImGui::SetNextWindowSize( { 680, 600 }, ImGuiCond_FirstUseEver );
-    if( ! ImGui::Begin( "HDR Configuration", &_window_open, ImGuiWindowFlags_NoCollapse ) )
+    // trigger the popup once
+    const auto window_name = "HDR Configuration";
+    if (_window_open)
     {
-        ImGui::End();
-        return;
+        ImGui::OpenPopup(window_name);
+        _window_open = false;
     }
 
-    if( ! error_message.empty() )
-        ImGui::TextColored( { 1, 0.3f, 0.3f, 1 }, "%s", error_message.c_str() );
-    ImGui::Separator();
+    // set size for the upcoming popup
+    ImGui::SetNextWindowSize({ 680, 600 }, ImGuiCond_Appearing);
 
-    ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.5f, 1.0f ), "SubPreset Configuration" );
-    ImGui::Separator();
+    // flags for a modal dialog
+    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
 
-    ImGui::Text( "Preset ID:" );
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth( 150 );
-    char buf[32];
-    strncpy( buf, _changed_config._hdr_preset.id.c_str(), 31 );
-    buf[31] = '\0';
-    if( ImGui::InputText( "##id", buf, 32 ) )
-        _changed_config._hdr_preset.id = buf;
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+    ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+    ImGui::PushStyleColor(ImGuiCol_Button, button_color);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.1f);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_color + 0.1f);
 
-    ImGui::Text( "Global Iterations:" );
-    ImGui::SameLine();
-    int gi = _changed_config._hdr_preset.iterations;
-    ImGui::SetNextItemWidth( 150 );
-    if( ImGui::InputInt( "##gi", &gi ) )
-        _changed_config._hdr_preset.iterations = std::max( 0, gi );
-
-    ImGui::Spacing();
-    ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.5f, 1.0f ), "Preset Items" );
-    ImGui::Separator();
-
-    for( size_t i = 0; i < _changed_config._hdr_preset.items.size(); ++i )
-        render_preset_item( _changed_config._hdr_preset.items[i], int( i ) );
-
-    ImGui::Spacing();
-    ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.5f, 1.0f ), "Load/Save Configuration" );
-    ImGui::Separator();
-
-    if( ImGui::Button( "Load from File" ) )
+    // begin the modal
+    if (ImGui::BeginPopupModal(window_name, nullptr, flags))
     {
-        auto ret = file_dialog_open( open_file, "JavaScript Object Notation (JSON)\0*.json\0", nullptr, nullptr );
-        if( ret )
+        // draw your same contents…
+        if (!error_message.empty())
+            ImGui::TextColored({ 1,0.3f,0.3f,1 }, "%s", error_message.c_str());
+        ImGui::Separator();
+
+        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "SubPreset Configuration");
+        ImGui::Separator();
+
+        ImGui::Text("Preset ID:");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(150);
+        char buf[32];
+        strncpy(buf, _changed_config._hdr_preset.id.c_str(), 31);
+        buf[31] = '\0';
+        if (ImGui::InputText("##id", buf, 32))
+            _changed_config._hdr_preset.id = buf;
+
+        ImGui::Text("Global Iterations:");
+        ImGui::SameLine();
+        int gi = _changed_config._hdr_preset.iterations;
+        ImGui::SetNextItemWidth(150);
+        if (ImGui::InputInt("##gi", &gi))
+            _changed_config._hdr_preset.iterations = std::max(0, gi);
+
+        ImGui::Spacing();
+        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "Preset Items");
+        ImGui::Separator();
+
+        for (size_t i = 0; i < _changed_config._hdr_preset.items.size(); ++i)
+            render_preset_item(_changed_config._hdr_preset.items[i], int(i));
+
+        ImGui::Spacing();
+        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "Load/Save Configuration");
+        ImGui::Separator();
+
+        if (ImGui::Button("Load from File"))
         {
-            try
+            auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON)\0*.json\0", nullptr, nullptr);
+            if (ret)
             {
-                load_hdr_config_from_file( ret );
+                try
+                {
+                    load_hdr_config_from_file(ret);
+                }
+                catch (const std::exception& e)
+                {
+                    error_message = e.what();
+                }
             }
-            catch( const std::exception & e )
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Save to File"))
+        {
+            auto ret = file_dialog_open(save_file, "JavaScript Object Notation (JSON)\0*.json\0", nullptr, nullptr);
+            if (ret)
             {
+                try
+                {
+                    save_hdr_config_to_file(ret);
+                }
+                catch (const std::exception& e)
+                {
+                    error_message = e.what();
+                }
+            }
+        }
+
+        ImGui::Separator();
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 4));
+
+        // “Apply” button
+        if (ImGui::Button("Apply", ImVec2(100, 0)))
+        {
+            try {
+                apply_hdr_config();
+                error_message.clear();
+                ImGui::CloseCurrentPopup();   // <- closes the popup and will let ImGui draw the dim
+            }
+            catch (const std::exception& e) {
                 error_message = e.what();
             }
         }
-    }
-    ImGui::SameLine();
-    if( ImGui::Button( "Save to File" ) )
-    {
-        auto ret = file_dialog_open( save_file, "JavaScript Object Notation (JSON)\0*.json\0", nullptr, nullptr );
-        if( ret )
+
+        ImGui::SameLine();
+
+        // “Cancel” button
+        if (ImGui::Button("Cancel", ImVec2(100, 0)))
         {
-            try
-            {
-                save_hdr_config_to_file( ret );
-            }
-            catch( const std::exception & e )
-            {
-                error_message = e.what();
-            }
+            close_window();
+            ImGui::CloseCurrentPopup();       // <- also close here
         }
+
+        ImGui::PopStyleVar(2);
+        ImGui::EndPopup();
     }
 
-    ImGui::Separator();
-    ImGui::PushStyleVar( ImGuiStyleVar_FrameRounding, 4.0f );
-    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 8, 4 ) );
-
-    if( ImGui::Button( "Apply", ImVec2( 100, 0 ) ) )
-    {
-        try
-        {
-            apply_hdr_config();
-            _set_default = false;
-            _window_open = false;
-            error_message.clear();
-        }
-        catch( const std::exception & e )
-        {
-            error_message = e.what();
-        }
-    }
-
-    ImGui::SameLine();
-
-    if( ImGui::Button( "Cancel", ImVec2( 100, 0 ) ) )
-    {
-        close_window();
-    }
-
-    ImGui::PopStyleVar( 2 );
-
-    ImGui::End();
+    ImGui::PopStyleColor(6);
+    ImGui::PopStyleVar(2);
 }
 
 

@@ -12,6 +12,7 @@
 #include "calibration-model.h"
 #include "objects-in-frame.h"
 #include "dds-model.h"
+#include "hdr-model.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -400,6 +401,7 @@ namespace rs2
         bool disable_record_button_logic(bool is_streaming, bool is_playback_device);
         std::string get_record_button_hover_text(bool is_streaming);
 
+        void open_hdr_config_tool_window();
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
 
@@ -485,6 +487,7 @@ namespace rs2
         std::shared_ptr<sw_update::dev_updates_profile::update_profile >_updates_profile;
         calibration_model _calib_model;
         dds_model _dds_model;
+        hdr_model _hdr_model;
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);

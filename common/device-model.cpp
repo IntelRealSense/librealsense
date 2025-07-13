@@ -377,7 +377,8 @@ namespace rs2
         _updates(viewer.updates),
         _updates_profile(std::make_shared<dev_updates_profile::update_profile>()),
         _allow_remove(remove),
-        _dds_model(dev)
+        _dds_model(dev),
+        _hdr_model(dev)
     {
         auto name = get_device_name(dev);
         id = rsutils::string::from() << name.first << ", " << name.second;
@@ -389,7 +390,7 @@ namespace rs2
             // checking if the sensor is color_sensor or is D405 (with integrated RGB in depth sensor)
             if (s->is<color_sensor>() || (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID) && !strcmp(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "0B5B")))
                 objects = _detected_objects;
-            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), objects, error_message, viewer, new_device_connected);
+            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), objects, error_message, viewer, this, new_device_connected);
             subdevices.push_back(model);
         }
 
@@ -1434,11 +1435,8 @@ namespace rs2
                     }
                 }
 
-                for( auto & sub : subdevices )
-                {
-                    if( sub->supports_hdr() )
-                        sub->render_hdr_config_window( window, error_message );
-                }
+                if ( _hdr_model.supports_HDR() )
+                    _hdr_model.render_hdr_config_window(window, error_message);
 
                 ImGuiSelectableFlags is_streaming_flag = (is_streaming) ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None;
                 if( _dds_model.supports_DDS() )
@@ -1478,8 +1476,8 @@ namespace rs2
 
         _calib_model.update(window, error_message);
 
-        for( auto & sub : subdevices )
-            sub->render_hdr_config_window( window, error_message );
+        if ( _hdr_model.supports_HDR() )
+            _hdr_model.render_hdr_config_window( window, error_message );
 
         if( _dds_model.supports_DDS() )
         {
@@ -3600,5 +3598,10 @@ namespace rs2
         }
 
         return has_autocalib;
+    }
+
+    void device_model::open_hdr_config_tool_window()
+    {
+        _hdr_model.open_hdr_tool_window();
     }
 }
