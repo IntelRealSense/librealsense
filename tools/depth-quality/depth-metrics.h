@@ -161,7 +161,8 @@ namespace rs2
 
             snapshot_metrics result{ w, h, roi, {} };
 
-            std::mutex m;
+            if( w < roi.max_x || h < roi.max_y ) // Resolution have changed since calculating roi, avoid accessing illegal pixels.
+                return result;
 
             std::vector<rs2::float3> roi_pixels;
             std::vector<rs2::float3> roi_deprojected_points;
@@ -180,7 +181,6 @@ namespace rs2
                         auto distance = depth_raw * units;
                         rs2_deproject_pixel_to_point(point, intrin, pixel, distance);// transform from pixels to metric units (meters) according to intrinsics.
 
-                        std::lock_guard<std::mutex> lock(m);
                         roi_pixels.push_back({ pixel[0], pixel[1], distance });
                         roi_deprojected_points.push_back({ point[0], point[1], point[2] });
                     }
