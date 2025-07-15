@@ -28,6 +28,15 @@ struct hdr_config
         std::vector< control_item > controls;
 
         preset_item();
+
+        bool operator==( const preset_item & other ) const
+        {
+            if (controls[0].depth_gain != other.controls[0].depth_gain)
+                return false;
+            if (controls[0].depth_man_exp != other.controls[0].depth_man_exp)
+                return false;
+            return iterations == other.iterations;
+        }
     };
 
     struct hdr_preset
@@ -44,6 +53,13 @@ struct hdr_config
     std::string to_json() const;
     void from_json( const std::string & json_str );
 
+    bool operator==( const hdr_config & other ) const
+    {
+        return _hdr_preset.id == other._hdr_preset.id &&
+               _hdr_preset.iterations == other._hdr_preset.iterations &&
+               _hdr_preset.items == other._hdr_preset.items;
+    }
+
 };
 
 class hdr_model
@@ -57,6 +73,7 @@ public:
 
     void load_hdr_config_from_file( const std::string & filename );
     void save_hdr_config_to_file( const std::string & filename );
+    void load_hdr_config_from_device();
     void apply_hdr_config();
 
 private:
@@ -64,6 +81,10 @@ private:
     bool _window_open;
     bool _hdr_supported;
     bool _set_default;
+    option_range _exp_range;
+    option_range _gain_range;
+    bool exp_edit_mode = false;
+    bool gain_edit_mode = false;
 
     hdr_config _current_config;
     hdr_config _changed_config;
@@ -74,7 +95,7 @@ private:
     void initialize_default_config();
 
     void render_preset_item( hdr_config::preset_item & item, int item_index );
-    void render_control_item( hdr_config::control_item & control, int control_index );
+    void render_control_item( hdr_config::control_item & control);
 };
 
 }

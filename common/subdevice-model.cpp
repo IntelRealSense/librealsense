@@ -96,10 +96,10 @@ namespace rs2
         std::shared_ptr< atomic_objects_in_frame > device_detected_objects,
         std::string& error_message,
         viewer_model& viewer,
-        device_model* device_model,
+        device_model* dev_model,
         bool new_device_connected
     )
-        : s(s), dev(dev), ui(), last_valid_ui(), model(device_model),
+        : s(s), dev(dev), ui(), last_valid_ui(), dev_model(dev_model),
         streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::gl::colorizer>()),
         yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>()),
