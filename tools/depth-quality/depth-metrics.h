@@ -161,7 +161,7 @@ namespace rs2
 
             snapshot_metrics result{ w, h, roi, {} };
 
-            if( w < roi.max_x || h < roi.max_y ) // Resolution have changed since calculating roi, avoid accessing illegal pixels.
+            if( w <= roi.max_x || h <= roi.max_y ) // Resolution has changed since calculating roi, avoid accessing illegal pixels.
                 return result;
 
             std::vector<rs2::float3> roi_pixels;
