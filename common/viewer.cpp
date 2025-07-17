@@ -2997,8 +2997,16 @@ namespace rs2
 
             if (ImGui::BeginPopupModal(menu_items[3], nullptr, flags))
             {
+                // splash original width, height
+                auto width = 1920;
+                auto height = 1080;
+
+                // considering the pixels in which the Realsense logo is within splash image
+                ImVec2 uv0 = ImVec2(200.f / width, 300.f / height);
+                ImVec2 uv1 = ImVec2(1700.f / width, 600.f / height);
+
                 ImGui::Image((void*)(intptr_t)window.get_splash().get_gl_handle(),
-                             ImVec2(w - 30, 100), {0.20f, 0.38f}, {0.80f, 0.56f});
+                             ImVec2(w - 30, 100), uv0, uv1);
 
                 auto realsense_pos = ImGui::GetCursorPos();
                 ImGui::Text("Intel RealSense is a suite of depth-sensing and motion-tracking technologies.");
