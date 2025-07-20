@@ -2900,8 +2900,8 @@ namespace rs2
                     }
 #endif
                 }
-                ImGui::EndChild();
                 }
+                ImGui::EndChild();
 
                 ImGui::Separator();
 

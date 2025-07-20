@@ -132,9 +132,9 @@ bool option_model::draw( std::string & error_message,
                                    "algorithm\nClick the button, then draw a rect on the frame" );
         }
 
-        if( opt == RS2_OPTION_HDR_ENABLED )
+        auto advanced = dev->dev.as< rs400::advanced_mode >();
+        if( opt == RS2_OPTION_HDR_ENABLED && advanced && advanced.is_enabled() )
         {
-            auto disable_hdr_config = value_as_float() > 0;  // if HDR is enabled, we can't modify config
             ImGui::SameLine( 0, 10 );
 
             std::string button_label = "HDR Config";
@@ -147,15 +147,14 @@ bool option_model::draw( std::string & error_message,
                     {
                         try
                         {
-                            dev->open_hdr_config_tool_window();
+                            dev->dev_model->open_hdr_config_tool_window();
                         }
                         catch( const std::exception & e )
                         {
                             error_message = rsutils::string::from() << "Failed to open HDR configuration: " << e.what();
                         }
                     }
-                },
-                disable_hdr_config );
+                });
         }
     
     }

@@ -96,16 +96,17 @@ namespace rs2
         std::shared_ptr< atomic_objects_in_frame > device_detected_objects,
         std::string& error_message,
         viewer_model& viewer,
+        device_model* dev_model,
         bool new_device_connected
     )
-        : s(s), dev(dev), ui(), last_valid_ui(),
+        : s(s), dev(dev), ui(), last_valid_ui(), dev_model(dev_model),
         streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::gl::colorizer>()),
         yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>()),
         y411(std::make_shared<rs2::gl::y411_decoder>()),
         viewer(viewer),
         detected_objects(device_detected_objects),
-        _destructing( false ), _hdr_model( dev )
+        _destructing( false )
     {
         supported_options = s->get_supported_options();
         restore_processing_block("colorizer", depth_colorizer);
@@ -1312,19 +1313,6 @@ namespace rs2
         }
 
         return false;
-    }
-    bool subdevice_model::supports_hdr() {
-        return _hdr_model.supports_HDR();
-    }
-
-    void subdevice_model::open_hdr_config_tool_window()
-    {
-        _hdr_model.open_hdr_tool_window();
-    }
-
-    void subdevice_model::render_hdr_config_window( ux_window & window, std::string & error_message )
-    {
-        _hdr_model.render_hdr_config_window( window, error_message );
     }
 
     std::pair<int, int> subdevice_model::get_max_resolution(rs2_stream stream) const
