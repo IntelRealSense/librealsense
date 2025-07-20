@@ -22,8 +22,8 @@ $ set LRS_LOG_LEVEL="<Log Level>"
 ```
 - A LibRealSense log will be created even when an application does not activate the LibRealSense logger.
 
-## Connected Intel Cameras
-- To list all connected Intel Cameras:
+## Connected Cameras
+- To list all connected Cameras:
 ```bash
 $ lsusb | grep 8086
 ```

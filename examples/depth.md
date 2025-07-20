@@ -1,6 +1,6 @@
 
 
-# Sample Code for Intel® RealSense™ **Depth** cameras
+# Sample Code for RealSense™ **Depth** cameras
 
 This is a subset of SDK examples, for full list see [readme.md](./readme.md)
 
@@ -24,7 +24,7 @@ This is a subset of SDK examples, for full list see [readme.md](./readme.md)
 |[Post Processing](./post-processing)| C++ | Demonstrating usage of post processing filters for depth images | :star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[Record & Playback](./record-playback)| C++ | Demonstrating usage of the recorder and playback devices | :star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[Motion](./motion)| C++ | Demonstrates how to use data from gyroscope and accelerometer to compute the rotation of the camera | :star::star: | [![Depth with IMU](https://img.shields.io/badge/-D435i-5bc3ff.svg)](./depth.md) |
-|[DNN](../wrappers/opencv/dnn)| C++ & OpenCV | Intel RealSense camera used for real-time object-detection | :star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
+|[DNN](../wrappers/opencv/dnn)| C++ & OpenCV | RealSense camera used for real-time object-detection | :star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[Software Device](./software-device)| C++ | Shows how to create a custom `rs2::device` | :star::star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[Sensor Control](./sensor-control)| C++ | A tutorial for using the `rs2::sensor` API | :star::star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[GrabCuts](../wrappers/opencv/grabcuts)| C++ & OpenCV | Simple background removal using the GrabCut algorithm | :star::star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)  |

@@ -17,7 +17,7 @@ This example demonstrates usage of the following processing blocks:
   * Rotates depth and IR frames.
 
 
-For further infomration please refer to [Depth Post-Processing for Intel® RealSense™ Depth Camera D400 Series](https://dev.intelrealsense.com/docs/depth-post-processing)
+For further infomration please refer to [Depth Post-Processing for RealSense™ Depth Camera D400 Series](https://dev.intelrealsense.com/docs/depth-post-processing)
 
 ## Expected Output
 ![expected output](https://user-images.githubusercontent.com/22654243/35924136-dd9cd1b6-0c2a-11e8-925a-84a52c0a5b96.gif)
@@ -28,7 +28,7 @@ This application displays a rotating point cloud of the depth frame, with GUI fo
 
 ### Declarations
 
-As with any SDK application we include the Intel RealSense Cross Platform API:
+As with any SDK application we include the RealSense Cross Platform API:
 
 ```cpp
 #include <librealsense2/rs.hpp>

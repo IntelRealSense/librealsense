@@ -114,7 +114,7 @@ Depth from stereo on the other hand, only benefits from multi-camera setup and c
 ### The D400 Series
 
 <p align="center"><img src="https://raw.githubusercontent.com/wiki/dorodnic/librealsense/realsense-cameras.PNG" width="70%" /><br>
-<i><b>D400</b> Intel RealSense cameras</i></p>
+<i><b>D400</b> RealSense cameras</i></p>
 
 D400 RealSense cameras offer the following basic features:
 1. The device comes fully calibrated producing hardware-rectified pairs of images
@@ -125,13 +125,13 @@ D400 RealSense cameras offer the following basic features:
 
 This product was designed from the ground up to address conditions critical to robotics / drones developers and to overcome the limitations of structured light. 
 
-<p align="center"><img src="https://raw.githubusercontent.com/wiki/dorodnic/librealsense/d415-depth.png" width="70%" /><br><i>Depth-map using <b>D415 Intel RealSense camera</b></i></p>
+<p align="center"><img src="https://raw.githubusercontent.com/wiki/dorodnic/librealsense/d415-depth.png" width="70%" /><br><i>Depth-map using <b>D415 RealSense camera</b></i></p>
 
-<p align="center"><img src="https://raw.githubusercontent.com/wiki/dorodnic/librealsense/realsense-depth.gif" width="70%" /><br><i>Point-cloud using <b>D415 Intel RealSense camera</b></i></p>
+<p align="center"><img src="https://raw.githubusercontent.com/wiki/dorodnic/librealsense/realsense-depth.gif" width="70%" /><br><i>Point-cloud using <b>D415 RealSense camera</b></i></p>
 
 Just like opencv, RealSense technology offers open-source and cross-platform set of [APIs](https://github.com/IntelRealSense/librealsense) for getting depth data. 
 
-1. [electronicdesign - New Intel RealSense Cameras Deliver Low-Cost 3D Solutions](http://www.electronicdesign.com/industrial-automation/new-intel-realsense-cameras-deliver-low-cost-3d-solutions)
+1. [electronicdesign - New RealSense Cameras Deliver Low-Cost 3D Solutions](http://www.electronicdesign.com/industrial-automation/new-intel-realsense-cameras-deliver-low-cost-3d-solutions)
 1. [Augmented World Expo - Help Your Embedded Systems See, Navigate, and Understand](https://www.youtube.com/watch?v=OOVl5dx7Bb8)
 1. [List of whitepapers](https://realsense.intel.com/intel-realsense-downloads/#whitepaper) covering D400 RealSense technology 
 1. [Where to buy Intel RealSense cameras](https://realsense.intel.com/buy-now/)

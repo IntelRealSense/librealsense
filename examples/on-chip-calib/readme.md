@@ -12,7 +12,7 @@ User will be promped to save calibration results to flash. "Results saved to fla
 
 ## Code Overview 
 
-First, we include the Intel® RealSense™ Cross-Platform API.  
+First, we include the RealSense™ Cross-Platform API.  
 All but advanced functionality is provided through a single header:
 ```cpp
 #include <librealsense2/rs.hpp> // RealSense Cross Platform API
