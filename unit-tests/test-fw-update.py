@@ -192,7 +192,7 @@ if device.is_update_device():
 
         if 'jetson' in test.context:
             # Reload d4xx mipi driver on Jetson
-            log.d("Reloading uvcvideo driver on Jetson...")
+            log.d("Reloading d4xx driver on Jetson...")
             subprocess.run(['sudo', 'modprobe', '-r', 'd4xx'], check=True) # force remove
             subprocess.run(['sudo', 'modprobe', 'd4xx'], check=True) # load
     except Exception as e:
