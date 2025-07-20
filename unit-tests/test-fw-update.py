@@ -189,6 +189,12 @@ if device.is_update_device():
         log.d( 'running:', cmd )
         subprocess.run( cmd )
         recovered = True
+
+        if 'jetson' not in test.context:
+            # Reload d4xx mipi driver on Jetson
+            log.d("Reloading uvcvideo driver on Jetson...")
+            subprocess.run(['sudo', 'modprobe', '-r', 'd4xx'], check=True) # force remove
+            subprocess.run(['sudo', 'modprobe', 'd4xx'], check=True) # load
     except Exception as e:
         test.unexpected_exception()
         log.f( "Unexpected error while trying to recover device:", e )
