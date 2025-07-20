@@ -982,37 +982,27 @@ namespace librealsense
 
     bool ros_reader::is_depth_sensor(std::string sensor_name)
     {
-        if( is_stereo_depth_sensor( sensor_name ) || sensor_name.compare( "Coded-Light Depth Sensor" ) == 0 )
-            return true;
-        return false;
+        return is_stereo_depth_sensor( sensor_name ) || sensor_name.compare( "Coded-Light Depth Sensor" ) == 0;
     }
 
     bool ros_reader::is_stereo_depth_sensor( std::string sensor_name )
     {
-        if( sensor_name.compare( "Stereo Module" ) == 0 )
-            return true;
-        return false;
+        return sensor_name.compare( "Stereo Module" ) == 0;
     }
 
     bool ros_reader::is_color_sensor(std::string sensor_name)
     {
-        if (sensor_name.compare("RGB Camera") == 0)
-            return true;
-        return false;
+        return sensor_name.compare( "RGB Camera" ) == 0;
     }
 
     bool ros_reader::is_motion_module_sensor(std::string sensor_name)
     {
-        if (sensor_name.compare("Motion Module") == 0)
-            return true;
-        return false;
+        return sensor_name.compare( "Motion Module" ) == 0;
     }
 
     bool ros_reader::is_fisheye_module_sensor(std::string sensor_name)
     {
-        if (sensor_name.compare("Wide FOV Camera") == 0)
-            return true;
-        return false;
+        return sensor_name.compare( "Wide FOV Camera" ) == 0;
     }
 
     bool ros_reader::is_ds_PID(int pid)
