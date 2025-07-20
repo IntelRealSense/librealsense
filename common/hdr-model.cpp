@@ -15,73 +15,71 @@
 using rsutils::json;
 
 namespace rs2 {
-hdr_config::control_item::control_item()
+hdr_preset::control_item::control_item()
     : control_item( 1, 1 )
 {
 }
 
-hdr_config::control_item::control_item( int gain, int exp )
+hdr_preset::control_item::control_item( int gain, int exp )
     : depth_gain( gain )
     , depth_man_exp( exp )
 {
 }
 
-hdr_config::preset_item::preset_item()
+hdr_preset::preset_item::preset_item()
     : iterations( 1 )
 {
 }
 
-hdr_config::hdr_preset::hdr_preset()
+hdr_preset::hdr_preset::hdr_preset()
     : id( "0" )
     , iterations( 0 )
 {
 }
 
-std::string hdr_config::to_json() const
+std::string hdr_preset::to_json() const
 {
     json j;
     auto & hp = j["hdr-preset"];
-    hp["id"] = _hdr_preset.id;
-    hp["iterations"] = std::to_string( _hdr_preset.iterations );
+    hp["id"] = id;
+    hp["iterations"] = std::to_string( iterations );
 
     hp["items"] = json::array();
-    for( auto const & item : _hdr_preset.items )
+    for( auto const & item : items )
     {
         json item_j;
         item_j["iterations"] = std::to_string( item.iterations );
         item_j["controls"] = json::array();
 
-        if( ! item.controls.empty() )
-        {
-            auto const & ctrl = item.controls[0];
-            json gain_j;
-            gain_j["depth-gain"] = std::to_string( ctrl.depth_gain );
-            json exp_j;
-            exp_j["depth-exposure"] = std::to_string( ctrl.depth_man_exp );
-            item_j["controls"].push_back( gain_j );
-            item_j["controls"].push_back( exp_j );
-        }
+        auto const& ctrl = item.controls;
+        json gain_j;
+        gain_j["depth-gain"] = std::to_string(ctrl.depth_gain);
+        json exp_j;
+        exp_j["depth-exposure"] = std::to_string(ctrl.depth_man_exp);
+        item_j["controls"].push_back(gain_j);
+        item_j["controls"].push_back(exp_j);
+
         hp["items"].push_back( item_j );
     }
 
     return j.dump( 4 );
 }
 
-void hdr_config::from_json( const std::string & json_str )
+void hdr_preset::from_json( const std::string & json_str )
 {
     auto j = json::parse( json_str );
     if( ! j.contains( "hdr-preset" ) )
     {
         // no hdr preset in the JSON, initialize with default values
-        _hdr_preset = hdr_config::hdr_preset();
+        *this = hdr_preset();
         return;
     }
 
     auto & hp = j["hdr-preset"];
-    _hdr_preset.id = hp.value( "id", "0" );
-    _hdr_preset.iterations = std::stoi( hp.value( "iterations", "0" ) );
+    id = hp.value( "id", "0" );
+    iterations = std::stoi( hp.value( "iterations", "0" ) );
 
-    _hdr_preset.items.clear();
+    items.clear();
     for( auto & item_j : hp["items"] )
     {
         preset_item item;
@@ -95,10 +93,9 @@ void hdr_config::from_json( const std::string & json_str )
                 ctrl.depth_gain = std::stoi( ctrls[0]["depth-gain"].get< std::string >() );
             if( ctrls[1].contains( "depth-exposure" ) )
                 ctrl.depth_man_exp = std::stoi( ctrls[1]["depth-exposure"].get< std::string >() );
-
-            item.controls.push_back( ctrl );
+            item.controls = ctrl;
         }
-        _hdr_preset.items.push_back( std::move( item ) );
+        items.push_back( std::move( item ) );
     }
 }
 
@@ -117,7 +114,7 @@ hdr_model::hdr_model( rs2::device dev )
         initialize_default_config();
         load_hdr_config_from_device();
         _changed_config = _current_config;
-        if( _changed_config._hdr_preset.items.empty() )
+        if( _changed_config.items.empty() )
         {
             // if the device does not have a preset, use the default one
             _changed_config = _default_config;
@@ -142,17 +139,17 @@ bool hdr_model::check_HDR_support()
 
 void hdr_model::initialize_default_config()
 {
-    _default_config._hdr_preset.id = "0";
-    _default_config._hdr_preset.iterations = 0;
+    _default_config.id = "0";
+    _default_config.iterations = 0;
 
     // pairs of gain and exposure
     const std::vector< std::pair< int, int > > defaults = { { 16, (int)_exp_range.min }, { 16, 32000 } };
     for (auto const& p : defaults)
     {
-        hdr_config::preset_item it;
+        hdr_preset::preset_item it;
         it.iterations = 1;
-        it.controls.emplace_back( p.first, p.second );
-        _default_config._hdr_preset.items.push_back( it );
+        it.controls = hdr_preset::control_item( p.first, p.second );
+        _default_config.items.push_back( it );
     }
 }
 
@@ -209,7 +206,7 @@ void hdr_model::apply_hdr_config()
     _current_config = _changed_config;
 }
 
-void hdr_model::render_control_item( hdr_config::control_item & control)
+void hdr_model::render_control_item( hdr_preset::control_item & control)
 {
     ImGui::PushID( &control );
 
@@ -230,7 +227,7 @@ void hdr_model::render_control_item( hdr_config::control_item & control)
     ImGui::PopID();
 }
 
-void hdr_model::render_preset_item( hdr_config::preset_item & item, int idx )
+void hdr_model::render_preset_item( hdr_preset::preset_item & item, int idx )
 {
     ImGui::PushID( idx );
     std::string hdr = "Preset Item " + std::to_string( idx + 1 );
@@ -238,7 +235,7 @@ void hdr_model::render_preset_item( hdr_config::preset_item & item, int idx )
     {
         ImGui::Text( "Iterations:" );
         if (ImGui::IsItemHovered())
-            RsImGui::CustomTooltip("Number of frames to be received with the configuration in this preset item");
+            RsImGui::CustomTooltip("Number of consequtive frames to be received with the configuration in this preset item per global iteration");
         ImGui::SameLine();
         ImGui::SetNextItemWidth( 100 );
         int it = item.iterations;
@@ -247,8 +244,8 @@ void hdr_model::render_preset_item( hdr_config::preset_item & item, int idx )
 
         ImGui::Separator();
         ImGui::Text( "Controls:" );
-        if( ! item.controls.empty() )
-            render_control_item( item.controls[0] );
+
+        render_control_item( item.controls );
     }
     ImGui::PopID();
 }
@@ -288,10 +285,10 @@ void hdr_model::render_hdr_config_window( ux_window & window, std::string & erro
             ImGui::SameLine();
             ImGui::SetNextItemWidth(150);
             char buf[32];
-            strncpy(buf, _changed_config._hdr_preset.id.c_str(), 31);
+            strncpy(buf, _changed_config.id.c_str(), 31);
             buf[31] = '\0';
             if (ImGui::InputText("##id", buf, 32))
-                _changed_config._hdr_preset.id = buf;
+                _changed_config.id = buf;
 
             ImGui::Text("Global Iterations:");
             // tooltip
@@ -299,10 +296,10 @@ void hdr_model::render_hdr_config_window( ux_window & window, std::string & erro
                 RsImGui::CustomTooltip("Number of times the specified preset will be run, 0 - infinite");
 
             ImGui::SameLine();
-            int gi = _changed_config._hdr_preset.iterations;
+            int gi = _changed_config.iterations;
             ImGui::SetNextItemWidth(150);
             if (ImGui::InputInt("##gi", &gi))
-                _changed_config._hdr_preset.iterations = std::max(0, gi);
+                _changed_config.iterations = std::max(0, gi);
 
             ImGui::Spacing();
             ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "Preset Items");
@@ -312,10 +309,10 @@ void hdr_model::render_hdr_config_window( ux_window & window, std::string & erro
                 {
                     if (ImGui::Button("-", { 22, 22 }))
                     {
-                        _changed_config._hdr_preset.items.pop_back();
+                        _changed_config.items.pop_back();
                     }
                 },
-                _changed_config._hdr_preset.items.size() <= 2);
+                _changed_config.items.size() <= 2);
 
             ImGui::SameLine();
             RsImGui::RsImButton(
@@ -324,20 +321,20 @@ void hdr_model::render_hdr_config_window( ux_window & window, std::string & erro
 
                     if (ImGui::Button("+", { 22, 22 }))
                     {
-                        hdr_config::control_item control = hdr_config::control_item((int)_gain_range.def, (int)_exp_range.def);
-                        hdr_config::preset_item item;
+                        hdr_preset::control_item control = hdr_preset::control_item((int)_gain_range.def, (int)_exp_range.def);
+                        hdr_preset::preset_item item;
                         item.iterations = 1;
-                        item.controls.push_back(control);
+                        item.controls = control;
 
-                        _changed_config._hdr_preset.items.push_back(item);
+                        _changed_config.items.push_back(item);
                     }
                 },
-                _changed_config._hdr_preset.items.size() >= 6);
+                _changed_config.items.size() >= 6);
 
             ImGui::Separator();
 
-            for (size_t i = 0; i < _changed_config._hdr_preset.items.size(); ++i)
-                render_preset_item(_changed_config._hdr_preset.items[i], int(i));
+            for (size_t i = 0; i < _changed_config.items.size(); ++i)
+                render_preset_item(_changed_config.items[i], int(i));
 
             ImGui::Spacing();
             ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "Load/Save Configuration");
