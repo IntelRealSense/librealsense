@@ -25,14 +25,14 @@
 The SDK allows depth and color streaming, and provides intrinsic and extrinsic calibration information.
 The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa), and a built-in support for [record and playback](./doc/record-and-playback.md) of streaming sessions.
 
-Developer kits containing the necessary hardware to use this library are available for purchase at [store.intelrealsense.com](https://store.intelrealsense.com/products.html).
-Information about the RealSense™ technology at [www.intelrealsense.com](https://www.intelrealsense.com/)
+Developer kits containing the necessary hardware to use this library are available for purchase at [store.intelrealsense.com](https://store.realsenseai.com/).
+Information about the RealSense™ technology at [www.intelrealsense.com](https://realsenseai.com/)
 
 > :open_file_folder: Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
 
 ## Update on Recent Changes to the RealSense Product Line
 
-Please visit this link for product updates - https://www.intelrealsense.com/message-to-customers/
+Please visit this link for product updates - https://realsenseai.com/message-to-customers/
 
 ## Building librealsense - Using vcpkg
 
@@ -52,7 +52,7 @@ The librealsense port in vcpkg is kept up to date by Microsoft team members and 
 * **Install** - You can also install or build from source the SDK (on [Linux](./doc/distribution_linux.md) \ [Windows](./doc/distribution_windows.md) \ [Mac OS](doc/installation_osx.md) \ [Android](./doc/android.md) \ [Docker](./scripts/Docker/readme.md)), connect your D400 depth camera and you are ready to start writing your first application.
 
 > **Support & Issues**: If you need product support (e.g. ask a question about / are having problems with the device), please check the [FAQ & Troubleshooting](https://github.com/IntelRealSense/librealsense/wiki/Troubleshooting-Q%26A) section.
-> If not covered there, please search our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.
+> If not covered there, please search our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page and [Support](https://realsenseai.com/support) sites.
 > If you still cannot find an answer to your question, please [open a new issue](https://github.com/IntelRealSense/librealsense/issues/new).
 
 ## What’s included in the SDK:

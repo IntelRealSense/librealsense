@@ -131,7 +131,7 @@ This product was designed from the ground up to address conditions critical to r
 
 Just like opencv, RealSense technology offers open-source and cross-platform set of [APIs](https://github.com/IntelRealSense/librealsense) for getting depth data. 
 
-1. [electronicdesign - New RealSense Cameras Deliver Low-Cost 3D Solutions](http://www.electronicdesign.com/industrial-automation/new-intel-realsense-cameras-deliver-low-cost-3d-solutions)
+1. [electronicdesign - New RealSense Cameras Deliver Low-Cost 3D Solutions](https://www.electronicdesign.com/industrial-automation/new-intel-realsense-cameras-deliver-low-cost-3d-solutions)
 1. [Augmented World Expo - Help Your Embedded Systems See, Navigate, and Understand](https://www.youtube.com/watch?v=OOVl5dx7Bb8)
-1. [List of whitepapers](https://realsense.intel.com/intel-realsense-downloads/#whitepaper) covering D400 RealSense technology 
-1. [Where to buy Intel RealSense cameras](https://realsense.intel.com/buy-now/)
+1. [List of whitepapers](https://dev.realsenseai.com/docs/whitepapers) covering D400 RealSense technology 
+1. [Where to buy Intel RealSense cameras](https://store.realsenseai.com/)

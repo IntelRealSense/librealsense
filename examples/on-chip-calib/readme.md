@@ -4,7 +4,7 @@
 
 This example demonstrates the basic flow of performing on chip calibration for a RealSense device.
 The principal is similar when calling other internal calibrations like Tare or focal-length calibrations. On chip calibration has the advantage of not needing a dedicated target.
-For more information see [self-calibration white paper](https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras).
+For more information see [self-calibration white paper](https://dev.realsenseai.com/docs/self-calibration-for-depth-cameras).
 
 ## Expected Output
 Assuming camera is connected and valid depth image can be obtained (usually more than 50% valid depth points), "Completed successfully" output is expected.
