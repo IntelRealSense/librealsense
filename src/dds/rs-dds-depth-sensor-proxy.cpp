@@ -86,5 +86,25 @@ void dds_depth_sensor_proxy::add_frame_metadata( frame * const f, rsutils::json 
     super::add_frame_metadata( f, dds_md, streaming );
 }
 
+bool dds_depth_sensor_proxy::extend_to( rs2_extension extension_type, void ** ptr )
+{
+    if( extension_type == RS2_EXTENSION_DEPTH_SENSOR )
+    {
+        if( auto ext = As< librealsense::depth_sensor >( this ) )
+        {
+            *ptr = ext;
+            return true;
+        }
+    }
+    else if( extension_type == RS2_EXTENSION_DEPTH_STEREO_SENSOR )
+    {
+        if( auto ext = As< librealsense::depth_stereo_sensor >( this ) )
+        {
+            *ptr = ext;
+            return true;
+        }
+    }
+    return super::extend_to( extension_type, ptr );
+}
 
 }  // namespace librealsense

@@ -948,42 +948,61 @@ namespace librealsense
         {
             sensor_extensions[RS2_EXTENSION_COLOR_SENSOR] = std::make_shared<color_sensor_snapshot>();
         }
-        if (is_motion_module_sensor(sensor_name))
+        else if( is_motion_module_sensor( sensor_name ) )
         {
             sensor_extensions[RS2_EXTENSION_MOTION_SENSOR] = std::make_shared<motion_sensor_snapshot>();
         }
-        if (is_fisheye_module_sensor(sensor_name))
+        else if( is_fisheye_module_sensor( sensor_name ) )
         {
             sensor_extensions[RS2_EXTENSION_FISHEYE_SENSOR] = std::make_shared<fisheye_sensor_snapshot>();
+        }
+        else if( is_depth_sensor( sensor_name ) )
+        {
+            if( sensor_extensions.find( RS2_EXTENSION_DEPTH_SENSOR ) == nullptr )
+            {
+                float depth_units = 0.01f; // Default to 1mm for devices that don't have this option implemented
+                sensor_extensions[RS2_EXTENSION_DEPTH_SENSOR] = std::make_shared< depth_sensor_snapshot >( depth_units );
+
+                if( is_stereo_depth_sensor( sensor_name ) ) // Need both extensions
+                {
+                    if( sensor_extensions.find( RS2_EXTENSION_DEPTH_STEREO_SENSOR ) == nullptr )
+                    {
+                        float baseline = 0.095f; // Default for D555 (and D455 but D400 have baseline option implemented and won't need this)
+                        for( auto & ext : m_extrinsics_map ) // Get real value from extrinsics data, if exists
+                        {
+                            if( ext.first.stream_type == RS2_STREAM_INFRARED && ext.first.stream_index == 2 )
+                                baseline = ext.second.second.translation[0];
+                        }
+                        sensor_extensions[RS2_EXTENSION_DEPTH_STEREO_SENSOR] = std::make_shared< depth_stereo_sensor_snapshot >( depth_units, baseline );
+                    }
+                }
+            }
         }
     }
 
     bool ros_reader::is_depth_sensor(std::string sensor_name)
     {
-        if (sensor_name.compare("Stereo Module") == 0 || sensor_name.compare("Coded-Light Depth Sensor") == 0)
-            return true;
-        return false;
+        return is_stereo_depth_sensor( sensor_name ) || sensor_name.compare( "Coded-Light Depth Sensor" ) == 0;
+    }
+
+    bool ros_reader::is_stereo_depth_sensor( std::string sensor_name )
+    {
+        return sensor_name.compare( "Stereo Module" ) == 0;
     }
 
     bool ros_reader::is_color_sensor(std::string sensor_name)
     {
-        if (sensor_name.compare("RGB Camera") == 0)
-            return true;
-        return false;
+        return sensor_name.compare( "RGB Camera" ) == 0;
     }
 
     bool ros_reader::is_motion_module_sensor(std::string sensor_name)
     {
-        if (sensor_name.compare("Motion Module") == 0)
-            return true;
-        return false;
+        return sensor_name.compare( "Motion Module" ) == 0;
     }
 
     bool ros_reader::is_fisheye_module_sensor(std::string sensor_name)
     {
-        if (sensor_name.compare("Wide FOV Camera") == 0)
-            return true;
-        return false;
+        return sensor_name.compare( "Wide FOV Camera" ) == 0;
     }
 
     bool ros_reader::is_ds_PID(int pid)
@@ -1079,7 +1098,7 @@ namespace librealsense
 
                 std::vector<sensor_snapshot> sensor_descriptions;
                 auto sensor_indices = read_sensor_indices(get_device_index());
-                std::map<stream_identifier, std::pair<uint32_t, rs2_extrinsics>> extrinsics_map;
+                m_extrinsics_map.clear();
 
                 for (auto sensor_index : sensor_indices)
                 {
@@ -1092,7 +1111,7 @@ namespace librealsense
                         rs2_extrinsics stream_extrinsic;
                         if (try_read_stream_extrinsic(stream_id, reference_id, stream_extrinsic))
                         {
-                            extrinsics_map[stream_id] = std::make_pair(reference_id, stream_extrinsic);
+                            m_extrinsics_map[stream_id] = std::make_pair(reference_id, stream_extrinsic);
                         }
                     }
 
@@ -1125,7 +1144,7 @@ namespace librealsense
                     sensor_descriptions.emplace_back(sensor_index, sensor_extensions, streams_snapshots);
                 }
 
-                m_initial_device_description = device_snapshot(device_extensions, sensor_descriptions, extrinsics_map);
+                m_initial_device_description = device_snapshot(device_extensions, sensor_descriptions, m_extrinsics_map);
             }
             return m_initial_device_description;
         }
