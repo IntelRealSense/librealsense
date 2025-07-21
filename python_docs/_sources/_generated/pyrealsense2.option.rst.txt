@@ -105,6 +105,7 @@ pyrealsense2.option
       ~option.receiver_sensitivity
       ~option.region_of_interest
       ~option.reset_camera_accuracy_health
+      ~option.rotation
       ~option.saturation
       ~option.sensor_mode
       ~option.sequence_id

@@ -20,6 +20,7 @@ pyrealsense2.threshold_filter
       ~threshold_filter.as_disparity_transform
       ~threshold_filter.as_hdr_merge
       ~threshold_filter.as_hole_filling_filter
+      ~threshold_filter.as_rotation_filter
       ~threshold_filter.as_sequence_id_filter
       ~threshold_filter.as_spatial_filter
       ~threshold_filter.as_temporal_filter
@@ -37,6 +38,7 @@ pyrealsense2.threshold_filter
       ~threshold_filter.is_hdr_merge
       ~threshold_filter.is_hole_filling_filter
       ~threshold_filter.is_option_read_only
+      ~threshold_filter.is_rotation_filter
       ~threshold_filter.is_sequence_id_filter
       ~threshold_filter.is_spatial_filter
       ~threshold_filter.is_temporal_filter

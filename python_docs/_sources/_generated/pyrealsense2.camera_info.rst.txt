@@ -28,6 +28,7 @@ pyrealsense2.camera_info
       ~camera_info.advanced_mode
       ~camera_info.asic_serial_number
       ~camera_info.camera_locked
+      ~camera_info.connection_type
       ~camera_info.debug_op_code
       ~camera_info.dfu_device_path
       ~camera_info.firmware_update_id

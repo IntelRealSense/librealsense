@@ -1,7 +1,4 @@
 /*
- * sidebar.js
- * ~~~~~~~~~~
- *
  * This script makes the Sphinx sidebar collapsible.
  *
  * .sphinxsidebar contains .sphinxsidebarwrapper.  This script adds
@@ -15,9 +12,6 @@
  * remember the position of the sidebar among the pages.
  * Once the browser is closed the cookie is deleted and the position
  * reset to the default (expanded).
- *
- * :copyright: Copyright 2007-2024 by the Sphinx team, see AUTHORS.
- * :license: BSD, see LICENSE for details.
  *
  */
 

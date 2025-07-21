@@ -20,6 +20,7 @@ pyrealsense2.save_single_frameset
       ~save_single_frameset.as_disparity_transform
       ~save_single_frameset.as_hdr_merge
       ~save_single_frameset.as_hole_filling_filter
+      ~save_single_frameset.as_rotation_filter
       ~save_single_frameset.as_sequence_id_filter
       ~save_single_frameset.as_spatial_filter
       ~save_single_frameset.as_temporal_filter
@@ -37,6 +38,7 @@ pyrealsense2.save_single_frameset
       ~save_single_frameset.is_hdr_merge
       ~save_single_frameset.is_hole_filling_filter
       ~save_single_frameset.is_option_read_only
+      ~save_single_frameset.is_rotation_filter
       ~save_single_frameset.is_sequence_id_filter
       ~save_single_frameset.is_spatial_filter
       ~save_single_frameset.is_temporal_filter

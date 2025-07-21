@@ -20,6 +20,7 @@ pyrealsense2.colorizer
       ~colorizer.as_disparity_transform
       ~colorizer.as_hdr_merge
       ~colorizer.as_hole_filling_filter
+      ~colorizer.as_rotation_filter
       ~colorizer.as_sequence_id_filter
       ~colorizer.as_spatial_filter
       ~colorizer.as_temporal_filter
@@ -38,6 +39,7 @@ pyrealsense2.colorizer
       ~colorizer.is_hdr_merge
       ~colorizer.is_hole_filling_filter
       ~colorizer.is_option_read_only
+      ~colorizer.is_rotation_filter
       ~colorizer.is_sequence_id_filter
       ~colorizer.is_spatial_filter
       ~colorizer.is_temporal_filter

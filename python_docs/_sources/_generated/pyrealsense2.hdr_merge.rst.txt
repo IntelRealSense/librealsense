@@ -20,6 +20,7 @@ pyrealsense2.hdr_merge
       ~hdr_merge.as_disparity_transform
       ~hdr_merge.as_hdr_merge
       ~hdr_merge.as_hole_filling_filter
+      ~hdr_merge.as_rotation_filter
       ~hdr_merge.as_sequence_id_filter
       ~hdr_merge.as_spatial_filter
       ~hdr_merge.as_temporal_filter
@@ -37,6 +38,7 @@ pyrealsense2.hdr_merge
       ~hdr_merge.is_hdr_merge
       ~hdr_merge.is_hole_filling_filter
       ~hdr_merge.is_option_read_only
+      ~hdr_merge.is_rotation_filter
       ~hdr_merge.is_sequence_id_filter
       ~hdr_merge.is_spatial_filter
       ~hdr_merge.is_temporal_filter

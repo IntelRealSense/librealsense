@@ -51,8 +51,6 @@
       auto_calibrated_device
       calib_target_type
       calibration_change_device
-      calibration_config
-      calibration_roi
       calibration_status
       calibration_type
       camera_info
@@ -77,15 +75,12 @@
       event_information
       extension
       extrinsics
-      extrinsics_table
       filter
       filter_interface
       firmware_log_message
       firmware_log_parsed_message
       firmware_logger
       fisheye_sensor
-      float3
-      float3x3
       format
       frame
       frame_metadata_value
@@ -130,6 +125,7 @@
       recorder
       region_of_interest
       roi_sensor
+      rotation_filter
       rs400_advanced_mode
       rs400_visual_preset
       save_single_frameset

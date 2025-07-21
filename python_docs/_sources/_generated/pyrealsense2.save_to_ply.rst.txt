@@ -20,6 +20,7 @@ pyrealsense2.save_to_ply
       ~save_to_ply.as_disparity_transform
       ~save_to_ply.as_hdr_merge
       ~save_to_ply.as_hole_filling_filter
+      ~save_to_ply.as_rotation_filter
       ~save_to_ply.as_sequence_id_filter
       ~save_to_ply.as_spatial_filter
       ~save_to_ply.as_temporal_filter
@@ -37,6 +38,7 @@ pyrealsense2.save_to_ply
       ~save_to_ply.is_hdr_merge
       ~save_to_ply.is_hole_filling_filter
       ~save_to_ply.is_option_read_only
+      ~save_to_ply.is_rotation_filter
       ~save_to_ply.is_sequence_id_filter
       ~save_to_ply.is_spatial_filter
       ~save_to_ply.is_temporal_filter

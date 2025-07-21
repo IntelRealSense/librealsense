@@ -5,18 +5,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>pyrealsense2.extension &#8212; pyrealsense2 2.56.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
-    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=def86cc0" />
+    <title>pyrealsense2.extension &#8212; pyrealsense2 2.56.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
     
-    <script src="../_static/documentation_options.js?v=d30441c9"></script>
-    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/documentation_options.js?v=2f755b6e"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
   </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -25,7 +25,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.56.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.56.4 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">pyrealsense2.extension</a></li> 
       </ul>
     </div>  
@@ -39,7 +39,7 @@
 <h1>pyrealsense2.extension<a class="headerlink" href="#pyrealsense2-extension" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="pyrealsense2.extension">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyrealsense2.</span></span><span class="sig-name descname"><span class="pre">extension</span></span><a class="headerlink" href="#pyrealsense2.extension" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyrealsense2.</span></span><span class="sig-name descname"><span class="pre">extension</span></span><a class="headerlink" href="#pyrealsense2.extension" title="Link to this definition">¶</a></dt>
 <dd><p>Specifies advanced interfaces (capabilities) objects may implement.</p>
 <p>Members:</p>
 <blockquote>
@@ -99,6 +99,7 @@
 <p>max_usable_range_sensor</p>
 <p>debug_stream_sensor</p>
 <p>calibration_change_device</p>
+<p>rotation_filter</p>
 </div></blockquote>
 <dl class="py method">
 <dt class="sig sig-object py" id="pyrealsense2.extension.__init__">
@@ -236,58 +237,61 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.roi" title="pyrealsense2.extension.roi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">roi</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.sequence_id_filter" title="pyrealsense2.extension.sequence_id_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sequence_id_filter</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.rotation_filter" title="pyrealsense2.extension.rotation_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rotation_filter</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.serializable" title="pyrealsense2.extension.serializable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">serializable</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.sequence_id_filter" title="pyrealsense2.extension.sequence_id_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sequence_id_filter</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.software_device" title="pyrealsense2.extension.software_device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">software_device</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.serializable" title="pyrealsense2.extension.serializable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">serializable</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.software_sensor" title="pyrealsense2.extension.software_sensor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">software_sensor</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.software_device" title="pyrealsense2.extension.software_device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">software_device</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.spatial_filter" title="pyrealsense2.extension.spatial_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spatial_filter</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.software_sensor" title="pyrealsense2.extension.software_sensor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">software_sensor</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.temporal_filter" title="pyrealsense2.extension.temporal_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">temporal_filter</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.spatial_filter" title="pyrealsense2.extension.spatial_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spatial_filter</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.threshold_filter" title="pyrealsense2.extension.threshold_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">threshold_filter</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.temporal_filter" title="pyrealsense2.extension.temporal_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">temporal_filter</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.tm2" title="pyrealsense2.extension.tm2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tm2</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.threshold_filter" title="pyrealsense2.extension.threshold_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">threshold_filter</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.tm2_sensor" title="pyrealsense2.extension.tm2_sensor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tm2_sensor</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.tm2" title="pyrealsense2.extension.tm2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tm2</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.unknown" title="pyrealsense2.extension.unknown"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unknown</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.tm2_sensor" title="pyrealsense2.extension.tm2_sensor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tm2_sensor</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.updatable" title="pyrealsense2.extension.updatable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">updatable</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.unknown" title="pyrealsense2.extension.unknown"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unknown</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.update_device" title="pyrealsense2.extension.update_device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_device</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.updatable" title="pyrealsense2.extension.updatable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">updatable</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.value" title="pyrealsense2.extension.value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">value</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.update_device" title="pyrealsense2.extension.update_device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_device</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.video" title="pyrealsense2.extension.video"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.value" title="pyrealsense2.extension.value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">value</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.video_frame" title="pyrealsense2.extension.video_frame"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video_frame</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.video" title="pyrealsense2.extension.video"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.video_profile" title="pyrealsense2.extension.video_profile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video_profile</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.video_frame" title="pyrealsense2.extension.video_frame"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video_frame</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.wheel_odometer" title="pyrealsense2.extension.wheel_odometer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wheel_odometer</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.video_profile" title="pyrealsense2.extension.video_profile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video_profile</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.zero_order_filter" title="pyrealsense2.extension.zero_order_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_order_filter</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.extension.wheel_odometer" title="pyrealsense2.extension.wheel_odometer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wheel_odometer</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.extension.zero_order_filter" title="pyrealsense2.extension.zero_order_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_order_filter</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -439,7 +443,7 @@
 
 <dl class="py property">
 <dt class="sig sig-object py" id="pyrealsense2.extension.name">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#pyrealsense2.extension.name" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#pyrealsense2.extension.name" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -490,6 +494,11 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="pyrealsense2.extension.roi">
 <span class="sig-name descname"><span class="pre">roi</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;extension.roi:</span> <span class="pre">6&gt;</span></em><a class="headerlink" href="#pyrealsense2.extension.roi" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyrealsense2.extension.rotation_filter">
+<span class="sig-name descname"><span class="pre">rotation_filter</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;extension.rotation_filter:</span> <span class="pre">56&gt;</span></em><a class="headerlink" href="#pyrealsense2.extension.rotation_filter" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -554,7 +563,7 @@
 
 <dl class="py property">
 <dt class="sig sig-object py" id="pyrealsense2.extension.value">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#pyrealsense2.extension.value" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#pyrealsense2.extension.value" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -591,7 +600,7 @@
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
   <div>
     <h3><a href="../index.html">Table of Contents</a></h3>
@@ -639,6 +648,7 @@
 <li><a class="reference internal" href="#pyrealsense2.extension.recommended_filters"><code class="docutils literal notranslate"><span class="pre">extension.recommended_filters</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.extension.record"><code class="docutils literal notranslate"><span class="pre">extension.record</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.extension.roi"><code class="docutils literal notranslate"><span class="pre">extension.roi</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.extension.rotation_filter"><code class="docutils literal notranslate"><span class="pre">extension.rotation_filter</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.extension.sequence_id_filter"><code class="docutils literal notranslate"><span class="pre">extension.sequence_id_filter</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.extension.serializable"><code class="docutils literal notranslate"><span class="pre">extension.serializable</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.extension.software_device"><code class="docutils literal notranslate"><span class="pre">extension.software_device</span></code></a></li>
@@ -685,7 +695,7 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -694,13 +704,13 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.56.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.56.4 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">pyrealsense2.extension</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
     &#169; Copyright 2024, Intel Realsense Team.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.3.7.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
     </div>
   </body>
 </html>

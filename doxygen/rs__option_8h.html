@@ -91,7 +91,7 @@ Typedefs</h2></td></tr>
 <tr class="memdesc:af365d2bc4cd1f7750f28f3886d652e95"><td class="mdescLeft">&#160;</td><td class="mdescRight">For L500 devices: provides optimized settings (presets) for specific types of usage.  <a href="#af365d2bc4cd1f7750f28f3886d652e95">More...</a><br /></td></tr>
 <tr class="separator:af365d2bc4cd1f7750f28f3886d652e95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39b5d16dcc1f878d7f0037c91d31b84f"><td class="memItemLeft" align="right" valign="top">typedef enum <a class="el" href="rs__option_8h.html#a716cf29de14d0804940f46d3d9b5627e">rs2_sensor_mode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__option_8h.html#a39b5d16dcc1f878d7f0037c91d31b84f">rs2_sensor_mode</a></td></tr>
-<tr class="memdesc:a39b5d16dcc1f878d7f0037c91d31b84f"><td class="mdescLeft">&#160;</td><td class="mdescRight">For setting the camera_mode option.  <a href="#a39b5d16dcc1f878d7f0037c91d31b84f">More...</a><br /></td></tr>
+<tr class="memdesc:a39b5d16dcc1f878d7f0037c91d31b84f"><td class="mdescLeft">&#160;</td><td class="mdescRight">DEPRECATED! - For setting the camera_mode option.  <a href="#a39b5d16dcc1f878d7f0037c91d31b84f">More...</a><br /></td></tr>
 <tr class="separator:a39b5d16dcc1f878d7f0037c91d31b84f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6ea073efd8782b96363802d6b926127"><td class="memItemLeft" align="right" valign="top">typedef enum <a class="el" href="rs__option_8h.html#a7683bd69c416b07e341d4083eb533b23">rs2_ambient_light</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__option_8h.html#ae6ea073efd8782b96363802d6b926127">rs2_ambient_light</a></td></tr>
 <tr class="memdesc:ae6ea073efd8782b96363802d6b926127"><td class="mdescLeft">&#160;</td><td class="mdescRight">DEPRECATED! - Use RS2_OPTION_DIGITAL_GAIN instead.  <a href="#ae6ea073efd8782b96363802d6b926127">More...</a><br /></td></tr>
@@ -240,7 +240,8 @@ Enumerations</h2></td></tr>
 <a class="el" href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2a9fb6dcd1f20ece04773e269bc9c4b147">RS2_OPTION_GYRO_SENSITIVITY</a>, 
 <a class="el" href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2ae90e934983b809e93cdf9b2d8164015d">RS2_OPTION_REGION_OF_INTEREST</a>, 
 <br />
-&#160;&#160;<a class="el" href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2a4158983f553ef28b078dd7716ce73419">RS2_OPTION_COUNT</a>
+&#160;&#160;<a class="el" href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2a12ac1c8f5a5e25c1f632aa751e7ba71f">RS2_OPTION_ROTATION</a>, 
+<a class="el" href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2a4158983f553ef28b078dd7716ce73419">RS2_OPTION_COUNT</a>
 <br />
  }</td></tr>
 <tr class="memdesc:a8b9c011f705cfab20c7eaaa7a26040e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.  <a href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2">More...</a><br /></td></tr>
@@ -309,7 +310,7 @@ Enumerations</h2></td></tr>
 <a class="el" href="rs__option_8h.html#a716cf29de14d0804940f46d3d9b5627eac490139b3f75bb617c1ea793b38ec0e3">RS2_SENSOR_MODE_QVGA</a>, 
 <a class="el" href="rs__option_8h.html#a716cf29de14d0804940f46d3d9b5627eaa425b436449b1b01ec71216c0ed815b2">RS2_SENSOR_MODE_COUNT</a>
  }</td></tr>
-<tr class="memdesc:a716cf29de14d0804940f46d3d9b5627e"><td class="mdescLeft">&#160;</td><td class="mdescRight">For setting the camera_mode option.  <a href="rs__option_8h.html#a716cf29de14d0804940f46d3d9b5627e">More...</a><br /></td></tr>
+<tr class="memdesc:a716cf29de14d0804940f46d3d9b5627e"><td class="mdescLeft">&#160;</td><td class="mdescRight">DEPRECATED! - For setting the camera_mode option.  <a href="rs__option_8h.html#a716cf29de14d0804940f46d3d9b5627e">More...</a><br /></td></tr>
 <tr class="separator:a716cf29de14d0804940f46d3d9b5627e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7683bd69c416b07e341d4083eb533b23"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__option_8h.html#a7683bd69c416b07e341d4083eb533b23">rs2_ambient_light</a> { <a class="el" href="rs__option_8h.html#a7683bd69c416b07e341d4083eb533b23a76a83a894e3c9f2b9886e0348d76d54c">RS2_AMBIENT_LIGHT_NO_AMBIENT</a> = 1, 
 <a class="el" href="rs__option_8h.html#a7683bd69c416b07e341d4083eb533b23a1a13e40e22abd540b9242ed5b499919a">RS2_AMBIENT_LIGHT_LOW_AMBIENT</a> = 2
@@ -625,7 +626,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>For setting the camera_mode option. </p>
+<p>DEPRECATED! - For setting the camera_mode option. </p>
 
 </div>
 </div>
@@ -968,7 +969,7 @@ Functions</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="a8b9c011f705cfab20c7eaaa7a26040e2af38b52d50ab6490198885125391e9705"></a>RS2_OPTION_DIGITAL_GAIN&#160;</td><td class="fielddoc"><p>Change the depth digital gain see rs2_digital_gain for values </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a8b9c011f705cfab20c7eaaa7a26040e2a54297f8bb86881f4b38f3f642504bd0a"></a>RS2_OPTION_SENSOR_MODE&#160;</td><td class="fielddoc"><p>The resolution mode: see rs2_sensor_mode for values </p>
+<tr><td class="fieldname"><a id="a8b9c011f705cfab20c7eaaa7a26040e2a54297f8bb86881f4b38f3f642504bd0a"></a>RS2_OPTION_SENSOR_MODE&#160;</td><td class="fielddoc"><p>DEPRECATED! - The resolution mode: see rs2_sensor_mode for values </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a8b9c011f705cfab20c7eaaa7a26040e2a87b1104cd97e9062ab15ca66878759ed"></a>RS2_OPTION_EMITTER_ALWAYS_ON&#160;</td><td class="fielddoc"><p>Enable Laser On constantly (GS SKU Only) </p>
 </td></tr>
@@ -1026,7 +1027,8 @@ Functions</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="a8b9c011f705cfab20c7eaaa7a26040e2ae90e934983b809e93cdf9b2d8164015d"></a>RS2_OPTION_REGION_OF_INTEREST&#160;</td><td class="fielddoc"><p>The rectangular area used from the streaming profile </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a8b9c011f705cfab20c7eaaa7a26040e2a4158983f553ef28b078dd7716ce73419"></a>RS2_OPTION_COUNT&#160;</td><td class="fielddoc"><p>Number of enumeration values. Not a valid input: intended to be used in for-loops. </p>
+<tr><td class="fieldname"><a id="a8b9c011f705cfab20c7eaaa7a26040e2a12ac1c8f5a5e25c1f632aa751e7ba71f"></a>RS2_OPTION_ROTATION&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a8b9c011f705cfab20c7eaaa7a26040e2a4158983f553ef28b078dd7716ce73419"></a>RS2_OPTION_COUNT&#160;</td><td class="fielddoc"><p>Rotates frames Number of enumeration values. Not a valid input: intended to be used in for-loops. </p>
 </td></tr>
 </table>
 
@@ -1096,7 +1098,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>For setting the camera_mode option. </p>
+<p>DEPRECATED! - For setting the camera_mode option. </p>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a716cf29de14d0804940f46d3d9b5627eadee1299d60b1f7e4ca3fd14e24ee58ad"></a>RS2_SENSOR_MODE_VGA&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a716cf29de14d0804940f46d3d9b5627ea135af2932e65dca94fc3b830e05d435c"></a>RS2_SENSOR_MODE_XGA&#160;</td><td class="fielddoc"></td></tr>

@@ -64,6 +64,8 @@ Functions</h2></td></tr>
 <tr class="separator:ac23c69f8d9e7bf7a373b149ff9c432f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb95ec546434b030119511ab488ec344"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__pipeline_8h.html#adb95ec546434b030119511ab488ec344">rs2_pipeline_stop</a> (<a class="el" href="rs__types_8h.html#ad54a014210e511b9f28470267ebf5c90">rs2_pipeline</a> *pipe, <a class="el" href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a> **error)</td></tr>
 <tr class="separator:adb95ec546434b030119511ab488ec344"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90dfe902dcc694dbf9af2bb1c2991abc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__pipeline_8h.html#a90dfe902dcc694dbf9af2bb1c2991abc">rs2_pipeline_set_device</a> (<a class="el" href="rs__types_8h.html#ad54a014210e511b9f28470267ebf5c90">rs2_pipeline</a> *pipe, <a class="el" href="rs__types_8h.html#a6b12b0e578c567223a99b0c0f2b67a25">rs2_device</a> *device, <a class="el" href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a> **error)</td></tr>
+<tr class="separator:a90dfe902dcc694dbf9af2bb1c2991abc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0cee9997a5a268437c505b921447601"><td class="memItemLeft" align="right" valign="top"><a class="el" href="rs__types_8h.html#af280a50e5484323c1b20b76eda3d370d">rs2_frame</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__pipeline_8h.html#ab0cee9997a5a268437c505b921447601">rs2_pipeline_wait_for_frames</a> (<a class="el" href="rs__types_8h.html#ad54a014210e511b9f28470267ebf5c90">rs2_pipeline</a> *pipe, unsigned int timeout_ms, <a class="el" href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a> **error)</td></tr>
 <tr class="separator:ab0cee9997a5a268437c505b921447601"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afd8a7648295ee1b3390fca786cdc74fb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__pipeline_8h.html#afd8a7648295ee1b3390fca786cdc74fb">rs2_pipeline_poll_for_frames</a> (<a class="el" href="rs__types_8h.html#ad54a014210e511b9f28470267ebf5c90">rs2_pipeline</a> *pipe, <a class="el" href="rs__types_8h.html#af280a50e5484323c1b20b76eda3d370d">rs2_frame</a> **output_frame, <a class="el" href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a> **error)</td></tr>
@@ -331,6 +333,47 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>list of stream profiles </dd></dl>
+
+</div>
+</div>
+<a id="a90dfe902dcc694dbf9af2bb1c2991abc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90dfe902dcc694dbf9af2bb1c2991abc">&#9670;&nbsp;</a></span>rs2_pipeline_set_device()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void rs2_pipeline_set_device </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rs__types_8h.html#ad54a014210e511b9f28470267ebf5c90">rs2_pipeline</a> *&#160;</td>
+          <td class="paramname"><em>pipe</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="rs__types_8h.html#a6b12b0e578c567223a99b0c0f2b67a25">rs2_device</a> *&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Set the device to be used in the pipline. The function is used to assign the device, useful when the user wish to set controls that cannot be set while streaming. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pipe</td><td>the pipeline. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>the device to be used in the pipline. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

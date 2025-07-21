@@ -26,7 +26,6 @@ pyrealsense2.auto_calibrated_device
       ~auto_calibrated_device.as_updatable
       ~auto_calibrated_device.as_update_device
       ~auto_calibrated_device.calculate_target_z
-      ~auto_calibrated_device.calibration_config_to_json_string
       ~auto_calibrated_device.first_color_sensor
       ~auto_calibrated_device.first_depth_sensor
       ~auto_calibrated_device.first_fisheye_sensor
@@ -48,7 +47,6 @@ pyrealsense2.auto_calibrated_device
       ~auto_calibrated_device.is_recorder
       ~auto_calibrated_device.is_updatable
       ~auto_calibrated_device.is_update_device
-      ~auto_calibrated_device.json_string_to_calibration_config
       ~auto_calibrated_device.process_calibration_frame
       ~auto_calibrated_device.query_sensors
       ~auto_calibrated_device.reset_to_factory_calibration

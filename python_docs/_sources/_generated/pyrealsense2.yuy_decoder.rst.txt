@@ -20,6 +20,7 @@ pyrealsense2.yuy_decoder
       ~yuy_decoder.as_disparity_transform
       ~yuy_decoder.as_hdr_merge
       ~yuy_decoder.as_hole_filling_filter
+      ~yuy_decoder.as_rotation_filter
       ~yuy_decoder.as_sequence_id_filter
       ~yuy_decoder.as_spatial_filter
       ~yuy_decoder.as_temporal_filter
@@ -37,6 +38,7 @@ pyrealsense2.yuy_decoder
       ~yuy_decoder.is_hdr_merge
       ~yuy_decoder.is_hole_filling_filter
       ~yuy_decoder.is_option_read_only
+      ~yuy_decoder.is_rotation_filter
       ~yuy_decoder.is_sequence_id_filter
       ~yuy_decoder.is_spatial_filter
       ~yuy_decoder.is_temporal_filter

@@ -20,6 +20,7 @@ pyrealsense2.units_transform
       ~units_transform.as_disparity_transform
       ~units_transform.as_hdr_merge
       ~units_transform.as_hole_filling_filter
+      ~units_transform.as_rotation_filter
       ~units_transform.as_sequence_id_filter
       ~units_transform.as_spatial_filter
       ~units_transform.as_temporal_filter
@@ -37,6 +38,7 @@ pyrealsense2.units_transform
       ~units_transform.is_hdr_merge
       ~units_transform.is_hole_filling_filter
       ~units_transform.is_option_read_only
+      ~units_transform.is_rotation_filter
       ~units_transform.is_sequence_id_filter
       ~units_transform.is_spatial_filter
       ~units_transform.is_temporal_filter

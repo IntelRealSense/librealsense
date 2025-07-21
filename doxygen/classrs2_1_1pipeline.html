@@ -70,6 +70,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a2e807d630f3ca0404884ffc42993d440"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a142ee1adb798f9a03f86eb90895dd8a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1pipeline.html#a142ee1adb798f9a03f86eb90895dd8a5">stop</a> ()</td></tr>
 <tr class="separator:a142ee1adb798f9a03f86eb90895dd8a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0de9c65098fe53a253621747da4bd6bf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1pipeline.html#a0de9c65098fe53a253621747da4bd6bf">set_device</a> (<a class="el" href="classrs2_1_1device.html">rs2::device</a> *<a class="el" href="classrs2_1_1device.html">device</a>)</td></tr>
+<tr class="separator:a0de9c65098fe53a253621747da4bd6bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac77cdd3d2f4ce1e85ea30d475743cec8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classrs2_1_1frameset.html">frameset</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1pipeline.html#ac77cdd3d2f4ce1e85ea30d475743cec8">wait_for_frames</a> (unsigned int timeout_ms=<a class="el" href="rs__config_8h.html#a9df60b60a2c445a3d4283a9d491190ff">RS2_DEFAULT_TIMEOUT</a>) const</td></tr>
 <tr class="separator:ac77cdd3d2f4ce1e85ea30d475743cec8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9069a979fd9e1e28881b945a6aec1b79"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1pipeline.html#a9069a979fd9e1e28881b945a6aec1b79">poll_for_frames</a> (<a class="el" href="classrs2_1_1frameset.html">frameset</a> *f) const</td></tr>
@@ -234,6 +236,38 @@ Friends</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if new set of time synchronized frames was stored to f, false if no new frames set is available </dd></dl>
+
+</div>
+</div>
+<a id="a0de9c65098fe53a253621747da4bd6bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0de9c65098fe53a253621747da4bd6bf">&#9670;&nbsp;</a></span>set_device()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void rs2::pipeline::set_device </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classrs2_1_1device.html">rs2::device</a> *&#160;</td>
+          <td class="paramname"><em>device</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Set the device to be used in the pipline. The function is used to assign the device, useful when the user wish to set controls that cannot be set while streaming. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>the device to be used in the pipline. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

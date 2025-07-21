@@ -20,6 +20,7 @@ pyrealsense2.align
       ~align.as_disparity_transform
       ~align.as_hdr_merge
       ~align.as_hole_filling_filter
+      ~align.as_rotation_filter
       ~align.as_sequence_id_filter
       ~align.as_spatial_filter
       ~align.as_temporal_filter
@@ -37,6 +38,7 @@ pyrealsense2.align
       ~align.is_hdr_merge
       ~align.is_hole_filling_filter
       ~align.is_option_read_only
+      ~align.is_rotation_filter
       ~align.is_sequence_id_filter
       ~align.is_spatial_filter
       ~align.is_temporal_filter

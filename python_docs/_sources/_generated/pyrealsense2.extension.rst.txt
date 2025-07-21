@@ -65,6 +65,7 @@ pyrealsense2.extension
       ~extension.recommended_filters
       ~extension.record
       ~extension.roi
+      ~extension.rotation_filter
       ~extension.sequence_id_filter
       ~extension.serializable
       ~extension.software_device

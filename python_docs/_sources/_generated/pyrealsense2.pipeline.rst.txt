@@ -18,6 +18,7 @@ pyrealsense2.pipeline
       ~pipeline.__init__
       ~pipeline.get_active_profile
       ~pipeline.poll_for_frames
+      ~pipeline.set_device
       ~pipeline.start
       ~pipeline.stop
       ~pipeline.try_wait_for_frames

@@ -5,18 +5,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>pyrealsense2.video_frame &#8212; pyrealsense2 2.56.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
-    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=def86cc0" />
+    <title>pyrealsense2.video_frame &#8212; pyrealsense2 2.56.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
     
-    <script src="../_static/documentation_options.js?v=d30441c9"></script>
-    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/documentation_options.js?v=2f755b6e"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
   </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -25,7 +25,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.56.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.56.4 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">pyrealsense2.video_frame</a></li> 
       </ul>
     </div>  
@@ -39,7 +39,7 @@
 <h1>pyrealsense2.video_frame<a class="headerlink" href="#pyrealsense2-video-frame" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="pyrealsense2.video_frame">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyrealsense2.</span></span><span class="sig-name descname"><span class="pre">video_frame</span></span><a class="headerlink" href="#pyrealsense2.video_frame" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyrealsense2.</span></span><span class="sig-name descname"><span class="pre">video_frame</span></span><a class="headerlink" href="#pyrealsense2.video_frame" title="Link to this definition">¶</a></dt>
 <dd><p>Extends the frame class with additional video related attributes and functions.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="pyrealsense2.video_frame.__init__">
@@ -181,19 +181,19 @@
 </table>
 <dl class="py property">
 <dt class="sig sig-object py" id="pyrealsense2.video_frame.bits_per_pixel">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bits_per_pixel</span></span><a class="headerlink" href="#pyrealsense2.video_frame.bits_per_pixel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bits_per_pixel</span></span><a class="headerlink" href="#pyrealsense2.video_frame.bits_per_pixel" title="Link to this definition">¶</a></dt>
 <dd><p>Bits per pixel. Identical to calling get_bits_per_pixel.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="pyrealsense2.video_frame.bytes_per_pixel">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bytes_per_pixel</span></span><a class="headerlink" href="#pyrealsense2.video_frame.bytes_per_pixel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bytes_per_pixel</span></span><a class="headerlink" href="#pyrealsense2.video_frame.bytes_per_pixel" title="Link to this definition">¶</a></dt>
 <dd><p>Bytes per pixel. Identical to calling get_bytes_per_pixel.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyrealsense2.video_frame.extract_target_dimensions">
-<span class="sig-name descname"><span class="pre">extract_target_dimensions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.video_frame" title="pyrealsense2.video_frame"><span class="pre">pyrealsense2.video_frame</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.calib_target_type.html#pyrealsense2.calib_target_type" title="pyrealsense2.calib_target_type"><span class="pre">pyrealsense2.calib_target_type</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#pyrealsense2.video_frame.extract_target_dimensions" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">extract_target_dimensions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.video_frame" title="pyrealsense2.video_frame"><span class="pre">pyrealsense2.video_frame</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.calib_target_type.html#pyrealsense2.calib_target_type" title="pyrealsense2.calib_target_type"><span class="pre">pyrealsense2.calib_target_type</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#pyrealsense2.video_frame.extract_target_dimensions" title="Link to this definition">¶</a></dt>
 <dd><p>This will calculate the four target dimenson size(s) in millimeter on the specific target.</p>
 </dd></dl>
 
@@ -229,19 +229,19 @@
 
 <dl class="py property">
 <dt class="sig sig-object py" id="pyrealsense2.video_frame.height">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">height</span></span><a class="headerlink" href="#pyrealsense2.video_frame.height" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">height</span></span><a class="headerlink" href="#pyrealsense2.video_frame.height" title="Link to this definition">¶</a></dt>
 <dd><p>Image height in pixels. Identical to calling get_height.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="pyrealsense2.video_frame.stride_in_bytes">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stride_in_bytes</span></span><a class="headerlink" href="#pyrealsense2.video_frame.stride_in_bytes" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stride_in_bytes</span></span><a class="headerlink" href="#pyrealsense2.video_frame.stride_in_bytes" title="Link to this definition">¶</a></dt>
 <dd><p>Frame stride, meaning the actual line width in memory in bytes (not the logical image width). Identical to calling get_stride_in_bytes.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="pyrealsense2.video_frame.width">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">width</span></span><a class="headerlink" href="#pyrealsense2.video_frame.width" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">width</span></span><a class="headerlink" href="#pyrealsense2.video_frame.width" title="Link to this definition">¶</a></dt>
 <dd><p>Image width in pixels. Identical to calling get_width.</p>
 </dd></dl>
 
@@ -254,7 +254,7 @@
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
   <div>
     <h3><a href="../index.html">Table of Contents</a></h3>
@@ -301,7 +301,7 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -310,13 +310,13 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.56.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.56.4 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">pyrealsense2.video_frame</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
     &#169; Copyright 2024, Intel Realsense Team.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.3.7.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
     </div>
   </body>
 </html>

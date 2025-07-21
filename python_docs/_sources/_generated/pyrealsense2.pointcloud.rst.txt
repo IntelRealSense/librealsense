@@ -20,6 +20,7 @@ pyrealsense2.pointcloud
       ~pointcloud.as_disparity_transform
       ~pointcloud.as_hdr_merge
       ~pointcloud.as_hole_filling_filter
+      ~pointcloud.as_rotation_filter
       ~pointcloud.as_sequence_id_filter
       ~pointcloud.as_spatial_filter
       ~pointcloud.as_temporal_filter
@@ -38,6 +39,7 @@ pyrealsense2.pointcloud
       ~pointcloud.is_hdr_merge
       ~pointcloud.is_hole_filling_filter
       ~pointcloud.is_option_read_only
+      ~pointcloud.is_rotation_filter
       ~pointcloud.is_sequence_id_filter
       ~pointcloud.is_spatial_filter
       ~pointcloud.is_temporal_filter

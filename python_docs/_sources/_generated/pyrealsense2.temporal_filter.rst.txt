@@ -20,6 +20,7 @@ pyrealsense2.temporal_filter
       ~temporal_filter.as_disparity_transform
       ~temporal_filter.as_hdr_merge
       ~temporal_filter.as_hole_filling_filter
+      ~temporal_filter.as_rotation_filter
       ~temporal_filter.as_sequence_id_filter
       ~temporal_filter.as_spatial_filter
       ~temporal_filter.as_temporal_filter
@@ -37,6 +38,7 @@ pyrealsense2.temporal_filter
       ~temporal_filter.is_hdr_merge
       ~temporal_filter.is_hole_filling_filter
       ~temporal_filter.is_option_read_only
+      ~temporal_filter.is_rotation_filter
       ~temporal_filter.is_sequence_id_filter
       ~temporal_filter.is_spatial_filter
       ~temporal_filter.is_temporal_filter

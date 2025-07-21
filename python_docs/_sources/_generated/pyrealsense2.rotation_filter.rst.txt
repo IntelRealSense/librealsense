@@ -1,0 +1,57 @@
+pyrealsense2.rotation_filter
+============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: rotation_filter
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~rotation_filter.__init__
+      ~rotation_filter.as_decimation_filter
+      ~rotation_filter.as_disparity_transform
+      ~rotation_filter.as_hdr_merge
+      ~rotation_filter.as_hole_filling_filter
+      ~rotation_filter.as_rotation_filter
+      ~rotation_filter.as_sequence_id_filter
+      ~rotation_filter.as_spatial_filter
+      ~rotation_filter.as_temporal_filter
+      ~rotation_filter.as_threshold_filter
+      ~rotation_filter.get_info
+      ~rotation_filter.get_option
+      ~rotation_filter.get_option_description
+      ~rotation_filter.get_option_range
+      ~rotation_filter.get_option_value
+      ~rotation_filter.get_option_value_description
+      ~rotation_filter.get_supported_options
+      ~rotation_filter.invoke
+      ~rotation_filter.is_decimation_filter
+      ~rotation_filter.is_disparity_transform
+      ~rotation_filter.is_hdr_merge
+      ~rotation_filter.is_hole_filling_filter
+      ~rotation_filter.is_option_read_only
+      ~rotation_filter.is_rotation_filter
+      ~rotation_filter.is_sequence_id_filter
+      ~rotation_filter.is_spatial_filter
+      ~rotation_filter.is_temporal_filter
+      ~rotation_filter.is_threshold_filter
+      ~rotation_filter.on_options_changed
+      ~rotation_filter.process
+      ~rotation_filter.set_option
+      ~rotation_filter.set_option_value
+      ~rotation_filter.start
+      ~rotation_filter.supports
+   
+   
+   
+   
+   
+   

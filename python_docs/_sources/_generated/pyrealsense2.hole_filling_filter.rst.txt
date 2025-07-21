@@ -20,6 +20,7 @@ pyrealsense2.hole_filling_filter
       ~hole_filling_filter.as_disparity_transform
       ~hole_filling_filter.as_hdr_merge
       ~hole_filling_filter.as_hole_filling_filter
+      ~hole_filling_filter.as_rotation_filter
       ~hole_filling_filter.as_sequence_id_filter
       ~hole_filling_filter.as_spatial_filter
       ~hole_filling_filter.as_temporal_filter
@@ -37,6 +38,7 @@ pyrealsense2.hole_filling_filter
       ~hole_filling_filter.is_hdr_merge
       ~hole_filling_filter.is_hole_filling_filter
       ~hole_filling_filter.is_option_read_only
+      ~hole_filling_filter.is_rotation_filter
       ~hole_filling_filter.is_sequence_id_filter
       ~hole_filling_filter.is_spatial_filter
       ~hole_filling_filter.is_temporal_filter

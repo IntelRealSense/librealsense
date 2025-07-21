@@ -20,6 +20,7 @@ pyrealsense2.decimation_filter
       ~decimation_filter.as_disparity_transform
       ~decimation_filter.as_hdr_merge
       ~decimation_filter.as_hole_filling_filter
+      ~decimation_filter.as_rotation_filter
       ~decimation_filter.as_sequence_id_filter
       ~decimation_filter.as_spatial_filter
       ~decimation_filter.as_temporal_filter
@@ -37,6 +38,7 @@ pyrealsense2.decimation_filter
       ~decimation_filter.is_hdr_merge
       ~decimation_filter.is_hole_filling_filter
       ~decimation_filter.is_option_read_only
+      ~decimation_filter.is_rotation_filter
       ~decimation_filter.is_sequence_id_filter
       ~decimation_filter.is_spatial_filter
       ~decimation_filter.is_temporal_filter

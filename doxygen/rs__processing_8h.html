@@ -108,6 +108,8 @@ Functions</h2></td></tr>
 <tr class="separator:a2cbc3c4b8d72841310291aa364ca1259"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85ae6d57f144056a4d95c2d863ac0dac"><td class="memItemLeft" align="right" valign="top"><a class="el" href="rs__types_8h.html#af50408eba1d9935d29eb72553ae53dd0">rs2_processing_block</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__processing_8h.html#a85ae6d57f144056a4d95c2d863ac0dac">rs2_create_decimation_filter_block</a> (<a class="el" href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a> **error)</td></tr>
 <tr class="separator:a85ae6d57f144056a4d95c2d863ac0dac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b56096fa8de741adaaef3430797e341"><td class="memItemLeft" align="right" valign="top"><a class="el" href="rs__types_8h.html#af50408eba1d9935d29eb72553ae53dd0">rs2_processing_block</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__processing_8h.html#a9b56096fa8de741adaaef3430797e341">rs2_create_rotation_filter_block</a> (<a class="el" href="structrs2__streams__list.html">rs2_streams_list</a> streams_to_rotate, <a class="el" href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a> **error)</td></tr>
+<tr class="separator:a9b56096fa8de741adaaef3430797e341"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d246a7d8420fc8a4988016ea521212e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="rs__types_8h.html#af50408eba1d9935d29eb72553ae53dd0">rs2_processing_block</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__processing_8h.html#a8d246a7d8420fc8a4988016ea521212e">rs2_create_temporal_filter_block</a> (<a class="el" href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a> **error)</td></tr>
 <tr class="separator:a8d246a7d8420fc8a4988016ea521212e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d2363f5eee11e34fef732f8f1b9ba0c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="rs__types_8h.html#af50408eba1d9935d29eb72553ae53dd0">rs2_processing_block</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__processing_8h.html#a9d2363f5eee11e34fef732f8f1b9ba0c">rs2_create_spatial_filter_block</a> (<a class="el" href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a> **error)</td></tr>
@@ -482,6 +484,40 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Creates a rates printer block. The printer prints the actual FPS of the invoked frame stream. The block ignores reapiting frames and calculats the FPS only if the frame number of the relevant frame was changed. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">error</td><td>if non-null, receives any error that occurs during this call, otherwise, errors are ignored </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a9b56096fa8de741adaaef3430797e341"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b56096fa8de741adaaef3430797e341">&#9670;&nbsp;</a></span>rs2_create_rotation_filter_block()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="rs__types_8h.html#af50408eba1d9935d29eb72553ae53dd0">rs2_processing_block</a>* rs2_create_rotation_filter_block </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structrs2__streams__list.html">rs2_streams_list</a>&#160;</td>
+          <td class="paramname"><em>streams_to_rotate</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Creates post-processing filter block. This block accepts frames and applies rotation filter </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[out]</td><td class="paramname">error</td><td>if non-null, receives any error that occurs during this call, otherwise, errors are ignored </td></tr>
   </table>

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Build Customization Flags</title>
+  <link rel="icon" href="build-flags.ico" type="image/icon type">
+  <link rel="stylesheet" href="build-flags.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Intel RealSense™ SDK Build Customization Flags</h1>
+    <h2>Version 2.56.4.9191</h2>
+    <table>
+      <tr>
+        <th style="width: 25%">Option</th>
+        <th style="width: 45%">Description</th>
+        <th style="width: 15%">Default</th>
+        <th style="width: 15%">Advanced</th>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>ENABLE_CCACHE</code></b>
+	</td>
+	<td>
+	  Build with ccache.
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_WITH_CUDA</code></b>
+	</td>
+	<td>
+	  Enable CUDA
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_GLSL_EXTENSIONS</code></b>
+	</td>
+	<td>
+	  Build GLSL extensions API
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_WITH_OPENMP</code></b>
+	</td>
+	<td>
+	  Use OpenMP
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_EASYLOGGINGPP</code></b>
+	</td>
+	<td>
+	  Build EasyLogging++ as a part of the build
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_WITH_STATIC_CRT</code></b>
+	</td>
+	<td>
+	  Build with static link CRT
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>HWM_OVER_XU</code></b>
+	</td>
+	<td>
+	  Send HWM commands over UVC XU control
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>COM_MULTITHREADED</code></b>
+	</td>
+	<td>
+	  Set OFF to initialize COM library with COINIT_APARTMENTTHREADED (Windows only)
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_SHARED_LIBS</code></b>
+	</td>
+	<td>
+	  Build shared library
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_UNIT_TESTS</code></b>
+	</td>
+	<td>
+	  Build LibCI unit tests. If enabled, additional test data may be downloaded
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_EXAMPLES</code></b>
+	</td>
+	<td>
+	  Build examples (not including graphical examples -- see BUILD_GRAPHICAL_EXAMPLES)
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_GRAPHICAL_EXAMPLES</code></b>
+	</td>
+	<td>
+	  Build graphical examples (Viewer & DQT) -- Implies BUILD_GLSL_EXTENSIONS
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_CV_EXAMPLES</code></b>
+	</td>
+	<td>
+	  Build OpenCV examples
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_DLIB_EXAMPLES</code></b>
+	</td>
+	<td>
+	  Build DLIB examples - requires DLIB_DIR
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_PCL_EXAMPLES</code></b>
+	</td>
+	<td>
+	  Build PCL examples
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_TOOLS</code></b>
+	</td>
+	<td>
+	  Build tools (fw-updater, etc.) that are not examples
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>ENFORCE_METADATA</code></b>
+	</td>
+	<td>
+	  Require WinSDK with Metadata support during compilation. Windows OS Only
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_PYTHON_BINDINGS</code></b>
+	</td>
+	<td>
+	  Build Python bindings
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_LEGACY_PYBACKEND</code></b>
+	</td>
+	<td>
+	  Build deprecated Python backend bindings
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_PYTHON_DOCS</code></b>
+	</td>
+	<td>
+	  Build Documentation for Python bindings
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_CSHARP_BINDINGS</code></b>
+	</td>
+	<td>
+	  Build C# bindings
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_MATLAB_BINDINGS</code></b>
+	</td>
+	<td>
+	  Build Matlab bindings
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_UNITY_BINDINGS</code></b>
+	</td>
+	<td>
+	  Copy the unity project to the build folder with the required dependencies
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_OPENVINO_EXAMPLES</code></b>
+	</td>
+	<td>
+	  Build Intel OpenVINO Toolkit examples - requires INTEL_OPENVINO_DIR
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_OPEN3D_EXAMPLES</code></b>
+	</td>
+	<td>
+	  Build Open3D examples
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_OPENNI2_BINDINGS</code></b>
+	</td>
+	<td>
+	  Build OpenNI bindings
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>IMPORT_DEPTH_CAM_FW</code></b>
+	</td>
+	<td>
+	  Download the latest firmware for the depth cameras
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_CV_KINFU_EXAMPLE</code></b>
+	</td>
+	<td>
+	  Build OpenCV KinectFusion example
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>FORCE_RSUSB_BACKEND</code></b>
+	</td>
+	<td>
+	  Use RS USB backend, mandatory for Win7/MacOS/Android, optional for Linux
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>FORCE_LIBUVC</code></b>
+	</td>
+	<td>
+	  Explicitly turn-on libuvc backend - deprecated, use FORCE_RSUSB_BACKEND instead
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>FORCE_WINUSB_UVC</code></b>
+	</td>
+	<td>
+	  Explicitly turn-on winusb_uvc (for win7) backend - deprecated, use FORCE_RSUSB_BACKEND instead
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>ANDROID_USB_HOST_UVC</code></b>
+	</td>
+	<td>
+	  Build UVC backend for Android - deprecated, use FORCE_RSUSB_BACKEND instead
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>CHECK_FOR_UPDATES</code></b>
+	</td>
+	<td>
+	  Checks for versions updates <span style='font-style: italic; color: #666;'>This feature requires OpenSSL installation on Linux/OSX, OSX normally does not come with OpenSSL integrated(Thats why default is OFF on OSX)</span>
+	</td>
+	<td>
+	  <span class="tooltip">Environment dependant<span class="tooltip-text"><span style="color: #4CAF50;">ON</span> if <b><code>NOT APPLE</code></b>,<br/><span style="color: #E74C3C;">OFF</span> otherwise</span></span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_WITH_CPU_EXTENSIONS</code></b>
+	</td>
+	<td>
+	  Enable compiler optimizations using CPU extensions (such as AVX)
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>UNIT_TESTS_ARGS</code></b>
+	</td>
+	<td>
+	  Command-line arguments to pass to unit-tests-config.py, e.g. '-t <tag> -r (type STRING)
+	</td>
+	<td>
+	  <code><span style="color: #2fcfc9;">""</span></code>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>ENABLE_EASYLOGGINGPP_ASYNC</code></b>
+	</td>
+	<td>
+	  Switch Logger to Asynchronous Mode (set OFF for Synchronous Mode) <span style='font-style: italic; color: #666;'>Performance improvement with Ubuntu 18/20</span>
+	</td>
+	<td>
+	  <span class="tooltip">Environment dependant<span class="tooltip-text"><span style="color: #4CAF50;">ON</span> if <b><code>UNIX AND (NOT ANDROID_NDK_TOOLCHAIN_INCLUDED)</code></b>,<br/><span style="color: #E74C3C;">OFF</span> otherwise</span></span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_PC_STITCHING</code></b>
+	</td>
+	<td>
+	  Build pointcloud-stitching example
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_WITH_DDS</code></b>
+	</td>
+	<td>
+	  Access camera devices through DDS topics (requires CMake 3.16.3)
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_RS2_ALL</code></b>
+	</td>
+	<td>
+	  Build realsense2-all static bundle containing all realsense libraries (with BUILD_SHARED_LIBS=OFF)
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>ENABLE_SECURITY_FLAGS</code></b>
+	</td>
+	<td>
+	  Enable additional compiler security flags to enhance the build's security
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>USE_EXTERNAL_LZ4</code></b>
+	</td>
+	<td>
+	  Use externally build LZ4 library instead of building and using the in this repo provided version
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_ASAN</code></b>
+	</td>
+	<td>
+	  Enable AddressSanitizer
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">YES</span>
+	</td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>
