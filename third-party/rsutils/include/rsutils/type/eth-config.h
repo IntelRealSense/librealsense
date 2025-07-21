@@ -72,4 +72,5 @@ struct eth_config
     bool operator!=( eth_config const & ) const noexcept;
 
     std::vector< uint8_t > build_command() const;
+    void validate() const; // Check field integrity, throws if not valid
 };

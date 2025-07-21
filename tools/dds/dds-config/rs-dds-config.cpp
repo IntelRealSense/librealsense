@@ -187,30 +187,34 @@ try
     cli::value< std::string > dhcp_arg( "dhcp", "on/off", "on", "DHCP dynamic IP discovery 'on' or 'off'" );
     cli::value< uint32_t > dhcp_timeout_arg( "dhcp-timeout", "seconds", 30, "Seconds before DHCP times out and falls back to a static IP" );
     cli::value< uint32_t > link_timeout_arg( "link-timeout", "milliseconds", 4000, "Milliseconds before --eth-first link times out and falls back to USB" );
+    cli::value< uint32_t > mtu_arg( "mtu", "bytes", 9000, "Size per Ethernet packet" );
+    cli::value< uint16_t > trans_delay_arg( "transmission-delay", "microseconds", 0, "Wait this much after each packet is sent before sending next one" );
     cli::value< int > domain_id_arg( "domain-id", "0-232", 0, "DDS Domain ID to use (default is 0)" );
     cli::flag usb_first_arg( "usb-first", "Prioritize USB and fall back to Ethernet after link timeout" );
     cli::flag eth_first_arg( "eth-first", "Prioritize Ethernet and fall back to USB after link timeout" );
     cli::flag dynamic_priority_arg( "dynamic-priority", "Dynamically prioritize the last-working connection method (the default)" );
 
     json settings = cli( "rs-dds-config Ethernet device configuration tool" )
-        .arg( quiet_arg )
-        .arg( sn_arg )
-        .arg( reset_arg )
-        .arg( disable_arg )
-        .arg( golden_arg )
-        .arg( factory_reset_arg )
-        .arg( usb_first_arg )
-        .arg( eth_first_arg )
-        .arg( dynamic_priority_arg )
-        .arg( link_timeout_arg )
-        .arg( dhcp_arg )
-        .arg( dhcp_timeout_arg )
-        .arg( ip_arg )
-        .arg( mask_arg )
-        .arg( gateway_arg )
-        .arg( domain_id_arg )
-        .arg( no_reset_arg )
-        .process( argc, argv );
+                        .arg( quiet_arg )
+                        .arg( sn_arg )
+                        .arg( reset_arg )
+                        .arg( disable_arg )
+                        .arg( golden_arg )
+                        .arg( factory_reset_arg )
+                        .arg( usb_first_arg )
+                        .arg( eth_first_arg )
+                        .arg( dynamic_priority_arg )
+                        .arg( link_timeout_arg )
+                        .arg( dhcp_arg )
+                        .arg( dhcp_timeout_arg )
+                        .arg( mtu_arg )
+                        .arg( trans_delay_arg )
+                        .arg( ip_arg )
+                        .arg( mask_arg )
+                        .arg( gateway_arg )
+                        .arg( domain_id_arg )
+                        .arg( no_reset_arg )
+                        .process( argc, argv );
 
     g_quiet = quiet_arg.isSet();
 
@@ -343,6 +347,14 @@ try
                 throw std::invalid_argument( "--domain-id must be 0-232" );
             requested.dds.domain_id = domain_id_arg.getValue();
         }
+        if( mtu_arg.isSet() )
+        {
+            requested.link.mtu = mtu_arg.getValue();
+        }
+        if( trans_delay_arg.isSet() )
+        {
+            requested.transmission_delay = trans_delay_arg.getValue();
+        }
     }
 
     if( ! g_quiet )
@@ -368,7 +380,7 @@ try
                 else
                     INFO( indent( 4 ) << setting( "link", "OFF" ) );
             }
-            INFO( indent( 8 ) << setting( "MTU, bytes", current.link.mtu ) );
+            INFO( indent( 8 ) << setting( "MTU, bytes", current.link.mtu, requested.link.mtu ) );
             INFO( indent( 8 ) << setting( "timeout, ms", current.link.timeout, requested.link.timeout ) );
             INFO( indent( 8 ) << setting( "priority", current.link.priority, requested.link.priority ) );
         }
@@ -378,6 +390,8 @@ try
             INFO( indent( 4 ) << setting( "DHCP", current_dhcp, requested_dhcp ) );
             INFO( indent( 8 ) << setting( "timeout, sec", current.dhcp.timeout, requested.dhcp.timeout ) );
         }
+        INFO( indent( 4 ) << setting( "transmission delay, us", current.transmission_delay, requested.transmission_delay ) );
+        std::cout << std::endl;
     }
 
     if( golden )
@@ -420,5 +434,6 @@ catch( const rs2::error & e )
 catch( const std::exception & e )
 {
     std::cerr << "-F- " << e.what() << std::endl;
+    std::cerr << "-F- Changes not set" << std::endl;
     return EXIT_FAILURE;
 }

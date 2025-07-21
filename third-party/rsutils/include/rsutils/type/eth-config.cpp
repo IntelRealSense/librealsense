@@ -62,6 +62,8 @@ eth_config::eth_config( eth_config_v3 const & v3 )
     , dhcp{ v3.dhcp_on != 0, v3.dhcp_timeout }
     , transmission_delay( 0 )
 {
+    if( header.version != 3 )
+        throw std::runtime_error( "eth-config expecting version 3" );
 }
 
 eth_config::eth_config( eth_config_v4 const & v4 )
@@ -75,6 +77,8 @@ eth_config::eth_config( eth_config_v4 const & v4 )
     , dhcp{ v4.dhcp_on != 0, v4.dhcp_timeout }
     , transmission_delay( v4.transmission_delay )
 {
+    if( header.version != 4 )
+        throw std::runtime_error( "eth-config expecting version 4" );
 }
 
 
@@ -126,28 +130,28 @@ eth_config::eth_config( std::vector< uint8_t > const & hwm_response )
 bool eth_config::operator==( eth_config const & other ) const noexcept
 {
     // Only compare those items that are configurable
-    return configured.ip == other.configured.ip && configured.netmask == other.configured.netmask
-        && configured.gateway == other.configured.gateway && dds.domain_id == other.dds.domain_id
-        && dhcp.on == other.dhcp.on && link.priority == other.link.priority && link.timeout == other.link.timeout
-        && dhcp.timeout == other.dhcp.timeout && transmission_delay == other.transmission_delay;
+    return configured.ip == other.configured.ip
+        && configured.netmask == other.configured.netmask
+        && configured.gateway == other.configured.gateway
+        && dds.domain_id == other.dds.domain_id
+        && dhcp.on == other.dhcp.on
+        && link.mtu == other.link.mtu
+        && link.priority == other.link.priority
+        && link.timeout == other.link.timeout
+        && dhcp.timeout == other.dhcp.timeout
+        && transmission_delay == other.transmission_delay;
 }
 
 
 bool eth_config::operator!=( eth_config const & other ) const noexcept
 {
-    // Only compare those items that are configurable
-    return configured.ip != other.configured.ip || configured.netmask != other.configured.netmask
-        || configured.gateway != other.configured.gateway || dds.domain_id != other.dds.domain_id
-        || dhcp.on != other.dhcp.on || link.priority != other.link.priority || link.timeout != other.link.timeout
-        || dhcp.timeout != other.dhcp.timeout || transmission_delay != other.transmission_delay;
+    return !operator==( other );
 }
 
 
 std::vector< uint8_t > eth_config::build_command() const
 {
-    if( header.version != 3 && header.version != 4 )
-        throw std::runtime_error( rsutils::string::from()
-                                  << "unrecognized Eth config table version " << header.version );
+    validate();
 
     std::vector< uint8_t > data;
     data.resize( sizeof( eth_config_v4 ) );
@@ -160,6 +164,7 @@ std::vector< uint8_t > eth_config::build_command() const
     cfg.domain_id = dds.domain_id;
     cfg.link_check_timeout = link.timeout;
     cfg.link_priority = (uint8_t)link.priority;
+    cfg.mtu = link.mtu;
     cfg.transmission_delay = transmission_delay;
 
     if( header.version == 3 )
@@ -172,5 +177,32 @@ std::vector< uint8_t > eth_config::build_command() const
     cfg.header.version = header.version;
     cfg.header.size = sizeof( cfg ) - sizeof( cfg.header );
     cfg.header.crc = rsutils::number::calc_crc32( data.data() + sizeof( cfg.header ), cfg.header.size );
+    
     return data;
+}
+
+void eth_config::validate() const
+{
+    if( header.version != 3 && header.version != 4 )
+        throw std::invalid_argument( rsutils::string::from() << "Unrecognized Eth config table version " << header.version );
+
+    if( dhcp.timeout < 0 )
+        throw std::invalid_argument( rsutils::string::from() << "DHCP timeout cannot be negative " << dhcp.timeout );
+
+    if( dds.domain_id < 0 || dds.domain_id > 232 )
+        throw std::invalid_argument( rsutils::string::from() << "Domain ID should be in 0-232 range. Current " << dds.domain_id );
+
+    if( link.mtu < 500 || link.mtu > 9000 )
+        throw std::invalid_argument( rsutils::string::from() << "MTU size should be 500-9000. Current " << link.mtu );
+    if( ( link.mtu % 500 ) != 0 )
+        throw std::invalid_argument( rsutils::string::from() << "MTU size must be divisible by 500. Current " << link.mtu );
+    if( header.version == 3 && link.mtu != 9000 )
+        throw std::invalid_argument( "Camera FW supports Ethernet configuration ver 3. Only MTU 9000 is supported." );
+
+    if( transmission_delay > 144 )
+        throw std::invalid_argument( rsutils::string::from() << "Transmission delay should be 0-144. Current " << transmission_delay );
+    if( ( transmission_delay % 3 ) != 0)
+        throw std::invalid_argument( rsutils::string::from() << "Transmission delay must be divisible by 3. Current " << transmission_delay );
+    if( header.version == 3 && transmission_delay != 0 )
+        throw std::invalid_argument( "Camera FW supports Ethernet configuration ver 3. Transmission delay is not supported." );
 }
