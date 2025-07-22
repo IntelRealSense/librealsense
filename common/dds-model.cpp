@@ -24,19 +24,18 @@ namespace rs2 {
     uint32_t const SET_ETH_CONFIG = 0xBA;
 
     int const CURRENT_VALUES = 1;
-    int const DEFULT_VALUES = 0;
+    int const DEFAULT_VALUES = 0;
 }
 
 dds_model::dds_model( rs2::device dev )
     : _device( dev )
     , _window_open( false )
     , _no_reset( false )
-    , _set_defult( false )
     , _dds_supported( false )
 {
     if( check_DDS_support() )
     {
-        _defult_config = get_eth_config( DEFULT_VALUES );
+        _default_config = get_eth_config( DEFAULT_VALUES );
         _current_config = get_eth_config( CURRENT_VALUES );
         _changed_config = _current_config;
         _dds_supported = true;
@@ -250,6 +249,11 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
             }
             ImGui::RadioButton( "USB First", reinterpret_cast< int * >( &connection_priority ), 1 );
             ImGui::RadioButton( "Dynamic Priority", reinterpret_cast< int * >( &connection_priority ), 2 );
+            if( ImGui::IsItemHovered() )
+            {
+                window.link_hovered();
+                RsImGui::CustomTooltip( "%s", "Try connection type from last power up, switch if changed" );
+            }
             switch( connection_priority )
             {
             case ETH_FIRST:
@@ -288,10 +292,10 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
             }
             else
             {
-                ImGui::Text( "DHCP Timeout (seconds)" );
+                ImGui::Text( "DHCP Timeout [seconds]" );
                 ImGui::SameLine();
                 int tempTimeout = static_cast< int >( _changed_config.dhcp.timeout );
-                if( ImGui::InputInt( "##DHCP Timeout (seconds)", &tempTimeout ) )
+                if( ImGui::InputInt( "##DHCP Timeout", &tempTimeout ) )
                 {
                     _changed_config.dhcp.timeout = static_cast< uint16_t >( std::max( 0, tempTimeout ) );
                 }
@@ -300,7 +304,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
 
         if( ImGui::CollapsingHeader( "Traffic Shaping" ) )
         {
-            ImGui::Text( "MTU" );
+            ImGui::Text( "MTU [bytes]" );
             ImGui::SameLine();
             int temp_mtu = static_cast< int >( _changed_config.link.mtu );
             if( ImGui::InputInt( "##MTU", &temp_mtu, 500 ) )
@@ -312,7 +316,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
                 _changed_config.link.mtu = static_cast< uint32_t >( temp_mtu );
             }
 
-            ImGui::Text( "Transmission Delay" );
+            ImGui::Text( "Transmission Delay [us]" );
             ImGui::SameLine();
             int temp_delay = static_cast< int >( _changed_config.transmission_delay );
             if( ImGui::InputInt( "##Transmission Delay", &temp_delay, 3 ) )
@@ -327,9 +331,9 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         
         ImGui::Separator();
         ImGui::Checkbox( "No Reset after changes", &_no_reset );
-        if( ImGui::Button( "Defult values" ) )
+        if( ImGui::Button( "Default values" ) )
         {
-            _changed_config = _defult_config;
+            _changed_config = _default_config;
         }
         if( ImGui::IsItemHovered() )
         {
@@ -368,7 +372,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         ImGui::SameLine();
         if( ImGui::Button( "Factory Reset", ImVec2( button_width, 25 ) ) )
         {
-            set_eth_config( _defult_config, error_message );
+            set_eth_config( _default_config, error_message );
             close_window();
         }
         if( ImGui::IsItemHovered() )

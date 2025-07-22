@@ -63,7 +63,7 @@ eth_config::eth_config( eth_config_v3 const & v3 )
     , transmission_delay( 0 )
 {
     if( header.version != 3 )
-        throw std::runtime_error( "eth-config expecting version 3" );
+        throw std::runtime_error( rsutils::string::from() << "eth-config expecting version 3. Got " << header.version );
 }
 
 eth_config::eth_config( eth_config_v4 const & v4 )
@@ -78,7 +78,7 @@ eth_config::eth_config( eth_config_v4 const & v4 )
     , transmission_delay( v4.transmission_delay )
 {
     if( header.version != 4 )
-        throw std::runtime_error( "eth-config expecting version 4" );
+        throw std::runtime_error( rsutils::string::from() << "eth-config expecting version 4. Got " << header.version );
 }
 
 
@@ -174,9 +174,10 @@ std::vector< uint8_t > eth_config::build_command() const
         data.resize( sizeof( eth_config_v3 ) ); // Trim v4 reserved bytes
     }
 
-    cfg.header.version = header.version;
-    cfg.header.size = sizeof( cfg ) - sizeof( cfg.header );
-    cfg.header.crc = rsutils::number::calc_crc32( data.data() + sizeof( cfg.header ), cfg.header.size );
+    eth_config_header & cfg_header = *reinterpret_cast< eth_config_header * >( data.data() ); // Getting reference to header again after possible resize
+    cfg_header.version = header.version;
+    cfg_header.size = static_cast< uint16_t >( data.size() - sizeof( cfg_header ) );
+    cfg_header.crc = rsutils::number::calc_crc32( data.data() + sizeof( cfg_header ), cfg_header.size );
     
     return data;
 }

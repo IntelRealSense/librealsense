@@ -187,8 +187,8 @@ try
     cli::value< std::string > dhcp_arg( "dhcp", "on/off", "on", "DHCP dynamic IP discovery 'on' or 'off'" );
     cli::value< uint32_t > dhcp_timeout_arg( "dhcp-timeout", "seconds", 30, "Seconds before DHCP times out and falls back to a static IP" );
     cli::value< uint32_t > link_timeout_arg( "link-timeout", "milliseconds", 4000, "Milliseconds before --eth-first link times out and falls back to USB" );
-    cli::value< uint32_t > mtu_arg( "mtu", "bytes", 9000, "Size per Ethernet packet" );
-    cli::value< uint16_t > trans_delay_arg( "transmission-delay", "microseconds", 0, "Wait this much after each packet is sent before sending next one" );
+    cli::value< uint32_t > mtu_arg( "mtu", "bytes", 9000, "Size per Ethernet packet. 500-9000 in 500 byte steps" );
+    cli::value< uint16_t > trans_delay_arg( "transmission-delay", "microseconds", 0, "Wait this much after each packet is sent before sending next one. 0-144 in 3 microsecond steps" );
     cli::value< int > domain_id_arg( "domain-id", "0-232", 0, "DDS Domain ID to use (default is 0)" );
     cli::flag usb_first_arg( "usb-first", "Prioritize USB and fall back to Ethernet after link timeout" );
     cli::flag eth_first_arg( "eth-first", "Prioritize Ethernet and fall back to USB after link timeout" );
@@ -434,6 +434,6 @@ catch( const rs2::error & e )
 catch( const std::exception & e )
 {
     std::cerr << "-F- " << e.what() << std::endl;
-    std::cerr << "-F- Changes not set" << std::endl;
+    std::cerr << "-F- Did not apply requested configuration changes" << std::endl;
     return EXIT_FAILURE;
 }
