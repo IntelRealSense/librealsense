@@ -7,7 +7,7 @@ import pyrealsense2 as rs
 from rspy import test, log
 
 with test.closure("HDR Streaming - custom config"):
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
 
     if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):
@@ -37,7 +37,7 @@ with test.closure("HDR Streaming - custom config"):
         cfg = rs.config()
         cfg.enable_stream(rs.stream.depth)
         cfg.enable_stream(rs.stream.infrared, 1)
-        pipe = rs.pipeline()
+        pipe = rs.pipeline(ctx)
         pipe.start(cfg)
 
         for iteration in range(1, 100):

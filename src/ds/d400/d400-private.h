@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-2024 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
@@ -22,7 +22,8 @@ namespace librealsense
         const uint16_t RS_D400_RECOVERY_PID = 0x0adb;
         const uint16_t RS_D400_USB2_RECOVERY_PID = 0x0adc;
         const uint16_t RS400_IMU_PID = 0x0af2; // IMU
-        const uint16_t RS420_PID = 0x0af6; // PWG
+        const uint16_t RS420_PID = 0x0af6;      // PWG
+        const uint16_t RS421_PID = 0x1155;     // D421
         const uint16_t RS420_MM_PID = 0x0afe; // PWGT
         const uint16_t RS410_MM_PID = 0x0aff; // ASRT
         const uint16_t RS400_MM_PID = 0x0b00; // PSR
@@ -37,6 +38,8 @@ namespace librealsense
         const uint16_t RS405_PID = 0x0B5B; // D405
         const uint16_t RS455_PID = 0x0B5C; // D455
         const uint16_t RS457_PID = 0xabcd; // D457
+        const uint16_t RS400_MIPI_RECOVERY_PID = 0xbbcd; // D4XX MIPI DFU Recovery
+        const uint16_t RS430_GMSL_PID = 0xabce; // D430 GMSL
 
         // d400 Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
@@ -48,6 +51,7 @@ namespace librealsense
             ds::RS_USB2_PID,
             ds::RS400_IMU_PID,
             ds::RS420_PID,
+            ds::RS421_PID,
             ds::RS420_MM_PID,
             ds::RS410_MM_PID,
             ds::RS400_MM_PID,
@@ -61,7 +65,8 @@ namespace librealsense
             ds::RS416_PID,
             ds::RS405_PID,
             ds::RS455_PID,
-            ds::RS457_PID
+            ds::RS457_PID,
+            ds::RS430_GMSL_PID
         };
 
         static const std::set<std::uint16_t> d400_multi_sensors_pid = {
@@ -74,7 +79,13 @@ namespace librealsense
             ds::RS435_RGB_PID,
             ds::RS435I_PID,
             ds::RS455_PID,
-            ds::RS457_PID
+            ds::RS457_PID,
+            ds::RS430_GMSL_PID
+        };
+
+        static const std::set<std::uint16_t> d400_mipi_device_pid = {
+            ds::RS457_PID,
+            ds::RS430_GMSL_PID
         };
 
         static const std::set<std::uint16_t> d400_hid_sensors_pid = {
@@ -110,6 +121,7 @@ namespace librealsense
             { RS_D400_USB2_RECOVERY_PID, "Intel RealSense D4XX USB2 Recovery"},
             { RS400_IMU_PID,        "Intel RealSense IMU" },
             { RS420_PID,            "Intel RealSense D420"},
+            { RS421_PID,            "Intel RealSense D421"},
             { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
             { RS410_MM_PID,         "Intel RealSense D410 with Tracking Module"},
             { RS400_MM_PID,         "Intel RealSense D400 with Tracking Module"},
@@ -124,6 +136,8 @@ namespace librealsense
             { RS405_PID,            "Intel RealSense D405" },
             { RS455_PID,            "Intel RealSense D455" },
             { RS457_PID,            "Intel RealSense D457" },
+            { RS400_MIPI_RECOVERY_PID,   "Intel RealSense D4XX MIPI Recovery"},
+            { RS430_GMSL_PID,       "Intel RealSense D430" },
         };
 
         static std::map<uint16_t, std::string> d400_device_to_fw_min_version = {
@@ -137,6 +151,7 @@ namespace librealsense
             {RS_D400_USB2_RECOVERY_PID, "5.8.15.0"},
             {RS400_IMU_PID, "5.8.15.0"},
             {RS420_PID, "5.8.15.0"},
+            {RS421_PID, "5.16.1.0"},
             {RS420_MM_PID, "5.8.15.0"},
             {RS410_MM_PID, "5.8.15.0"},
             {RS400_MM_PID, "5.8.15.0" },
@@ -150,7 +165,9 @@ namespace librealsense
             {RS416_RGB_PID, "5.8.15.0" },
             {RS405_PID, "5.12.11.8" },
             {RS455_PID, "5.13.0.50" },
-            {RS457_PID, "5.13.1.1" }
+            {RS457_PID, "5.16.8.0" },
+            {RS400_MIPI_RECOVERY_PID, "5.16.8.0" },
+            {RS430_GMSL_PID, "5.16.8.0" }
         };
 
         std::vector<platform::uvc_device_info> filter_d400_device_by_capability(
@@ -235,6 +252,7 @@ namespace librealsense
         rs2_intrinsics get_d400_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_d400_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
         rs2_intrinsics get_d400_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        rs2_intrinsics get_d405_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         bool try_get_d400_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,
             uint32_t width, uint32_t height, rs2_intrinsics* result);
 
@@ -328,6 +346,159 @@ namespace librealsense
             { no_temperature_disable_laser, "Temperature read failure - laser disabled" },
             { isp_boot_data_upload_failed, "ISP boot data upload failure" },
         };
+
+        class d400_hwmon_response : public hwmon_response_interface
+        {
+        public:
+            enum opcodes : hwmon_response_type
+            {
+               SUCCESS                                =  0,
+               WRONG_COMMAND                          = -1,
+               START_NG_END_ADDR                      = -2,
+               ADDRESS_SPACE_NOT_ALIGNED              = -3,
+               ADDRESS_SPACE_TOO_SMALL                = -4,
+               READ_ONLY                              = -5,
+               WRONG_PARAMETER                        = -6,
+               HW_NOT_READY                           = -7,
+               I2C_ACCESS_FAILED                      = -8,
+               NO_EXPECTED_USER_ACTION                = -9,
+               INTEGRITY_ERROR                        = -10,
+               NULL_OR_ZERO_SIZE_STRING               = -11,
+               GPIO_PIN_NUMBER_INVALID                = -12,
+               GPIO_PIN_DIRECTION_INVALID             = -13,
+               ILLEGAL_ADDRESS                        = -14,
+               ILLEGAL_SIZE                           = -15,
+               PARAMS_TABLE_NOT_VALID                 = -16,
+               PARAMS_TABLE_ID_NOT_VALID              = -17,
+               PARAMS_TABLE_WRONG_EXISTING_SIZE       = -18,
+               WRONG_CRC                              = -19,
+               NOT_AUTHORISED_FLASH_WRITE             = -20,
+               NO_DATA_TO_RETURN                      = -21,
+               SPI_READ_FAILED                        = -22,
+               SPI_WRITE_FAILED                       = -23,
+               SPI_ERASE_SECTOR_FAILED                = -24,
+               TABLE_IS_EMPTY                         = -25,
+               I2C_SEQ_DELAY                          = -26,
+               COMMAND_IS_LOCKED                      = -27,
+               CALIBRATION_WRONG_TABLE_ID             = -28,
+               VALUE_OUT_OF_RANGE                     = -29,
+               INVALID_DEPTH_FORMAT                   = -30,
+               DEPTH_FLOW_ERROR                       = -31,
+               TIMEOUT                                = -32,
+               NOT_SAFE_CHECK_FAILED                  = -33,
+               FLASH_REGION_IS_LOCKED                 = -34,
+               SUMMING_EVENT_TIMEOUT                  = -35,
+               SDS_CORRUPTED                          = -36,
+               SDS_VERIFY_FAILED                      = -37,
+               ILLEGAL_HW_STATE                       = -38,
+               REALTEK_NOT_LOADED                     = -39,
+               WAKE_UP_DEVICE_NOT_SUPPORTED           = -40,
+               RESOURCE_BUSY                          = -41,
+               MAX_ERROR_VALUE                        = -42,
+               PWM_NOT_SUPPORTED                      = -43,
+               PWM_STEREO_MODULE_NOT_CONNECTED        = -44,
+               UVC_STREAM_INVALID_STREAM_REQUEST      = -45,
+               UVC_CONTROL_MANUAL_EXPOSURE_INVALID    = -46,
+               UVC_CONTROL_MANUAL_GAIN_INVALID        = -47,
+               EYE_SAFETY_PAYLOAD_FAILURE             = -48,
+               PROJECTOR_TEST_FAILED                  = -49,
+               THREAD_MODIFY_FAILED                   = -50,
+               HOT_LASER_PWR_REDUCE                   = -51, // reported to error depth XU control
+               HOT_LASER_DISABLE                      = -52, // reported to error depth XU control
+               FLAG_B_LASER_DISABLE                   = -53, // reported to error depth XU control
+               NO_STATE_CHANGE                        = -54,
+               EEPROM_IS_LOCKED                       = -55,
+               OEM_ID_WRONG                           = -56,
+               REALTEK_NOT_UPDATED                    = -57,
+               FUNCTION_NOT_SUPPORTED                 = -58,
+               ISP_NOT_IMPLEMENTED                    = -59,
+               ISP_NOT_SUPPORTED                      = -60,
+               ISP_NOT_PERMITTED                      = -61,
+               ISP_NOT_EXISTS                         = -62,
+               ISP_FAIL                               = -63,
+               UNKNOWN                                = -64,
+               LAST_ERROR                             = UNKNOWN - 1,
+            };
+
+            // Elaborate HW Monitor response
+            std::map<hwmon_response_type, std::string> hwmon_response_report = {
+               { SUCCESS,                                  "Success" },
+               { WRONG_COMMAND,                            "Invalid Command" },
+               { START_NG_END_ADDR,                        "Start NG End Address" },
+               { ADDRESS_SPACE_NOT_ALIGNED,                "Address space not aligned" },
+               { ADDRESS_SPACE_TOO_SMALL,                  "Address space too small" },
+               { READ_ONLY,                                "Read-only" },
+               { WRONG_PARAMETER,                          "Invalid parameter" },
+               { HW_NOT_READY,                             "HW not ready" },
+               { I2C_ACCESS_FAILED,                        "I2C access failed" },
+               { NO_EXPECTED_USER_ACTION,                  "No expected user action" },
+               { INTEGRITY_ERROR,                          "Integrity error" },
+               { NULL_OR_ZERO_SIZE_STRING,                 "Null or zero size string" },
+               { GPIO_PIN_NUMBER_INVALID,                  "GPIO pin number invalid" },
+               { GPIO_PIN_DIRECTION_INVALID,               "GPIO pin direction invalid" },
+               { ILLEGAL_ADDRESS,                          "Illegal address" },
+               { ILLEGAL_SIZE,                             "Illegal size" },
+               { PARAMS_TABLE_NOT_VALID,                   "Params table not valid" },
+               { PARAMS_TABLE_ID_NOT_VALID,                "Params table id not valid" },
+               { PARAMS_TABLE_WRONG_EXISTING_SIZE,         "Params table wrong existing size" },
+               { WRONG_CRC,                                "Invalid CRC" },
+               { NOT_AUTHORISED_FLASH_WRITE,               "Not authorised flash write" },
+               { NO_DATA_TO_RETURN,                        "No data to return" },
+               { SPI_READ_FAILED,                          "SPI read failed" },
+               { SPI_WRITE_FAILED,                         "SPI write failed" },
+               { SPI_ERASE_SECTOR_FAILED,                  "SPI erase sector failed" },
+               { TABLE_IS_EMPTY,                           "Table is empty" },
+               { I2C_SEQ_DELAY,                            "I2C seq delay" },
+               { COMMAND_IS_LOCKED,                        "Command is locked" },
+               { CALIBRATION_WRONG_TABLE_ID,               "Calibration invalid table id" },
+               { VALUE_OUT_OF_RANGE,                       "Value out of range" },
+               { INVALID_DEPTH_FORMAT,                     "Invalid depth format" },
+               { DEPTH_FLOW_ERROR,                         "Depth flow error" },
+               { TIMEOUT,                                  "Timeout" },
+               { NOT_SAFE_CHECK_FAILED,                    "Not safe check failed" },
+               { FLASH_REGION_IS_LOCKED,                   "Flash region is locked" },
+               { SUMMING_EVENT_TIMEOUT,                    "Summing event timeout" },
+               { SDS_CORRUPTED,                            "SDS corrupted" },
+               { SDS_VERIFY_FAILED,                        "SDS verification failed" },
+               { ILLEGAL_HW_STATE,                         "Illegal HW state" },
+               { REALTEK_NOT_LOADED,                       "Realtek not loaded" },
+               { WAKE_UP_DEVICE_NOT_SUPPORTED,             "Wake up device not supported" },
+               { RESOURCE_BUSY,                            "Resource busy" },
+               { MAX_ERROR_VALUE,                          "Max error value" },
+               { PWM_NOT_SUPPORTED,                        "PWM not supported" },
+               { PWM_STEREO_MODULE_NOT_CONNECTED,          "PWM stereo module not connected" },
+               { UVC_STREAM_INVALID_STREAM_REQUEST,        "UVC stream invalid stream request" },
+               { UVC_CONTROL_MANUAL_EXPOSURE_INVALID,      "UVC control manual exposure invalid" },
+               { UVC_CONTROL_MANUAL_GAIN_INVALID,          "UVC control manual gain invalid" },
+               { EYE_SAFETY_PAYLOAD_FAILURE,               "Eye safety payload failure" },
+               { PROJECTOR_TEST_FAILED,                    "Projector test failed" },
+               { THREAD_MODIFY_FAILED,                     "Thread modify failed" },
+               { HOT_LASER_PWR_REDUCE,                     "Hot laser power reduce" },
+               { HOT_LASER_DISABLE,                        "Hot laser disable" },
+               { FLAG_B_LASER_DISABLE,                     "Flag B laser disable" },
+               { NO_STATE_CHANGE,                          "No state change" },
+               { EEPROM_IS_LOCKED,                         "EEPROM is locked" },
+               { OEM_ID_WRONG,                             "OEM ID wrong" },
+               { REALTEK_NOT_UPDATED,                      "Realtek not updated" },
+               { FUNCTION_NOT_SUPPORTED,                   "Function not supported" },
+               { ISP_NOT_IMPLEMENTED,                      "ISP not implemented" },
+               { ISP_NOT_SUPPORTED,                        "ISP not supported" },
+               { ISP_NOT_PERMITTED,                        "ISP not permitted" },
+               { ISP_NOT_EXISTS,                           "ISP not exists" },
+               { ISP_FAIL,                                 "ISP fail" },
+               { UNKNOWN,                                  "Unresolved error" },
+               { LAST_ERROR,                               "Last error" },
+            };
+
+            virtual std::string hwmon_error2str(hwmon_response_type opcode) const override {
+                if (hwmon_response_report.find(opcode) != hwmon_response_report.end())
+                    return hwmon_response_report.at(opcode);
+                return {};
+            }
+
+            virtual hwmon_response_type success_value() const override { return SUCCESS; };
+        };
+
 
     } // namespace ds
 } // namespace librealsense

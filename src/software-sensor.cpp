@@ -25,7 +25,23 @@ static std::shared_ptr< metadata_parser_map > create_software_metadata_parser_ma
     for( int i = 0; i < static_cast< int >( rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT ); ++i )
     {
         auto key = static_cast< rs2_frame_metadata_value >( i );
-        md_parser_map->emplace( key, std::make_shared< md_array_parser >( key ) );
+        std::shared_ptr< md_attribute_parser_base > fallback;
+        switch( key )
+        {
+        case RS2_FRAME_METADATA_TIME_OF_ARRIVAL:
+            fallback = make_additional_data_parser_unless( &frame_additional_data::system_time, rs2_time_t( 0 ) );
+            break;
+        case RS2_FRAME_METADATA_BACKEND_TIMESTAMP:
+            fallback = make_additional_data_parser_unless( &frame_additional_data::backend_timestamp, rs2_time_t(0) );
+            break;
+        case RS2_FRAME_METADATA_RAW_FRAME_SIZE:
+            fallback = make_additional_data_parser_unless( &frame_additional_data::raw_size, uint32_t(0) );
+            break;
+        case RS2_FRAME_METADATA_ACTUAL_FPS:
+            fallback = std::make_shared< ds_md_attribute_actual_fps >();
+            break;
+        }
+        md_parser_map->emplace( key, std::make_shared< md_array_parser >( key, fallback ) );
     }
     return md_parser_map;
 }
@@ -67,7 +83,7 @@ software_sensor::~software_sensor()
 
 
 std::shared_ptr< stream_profile_interface > software_sensor::add_video_stream( rs2_video_stream video_stream,
-                                                                               bool is_default )
+                                                                               bool is_default, std::string name )
 {
     auto profile = std::make_shared< video_stream_profile >();
     profile->set_dims( video_stream.width, video_stream.height );
@@ -77,6 +93,7 @@ std::shared_ptr< stream_profile_interface > software_sensor::add_video_stream( r
     profile->set_stream_type( video_stream.type );
     profile->set_unique_id( video_stream.uid );
     profile->set_intrinsics( [=]() { return video_stream.intrinsics; } );
+    profile->set_name( name );
     if( is_default )
         profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
     _sw_profiles.push_back( profile );
@@ -86,7 +103,7 @@ std::shared_ptr< stream_profile_interface > software_sensor::add_video_stream( r
 
 
 std::shared_ptr< stream_profile_interface > software_sensor::add_motion_stream( rs2_motion_stream motion_stream,
-                                                                                bool is_default )
+                                                                                bool is_default, std::string name )
 {
     auto profile = std::make_shared< motion_stream_profile >();
     profile->set_format( motion_stream.fmt );
@@ -95,16 +112,16 @@ std::shared_ptr< stream_profile_interface > software_sensor::add_motion_stream( 
     profile->set_stream_type( motion_stream.type );
     profile->set_unique_id( motion_stream.uid );
     profile->set_intrinsics( [=]() { return motion_stream.intrinsics; } );
+    profile->set_name( name );
     if( is_default )
         profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
     _sw_profiles.push_back( profile );
 
-    return std::move( profile );
+    return profile;
 }
 
 
-std::shared_ptr< stream_profile_interface > software_sensor::add_pose_stream( rs2_pose_stream pose_stream,
-                                                                              bool is_default )
+std::shared_ptr< stream_profile_interface > software_sensor::add_pose_stream( rs2_pose_stream pose_stream, bool is_default, std::string name )
 {
     auto profile = std::make_shared< pose_stream_profile >();
     if( ! profile )
@@ -115,6 +132,7 @@ std::shared_ptr< stream_profile_interface > software_sensor::add_pose_stream( rs
     profile->set_stream_index( pose_stream.index );
     profile->set_stream_type( pose_stream.type );
     profile->set_unique_id( pose_stream.uid );
+    profile->set_name( name );
     if( is_default )
         profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
     _sw_profiles.push_back( profile );
@@ -253,6 +271,9 @@ frame_interface * software_sensor::allocate_new_video_frame( video_stream_profil
 
         vid_frame->assign( profile->get_width(), profile->get_height(), stride, bpp * 8 );
         auto sd = dynamic_cast< software_device * >( _owner );
+        if (!sd)
+            throw std::runtime_error("Owner is not a software device");
+
         sd->register_extrinsic( *profile );
     }
     return frame;
@@ -373,6 +394,14 @@ void software_sensor::add_processing_block( std::shared_ptr< processing_block_in
         throw invalid_value_exception( "trying to add an empty software processing block" );
 
     _pbs.push_back( block );
+}
+
+
+std::vector< rs2_option > software_sensor::get_supported_options() const
+{
+    // Override the default options_container behavior: software sensors return the options in the same order they were
+    // registered!
+    return _ordered_options;
 }
 
 

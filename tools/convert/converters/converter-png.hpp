@@ -7,7 +7,7 @@
 
 // 3rd party header for writing png files
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include <third-party/stb_image_write.h>
 
 #include "../converter.hpp"
 
@@ -40,8 +40,7 @@ namespace rs2 {
                         return;
                     }
 
-                    if (frames_map_get_and_set(videoframe.get_profile().stream_type(), 
-                        static_cast<rs2::tools::converter::frame_number_t>(videoframe.get_timestamp()))) {
+                    if (frames_map_get_and_set(videoframe.get_profile().stream_type(), videoframe.get_profile().stream_index(), videoframe.get_frame_number())) {
                         return;
                     }
 

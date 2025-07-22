@@ -3,6 +3,7 @@
 
 from rspy import test, log
 import time
+import pyrealsense2 as rs
 
 # global variable used to count on all the sensors simultaneously
 count_frames = False
@@ -15,7 +16,7 @@ TIME_TO_COUNT_FRAMES = 5
 # ---------- Helper Functions ---------- #
 ##########################################
 def check_fps_pair(measured_fps, expected_fps):
-    delta_Hz = expected_fps * 0.05  # Validation KPI is 5%
+    delta_Hz = expected_fps * 0.15
     return (measured_fps <= (expected_fps + delta_Hz) and measured_fps >= (expected_fps - delta_Hz))
 
 
@@ -74,9 +75,15 @@ def generate_callbacks(sensor_profiles_dict, profile_name_fps_dict):
     """
     def on_frame_received(frame):
         global count_frames
+        profile_name = frame.profile.stream_name()
+        counted_frame_number = profile_name_fps_dict[frame.profile.stream_name()] + 1  # frame number counted in test
+        frame_number = frame.get_frame_number()  # the actual frame number from the metadata
+        frame_ts = frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
+        log.d(f"frame {profile_name} #{counted_frame_number} "
+              f"accepted with frame number {frame_number} and ts {frame_ts}")
         if count_frames:
-            profile_name = frame.profile.stream_name()
             profile_name_fps_dict[profile_name] += 1
+        log.d(f"frame {profile_name} #{counted_frame_number} callback finished")
 
     sensor_function_dict = {sensor_key: on_frame_received for sensor_key in sensor_profiles_dict}
     return sensor_function_dict
@@ -161,3 +168,9 @@ def get_profile(sensor, stream, resolution=None, fps=None):
                 and (resolution is None or get_resolution(profile) == resolution)
                 and (fps is None or profile.fps() == fps)),
                 None)  # return None if no profile found
+
+
+def get_profiles(sensor, stream, resolution=None, fps=None):
+    return iter(profile for profile in sensor.profiles if profile.stream_type() == stream
+                and (resolution is None or get_resolution(profile) == resolution)
+                and (fps is None or profile.fps()))

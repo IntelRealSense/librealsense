@@ -3,6 +3,7 @@
 
 #include <rsutils/os/special-folder.h>
 #include <rsutils/easylogging/easyloggingpp.h>
+#include <locale.h>
 
 #ifdef _WIN32
 
@@ -25,6 +26,7 @@ namespace os {
 
 std::string get_special_folder( special_folder f )
 {
+    setlocale(LC_ALL, ".UTF8");
     std::string res;
 
 #ifdef _WIN32

@@ -2,7 +2,7 @@
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 from rspy import log, test
 import pyrealdds as dds
@@ -68,7 +68,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
 
     # We listen directly on the device-info topic
     device_info_topic = dds.message.device_info.create_topic( participant, dds.topics.device_info )
-    device_info = dds.topic_reader( device_info_topic )
+    device_info_reader = dds.topic_reader( device_info_topic )
     broadcast_received = threading.Event()
     broadcast_devices = []
     def on_device_info_available( reader ):
@@ -81,8 +81,8 @@ with test.remote.fork( nested_indent='  S' ) as remote:
             global broadcast_devices
             broadcast_devices.append( j )
         broadcast_received.set()
-    device_info.on_data_available( on_device_info_available )
-    device_info.run( dds.topic_reader.qos() )
+    device_info_reader.on_data_available( on_device_info_available )
+    device_info_reader.run( dds.topic_reader.qos() )
 
     def detect_broadcast():
         global broadcast_received, broadcast_devices
@@ -203,6 +203,9 @@ with test.remote.fork( nested_indent='  S' ) as remote:
             reader_2 = dds.topic_reader( device_info_topic )
             reader_2.run( dds.topic_reader.qos() )
         test.check_equal( len(broadcast_devices), 2 )
+        # Add short sleep to avoid a possible deadlock. Devices broadcast is handled by `on_device_info_available` callback,
+        # we may still be checking for messages (in eProcima reader thread) when trying to delete reader_2.
+        sleep( 0.1 )
         del reader_2
 
     #############################################################################################
@@ -290,7 +293,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
     with test.closure( "Check new content" ):
         test.check_throws( lambda:
             d2.query_option_value( d2option ),
-            RuntimeError, r'''["query-option" error] device option 'Backlight Compensation' not found''' )
+            RuntimeError, r'''["query-option"] device option 'Backlight Compensation' not found''' )
         if test.check_equal( len(d2.streams()), 1 ):
             stream = d2.streams()[0]
             test.check_equal( stream.name(), 's2' )
@@ -300,6 +303,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
 
 
     del watcher
-    del device_info
+    device_info_reader.stop()
+    del device_info_reader
     del participant
     test.print_results_and_exit()

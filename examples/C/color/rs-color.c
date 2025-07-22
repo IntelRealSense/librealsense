@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017-24 Intel Corporation. All Rights Reserved.
 
 /* Include the librealsense C header files */
 #include <librealsense2/rs.h>
@@ -15,12 +15,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                     These parameters are reconfigurable                                        //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#define STREAM          RS2_STREAM_COLOR  // rs2_stream is a types of data provided by RealSense device           //
-#define FORMAT          RS2_FORMAT_RGB8   // rs2_format identifies how binary data is encoded within a frame      //
-#define WIDTH           640               // Defines the number of columns for each frame                         //
-#define HEIGHT          480               // Defines the number of lines for each frame                           //
-#define FPS             30                // Defines the rate of frames per second                                //
-#define STREAM_INDEX    0                 // Defines the stream index, used for multiple streams of the same type //
+#define STREAM          RS2_STREAM_COLOR  // Type of data provided by RealSense device                            //
+#define FORMAT          RS2_FORMAT_ANY    // How binary data is encoded within a frame (ANY)                      //
+#define WIDTH           0                 // Number of columns for each frame (ANY)                               //
+#define HEIGHT          0                 // Number of lines for each frame (ANY)                                 //
+#define FPS             0                 // Rate of frames per second (ANY)                                      //
+#define STREAM_INDEX    -1                // Used for multiple streams of the same type (ANY)                     //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -74,7 +74,7 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    while (1)
+    while (1)  // Until user presses Ctrl+C
     {
         // This call waits until a new composite_frame is available
         // composite_frame holds a set of frames. It is used to prevent frame drops
@@ -125,18 +125,4 @@ int main()
 
         rs2_release_frame(frames);
     }
-
-    // Stop the pipeline streaming
-    rs2_pipeline_stop(pipeline, &e);
-    check_error(e);
-
-    // Release resources
-    rs2_delete_pipeline_profile(pipeline_profile);
-    rs2_delete_config(config);
-    rs2_delete_pipeline(pipeline);
-    rs2_delete_device(dev);
-    rs2_delete_device_list(device_list);
-    rs2_delete_context(ctx);
-
-    return EXIT_SUCCESS;
 }

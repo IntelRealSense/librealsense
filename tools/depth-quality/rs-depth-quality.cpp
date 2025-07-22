@@ -1,17 +1,137 @@
-﻿// License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+﻿
 
-#include <numeric>
-#include <librealsense2/rs.hpp>
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015-24 Intel Corporation. All Rights Reserved.
+
 #include "depth-quality-model.h"
+
+#include <common/cli.h>
+
+#include <librealsense2/rs.hpp>
+#include <numeric>
+#include <rs-config.h>
+
+static const float TO_MM = 1000.f;
+static const float TO_PERCENT = 100.f;
+using namespace rs2::depth_quality;
+
+static void calculate_temporal_noise(const std::vector<rs2::float3>& points, const rs2::region_of_interest& roi, const int roi_width, const int roi_height, metric temporal_noise, bool record, std::vector<single_metric_data>& samples)
+{
+    // Calculate Temporal Noise
+    const int NUM_IMAGES = 40;
+
+    static std::deque<std::vector<rs2::float3>> depth_images; // FIFO buffer for depth images
+
+    // Add the current depth image to the FIFO buffer
+    depth_images.push_back(points);
+    //start calculate only once we accumulate 'NUM_IMAGES'
+    if (depth_images.size() >= NUM_IMAGES) {
+        depth_images.pop_front();
+
+        // Create Depth_Tensor ==> vector of 'NUM_IMAGES' images.
+        std::vector<std::vector<std::vector<float>>> depth_tensor(roi_width, std::vector<std::vector<float>>(roi_height, std::vector<float>(depth_images.size(), 0.0f)));
+
+        // Fill Depth_Tensor with depth images
+        for (size_t n = 0; n < depth_images.size(); ++n) {
+            for (const auto& point : depth_images[n]) {
+                int x = static_cast<int>(point.x);
+                int y = static_cast<int>(point.y);
+                if (x >= roi.min_x && x < roi.max_x && y >= roi.min_y && y < roi.max_y) {
+                    depth_tensor[x - roi.min_x][y - roi.min_y][n] = point.z * TO_MM;
+                }
+            }
+        }
+
+        // Remove all zeros from Depth_Tensor
+        for (int y = 0; y < roi_height; ++y) {
+            for (int x = 0; x < roi_width; ++x) {
+                depth_tensor[x][y].erase(std::remove(depth_tensor[x][y].begin(), depth_tensor[x][y].end(), 0.0f), depth_tensor[x][y].end());
+            }
+        }
+
+
+        std::vector<std::vector<float>> std_matrix(roi_width, std::vector<float>(roi_height, 0.0f));
+        std::vector<std::vector<float>> median_matrix(roi_width, std::vector<float>(roi_height, 0.0f));
+        std::vector<std::vector<float>> division_matrix(roi_width, std::vector<float>(roi_height, 0.0f));
+
+        for (int y = 0; y < roi_height; ++y) {
+            for (int x = 0; x < roi_width; ++x) {
+                if (!depth_tensor[x][y].empty()) {
+                    float mean = std::accumulate(depth_tensor[x][y].begin(), depth_tensor[x][y].end(), 0.0f) / depth_tensor[x][y].size();
+                    float variance = 0.0f;
+
+                    // Compute STD_Matrix
+                    for (float value : depth_tensor[x][y]) {
+                        variance += (value - mean) * (value - mean);
+                    }
+                    variance /= depth_tensor[x][y].size();
+                    std_matrix[x][y] = std::sqrt(variance);
+
+                    // Compute median
+                    std::vector<float> sorted_values = depth_tensor[x][y];
+                    std::sort(sorted_values.begin(), sorted_values.end());
+                    size_t size = sorted_values.size();
+                    if (size % 2 == 0) {
+                        median_matrix[x][y] = (sorted_values[size / 2 - 1] + sorted_values[size / 2]) / 2.0f;
+                    }
+                    else {
+                        median_matrix[x][y] = sorted_values[size / 2];
+                    }
+
+                    // Compute division of std_matrix by median_matrix
+                    if (median_matrix[x][y] != 0) { // Avoid division by zero
+                        division_matrix[x][y] = std_matrix[x][y] / median_matrix[x][y];
+                    }
+                    else {
+                        division_matrix[x][y] = 0.0f; // Handle division by zero case
+                    }
+                }
+            }
+        }
+
+        // Flatten the division_matrix into a single vector
+        std::vector<float> flattened_division_matrix;
+        for (const auto& row : division_matrix) {
+            for (float value : row) {
+                flattened_division_matrix.push_back(value);
+            }
+        }
+
+        // Sort the flattened vector
+        std::sort(flattened_division_matrix.begin(), flattened_division_matrix.end());
+
+        // Find the median of the flattened vector
+        float division_median;
+        size_t flattened_size = flattened_division_matrix.size();
+        if (flattened_size % 2 == 0) {
+            division_median = (flattened_division_matrix[flattened_size / 2 - 1] + flattened_division_matrix[flattened_size / 2]) / 2.0f;
+        }
+        else {
+            division_median = flattened_division_matrix[flattened_size / 2];
+        }
+
+        temporal_noise->add_value(division_median * 100);
+
+        if (record) {
+            samples.push_back({ temporal_noise->get_name(), division_median * 100 });
+        }
+    }
+}
 
 int main(int argc, const char * argv[]) try
 {
-    rs2::context ctx;
-    rs2::ux_window window("Depth Quality Tool", ctx);
-    rs2::depth_quality::tool_model model(ctx);
+    rs2::cli cmd( "rs-depth-quality" );
+    auto settings = cmd.process( argc, argv );
 
-    using namespace rs2::depth_quality;
+    rs2::context ctx( settings.dump() );
+    rs2::ux_window window("Depth Quality Tool", ctx);
+    
+#ifdef BUILD_EASYLOGGINGPP
+    bool const disable_log_to_console = cmd.debug_arg.getValue();
+#else
+    bool const disable_log_to_console = false;
+#endif
+    rs2::depth_quality::tool_model model( ctx, disable_log_to_console );
 
     // ===============================
     //       Metrics Definitions
@@ -62,6 +182,22 @@ int main(int argc, const char * argv[]) try
                  "RMS = SQRT((SUM(Di-Dpi)^2)/n)\n"
                  "             i=1    ");
 
+    metric temporal_noise = model.make_metric(
+        "Temporal Noise", 0.f, 100.f, true, "%",
+        "Temporal Noise .\n"
+        "This metric provides the depth temporal noise\n"
+        "and is calculated as follows:\n"
+        "Input - N images of Depth_Image\n"
+        "Loop over the N images and create Depth_Tensor\n"
+        "Depth_Tensor = (Depth_Image, N)\n"
+        "Remove all zeros from Depth_Tensor\n"
+        "COMPUTE STD_Matrix = STD of Depth_Tensor(x, y, all)\n"
+        "COMPUTE Median_Matrix = Median of Depth_Tensor(x, y, all)\n"
+        "COMPUTE Division_Matrix = STD_Matrix /Median_Matrix\n"
+        "COMPUTE Median_Devision_Matrix = 50% percentile value of Devision_Matrix\n"
+        "Temporal Noise = Median_Devision_Matrix multiply by 100 to get percentage\n");
+
+
     // ===============================
     //       Metrics Calculation
     // ===============================
@@ -71,7 +207,7 @@ int main(int argc, const char * argv[]) try
         const rs2::plane p,
         const rs2::region_of_interest roi,
         const float baseline_mm,
-        const float focal_length_pixels,
+        const rs2_intrinsics* intrin,
         const int ground_truth_mm,
         const bool plane_fit,
         const float plane_fit_to_ground_truth_mm,
@@ -80,19 +216,27 @@ int main(int argc, const char * argv[]) try
         std::vector<single_metric_data>& samples)
     {
         float TO_METERS = model.get_depth_scale();
-        static const float TO_MM = 1000.f;
-        static const float TO_PERCENT = 100.f;
+        const int roi_width = roi.max_x - roi.min_x;
+        const int roi_height = roi.max_y - roi.min_y;
 
         // Calculate fill rate relative to the ROI
-        auto fill_rate = points.size() / float((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * TO_PERCENT;
+        auto fill_rate = points.size() / float((roi_width)*(roi_height)) * TO_PERCENT;
         fill->add_value(fill_rate);
         if(record) samples.push_back({fill->get_name(),  fill_rate });
 
         if (!plane_fit) return;
 
-        const float bf_factor = baseline_mm * focal_length_pixels * TO_METERS; // also convert point units from mm to meter
+        const float bf_factor = baseline_mm * intrin->fx * TO_METERS; // also convert point units from mm to meter
 
-        std::vector<rs2::float3> points_set = points;
+        std::vector<rs2::float3> deprojected_points;
+        for (auto point : points)
+        {
+            float pixel[2] = { point.x, point.y };
+            float pt[3];
+            rs2_deproject_pixel_to_point(pt, intrin, pixel, point.z);
+            deprojected_points.push_back({ pt[0], pt[1], pt[2] });
+        }
+        
         std::vector<float> distances;
         std::vector<float> disparities;
         std::vector<float> gt_errors;
@@ -103,15 +247,15 @@ int main(int argc, const char * argv[]) try
         if (ground_truth_mm) gt_errors.reserve(points.size());
 
         // Remove outliers [below 0.5% and above 99.5%)
-        std::sort(points_set.begin(), points_set.end(), [](const rs2::float3& a, const rs2::float3& b) { return a.z < b.z; });
-        size_t outliers = points_set.size() / 200;
-        points_set.erase(points_set.begin(), points_set.begin() + outliers); // crop min 0.5% of the dataset
-        points_set.resize(points_set.size() - outliers); // crop max 0.5% of the dataset
+        std::sort(deprojected_points.begin(), deprojected_points.end(), [](const rs2::float3& a, const rs2::float3& b) { return a.z < b.z; });
+        size_t outliers = deprojected_points.size() / 200;
+        deprojected_points.erase(deprojected_points.begin(), deprojected_points.begin() + outliers); // crop min 0.5% of the dataset
+        deprojected_points.resize(deprojected_points.size() - outliers); // crop max 0.5% of the dataset
 
         // Convert Z values into Depth values by aligning the Fitted plane with the Ground Truth (GT) plane
         // Calculate distance and disparity of Z values to the fitted plane.
         // Use the rotated plane fit to calculate GT errors
-        for (auto point : points_set)
+        for (auto point : deprojected_points)
         {
             // Find distance from point to the reconstructed plane
             auto dist2plane = p.a*point.x + p.b*point.y + p.c*point.z + p.d;
@@ -157,8 +301,9 @@ int main(int argc, const char * argv[]) try
         {
             samples.push_back({ plane_fit_rms_error->get_name(),  rms_error_val_per });
             samples.push_back({ plane_fit_rms_error->get_name() + " mm",  rms_error_val });
-        }
+        }  
 
+        calculate_temporal_noise(points, roi, roi_width, roi_height, temporal_noise, record, samples);
     });
 
     // ===============================

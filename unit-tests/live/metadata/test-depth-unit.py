@@ -10,12 +10,12 @@ from rspy import test
 # get metadata depth units value and make sure it's non zero and equal to the depth sensor matching option value
 test.start("checking depth units on metadata")
 
-dev = test.find_first_device_or_exit()
+dev, ctx = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 
 try:
     cfg = pipeline = None
-    pipeline = rs.pipeline()
+    pipeline = rs.pipeline(ctx)
     cfg = rs.config()
     pipeline_profile = pipeline.start(cfg)
 

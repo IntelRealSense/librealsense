@@ -25,11 +25,11 @@ public:
     ~software_sensor();
 
     virtual std::shared_ptr< stream_profile_interface > add_video_stream( rs2_video_stream video_stream,
-                                                                          bool is_default = false );
+                                                                          bool is_default = false, std::string name = "" );
     virtual std::shared_ptr< stream_profile_interface > add_motion_stream( rs2_motion_stream motion_stream,
-                                                                           bool is_default = false );
+                                                                           bool is_default = false, std::string name = "" );
     virtual std::shared_ptr< stream_profile_interface > add_pose_stream( rs2_pose_stream pose_stream,
-                                                                         bool is_default = false );
+                                                                         bool is_default = false, std::string name = "" );
 
     bool extend_to( rs2_extension extension_type, void ** ptr ) override;
 
@@ -52,6 +52,10 @@ public:
     void add_option( rs2_option option, option_range range, bool is_writable );
     void set_metadata( rs2_frame_metadata_value key, rs2_metadata_type value );
     void erase_metadata( rs2_frame_metadata_value key );
+
+    // options_container
+public:
+    std::vector< rs2_option > get_supported_options() const override;
 
 protected:
     frame_interface * allocate_new_frame( rs2_extension, stream_profile_interface *, frame_additional_data && );

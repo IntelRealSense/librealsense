@@ -10,7 +10,7 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 
 |Name | Language | Description | Experience Level | Technology |
 |---|---|---|---|---|
-|[Hello-RealSense](./hello-realsense)| C++ | Demonstrates the basics of connecting to a RealSense device and using depth data | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
+|[Hello-RealSense](./hello-realsense) | C++ | Demonstrates the basics of connecting to a RealSense device and using depth data | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[Distance](./C/distance) | C | Equivalent to `hello-realsense` but rewritten for C users | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)|
 |[Color](./C/color) | C | Demonstrate how to stream color data and prints some frame information | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)|
 |[Capture](./capture)| C++ | Shows how to synchronize and render multiple streams: left, right, depth and RGB streams | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)|
@@ -20,6 +20,7 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 |[Multicam](./multicam)| C++ | Present multiple cameras depth streams simultaneously, in separate windows | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[Face](../wrappers/dlib/face)| C++ & [Dlib](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/dlib) | Facial recognition with simple anti-spoofing | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)  |
 |[Face](../wrappers/openvino/face)| C++ & [OpenVINO](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/openvino) | Facial recognition with OpenVINO™ | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)  |
+|[On Chip Calibration](./on-chip-calib)| C++ | Demonstrates the basic flow of activating a RealSense device internal calibration | :star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[Depth](./C/depth) | C | Demonstrates how to stream depth data and prints a simple text-based representation of the depth image | :star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md)|
 |[Spatial Alignment](./align)| C++ | Introduces the concept of spatial stream alignment, using depth-color mapping | :star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
 |[Advanced Alignment](./align-advanced)| C++ | Show a simple method for dynamic background removal from video | :star::star: | [![Depth Sensing - Structured Light, Stereo and L500](https://img.shields.io/badge/-Depth-5bc3ff.svg)](./depth.md) |
@@ -56,3 +57,6 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 16. [realsenseOnCyber](https://github.com/mickeyouyou/realsenseOnCyber) Realsense module Based on Apollo Cyber RT
 17. [Raspberry Pi Handheld 3D Scanner](https://eleccelerator.com/pi-handheld-3d-scanner/) by [Frank Zhao](https://github.com/frank26080115)
 18. [Erwhi Hedgehog](https://gbr1.github.io/erwhi_hedgehog.html) by [Giovanni Bruno](https://github.com/gbr1) - Open-Source Hardware and Software design featuring Intel RealSense, UP-Squared and Intel Movidius technologies
+19. [Archery Tower Defence Game](https://github.com/saadisaadi1/Handshot-Tower-Defence) by [Saadi Saadi](https://github.com/saadisaadi1) and [Ali Haj](mailto:alihaj00@outlook.com) - This game uses RealSense camera to control in-game movements. The game was developed as a one semester students project for the Technion Institute of Technology
+20. [Real-Time Drowning Detection](https://github.com/talaSaba/intelRealsenseProject) by [Tala Saba](https://github.com/talaSaba) and [Raneen Assy](https://github.com/raneen28) - This project is designed to detect a potential drowning incident in real-time using a Intel RealSense camera. The game was developed as a one semester students project for the Technion Institute of Technology
+

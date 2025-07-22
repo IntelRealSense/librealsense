@@ -2,7 +2,7 @@
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 from rspy import log, test
 with test.remote.fork( nested_indent=None ) as remote:
@@ -15,9 +15,11 @@ with test.remote.fork( nested_indent=None ) as remote:
             participant.init( 123, 'server' )
 
         with test.closure( 'Create the server' ):
-            device_info = dds.message.device_info()
-            device_info.name = 'Options device'
-            device_info.topic_root = 'librs-options/device'
+            device_info = dds.message.device_info.from_json({
+                "name": "Options device",
+                "topic-root": "librs-options/device",
+                "product-line": "D400"
+            })
             s1p1 = dds.video_stream_profile( 9, dds.video_encoding.rgb, 10, 10 )
             s1profiles = [s1p1]
             s1 = dds.color_stream_server( 's1', 'sensor' )
@@ -26,10 +28,17 @@ with test.remote.fork( nested_indent=None ) as remote:
                 dds.option.from_json( ['Backlight Compensation', 0, 0, 1, 1, 0, 'Backlight custom description'] ),
                 dds.option.from_json( ['Boolean Option', False, False, 'Something'] ),
                 dds.option.from_json( ['Integer Option', 1, None, 'Something', ['optional']] ),
-                dds.option.from_json( ['Enum Option', 'First', ['First','Last','Everything'], 'Last', 'My'] )
+                dds.option.from_json( ['Enum Option', 'First', ['First','Last','Everything'], 'Last', 'My'] ),
+                dds.option.from_json( ['R/O Option', 'Value', 'Read-only string option'] ),
+                dds.option.from_json( ['Visual Preset', 'Default', ['Default','Preset-1','Preset-2'], 'Default', 'Should enable serialization'] )
                 ] )
             server = dds.device_server( participant, device_info.topic_root )
             server.init( [s1], [], {} )
+
+        with test.closure( 'Set up a handler to keep track of the change order' ):
+            def _on_set_option( server, option, value ):
+                print( option.get_name() )
+            server.on_set_option( _on_set_option )
 
         with test.closure( 'Broadcast the device', on_fail=test.ABORT ):
             server.broadcast( device_info )
@@ -40,21 +49,19 @@ with test.remote.fork( nested_indent=None ) as remote:
     ###############################################################################################################
     # The client is LibRS
     #
-    import pyrealsense2 as rs
+    from rspy import librs as rs
     if log.is_debug_on():
         rs.log_to_console( rs.log_severity.debug )
-    from dds import wait_for_devices
 
     with test.closure( 'Initialize librealsense context', on_fail=test.ABORT ):
         context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'client' }} )
-        only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any)
 
     with test.closure( 'Find the server', on_fail=test.ABORT ):
-        dev = wait_for_devices( context, only_sw_devices, n=1. )
+        dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
         for s in dev.query_sensors():
             break
         options = test.info( "supported options", s.get_supported_options() )
-        test.check_equal( len(options), 5 )  # 'Frames Queue Size' gets added to all sensors!!?!?!
+        test.check_equal( len(options), 7 )  # 'Frames Queue Size' gets added to all sensors!!?!?!
 
     with test.closure( 'Play with integer option' ):
         io = next( o for o in options if str(o) == 'Integer Option' )
@@ -95,8 +102,57 @@ with test.remote.fork( nested_indent=None ) as remote:
         s.set_option_value( eo, 'Last' )
         test.check_equal( s.get_option( eo ), 1. )
 
+    with test.closure( 'Play with read-only option' ):
+        ro = next( o for o in options if str(o) == 'R/O Option' )
+        test.check_throws( lambda:
+            s.get_option( ro ),
+            RuntimeError, 'use rs2_get_option_value to get string values' )
+        rv = s.get_option_value( ro )
+        test.check_equal( rv.type, rs.option_type.string )
+        test.check_equal( rv.value, 'Value' )
+        test.check( s.is_option_read_only( rv.id ) )
+        rr = s.get_option_range( rv.id )
+        test.check_equal( rr.min, 0. )
+        test.check_equal( rr.max, 0. )
+        test.check_equal( rr.default, 0. )
+        test.check_equal( rr.step, 0. )
+        test.check_throws( lambda:
+            s.set_option( ro, 2. ),
+            RuntimeError, 'use rs2_set_option_value to set string values' )
+        test.check_throws( lambda:
+            s.set_option_value( ro, 'Blah' ),
+            RuntimeError, 'option is read-only: R/O Option' )
+
+    with test.closure( 'Check serialization through serialized_device' ):
+        sdev = rs.serializable_device( dev )
+        test.check( sdev, on_fail=test.RAISE )
+        import json
+        j = json.loads( sdev.serialize_json() )
+        test.info( "serialize_json()", j )
+        params = j.get( 'parameters', [] )
+        test.check_equal( len( params ), 5 )  # Without FRAMES_QUEUE_SIZE
+        test.check_equal( params.get( 'sensor/Boolean Option' ), True )
+
+        # Confirm previous value was set
+        bv = s.get_option_value( bo )
+        test.check_equal( bv.type, rs.option_type.boolean )
+        test.check_equal( bv.value, True )
+        test.check_equal( s.get_option( bo ), 1. )
+
+        # Change using load_json() and verify
+        params.update({ 'sensor/Boolean Option': False })
+        log.d( f'updated json: {j}' )
+        remote.capture_stdout()
+        sdev.load_json( json.dumps( j ) )
+        rv = remote.get_stdout()
+        test.check_equal( s.get_option( bo ), 0. )
+        test.info( "option change order", rv )
+        test.check_equal( len(rv), 5 )              # all options should have been changed
+        test.check_equal( rv[0], 'Visual Preset' )  # but Visual Preset should always update first
+        del sdev
+
     with test.closure( 'All done' ):
-        dev = None
-        context = None
+        del dev
+        del context
 
 test.print_results()

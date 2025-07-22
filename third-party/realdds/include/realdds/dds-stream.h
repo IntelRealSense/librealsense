@@ -38,6 +38,8 @@ protected:
     dds_stream( std::string const & stream_name, std::string const & sensor_name );
 
 public:
+    ~dds_stream();
+
     bool is_open() const override { return !! _reader; }
     virtual void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) = 0;
     virtual void close();
@@ -65,10 +67,10 @@ public:
 
     void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) override;
 
-    typedef std::function< void( topics::image_msg && f ) > on_data_available_callback;
+    typedef std::function< void( topics::image_msg &&, dds_sample && ) > on_data_available_callback;
     void on_data_available( on_data_available_callback cb ) { _on_data_available = cb; }
 
-    void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
+    void set_intrinsics( std::set< video_intrinsics > intrinsics ) { _intrinsics = std::move( intrinsics ); }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
 
 protected:
@@ -130,7 +132,7 @@ public:
 
     void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) override;
 
-    typedef std::function< void( topics::imu_msg && f ) > on_data_available_callback;
+    typedef std::function< void( topics::imu_msg &&, dds_sample && ) > on_data_available_callback;
     void on_data_available( on_data_available_callback cb ) { _on_data_available = cb; }
 
     void set_accel_intrinsics( const motion_intrinsics & intrinsics ) { _accel_intrinsics = intrinsics; }

@@ -5,6 +5,7 @@
 #include "types.h"
 #include "core/extension.h"
 #include <vector>
+#include <core/debug.h>
 
 
 namespace librealsense
@@ -25,6 +26,16 @@ namespace librealsense
             float* const health, int health_size, rs2_update_progress_callback_sptr progress_callback) = 0;
         virtual float calculate_target_z(rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
             float target_w, float target_h, rs2_update_progress_callback_sptr progress_callback) = 0;
+        virtual std::string get_calibration_config() const = 0;
+        virtual void set_calibration_config(const std::string& calibration_config_json_str) const = 0;
+
+        void add_depth_write_observer( std::function< void() > callback ) { _depth_write_callbacks.push_back( callback ); }
+        void add_color_write_observer( std::function< void() > callback ) { _color_write_callbacks.push_back( callback ); }
+
+    protected:
+        std::vector< std::function< void() > > _depth_write_callbacks; // Notify observers when depth tables are written
+        std::vector< std::function< void() > > _color_write_callbacks; // Notify observers when color table is written
+
     };
     MAP_EXTENSION(RS2_EXTENSION_AUTO_CALIBRATED_DEVICE, auto_calibrated_interface);
 }

@@ -4,8 +4,8 @@ target_sources(${LRS_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/fw-log-data.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fw-log-data.h"
-        "${CMAKE_CURRENT_LIST_DIR}/fw-logs-formating-options.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/fw-logs-formating-options.h"
+        "${CMAKE_CURRENT_LIST_DIR}/fw-logs-formatting-options.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/fw-logs-formatting-options.h"
         "${CMAKE_CURRENT_LIST_DIR}/fw-logs-parser.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fw-logs-parser.h"
         "${CMAKE_CURRENT_LIST_DIR}/fw-logs-xml-helper.cpp"

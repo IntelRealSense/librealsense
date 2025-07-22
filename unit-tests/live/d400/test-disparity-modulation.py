@@ -25,7 +25,7 @@ def test_amp_factor(am_device, input_factor_values: list):
     test.check_float_lists(input_factor_values, output_factor_values)
 
 
-device = test.find_first_device_or_exit()
+device, _ = test.find_first_device_or_exit()
 advance_mode_device = rs.rs400_advanced_mode(device)
 
 with test.closure('Verify set/get of Disparity modulation'):

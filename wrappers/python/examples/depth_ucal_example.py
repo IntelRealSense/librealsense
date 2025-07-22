@@ -26,14 +26,14 @@ def on_chip_calibration_json(occ_json_file, host_assistance, interactive_mode):
                     '"calib type": 0,\n'+\
                     '"host assistance": ' + str(int(host_assistance)) + ',\n'+\
                     '"keep new value after sucessful scan": 0,\n'+\
-                    '"fl data sampling": 1,\n'+\
+                    '"fl data sampling": 0,\n'+\
                     '"adjust both sides": 0,\n'+\
                     '"fl scan location": 0,\n'+\
                     '"fy scan direction": 0,\n'+\
                     '"white wall mode": 0,\n'+\
-                    '"speed": 3,\n'+\
+                    '"speed": 2,\n'+\
                     '"scan parameter": 0,\n'+\
-                    '"apply preset": 1,\n'+\
+                    '"apply preset": 0,\n'+\
                     '"scan only": ' + str(int(host_assistance)) + ',\n'+\
                     '"interactive scan": ' + str(int(interactive_mode)) + ',\n'+\
                     '"resize factor": 1\n'+\
@@ -66,7 +66,20 @@ def on_chip_calib_cb(progress):
     if (pp == 100):
         print()
 
+def initialize_pipe():
+    global config, pipeline, pipeline_wrapper, pipeline_profile, device, auto_calibrated_device
+    config = rs.config()
+    pipeline = rs.pipeline()
+    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+    pipeline_profile = config.resolve(pipeline_wrapper)
+    device = pipeline_profile.get_device()
+    auto_calibrated_device = rs.auto_calibrated_device(device)
+    if not auto_calibrated_device:
+        print("The connected device does not support auto calibration")
+        return
+
 def main(argv):
+    global config, pipeline, pipeline_wrapper, pipeline_profile, device, auto_calibrated_device
     if '--help' in sys.argv or '-h' in sys.argv:
         print('USAGE:')
         print('depth_auto_calibration_example.py [--occ <json_file_name>] [--tare <json_file_name>]')
@@ -91,25 +104,13 @@ def main(argv):
     occ_json_file = params.get('--occ', None)
     tare_json_file = params.get('--tare', None)
 
-    pipeline = rs.pipeline()
-    config = rs.config()
-
-    # Get device product line for setting a supporting resolution
-    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
-    pipeline_profile = config.resolve(pipeline_wrapper)
-    device = pipeline_profile.get_device()
-
-    auto_calibrated_device = rs.auto_calibrated_device(device)
-
-    if not auto_calibrated_device:
-        print("The connected device does not support auto calibration")
-        return
+    initialize_pipe()
 
     interactive_mode = False
 
     while True:
         try:
-            print ("interactive_mode: ", interactive_mode)
+            print ("\ninteractive_mode: ", interactive_mode)
             operation_str = "Please select what the operation you want to do\n" + \
                             "c - on chip calibration\n" + \
                             "C - on chip calibration - host assist\n" + \
@@ -117,7 +118,8 @@ def main(argv):
                             "T - tare calibration - host assist\n" + \
                             "g - get the active calibration\n" + \
                             "w - write new calibration\n" + \
-                            "e - exit\n"
+                            "a - toggle Advanced Mode on/off\n" + \
+                            "e - exit\n\n"
             operation = input(operation_str)
 
             config = rs.config()
@@ -127,6 +129,7 @@ def main(argv):
                 config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
 
             conf = pipeline.start(config)
+            pipeline.wait_for_frames() # Verify streaming started before calling calibration methods
             calib_dev = rs.auto_calibrated_device(conf.get_device())
 
             # prepare device
@@ -144,7 +147,7 @@ def main(argv):
             if operation.lower() == 'c':
                 print("Starting on chip calibration")
                 occ_json = on_chip_calibration_json(occ_json_file, operation == 'C', interactive_mode)
-                new_calib, health = calib_dev.run_on_chip_calibration(occ_json, on_chip_calib_cb, 5000)
+                new_calib, health = calib_dev.run_on_chip_calibration(occ_json, on_chip_calib_cb, 9000)
                 calib_done = len(new_calib) > 0
                 while (not calib_done):
                     frame_set = pipeline.wait_for_frames()
@@ -188,13 +191,29 @@ def main(argv):
                 print("Writing the new calibration")
                 calib_dev.set_calibration_table(new_calib)
                 calib_dev.write_calibration()
+                
+            if operation == 'a':
+                am_device = rs.rs400_advanced_mode(device)
+                if am_device:
+                    enabled_before_toggle = am_device.is_enabled()
+                    am_device.toggle_advanced_mode(not enabled_before_toggle)
+                    # Toggling Advanced Mode resets the camera, needs to re-query devices
+                    time.sleep(3)
+                    initialize_pipe()                    
+                    
+                    state_str = "enabled"
+                    if enabled_before_toggle:
+                        state_str = "disabled"
+                    print('"Advanced Mode" is now', state_str)
+                else:
+                    print('Camera does not support "Advanced Mode". Some calibrations may not run properly (depends on calibration parameters/type).')
 
             if operation == 'e':
                 return
 
             print("Done\n")
         except Exception as e:
-            pipeline.stop()
+            initialize_pipe()
             print(e)
         except:
             print("A different Error")

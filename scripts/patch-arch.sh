@@ -47,7 +47,7 @@ echo "RealSense patch..."
 patch -p1 < ../../realsense-camera-formats.patch
 
 # Apply our RealSense specific metadata patch
-patch -p1 < ../../realsense-metadata-bionic-5.patch
+patch -p1 < ../../realsense-metadata-focal-master.patch
 
 # Prepare to compile modules
 

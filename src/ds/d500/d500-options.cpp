@@ -50,4 +50,50 @@ namespace librealsense
 
         return temperature;
     }
+    temperature_xu_option::temperature_xu_option(const std::weak_ptr<uvc_sensor>& ep, 
+        platform::extension_unit xu, uint8_t id, 
+        std::string description)
+        : uvc_xu_option<int16_t>(ep, xu, id, description, false,
+            // defining the parsing modifier, to be used on the calls for query and get_range methods
+            [](const int16_t read_value) {
+                return static_cast<float>(read_value) / 10.f;
+            }) {}
+
+    float temperature_xu_option::query() const
+    {
+        return uvc_xu_option<int16_t>::query();
+    }
+
+    void temperature_xu_option::set(float value)
+    {
+        readonly_option::set(value);
+    }
+
+    d500_thermal_compensation_option::d500_thermal_compensation_option( std::shared_ptr< hw_monitor > hwm )
+        : _hwm( hwm )
+    {
+    }
+
+    void d500_thermal_compensation_option::set( float value )
+    {
+        if( auto hwm = _hwm.lock() )
+        {
+            int on_off = value > 0 ? 1 : 0; // 1 toggle on, 0 off
+            int param1 = 5; // received from HKR team, probably means toggle
+            try
+            {
+                command cmd( ds::fw_cmd::HKR_THERMAL_COMPENSATION, param1, on_off );
+                hwm->send( cmd );
+                _value = value; // Currently no way to query actual value, save set value.
+            }
+            catch( ... )
+            {
+                throw wrong_api_call_sequence_exception( "hw monitor command for setting thermal compensation failed" );
+            }
+        }
+    }
+
+    power_line_freq_option::power_line_freq_option(const std::weak_ptr< uvc_sensor >& ep, rs2_option id,
+        const std::map< float, std::string >& description_per_value) :
+        uvc_pu_option(ep, id, description_per_value) {}
 }

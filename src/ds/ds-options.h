@@ -244,7 +244,7 @@ namespace librealsense
     class alternating_emitter_option : public option
     {
     public:
-        alternating_emitter_option(hw_monitor& hwm, bool is_fw_version_using_id);
+        alternating_emitter_option(hw_monitor& hwm, bool is_fw_version_using_id, hwmon_response_type no_data_to_return_opcode);
         virtual ~alternating_emitter_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -261,6 +261,7 @@ namespace librealsense
         rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
         bool _is_fw_version_using_id;
+        hwmon_response_type _no_data_to_return_opcode;
     };
 
     class emitter_always_on_option : public option
@@ -339,4 +340,32 @@ namespace librealsense
         std::shared_ptr<option> _uvc_option;
         std::shared_ptr<option> _hdr_option;
     };
-}
+    
+    class ds_thermal_monitor;
+    class thermal_compensation : public option
+    {
+    public:
+        thermal_compensation( std::shared_ptr< ds_thermal_monitor > monitor, std::shared_ptr< option > toggle );
+
+        void set( float value ) override;
+        float query() const override;
+
+        option_range get_range() const override { return option_range{ 0, 1, 1, 0 }; }
+        bool is_enabled() const override { return true; }
+
+        const char * get_description() const override;
+        const char * get_value_description( float value ) const override;
+        void create_snapshot( std::shared_ptr< option > & snapshot ) const override;
+
+        void enable_recording( std::function< void( const option & ) > record_action ) override
+        {
+            _recording_function = record_action;
+        }
+
+    private:
+        std::shared_ptr< ds_thermal_monitor > _thermal_monitor;
+        std::shared_ptr< option > _thermal_toggle;
+
+        std::function< void( const option & ) > _recording_function = []( const option & ) {};
+    };
+} // namespace librealsense

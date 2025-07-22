@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 from argparse import ArgumentParser
 from argparse import ArgumentTypeError as ArgumentError  # NOTE: only ArgumentTypeError passes along the original error string
@@ -42,7 +42,18 @@ import sys
 
 dds.debug( args.debug )
 
-settings = {}
+max_sample_size = 1470                     # assuming ~1500 max packet size at destination IP stack
+flow_period_bytes = 256 * max_sample_size  # 256=quarter of number of buffers available at destination
+flow_period_ms = 250                       # how often to send
+settings = {
+    'flow-controllers': {
+        'blob': {
+            'max-bytes-per-period': flow_period_bytes,
+            'period-ms': flow_period_ms
+            }
+        },
+    'max-out-message-bytes': max_sample_size
+    }
 
 participant = dds.participant()
 participant.init( dds.load_rs_settings( settings ), args.domain )
@@ -54,28 +65,29 @@ if args.blob:
         e( '--blob requires --topic' )
         sys.exit( 1 )
     topic_path = args.topic
+    import os
     if not os.path.isfile( args.blob ):
         e( '--blob <file> does not exist:', args.blob )
         sys.exit( 1 )
     writer = dds.topic_writer( dds.message.blob.create_topic( participant, topic_path ))
-    writer.run( dds.topic_writer.qos() )  # reliable
-    # Let the client pick up on the new entity - if we send it too quickly, they won't see it before we disappear...
-    time.sleep( 1 )
+    wqos = dds.topic_writer.qos()  # reliable
+    writer.override_qos_from_json( wqos, { 'publish-mode': { 'flow-control': 'blob' } } )
+    writer.run( wqos )
+    if not writer.wait_for_readers( dds.time( 3. ) ):
+        e( 'Timeout waiting for readers' )
+        sys.exit( 1 )
     with open( args.blob, mode='rb' ) as file: # b is important -> binary
         blob = dds.message.blob( file.read() )
-    if not writer.has_readers():
-        e( 'No readers exist on topic:', topic_path )
-        sys.exit( 1 )
     i( f'Writing {blob} on {topic_path} ...' )
     start = dds.now()
     blob.write_to( writer )
-    if args.ack:
-        if not writer.wait_for_acks( dds.time( 5. ) ):  # seconds
-            e( 'Timeout waiting for ack' )
-            sys.exit( 1 )
-        i( f'Acknowledged ({dds.timestr( dds.now(), start )})' )
-    else:
-        i( f'Done' )
+    # We must wait for acks, since we use a flow controller and write_to() will return before we've
+    # actually finished the send
+    seconds_to_send = blob.size() / flow_period_bytes / (1000. / flow_period_ms)
+    if not writer.wait_for_acks( dds.time( 5. + seconds_to_send ) ):
+        e( 'Timeout waiting for ack' )
+        sys.exit( 1 )
+    i( f'Acknowledged' )
 
 elif args.device:
     info = dds.message.device_info()
@@ -91,8 +103,9 @@ elif args.device:
 
     wait_for_reply = True
     i( f'Sending {message} on {info.topic_root}' )
+    start = dds.now()
     reply = device.send_control( message, wait_for_reply )
-    i( f'Got back {reply}' )
+    i( f'{reply}' )
 
     if args.debug or not wait_for_reply:
         # Sleep a bit, to allow us to catch and display any replies
@@ -106,10 +119,8 @@ else:
     topic_path = args.topic
     writer = dds.topic_writer( dds.message.flexible.create_topic( participant, topic_path ))
     writer.run( dds.topic_writer.qos() )
-    # Let the client pick up on the new entity - if we send it too quickly, they won't see it before we disappear...
-    time.sleep( 1 )
-    if not writer.has_readers():
-        e( 'No readers exist on topic:', topic_path )
+    if not writer.wait_for_readers( dds.time( 2. ) ):
+        e( 'Timeout waiting for readers' )
         sys.exit( 1 )
     start = dds.now()
     dds.message.flexible( message ).write_to( writer )
@@ -118,6 +129,10 @@ else:
         if not writer.wait_for_acks( dds.time( 5. ) ):  # seconds
             e( 'Timeout waiting for ack' )
             sys.exit( 1 )
-        i( f'Acknowledged ({dds.timestr( dds.now(), start )})' )
+        i( f'Acknowledged' )
+    # NOTE: if we don't wait for acks there's no guarrantee that the message is received; even if
+    # all the packets are sent, they may need resending (reliable) but if we exit they won't be...
+
+i( f'After {dds.timestr( dds.now(), start )}' )
 
 

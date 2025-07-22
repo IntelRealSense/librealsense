@@ -1,6 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-cmake_minimum_required(VERSION 3.1.3)
+# Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
+cmake_minimum_required(VERSION 3.8)
 
 project(fw)
 
@@ -14,7 +14,7 @@ set(REALSENSE_FIRMWARE_URL "https://librealsense.intel.com" CACHE STRING
 string(REGEX MATCH "D4XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(D4XX_FW_VERSION ${CMAKE_MATCH_1})
 #message(STATUS "D4XX_FW_VERSION: ${D4XX_FW_VERSION}")
-set(D4XX_FW_SHA1 51e37fd01132c500bb4e4af408a41f42391289a5)
+set(D4XX_FW_SHA1 190cddd478809a0994ad742ec55cafd913ca36af)
 set(D4XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/RS4xx/FW")
 
 add_library(${PROJECT_NAME} STATIC empty.c)

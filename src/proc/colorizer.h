@@ -6,6 +6,7 @@
 
 #include <map>
 #include <vector>
+#include <set>
 
 namespace rs2
 {
@@ -169,5 +170,7 @@ namespace librealsense {
 
         float   _depth_units = 0.f;
         float   _d2d_convert_factor = 0.f;
+
+        const std::set<rs2_format> _supported_formats = {RS2_FORMAT_Z16, RS2_FORMAT_DISPARITY32};
     };
 }

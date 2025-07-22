@@ -81,7 +81,7 @@ public:
     void set_option_value( const std::shared_ptr< dds_option > & option, rsutils::json new_value );
     rsutils::json query_option_value( const std::shared_ptr< dds_option > & option );
 
-    void send_control( topics::flexible_msg &&, rsutils::json * reply = nullptr );
+    void send_control( rsutils::json const &, rsutils::json * reply = nullptr );
 
     bool has_extrinsics() const;
     std::shared_ptr< extrinsics > get_extrinsics( std::string const & from, std::string const & to ) const;
@@ -98,6 +98,9 @@ public:
 
     typedef std::function< void( std::string const & id, rsutils::json const & ) > on_notification_callback;
     rsutils::subscription on_notification( on_notification_callback && );
+
+    typedef std::function< void( std::shared_ptr< const dds_stream > const & ) > on_calibration_changed_callback;
+    rsutils::subscription on_calibration_changed( on_calibration_changed_callback && );
 
     // dds_discovery_sink
 protected:

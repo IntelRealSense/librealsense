@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 /** \brief Category of the librealsense notification. */
 typedef enum rs2_notification_category{
     RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT,               /**< Frames didn't arrived within 5 seconds */
@@ -131,6 +133,7 @@ typedef enum rs2_log_severity {
 const char* rs2_log_severity_to_string(rs2_log_severity info);
 
 /** \brief Specifies advanced interfaces (capabilities) objects may implement. */
+// To add a new extension, append it at the end of this enum to preserve ordering.
 typedef enum rs2_extension
 {
     RS2_EXTENSION_UNKNOWN,
@@ -189,6 +192,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR,
     RS2_EXTENSION_DEBUG_STREAM_SENSOR,
     RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE,
+    RS2_EXTENSION_ROTATION_FILTER,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
@@ -251,6 +255,7 @@ typedef struct rs2_sensor_list rs2_sensor_list;
 typedef struct rs2_sensor rs2_sensor;
 typedef struct rs2_options rs2_options;
 typedef struct rs2_options_list rs2_options_list;
+typedef struct rs2_streams_list rs2_streams_list;
 typedef struct rs2_options_changed_callback rs2_options_changed_callback;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_notification rs2_notification;
@@ -277,6 +282,7 @@ const char* rs2_get_failed_function            (const rs2_error* error);
 const char* rs2_get_failed_args                (const rs2_error* error);
 const char* rs2_get_error_message              (const rs2_error* error);
 void        rs2_free_error                     (rs2_error* error);
+
 
 #ifdef __cplusplus
 }

@@ -224,6 +224,17 @@ bool type_from_value( std::string & type, json const & j )
         if( ! type.empty() )
             return true;
         break;
+
+    case json::value_t::array:
+        if( j.size() == 4 && j[0].is_number_integer() && j[1].is_number_integer() && j[2].is_number_integer()
+            && j[3].is_number_integer() )
+        {
+            if( type.empty() )
+                return type.assign( "rect", 4 ), true;
+            if( type.length() == 4 && type == "rect" )
+                return true;
+        }
+        break;
     }
     return false;
 }
@@ -261,6 +272,8 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
             continue;
         case 4:
             if( 0 == it->compare( "IPv4" ) )
+                break;
+            if( 0 == it->compare( "rect" ) )
                 break;
             if( 5 == size && 0 == it->compare( "enum" ) )
                 break;
@@ -317,6 +330,8 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
         return std::make_shared< dds_ip_option >();
     if( type == "enum" )
         return std::make_shared< dds_enum_option >();
+    if( type == "rect" )
+        return std::make_shared< dds_rect_option >();
     return {};
 }
 
@@ -374,7 +389,8 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
         break;
 
     case 5:  // [name,value,[choices],default,description]
-        std::dynamic_pointer_cast< dds_enum_option >( option )->init_choices( j[2] );
+        if( auto e = std::dynamic_pointer_cast< dds_enum_option >( option ) )
+            e->init_choices( j[2] );
         option->init_default_value( j[3] );
         break;
 
@@ -570,7 +586,7 @@ json dds_enum_option::to_json() const
 }
 
 
-/*static*/ rsutils::string::ip_address dds_ip_option::check_ip( json const & value )
+/*static*/ dds_ip_option::ip_address dds_ip_option::check_ip( json const & value )
 {
     ip_address ip( value.string_ref() );
     if( ip.is_valid() )
@@ -590,6 +606,29 @@ json dds_ip_option::props_to_json() const
     json j = super::props_to_json();
     j += "IPv4";
     return j;
+}
+
+
+rsutils::json dds_rect_option::type::to_json() const
+{
+    return json::array( { x1, y1, x2, y2 } );
+}
+
+
+/*static*/ dds_rect_option::type dds_rect_option::check_rect( json const & value )
+{
+    if( ! value.is_array() || value.size() != 4 )
+        DDS_THROW( runtime_error, "not [x1,y1,x2,y2]: " << value );
+    if( ! value[0].is_number_integer() || ! value[1].is_number_integer() || ! value[2].is_number_integer()
+        || ! value[3].is_number_integer() )
+        DDS_THROW( runtime_error, "non-integers found: " << value );
+    return type::from_json( value );
+}
+
+
+void dds_rect_option::check_type( json & value ) const
+{
+    check_rect( value );
 }
 
 

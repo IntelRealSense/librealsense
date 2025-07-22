@@ -1,11 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #include "proc/formats-converter.h"
 #include "stream.h"
 #include <src/composite-frame.h>
 #include <src/core/frame-callback.h>
 
+#include <rsutils/string/from.h>
 #include <ostream>
 
 namespace librealsense
@@ -73,15 +74,18 @@ std::ostream & operator<<( std::ostream & os, const std::shared_ptr< stream_prof
 {
     if( profile )
     {
-        os << "(" << rs2_stream_to_string( profile->get_stream_type() ) << ")";
-        os << " " << rs2_format_to_string( profile->get_format() );
-        os << " " << profile->get_stream_index();
+        os << rs2_stream_to_string( profile->get_stream_type() );
+        if( auto stream_index = profile->get_stream_index() )
+            os << " " << stream_index;
         if( auto vsp = As< video_stream_profile, stream_profile_interface >( profile ) )
         {
             os << " " << vsp->get_width();
             os << "x" << vsp->get_height();
         }
-        os << " @ " << profile->get_framerate();
+        os << " " << rs2_format_to_string( profile->get_format() );
+        os << " @ " << profile->get_framerate() << " Hz";
+        if( auto bsp = std::dynamic_pointer_cast< backend_stream_profile >( profile ) )
+            bsp->to_stream( os );
     }
 
     return os;
@@ -97,7 +101,7 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
 
     for( auto & raw_profile : raw_profiles )
     {
-        LOG_DEBUG( "Raw profile: " << raw_profile );
+        //LOG_DEBUG( "Raw profile: " << raw_profile );
         for( auto & pbf : _pb_factories )
         {
             const auto & sources = pbf->get_source_info();
@@ -119,6 +123,11 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                         cloned_profile->set_format( target.format );
                         cloned_profile->set_stream_index( target.index );
                         cloned_profile->set_stream_type( target.stream );
+                        // UVC raw profile name is not set, default name can be created based on type and index, but raw UVC index is always 0.
+                        // Use temporary variable to generate name without changing original raw_profile object.
+                        auto && tmp_raw_profile = std::dynamic_pointer_cast< stream_profile_base >( raw_profile ).get();
+                        tmp_raw_profile->set_stream_index( target.index );
+                        cloned_profile->set_name( tmp_raw_profile->get_name() );
 
                         auto cloned_vsp = As< video_stream_profile, stream_profile_interface >( cloned_profile );
                         if( cloned_vsp )
@@ -129,7 +138,7 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                             target.resolution_transform( width, height );
                             cloned_vsp->set_dims( width, height );
                         }
-                        LOG_DEBUG( "          -> " << cloned_profile );
+                        //LOG_DEBUG( "          -> " << cloned_profile );
 
                         // Cache pbf supported profiles for efficiency in find_pbf_matching_most_profiles
                         _pbf_supported_profiles[pbf.get()].push_back( cloned_profile );
@@ -222,6 +231,7 @@ bool formats_converter::is_profile_in_list( const std::shared_ptr< stream_profil
 // Not passing const & because we modify from_profiles, would otherwise need to create a copy
 void formats_converter::prepare_to_convert( stream_profiles from_profiles )
 {
+    LOG_DEBUG( "Requested: " << from_profiles );
     clear_active_cache();
 
     // Add missing data to target profiles (was not available during get_all_possible_target_profiles)
@@ -264,9 +274,21 @@ void formats_converter::prepare_to_convert( stream_profiles from_profiles )
             }
         }
         const stream_profiles & print_current_resolved_reqs = { current_resolved_reqs.begin(), current_resolved_reqs.end() };
-        LOG_INFO( "Request: " << from_profiles_of_best_match << "\nResolved to: " << print_current_resolved_reqs );
+        LOG_DEBUG( "Resolved to: " << print_current_resolved_reqs );
     }
 }
+
+
+stream_profiles const & formats_converter::get_source_profiles_from_target(
+    std::shared_ptr< stream_profile_interface > const & target_profile ) const
+{
+    auto it = _target_profiles_to_raw_profiles.find( to_profile( target_profile.get() ) );
+    if( it == _target_profiles_to_raw_profiles.end() )
+        throw invalid_value_exception( rsutils::string::from()
+                                       << "target profile [" << target_profile << "] not found" );
+    return it->second;
+}
+
 
 void formats_converter::update_target_profiles_data( const stream_profiles & from_profiles )
 {

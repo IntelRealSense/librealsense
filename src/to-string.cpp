@@ -313,6 +313,7 @@ const char * get_string( rs2_extension value )
     CASE( MAX_USABLE_RANGE_SENSOR )
     CASE( DEBUG_STREAM_SENSOR )
     CASE( CALIBRATION_CHANGE_DEVICE )
+    CASE( ROTATION_FILTER )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -459,6 +460,8 @@ std::string const & get_string_( rs2_option value )
         CASE( OHM_TEMPERATURE )
         CASE( SOC_PVT_TEMPERATURE )
         CASE( GYRO_SENSITIVITY )
+        CASE( ROTATION )
+        arr[RS2_OPTION_REGION_OF_INTEREST] = "Region of Interest";
 #undef CASE
         return arr;
     }();
@@ -588,6 +591,7 @@ const char * get_string( rs2_camera_info value )
     CASE( FIRMWARE_UPDATE_ID )
     CASE( IP_ADDRESS )
     CASE( DFU_DEVICE_PATH )
+    CASE( CONNECTION_TYPE )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

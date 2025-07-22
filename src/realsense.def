@@ -76,6 +76,7 @@ EXPORTS
     rs2_get_frame_stride_in_bytes
     rs2_get_frame_bits_per_pixel
     rs2_get_frame_stream_profile
+    rs2_get_stream_profile_name
     rs2_get_frame_vertices
     rs2_get_frame_texture_coordinates
     rs2_get_frame_points_count
@@ -211,6 +212,7 @@ EXPORTS
     rs2_create_threshold
     rs2_create_units_transform
     rs2_create_decimation_filter_block
+    rs2_create_rotation_filter_block
     rs2_create_temporal_filter_block
     rs2_create_spatial_filter_block
     rs2_create_hole_filling_filter_block
@@ -306,6 +308,7 @@ EXPORTS
     rs2_pipeline_get_active_profile
     rs2_pipeline_profile_get_device
     rs2_pipeline_profile_get_streams
+    rs2_pipeline_set_device
     rs2_delete_pipeline_profile
 
     rs2_create_config
@@ -398,6 +401,8 @@ EXPORTS
     rs2_get_calibration_table
     rs2_set_calibration_table
 
+    rs2_start_collecting_fw_logs
+    rs2_stop_collecting_fw_logs
     rs2_create_fw_log_message
     rs2_delete_fw_log_message
     rs2_get_number_of_fw_logs
@@ -414,6 +419,7 @@ EXPORTS
     rs2_get_fw_log_parsed_message
     rs2_get_fw_log_parsed_file_name
     rs2_get_fw_log_parsed_thread_name
+    rs2_get_fw_log_parsed_module_name
     rs2_get_fw_log_parsed_severity
     rs2_get_fw_log_parsed_line
     rs2_get_fw_log_parsed_timestamp
@@ -432,3 +438,6 @@ EXPORTS
     rs2_transform_point_to_point
     rs2_fov
     rs2_project_color_pixel_to_depth_pixel
+    rs2_get_calibration_config
+    rs2_set_calibration_config
+    rs2_hw_monitor_get_opcode_string

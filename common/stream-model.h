@@ -8,6 +8,7 @@
 #include <imgui.h>
 #include "reflectivity/reflectivity.h"
 #include <rsutils/number/stabilized-value.h>
+#include <graph-model.h>
 
 namespace rs2
 {
@@ -43,7 +44,13 @@ namespace rs2
         bool is_stream_alive();
         void show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer);
         void show_stream_header(ImFont* font, const rect& stream_rect, viewer_model& viewer);
-        void show_stream_imu(ImFont* font, const rect& stream_rect, const rs2_vector& axis, const mouse_info& mouse);
+        float show_stream_imu( ImFont * font,
+                               const rect & stream_rect,
+                               const rs2_vector & axis,
+                               const mouse_info & mouse,
+                               char const * units,
+                               char const * title = nullptr,
+                               float y_offset = 0.f );
         void show_stream_pose(ImFont* font, const rect& stream_rect, const rs2_pose& pose_data,
             rs2_stream stream_type, bool fullScreen, float y_offset, viewer_model& viewer);
 
@@ -98,6 +105,10 @@ namespace rs2
         bool show_map_ruler = true;
         bool show_metadata = false;
 
+        std::shared_ptr<graph_model> graph;
+        bool show_graph = false;
+        bool graph_initialized = false;
+
         animated<float> _info_height{ 0.f };
         int _prev_mouse_pos_x = 0;
         int _prev_mouse_pos_y = 0;
@@ -108,6 +119,7 @@ namespace rs2
 
         std::string format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const;
         bool should_show_in_hex(rs2_frame_metadata_value& md_val) const;
+        void create_graph(rs2_stream stream_type);
     };
 
     

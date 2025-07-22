@@ -106,6 +106,7 @@ namespace librealsense
         zoom_factor_attribute           = (1u << 8),
         scene_mode_attribute            = (1u << 9),
         sensor_framerate_attribute      = (1u << 10),
+        hw_timestamp_attribute          = (1u << 11)
     };
 
     /**\brief md_depth_control_attributes - bit mask to find active attributes,
@@ -384,7 +385,7 @@ namespace librealsense
     {
         md_header   header;
         uint32_t    flags;
-        uint32_t    reserved;
+        uint32_t    hw_timestamp;
         uint64_t    exposure_time;
         uint64_t    exposure_compensation_flags;
         int32_t     exposure_compensation_value;

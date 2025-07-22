@@ -4,7 +4,7 @@
 #ifndef __RS_CONVERTER_CONVERTER_H
 #define __RS_CONVERTER_CONVERTER_H
 
-#include <unordered_map>
+#include <map>
 #include <unordered_set>
 #include <thread>
 #include <string>
@@ -26,10 +26,10 @@ namespace rs2 {
             protected:
                 std::thread _worker;
                 std::vector<std::thread> _subWorkers;
-                std::unordered_map<int, std::unordered_set<frame_number_t>> _framesMap;
+                std::map<std::pair<rs2_stream, int>, std::unordered_set<frame_number_t>> _framesMap;
 
             protected:
-                bool frames_map_get_and_set(rs2_stream streamType, frame_number_t frameNumber);
+                bool frames_map_get_and_set(rs2_stream streamType, int index, frame_number_t frameNumber);
                 void wait_sub_workers();
 
                 template <typename F> void start_worker(const F& f)

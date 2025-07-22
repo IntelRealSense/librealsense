@@ -87,16 +87,19 @@ dds_topic_writer::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind rel
 }
 
 
-void dds_topic_writer::qos::override_from_json( rsutils::json const & qos_settings )
+void dds_topic_writer::override_qos_from_json( qos & wqos, rsutils::json const & qos_settings )
 {
     // Default values should be set before we're called:
     // All we do here is override those - if specified!
-    override_reliability_qos_from_json( reliability(), qos_settings.nested( "reliability" ) );
-    override_durability_qos_from_json( durability(), qos_settings.nested( "durability" ) );
-    override_history_qos_from_json( history(), qos_settings.nested( "history" ) );
-    override_liveliness_qos_from_json( liveliness(), qos_settings.nested( "liveliness" ) );
-    override_data_sharing_qos_from_json( data_sharing(), qos_settings.nested( "data-sharing" ) );
-    override_endpoint_qos_from_json( endpoint(), qos_settings.nested( "endpoint" ) );
+    override_reliability_qos_from_json( wqos.reliability(), qos_settings.nested( "reliability" ) );
+    if( wqos.reliability().kind == eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS )
+        qos_settings.nested( "heartbeat-period" ).get_ex( wqos.reliable_writer_qos().times.heartbeatPeriod );
+    override_durability_qos_from_json( wqos.durability(), qos_settings.nested( "durability" ) );
+    override_history_qos_from_json( wqos.history(), qos_settings.nested( "history" ) );
+    override_liveliness_qos_from_json( wqos.liveliness(), qos_settings.nested( "liveliness" ) );
+    override_data_sharing_qos_from_json( wqos.data_sharing(), qos_settings.nested( "data-sharing" ) );
+    override_endpoint_qos_from_json( wqos.endpoint(), qos_settings.nested( "endpoint" ) );
+    override_publish_mode_qos_from_json( wqos.publish_mode(), qos_settings.nested( "publish-mode" ), *publisher()->get_participant() );
 }
 
 

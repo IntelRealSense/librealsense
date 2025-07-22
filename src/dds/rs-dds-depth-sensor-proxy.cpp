@@ -6,6 +6,7 @@
 
 #include <realdds/topics/dds-topic-names.h>
 
+#include <src/stream.h>
 #include <src/librealsense-exception.h>
 #include <rsutils/json.h>
 
@@ -23,6 +24,39 @@ float dds_depth_sensor_proxy::get_depth_scale() const
     return 0.001f;
 }
 
+float dds_depth_sensor_proxy::get_stereo_baseline_mm() const
+{
+    if( auto opt = get_option_handler( RS2_OPTION_STEREO_BASELINE ) )
+        return opt->get_value();
+
+    // Baseline not registered, try getting it from extrinsics
+    std::shared_ptr< stream_profile_interface > ir1;
+    std::shared_ptr< stream_profile_interface > ir2;
+    for( auto & prof : get_raw_stream_profiles() )
+    {
+        if( prof->get_stream_type() == RS2_STREAM_INFRARED )
+        {
+            if( prof->get_stream_index() == 1 )
+                ir1 = prof;
+            else if( prof->get_stream_index() == 2 )
+                ir2 = prof;
+        }
+    }
+
+    if( ir1 && ir2 )
+    {
+        rs2_extrinsics out;
+        if( environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics( *ir1, *ir2, &out ) )
+        {
+            float baseline = std::sqrt( out.translation[0] * out.translation[0] +
+                                        out.translation[1] * out.translation[1] +
+                                        out.translation[2] * out.translation[2] );
+            return baseline;
+        }
+    }
+
+    throw not_implemented_exception( "Not a stereo depth sensor. Cannot get basline information." );
+}
 
 void dds_depth_sensor_proxy::add_no_metadata( frame * const f, streaming_impl & streaming )
 {

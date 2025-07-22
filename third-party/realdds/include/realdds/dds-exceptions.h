@@ -1,11 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <stdexcept>
-#include <rsutils/string/from.h>
 
 
 // E.g.:
@@ -14,8 +12,11 @@
 #define DDS_THROW( ERR_TYPE, WHAT )                                                                                    \
     do                                                                                                                 \
     {                                                                                                                  \
-        LOG_ERROR( "throwing: " << WHAT );                                                                             \
-        throw realdds::dds_##ERR_TYPE( rsutils::string::from() << WHAT );                                              \
+        std::ostringstream os__;                                                                                       \
+        os__ << WHAT;                                                                                                  \
+        auto log_message__ = os__.str();                                                                               \
+        LOG_ERROR_STR( "throwing: " << log_message__ );                                                                \
+        throw realdds::dds_##ERR_TYPE( std::move( log_message__ ) );                                                   \
     }                                                                                                                  \
     while( 0 )
 
@@ -26,15 +27,7 @@ namespace realdds {
 class dds_runtime_error : public std::runtime_error
 {
 public:
-    dds_runtime_error( std::string const& str )
-        : std::runtime_error( str )
-    {
-    }
-
-    dds_runtime_error( char const* lpsz )
-        : std::runtime_error( lpsz )
-    {
-    }
+    using std::runtime_error::runtime_error;
 };
 
 

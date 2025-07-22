@@ -4,6 +4,7 @@
 #include "rscore-pp-block-factory.h"
 
 #include "proc/decimation-filter.h"
+#include "proc/rotation-filter.h"
 #include "proc/disparity-transform.h"
 #include "proc/hdr-merge.h"
 #include "proc/hole-filling-filter.h"
@@ -27,6 +28,8 @@ rscore_pp_block_factory::create_pp_block( std::string const & name, rsutils::jso
 
     if( rsutils::string::nocase_equal( name, "Decimation Filter" ) )
         return std::make_shared< decimation_filter >();
+    if( rsutils::string::nocase_equal( name, "Rotation Filter" ) )
+        return std::make_shared< rotation_filter >();
     if( rsutils::string::nocase_equal( name, "HDR Merge" ) )  // and Hdr Merge
         return std::make_shared< hdr_merge >();
     if( rsutils::string::nocase_equal( name, "Filter By Sequence id" )    // name

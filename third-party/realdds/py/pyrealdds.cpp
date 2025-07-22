@@ -9,9 +9,11 @@
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
 #include <realdds/topics/blob-msg.h>
+#include <realdds/topics/ros2/participant-entities-info-msg.h>
 #include <realdds/topics/blob/blobPubSubTypes.h>
-#include <realdds/topics/ros2/ros2imagePubSubTypes.h>
-#include <realdds/topics/ros2/ros2imuPubSubTypes.h>
+#include <realdds/topics/ros2/sensor_msgs/msg/ImagePubSubTypes.h>
+#include <realdds/topics/ros2/sensor_msgs/msg/ImuPubSubTypes.h>
+#include <realdds/topics/ros2/rmw_dds_common/msg/ParticipantEntitiesInfoPubSubTypes.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
@@ -30,6 +32,9 @@
 #include <realdds/dds-log-consumer.h>
 #include <realdds/dds-stream-sensor-bridge.h>
 #include <realdds/dds-metadata-syncer.h>
+#include <realdds/dds-serialization.h>
+#include <realdds/dds-sample.h>
+#include <realdds/dds-network-adapter-watcher.h>
 
 #include <rsutils/os/special-folder.h>
 #include <rsutils/os/executable-name.h>
@@ -42,8 +47,9 @@
 
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
-#include <fastdds/dds/subscriber/SampleInfo.hpp>
 #include <fastrtps/types/DynamicType.h>
+#include <fastdds/rtps/builtin/data/WriterProxyData.h>
+#include <fastdds/rtps/builtin/data/ReaderProxyData.h>
 
 #include <rsutils/py/pybind11.h>
 
@@ -96,9 +102,17 @@ json load_rs_settings( json const & local_settings )
 
     // Patch any script-specific settings
     // NOTE: this is also accessed by pyrealsense2, where a "context" hierarchy is still used
-    auto script = script_name();
-    if( auto script_settings = config.nested( script, "context", "dds" ) )
-        settings.override( script_settings, "config-file/" + script + "/context" );
+    try
+    {
+        auto script = script_name();
+        if( auto script_settings = config.nested( script, "context", "dds" ) )
+            settings.override( script_settings, "config-file/" + script + "/context" );
+    }
+    catch( std::exception const & e )
+    {
+        // Expected if we're not in a script
+        LOG_DEBUG( "failed to get script name: " << e.what() );
+    }
 
     // We should always have DDS enabled
     if( settings.is_object() )
@@ -108,6 +122,17 @@ json load_rs_settings( json const & local_settings )
     settings.override( local_settings, "local settings" );
 
     return settings;
+}
+
+
+py::list network_adapter_list()
+{
+    auto const ips = realdds::dds_network_adapter_watcher::current_ips();
+    py::list obj( ips.size() );
+    int i = 0;
+    for( auto & ip : ips )
+        obj[i++] = ip;
+    return std::move( obj );
 }
 
 
@@ -133,6 +158,19 @@ PYBIND11_MODULE(NAME, m) {
            py::arg( "nested-string" ) = "",
            py::arg( "logger" ) = LIBREALSENSE_ELPP_ID );
 
+    m.def(
+        "json_dump",  // pretty print, using our own output; also available in pyrsutils - here for convenience
+        []( rsutils::json const & j, size_t indent )
+        {
+            std::ostringstream os;
+            if( indent )
+                os << std::setw( indent );
+            os << j;
+            return os.str();
+        },
+        py::arg( "json" ),
+        py::arg( "indent" ) = 4 );
+
     using realdds::dds_guid;
     py::class_< dds_guid >( m, "guid" )
         .def( py::init<>() )
@@ -154,7 +192,58 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_participant;
     using eprosima::fastrtps::types::ReturnCode_t;
-    
+
+
+    using realdds::dds_time;
+    using realdds::dds_nsec;
+    py::class_< dds_time >( m, "time" )
+        .def( py::init<>() )
+        .def( py::init< int32_t, uint32_t >() )  // sec, nsec
+        .def( py::init< long double >() )        // inexact (1.001 -> 1.000999999)
+        .def( py::init( []( dds_nsec ns ) { return realdds::time_from( ns ); } ) )           // exact
+        .def_readwrite( "seconds", &dds_time::seconds )
+        .def_readwrite( "nanosec", &dds_time::nanosec )
+        .def( "to_ns", &dds_time::to_ns )
+        .def_static( "from_ns", []( dds_nsec ns ) { return realdds::time_from( ns ); } )
+        .def_static( "from_double", []( long double d ) { return realdds::dds_time( d ); } )
+        .def( "to_double", py::overload_cast< dds_time const & >( &realdds::time_to_double ) )
+        .def( "__repr__", []( dds_time const & self ) -> std::string { return rsutils::string::from( realdds::time_to_string( self ) ); } )
+        .def( pybind11::self == pybind11::self )
+        .def( pybind11::self != pybind11::self );
+
+
+    // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
+    using realdds::timestr;
+    m.def( "now", []() { return realdds::now(); } );
+
+    py::enum_< timestr::no_suffix_t >( m, "no_suffix_t" );
+    m.attr( "no_suffix" ) = timestr::no_suffix;
+    py::enum_< timestr::rel_t >( m, "rel_t" );
+    m.attr( "rel" ) = timestr::rel;
+    py::enum_< timestr::abs_t >( m, "abs_t" );
+    m.attr( "abs" ) = timestr::abs;
+
+    m.def( "timestr", []( dds_nsec t ) { return timestr( t ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t, timestr::no_suffix_t ) { return timestr( t, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_nsec dt, timestr::rel_t ) { return timestr( dt, timestr::rel ).to_string(); } );
+    m.def( "timestr", []( dds_nsec dt, timestr::rel_t, timestr::no_suffix_t ) { return timestr( dt, timestr::rel, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t1, dds_nsec t2 ) { return timestr( t1, t2 ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t1, dds_nsec t2, timestr::no_suffix_t ) { return timestr( t1, t2, timestr::no_suffix ).to_string(); } );
+
+    m.def( "timestr", []( dds_time t, dds_time start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_time t, dds_nsec start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t, dds_time start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_time t, timestr::no_suffix_t ) { return timestr( t, timestr::no_suffix ).to_string(); } );
+
+    m.def( "timestr", []( dds_time t, dds_time start ) { return timestr( t, start ).to_string(); } );
+    m.def( "timestr", []( dds_time t, dds_nsec start ) { return timestr( t, start ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t, dds_time start ) { return timestr( t, start ).to_string(); } );
+    m.def( "timestr", []( dds_time t ) { return timestr( t ).to_string(); } );
+
+
+    m.def( "network_adapter_list", &network_adapter_list );
+
+
     py::class_< dds_participant::listener,
                 std::shared_ptr< dds_participant::listener >  // handled with a shared_ptr
                 >
@@ -163,8 +252,8 @@ PYBIND11_MODULE(NAME, m) {
         .def( FN_FWD( dds_participant::listener,
                       on_writer_added,
                       ( dds_guid guid, char const * topic_name ),
-                      ( dds_guid guid, char const * topic_name ),
-                      callback( guid, topic_name ); ) )
+                      ( eprosima::fastrtps::rtps::WriterProxyData const & data ),
+                      callback( data.guid(), data.topicName().c_str() ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_writer_removed,
                       ( dds_guid guid, char const * topic_name ),
@@ -173,8 +262,8 @@ PYBIND11_MODULE(NAME, m) {
         .def( FN_FWD( dds_participant::listener,
                       on_reader_added,
                       ( dds_guid guid, char const * topic_name ),
-                      ( dds_guid guid, char const * topic_name ),
-                      callback( guid, topic_name ); ) )
+                      ( eprosima::fastrtps::rtps::ReaderProxyData const & data ),
+                      callback( data.guid(), data.topicName().c_str() ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_reader_removed,
                       ( dds_guid guid, char const * topic_name ),
@@ -208,19 +297,15 @@ PYBIND11_MODULE(NAME, m) {
               []( dds_participant & self, json const & local_settings, realdds::dds_domain_id domain_id )
                     { self.init( domain_id, script_name(), local_settings ); },
               "local-settings"_a = json::object(), "domain-id"_a = -1 )
-        .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a, "local-settings"_a = json::object() )
+        .def( "init",
+              py::overload_cast< realdds::dds_domain_id, std::string const &, json const & >( &dds_participant::init ),
+              "domain-id"_a, "participant-name"_a, "local-settings"_a = json::object() )
         .def( "is_valid", &dds_participant::is_valid )
         .def( "guid", &dds_participant::guid )
         .def( "create_guid", &dds_participant::create_guid )
         .def( "__bool__", &dds_participant::is_valid )
-        .def( "name",
-              []( dds_participant const & self ) {
-                  eprosima::fastdds::dds::DomainParticipantQos qos;
-                  if( ReturnCode_t::RETCODE_OK == self.get()->get_qos( qos ) )
-                      return std::string( qos.name() );
-                  return std::string();
-              } )
-        .def( "name_from_guid", []( dds_guid const & guid ) { return dds_participant::name_from_guid( guid ); } )
+        .def( "name", &dds_participant::name )
+        .def_static( "name_from_guid", []( dds_guid const & guid ) { return dds_participant::name_from_guid( guid ); } )
         .def( "names", []( dds_participant const & self ) { return self.get()->get_participant_names(); } )
         .def( "settings", &dds_participant::settings )
         .def( "__repr__",
@@ -233,9 +318,7 @@ PYBIND11_MODULE(NAME, m) {
                   }
                   else
                   {
-                      eprosima::fastdds::dds::DomainParticipantQos qos;
-                      if( ReturnCode_t::RETCODE_OK == self.get()->get_qos( qos ) )
-                          os << " \"" << qos.name() << "\"";
+                      os << " \"" << self.name() << "\"";
                       os << " " << realdds::print_guid( self.guid() );
                   }
                   os << ">";
@@ -256,17 +339,50 @@ PYBIND11_MODULE(NAME, m) {
     topics.attr( "device_metadata" ) = realdds::topics::METADATA_TOPIC_NAME;
     topics.attr( "device_dfu" ) = realdds::topics::DFU_TOPIC_NAME;
 
+    auto ros2_topics = topics.def_submodule( "ros2", "all the ROS2 topics" );
+    ros2_topics.attr( "discovery_info" ) = realdds::topics::ros2::DISCOVERY_INFO;
+
+    using realdds::distortion_model;
+    py::enum_< distortion_model >( m, "distortion_model" )
+        .value( "none", distortion_model::none )
+        .value( "brown", distortion_model::brown )
+        .value( "inverse_brown", distortion_model::inverse_brown )
+        .value( "modified_brown", distortion_model::modified_brown );
+
+    using realdds::distortion_parameters;
+    py::class_< distortion_parameters >( m, "distortion_parameters" )
+        .def( py::init<>() )
+        .def_readwrite( "model", &distortion_parameters::model )
+        .def_readwrite( "coeffs", &distortion_parameters::coeffs )
+        .def( "__repr__",
+              []( distortion_parameters const & self ) -> std::string
+              { return rsutils::string::from() << "<" SNAME ".distortion_parameters " << self << ">"; } );
+
+    py::class_< rsutils::number::float2 >( m, "float2" )
+        .def( py::init<>() )
+        .def( py::init< float, float >() )
+        .def_readwrite( "x", &rsutils::number::float2::x )
+        .def_readwrite( "y", &rsutils::number::float2::y )
+        .def( "length", &rsutils::number::float2::length )
+        .def( "normalized", &rsutils::number::float2::normalized )
+        .def( "__repr__",
+              []( rsutils::number::float2 const & self ) -> std::string
+              { return rsutils::string::from() << self.x << ',' << self.y; } );
+
     using realdds::video_intrinsics;
     py::class_< video_intrinsics, std::shared_ptr< video_intrinsics > >( m, "video_intrinsics" )
         .def( py::init<>() )
         .def_readwrite( "width", &video_intrinsics::width )
         .def_readwrite( "height", &video_intrinsics::height )
-        .def_readwrite( "principal_point_x", &video_intrinsics::principal_point_x )
-        .def_readwrite( "principal_point_y", &video_intrinsics::principal_point_y )
-        .def_readwrite( "focal_lenght_x", &video_intrinsics::focal_lenght_x )
-        .def_readwrite( "focal_lenght_y", &video_intrinsics::focal_lenght_y )
-        .def_readwrite( "distortion_model", &video_intrinsics::distortion_model )
-        .def_readwrite( "distortion_coeffs", &video_intrinsics::distortion_coeffs );
+        .def_readwrite( "principal_point", &video_intrinsics::principal_point )
+        .def_readwrite( "focal_length", &video_intrinsics::focal_length )
+        .def_readwrite( "distortion", &video_intrinsics::distortion )
+        .def( "__repr__",
+              []( video_intrinsics const & self ) -> std::string
+              { return rsutils::string::from() << "<" SNAME ".video_intrinsics " << self << ">"; } )
+        .def( "to_json", &video_intrinsics::to_json )
+        .def( "scaled_to", &video_intrinsics::scaled_to )
+        .def( "is_valid", &video_intrinsics::is_valid );
 
     using realdds::motion_intrinsics;
     py::class_< motion_intrinsics, std::shared_ptr< motion_intrinsics > >( m, "motion_intrinsics" )
@@ -301,9 +417,42 @@ PYBIND11_MODULE(NAME, m) {
     py::enum_< reliability >( m, "reliability" )
         .value( "reliable", eprosima::fastdds::dds::ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS )
         .value( "best_effort", eprosima::fastdds::dds::ReliabilityQosPolicyKind::BEST_EFFORT_RELIABILITY_QOS );
+    using history_kind = eprosima::fastdds::dds::HistoryQosPolicyKind;
+    py::enum_< history_kind >( m, "history_kind" )
+        .value( "keep_last", eprosima::fastdds::dds::HistoryQosPolicyKind::KEEP_LAST_HISTORY_QOS )
+        .value( "keep_all", eprosima::fastdds::dds::HistoryQosPolicyKind::KEEP_ALL_HISTORY_QOS );
+    using history_policy = eprosima::fastdds::dds::HistoryQosPolicy;
+    py::class_< history_policy >( m, "history_policy" )  //
+        .def_readwrite( "kind", &history_policy::kind )
+        .def_readwrite( "depth", &history_policy::depth )
+        .def( "__repr__",
+              []( history_policy const & self )
+              {
+                  std::ostringstream os;
+                  os << "[";
+                  switch( self.kind )
+                  {
+                  case history_kind::KEEP_ALL_HISTORY_QOS:
+                      os << "all";
+                      break;
+                  case history_kind::KEEP_LAST_HISTORY_QOS:
+                      os << "last";
+                      break;
+                  default:
+                      os << (int)self.kind;
+                      break;
+                  }
+                  os << ' ';
+                  os << self.depth;
+                  os << "]";
+                  return os.str();
+              } );
 
     using reader_qos = realdds::dds_topic_reader::qos;
     py::class_< reader_qos >( m, "reader_qos" )  //
+        .def_property( "history",
+            []( reader_qos & self ) -> history_policy & { return self.history(); },
+            []( reader_qos & self, eprosima::fastdds::dds::HistoryQosPolicy const & policy ) { self.history( policy ); } )
         .def( "__repr__", []( reader_qos const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".reader_qos";
@@ -314,27 +463,35 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_topic_reader;
     py::class_< dds_topic_reader, std::shared_ptr< dds_topic_reader > >( m, "topic_reader" )
         .def( py::init< std::shared_ptr< dds_topic > const & >() )
-        .def( FN_FWD( dds_topic_reader, on_data_available, (dds_topic_reader &), (), callback( self ); ) )
+        .def( FN_FWD( dds_topic_reader, on_data_available, (dds_topic_reader *), (), callback( self ); ) )
         .def( FN_FWD( dds_topic_reader,
                       on_subscription_matched,
-                      (dds_topic_reader &, int),
+                      (dds_topic_reader *, int),
                       ( eprosima::fastdds::dds::SubscriptionMatchedStatus const & status ),
                       callback( self, status.current_count_change ); ) )
         .def( FN_FWD( dds_topic_reader,
                       on_sample_lost,
-                      (dds_topic_reader &, int, int),
+                      (dds_topic_reader *, int, int),
                       (eprosima::fastdds::dds::SampleLostStatus const & status),
                       callback( self, status.total_count, status.total_count_change ); ) )
         .def( "topic", &dds_topic_reader::topic )
         .def( "run", &dds_topic_reader::run )
+        .def( "wait_for_writers", &dds_topic_reader::wait_for_writers )
+        .def( "stop", &dds_topic_reader::stop, 
+              // GIL release needed: stop will wait and cause a hang if we're inside a callback
+              py::call_guard< py::gil_scoped_release >() )
         .def( "qos", []() { return reader_qos(); } )
         .def( "qos", []( reliability r, durability d ) { return reader_qos( r, d ); } );
 
     using writer_qos = realdds::dds_topic_writer::qos;
     py::class_< writer_qos >( m, "writer_qos" )  //
+        .def_property_readonly( "flow_controller",
+                                []( writer_qos const & self ) -> std::string
+                                { return self.publish_mode().flow_controller_name; } )
         .def( "__repr__", []( writer_qos const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".writer_qos";
+            os << self;
             os << ">";
             return os.str();
         } );
@@ -353,10 +510,11 @@ PYBIND11_MODULE(NAME, m) {
         .def( "guid", &dds_topic_writer::guid )
         .def( FN_FWD( dds_topic_writer,
                       on_publication_matched,
-                      (dds_topic_writer &, int),
+                      (dds_topic_writer *, int),
                       ( eprosima::fastdds::dds::PublicationMatchedStatus const & status ),
                       callback( self, status.current_count_change ); ) )
         .def( "topic", &dds_topic_writer::topic )
+        .def( "override_qos_from_json", &dds_topic_writer::override_qos_from_json )
         .def( "run", &dds_topic_writer::run )
         .def( "has_readers", &dds_topic_writer::has_readers )
         .def( "wait_for_readers", &dds_topic_writer::wait_for_readers )
@@ -408,59 +566,22 @@ PYBIND11_MODULE(NAME, m) {
                   return os.str();
               } );
 
-    using eprosima::fastdds::dds::SampleInfo;
-    py::class_< SampleInfo >( message, "sample_info" )  //
+    using realdds::dds_sample;
+    py::class_< dds_sample >( message, "sample_info" )  //
         .def( py::init<>() )
-        .def( "identity", []( SampleInfo const & self ) { return self.sample_identity; } )
-        .def( "source_timestamp", []( SampleInfo const & self ) { return self.source_timestamp.to_ns(); } )
-        .def( "reception_timestamp", []( SampleInfo const & self ) { return self.reception_timestamp.to_ns(); } );
-
-
-    using realdds::dds_time;
-    using realdds::dds_nsec;
-    py::class_< dds_time >( m, "time" )
-        .def( py::init<>() )
-        .def( py::init< int32_t, uint32_t >() )  // sec, nsec
-        .def( py::init< long double >() )        // inexact (1.001 -> 1.000999999)
-        .def( py::init( []( dds_nsec ns ) { return realdds::time_from( ns ); } ) )           // exact
-        .def_readwrite( "seconds", &dds_time::seconds )
-        .def_readwrite( "nanosec", &dds_time::nanosec )
-        .def( "to_ns", &dds_time::to_ns )
-        .def_static( "from_ns", []( dds_nsec ns ) { return realdds::time_from( ns ); } )
-        .def_static( "from_double", []( long double d ) { return realdds::dds_time( d ); } )
-        .def( "to_double", &realdds::time_to_double )
-        .def( "__repr__", &realdds::time_to_string )
-        .def( pybind11::self == pybind11::self )
-        .def( pybind11::self != pybind11::self );
-
-
-    // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
-    using realdds::timestr;
-    m.def( "now", []() { return realdds::now(); } );
-
-    py::enum_< timestr::no_suffix_t >( m, "no_suffix_t" );
-    m.attr( "no_suffix" ) = timestr::no_suffix;
-    py::enum_< timestr::rel_t >( m, "rel_t" );
-    m.attr( "rel" ) = timestr::rel;
-    py::enum_< timestr::abs_t >( m, "abs_t" );
-    m.attr( "abs" ) = timestr::abs;
-
-    m.def( "timestr", []( dds_nsec t ) { return timestr( t ).to_string(); } );
-    m.def( "timestr", []( dds_nsec t, timestr::no_suffix_t ) { return timestr( t, timestr::no_suffix ).to_string(); } );
-    m.def( "timestr", []( dds_nsec dt, timestr::rel_t ) { return timestr( dt, timestr::rel ).to_string(); } );
-    m.def( "timestr", []( dds_nsec dt, timestr::rel_t, timestr::no_suffix_t ) { return timestr( dt, timestr::rel, timestr::no_suffix ).to_string(); } );
-    m.def( "timestr", []( dds_nsec t1, dds_nsec t2 ) { return timestr( t1, t2 ).to_string(); } );
-    m.def( "timestr", []( dds_nsec t1, dds_nsec t2, timestr::no_suffix_t ) { return timestr( t1, t2, timestr::no_suffix ).to_string(); } );
-
-    m.def( "timestr", []( dds_time t, dds_time start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
-    m.def( "timestr", []( dds_time t, dds_nsec start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
-    m.def( "timestr", []( dds_nsec t, dds_time start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
-    m.def( "timestr", []( dds_time t, timestr::no_suffix_t ) { return timestr( t, timestr::no_suffix ).to_string(); } );
-    
-    m.def( "timestr", []( dds_time t, dds_time start ) { return timestr( t, start ).to_string(); } );
-    m.def( "timestr", []( dds_time t, dds_nsec start ) { return timestr( t, start ).to_string(); } );
-    m.def( "timestr", []( dds_nsec t, dds_time start ) { return timestr( t, start ).to_string(); } );
-    m.def( "timestr", []( dds_time t ) { return timestr( t ).to_string(); } );
+        .def( "identity", []( dds_sample const & self ) { return self.sample_identity; } )
+        .def( "source_timestamp", []( dds_sample const & self ) { return self.source_timestamp.to_ns(); } )
+        .def( "reception_timestamp", []( dds_sample const & self ) { return self.reception_timestamp.to_ns(); } )
+        .def( "__repr__",
+              []( dds_sample const & self )
+              {
+                  std::ostringstream os;
+                  os << "<sample #" << self.sample_identity.sequence_number();
+                  os << " @ " << realdds::time_to_string( self.reception_timestamp );
+                  os << " from " << realdds::print_guid( self.sample_identity.writer_guid() );
+                  os << ">";
+                  return os.str();
+              } );
 
 
     py::class_< flexible_msg >( message, "flexible" )
@@ -482,7 +603,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "__repr__",
               []( flexible_msg const & self ) {
                   std::ostringstream os;
-                  os << "<" SNAME ".flexible_msg ";
+                  os << "<" SNAME ".message.flexible ";
                   switch( self._data_format )
                   {
                   case flexible_msg::data_format::JSON:
@@ -519,7 +640,7 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def_static(
             "take_next",
-            []( dds_topic_reader & reader, SampleInfo * sample ) {
+            []( dds_topic_reader & reader, dds_sample * sample ) {
                 auto actual_type = reader.topic()->get()->get_type_name();
                 if( actual_type != flexible_msg::type().getName() )
                     throw std::runtime_error( "can't initialize raw::flexible from " + actual_type );
@@ -542,27 +663,48 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< image_msg, std::shared_ptr< image_msg > >( message, "image" )
         .def( py::init<>() )
         .def_static( "create_topic", &image_msg::create_topic )
-        .def_readwrite( "data", &image_msg::raw_data )
-        .def_readwrite( "width", &image_msg::width )
-        .def_readwrite( "height", &image_msg::height )
-        .def_readwrite( "timestamp", &image_msg::timestamp )
+        .def_property(
+            "data",
+            []( image_msg const & self ) { return py::memoryview::from_memory( self.raw().data().data(), self.raw().data().size() ); },
+            []( image_msg & self, std::vector< uint8_t > bytes ) { self.raw().data( std::move( bytes ) ); } )
+        .def_property( "width", &image_msg::width, &image_msg::set_width )
+        .def_property( "height", &image_msg::height, &image_msg::set_height )
+        .def_property( "step", &image_msg::step, &image_msg::set_step )
+        .def_property( "timestamp", &image_msg::timestamp, &image_msg::set_timestamp )
+        .def_property_readonly( "is_bigendian", &image_msg::is_bigendian )
+        .def_property( "encoding", &image_msg::encoding, &image_msg::set_encoding )
+        .def_property( "frame_id", &image_msg::frame_id, &image_msg::set_frame_id )
+        .def( "__bool__", &image_msg::is_valid )
         .def( "__repr__",
               []( image_msg const & self )
               {
                   std::ostringstream os;
-                  os << "<" SNAME ".image_msg";
-                  if( self.width > 0 && self.height > 0 )
+                  os << "<" SNAME ".message.image";
+                  if( self.is_valid() )
                   {
-                      os << ' ' << self.width << 'x' << self.height;
-                      os << 'x' << (self.raw_data.size() / (self.width * self.height));
+                      if( ! self.frame_id().empty() )
+                          os << " " << self.frame_id();
+                      if( ! self.encoding().empty() )
+                          os << " '" << self.encoding() << "'";
+                      os << " " << self.width() << 'x' << self.height();
+                      if( ! self.step() )
+                          os << " STEP 0";
+                      else if( self.step() % self.width() )
+                          os << " STEP " << self.step();
+                      else if( self.raw().data().size() % self.step() )
+                          os << " SIZE " << self.raw().data().size();
+                      //else
+                      //    os << ' ' << ( self.raw().data().size() / ( self.width() * self.height() ) ) << " Bpp";
+                      if( self.is_bigendian() )
+                          os << " BE";
                   }
-                  os << " @ " << realdds::time_to_string( self.timestamp );
+                  os << " @ " << realdds::time_to_string( self.timestamp() );
                   os << ">";
                   return os.str();
               } )
         .def_static(
             "take_next",
-            []( dds_topic_reader & reader, SampleInfo * sample )
+            []( dds_topic_reader & reader, dds_sample * sample )
             {
                 auto actual_type = reader.topic()->get()->get_type_name();
                 if( actual_type != image_msg::type().getName() )
@@ -576,6 +718,58 @@ PYBIND11_MODULE(NAME, m) {
             py::arg( "sample" ) = nullptr,
             py::call_guard< py::gil_scoped_release >() )
         /*.def("write_to", &image_msg::write_to, py::call_guard< py::gil_scoped_release >())*/;
+
+
+    using participant_entities_info_msg = realdds::topics::ros2::participant_entities_info_msg;
+    py::class_< participant_entities_info_msg, std::shared_ptr< participant_entities_info_msg > >( message, "participant_entities_info" )
+        .def( py::init<>() )
+        .def_static( "create_topic", &participant_entities_info_msg::create_topic )
+        .def_property( "gid", &participant_entities_info_msg::gid, &participant_entities_info_msg::set_gid )
+        .def( "__bool__", &participant_entities_info_msg::is_valid )
+        .def( "__repr__",
+              []( participant_entities_info_msg const & self )
+              {
+                  std::ostringstream os;
+                  os << "<" SNAME ".message.participant_entities_info";
+                  if( self.is_valid() )
+                  {
+                      os << " " << realdds::print_guid( self.gid() );
+                      if( ! self.nodes().empty() )
+                          os << " ";
+                      for( auto & node : self.nodes() )
+                      {
+                          os << "[";
+                          if( auto len = node.node_namespace().size() )
+                          {
+                              os << node.node_namespace();
+                              if( node.node_namespace().c_str()[len-1] != realdds::topics::SEPARATOR )
+                                  os << realdds::topics::SEPARATOR;
+                          }
+                          os << node.node_name();
+                          os << " R " << node.reader_gid_seq().size();
+                          os << " W " << node.writer_gid_seq().size();
+                          os << "]";
+                      }
+                  }
+                  os << ">";
+                  return os.str();
+              } )
+        .def_static(
+            "take_next",
+            []( dds_topic_reader & reader, dds_sample * sample )
+            {
+                auto actual_type = reader.topic()->get()->get_type_name();
+                if( actual_type != participant_entities_info_msg::type().getName() )
+                    throw std::runtime_error( "can't initialize raw::image from " + actual_type );
+                participant_entities_info_msg data;
+                if( !participant_entities_info_msg::take_next( reader, &data, sample ) )
+                    assert( ! data.is_valid() );
+                return data;
+            },
+            py::arg( "reader" ),
+            py::arg( "sample" ) = nullptr,
+            py::call_guard< py::gil_scoped_release >() )
+        /*.def("write_to", &participant_entities_info_msg::write_to, py::call_guard< py::gil_scoped_release >())*/;
 
 
     using blob_msg = realdds::topics::blob_msg;
@@ -595,6 +789,8 @@ PYBIND11_MODULE(NAME, m) {
                                                              std::string const & ) >( &blob_msg::create_topic ) )
         .def( "data", []( blob_msg const & self ) { return self.data(); } )
         .def( "size", []( blob_msg const & self ) { return self.data().size(); } )
+        .def( "crc", []( blob_msg const & self ) { return rsutils::number::calc_crc32( self.data().data(), self.data().size() ); } )
+        .def( "__bool__", &blob_msg::is_valid )
         .def( "__repr__",
               []( blob_msg const & self )
               {
@@ -607,7 +803,7 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def_static(
             "take_next",
-            []( dds_topic_reader & reader, SampleInfo * sample )
+            []( dds_topic_reader & reader, dds_sample * sample )
             {
                 auto actual_type = reader.topic()->get()->get_type_name();
                 if( actual_type != blob_msg::type().getName() )
@@ -639,6 +835,7 @@ PYBIND11_MODULE(NAME, m) {
             "timestamp",
             []( imu_msg const & self ) { return self.timestamp(); },
             []( imu_msg & self, dds_time time ) { self.timestamp( time ); } )
+        .def( "__bool__", &imu_msg::is_valid )
         .def( "__repr__",
               []( imu_msg const & self )
               {
@@ -648,7 +845,7 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def_static(
             "take_next",
-            []( dds_topic_reader & reader, SampleInfo * sample )
+            []( dds_topic_reader & reader, dds_sample * sample )
             {
                 auto actual_type = reader.topic()->get()->get_type_name();
                 if( actual_type != imu_msg::type().getName() )
@@ -716,15 +913,18 @@ PYBIND11_MODULE(NAME, m) {
         .def( "is_valid", &dds_video_encoding::is_valid )
         .def( "to_rs2", &dds_video_encoding::to_rs2 )
         .def( "from_rs2", &dds_video_encoding::from_rs2 )
+        .def( py::self == py::self )
+        .def( py::self != py::self )
         .def( "__bool__", &dds_video_encoding::is_valid )
         .def( "__repr__", []( dds_video_encoding const & self ) { return self.to_string(); } );
     video_encoding.attr( "z16" ) = dds_video_encoding( "16UC1" );
     video_encoding.attr( "y8" ) = dds_video_encoding( "mono8" );
-    video_encoding.attr( "y16" ) = dds_video_encoding( "Y16" );  // todo should be mono16
+    video_encoding.attr( "y16" ) = dds_video_encoding( "mono16" );
     video_encoding.attr( "byr2" ) = dds_video_encoding( "BYR2" );
     video_encoding.attr( "yuyv" ) = dds_video_encoding( "yuv422_yuy2" );
     video_encoding.attr( "uyvy" ) = dds_video_encoding( "uyvy" );
     video_encoding.attr( "rgb" ) = dds_video_encoding( "rgb8" );
+    video_encoding.attr( "y12i" ) = dds_video_encoding( "Y12I" );
 
     using realdds::dds_stream_profile;
     py::class_< dds_stream_profile, std::shared_ptr< dds_stream_profile > > stream_profile_base( m, "stream_profile" );
@@ -733,7 +933,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "stream", &dds_stream_profile::stream )
         .def( "to_string", &dds_stream_profile::to_string )
         .def( "details_to_string", &dds_stream_profile::details_to_string )
-        .def( "to_json", []( dds_stream_profile const & self ) { return self.to_json().dump(); } )
+        .def( "to_json", []( dds_stream_profile const & self ) { return self.to_json(); } )
         .def( "__repr__", []( dds_stream_profile const & self ) {
             std::ostringstream os;
             std::string self_as_string = self.to_string();  // <video 0xUID ...>
@@ -794,22 +994,12 @@ PYBIND11_MODULE(NAME, m) {
         video_stream_server_base( m, "video_stream_server", stream_server_base );
     video_stream_server_base
         .def( "set_intrinsics", &dds_video_stream_server::set_intrinsics )
+        .def( "get_intrinsics", &dds_video_stream_server::get_intrinsics )
         .def( "start_streaming",
               []( dds_video_stream_server & self, dds_video_encoding encoding, int width, int height ) {
                   self.start_streaming( { encoding, height, width } );
               } )
-        .def( "publish_image",
-              []( dds_video_stream_server & self, image_msg const & img )
-              {
-                  // We don't have C++ 'std::move' explicit semantics in Python, so we create a copy.
-                  // Notice there's no copy constructor on purpose (!) so we do it manually...
-                  image_msg img_copy;
-                  img_copy.raw_data = img.raw_data;
-                  img_copy.timestamp = img.timestamp;
-                  img_copy.width = img.width;
-                  img_copy.height = img.height;
-                  self.publish_image( std::move( img_copy ) );
-              } );
+        .def( "publish_image", &dds_video_stream_server::publish_image );
 
     using realdds::dds_depth_stream_server;
     py::class_< dds_depth_stream_server, std::shared_ptr< dds_depth_stream_server > >( m, "depth_stream_server", video_stream_server_base )
@@ -865,9 +1055,13 @@ PYBIND11_MODULE(NAME, m) {
         .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() )
         .def( "broadcast", &dds_device_server::broadcast )
         .def( "broadcast_disconnect", &dds_device_server::broadcast_disconnect, py::arg( "ack-timeout" ) = dds_time() )
+        .def( FN_FWD( dds_device_server, on_set_option,
+                      (dds_device_server *, std::shared_ptr< realdds::dds_option > const &, json_ref &&),
+                      ( std::shared_ptr< realdds::dds_option > const & option, json & value ),
+                      callback( self, option, json_ref{ value } ); ) )
         .def( FN_FWD_R( dds_device_server, on_control,
                         false,
-                        (dds_device_server &, std::string const &, py::object &&, json_ref &&),
+                        (dds_device_server *, std::string const &, py::object &&, json_ref &&),
                         ( std::string const & id, json const & control, json & reply ),
                         return callback( self, id, json_to_py( control ), json_ref{ reply } ); ) );
 
@@ -892,11 +1086,12 @@ PYBIND11_MODULE(NAME, m) {
         video_stream_client_base( m, "video_stream", stream_client_base );
     video_stream_client_base  //
         .def( "set_intrinsics", &dds_video_stream::set_intrinsics )
+        .def( "get_intrinsics", &dds_video_stream::get_intrinsics )
         .def( FN_FWD( dds_video_stream,
                       on_data_available,
-                      ( dds_video_stream &, image_msg && ),
-                      ( image_msg && i ),
-                      callback( self, std::move( i ) ); ) );
+                      ( dds_video_stream *, image_msg &&, dds_sample && ),
+                      ( image_msg && i, dds_sample && sample ),
+                      callback( self, std::move( i ), std::move( sample ) ); ) );
 
     using realdds::dds_depth_stream;
     py::class_< dds_depth_stream, std::shared_ptr< dds_depth_stream > >( m, "depth_stream", video_stream_client_base )
@@ -919,7 +1114,12 @@ PYBIND11_MODULE(NAME, m) {
         motion_stream_client_base( m, "motion_stream", stream_client_base );
     motion_stream_client_base
         .def( "set_gyro_intrinsics", &dds_motion_stream::set_gyro_intrinsics )
-        .def( "set_accel_intrinsics", &dds_motion_stream::set_accel_intrinsics );
+        .def( "set_accel_intrinsics", &dds_motion_stream::set_accel_intrinsics )
+        .def( FN_FWD( dds_motion_stream,
+                      on_data_available,
+                      ( dds_motion_stream *, imu_msg &&, dds_sample && ),
+                      ( imu_msg && i, dds_sample && sample ),
+                      callback( self, std::move( i ), std::move( sample ) ); ) );
 
 
     using subscription = rsutils::subscription;
@@ -1031,12 +1231,12 @@ PYBIND11_MODULE(NAME, m) {
         .def( "is_stopped", &dds_device_watcher::is_stopped )
         .def( FN_FWD( dds_device_watcher,
                       on_device_added,
-                      ( dds_device_watcher const &, std::shared_ptr< dds_device > const & ),
+                      ( dds_device_watcher const *, std::shared_ptr< dds_device > const & ),
                       ( std::shared_ptr< dds_device > const & dev ),
                       callback( self, dev ); ) )
         .def( FN_FWD( dds_device_watcher,
                       on_device_removed,
-                      ( dds_device_watcher const &, std::shared_ptr< dds_device > const & ),
+                      ( dds_device_watcher const *, std::shared_ptr< dds_device > const & ),
                       ( std::shared_ptr< dds_device > const & dev ),
                       callback( self, dev ); ) )
         .def( "devices",
@@ -1103,6 +1303,12 @@ PYBIND11_MODULE(NAME, m) {
         dds_metadata_syncer()
         {
             on_frame_release( frame_releaser );
+            start();
+        }
+
+        ~dds_metadata_syncer()
+        {
+            stop();
         }
 
         void enqueue_frame( key_type key, frame_type const & img )
@@ -1124,7 +1330,7 @@ PYBIND11_MODULE(NAME, m) {
                       on_frame_ready,
                       ( dds_metadata_syncer::frame_type, json const & ),
                       ( dds_metadata_syncer::frame_holder && fh, std::shared_ptr< const json > const & metadata ),
-                      callback( self.get_frame( fh ), metadata ? *metadata : json() ); ) )
+                      callback( self->get_frame( fh ), metadata ? *metadata : json() ); ) )
         .def( FN_FWD( dds_metadata_syncer,
                       on_metadata_dropped,
                       ( dds_metadata_syncer::key_type, json const & ),

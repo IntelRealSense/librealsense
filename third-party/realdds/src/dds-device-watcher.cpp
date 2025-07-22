@@ -30,8 +30,8 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
         [this]()
         {
             topics::flexible_msg msg;
-            eprosima::fastdds::dds::SampleInfo info;
-            while( topics::flexible_msg::take_next( *_device_info_topic, &msg, &info ) )
+            dds_sample sample;
+            while( topics::flexible_msg::take_next( *_device_info_topic, &msg, &sample ) )
             {
                 if( ! msg.is_valid() )
                     continue;
@@ -39,7 +39,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                 // NOTE: the GUID we get here is the writer on the device-info, used nowhere again in the system, which
                 // can therefore be confusing. It is not the "server GUID" that's stored in the device!
                 dds_guid guid;
-                eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
+                eprosima::fastrtps::rtps::iHandle2GUID( guid, sample.publication_handle );
 
                 auto const j = msg.json_data();
 
@@ -78,7 +78,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                             // Old device coming back to life
                             device.writer_guid = guid;
                             LOG_DEBUG( "[" << device.alive->debug_name() << "] device (from "
-                                           << _participant->print( guid ) << ") back to life: " << j.dump( 4 ) );
+                                           << _participant->print( guid ) << ") back to life: " << std::setw( 4 ) << j );
                             topics::device_info device_info = topics::device_info::from_json( j );
                             static_cast< dds_discovery_sink * >( device.alive.get() )
                                 ->on_discovery_restored( device_info );
@@ -97,7 +97,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                     }
                 }
 
-                LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") detected: " << j.dump( 4 ) );
+                LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") detected: " << std::setw( 4 ) << j );
                 topics::device_info device_info = topics::device_info::from_json( j );
 
                 // Add a new device record into our dds devices map

@@ -16,7 +16,7 @@ The various topics are arranged hierarchically:
 
 The code for each message type in this directory is generated from IDL files if the message format is defined by RealDDS.
 
-For [ROS](#ros2), the IDLs are not available.
+For [ROS](#ros2), the IDLs are available in the `/opt/ros/<distro>/share/` installation folder.
 
 # Generation
 

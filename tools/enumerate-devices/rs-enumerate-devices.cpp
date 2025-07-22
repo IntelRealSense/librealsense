@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-24 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
 #include <iostream>
@@ -14,10 +14,9 @@
 #include <rsutils/json.h>
 using rsutils::json;
 
-#include "tclap/CmdLine.h"
+#include <common/cli.h>
 
 using namespace std;
-using namespace TCLAP;
 using namespace rs2;
 
 std::vector<std::string> tokenize_floats(string input, char separator) {
@@ -300,20 +299,18 @@ void output_modes( std::vector< stream_profile > const & profiles, bool verbose,
 
 int main(int argc, char** argv) try
 {
-    CmdLine cmd("librealsense rs-enumerate-devices tool", ' ', RS2_API_FULL_VERSION_STR);
+    cli cmd( "librealsense rs-enumerate-devices tool" );
 
-    SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
-    SwitchArg short_view_arg("s", "short", "Provide a one-line summary of the devices");
-    SwitchArg compact_view_arg("S", "compact", "Provide a short summary of the devices");
-    SwitchArg show_options_arg("o", "option", "Show all the supported options per subdevice");
-    SwitchArg show_calibration_data_arg( "c", "calib_data", "Show extrinsic and intrinsic of all subdevices" );
-    SwitchArg show_defaults("d", "defaults", "Show the default streams configuration");
-    SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)" );
-    ValueArg<string> format_arg( "", "format", "Choose which 'format-conversion' to use", false, "full", "raw/basic/FULL" );
-    SwitchArg verbose_arg( "v", "verbose", "Show extra information" );
-    ValueArg<string> show_playback_device_arg("p", "playback_device", "Inspect and enumerate playback device (from file)",
-        false, "", "path");
-    cmd.add(debug_arg);
+    cli::flag short_view_arg('s', "short", "Provide a one-line summary of the devices");
+    cli::flag compact_view_arg('S', "compact", "Provide a short summary of the devices");
+    cli::flag show_options_arg('o', "option", "Show all the supported options per subdevice");
+    cli::flag show_calibration_data_arg( 'c', "calib_data", "Show extrinsic and intrinsic of all subdevices" );
+    cli::flag show_defaults('d', "defaults", "Show the default streams configuration");
+    cli::flag only_sw_arg( "sw-only", "Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)" );
+    cli::value<string> format_arg( "format", "raw/basic/FULL", "full", "Choose which 'format-conversion' to use" );
+    cli::flag verbose_arg( 'v', "verbose", "Show extra information" );
+    cli::value<string> show_playback_device_arg('p', "playback_device", "path", "", "Inspect and enumerate playback device (from file)" );
+
     cmd.add(short_view_arg);
     cmd.add(compact_view_arg);
     cmd.add(show_options_arg);
@@ -321,19 +318,10 @@ int main(int argc, char** argv) try
     cmd.add(only_sw_arg);
     cmd.add( format_arg );
     cmd.add(verbose_arg);
-#ifdef BUILD_WITH_DDS
-    ValueArg< int > domain_arg( "", "dds-domain", "Set the DDS domain ID (default to 0)", false, 0, "0-232" );
-    cmd.add( domain_arg );
-#endif
     cmd.add(show_defaults);
     cmd.add(show_playback_device_arg);
 
-    cmd.parse(argc, argv);
-
-#ifdef BUILD_EASYLOGGINGPP
-    bool debugging = debug_arg.getValue();
-    log_to_console(debugging ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_ERROR);
-#endif
+    auto settings = cmd.process( argc, argv );
 
     bool short_view = short_view_arg.getValue();
     bool compact_view = compact_view_arg.getValue();
@@ -355,18 +343,8 @@ int main(int argc, char** argv) try
     }
 
     // Obtain a list of devices currently present on the system
-    json settings = json::object();
-#ifdef BUILD_WITH_DDS
-    if( domain_arg.isSet() || only_sw_arg.isSet() )
-    {
-        json dds = json::object();
-        if( domain_arg.isSet() )
-            dds["domain"] = domain_arg.getValue();
-        dds["enabled"];  // null: remove global dds:false or dds/enabled:false, if any
-        settings["dds"] = std::move( dds );
-    }
-#endif
-    settings["format-conversion"] = format_arg.getValue();
+    if( format_arg.isSet() )
+        settings["format-conversion"] = format_arg.getValue();
     context ctx( settings.dump() );
     
     rs2::device d;
@@ -415,7 +393,7 @@ int main(int argc, char** argv) try
     if( !device_count )
     {
         cout << "No device detected. Is it plugged in?\n";
-        return EXIT_SUCCESS;
+        return EXIT_FAILURE;
     }
 
     if (short_view || compact_view)

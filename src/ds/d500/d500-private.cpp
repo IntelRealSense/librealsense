@@ -19,10 +19,11 @@ namespace librealsense
                 {
                     bool found = false;
                     result = *it;
-                    // to be uncommented after d500 device is added
-                    /*switch (info.pid)
+                    switch (info.pid)
                     {
-
+                    case D555_PID:
+                        found = (result.mi == 6);
+                        break;
                     default:
                         throw not_implemented_exception(rsutils::string::from() << "USB device "
                             << std::hex << info.pid << ":" << info.vid << std::dec << " is not supported.");
@@ -34,7 +35,6 @@ namespace librealsense
                         devices.erase(it);
                         return true;
                     }
-                    */
                 }
             }
             return false;
@@ -47,15 +47,31 @@ namespace librealsense
             {
             case d500_calibration_table_id::depth_calibration_id:
             {
-                return get_d500_depth_intrinsic_by_resolution(raw_data, width, height, is_symmetrization_enabled);
+                if ( !raw_data.empty() )
+                    return get_d500_depth_intrinsic_by_resolution(raw_data, width, height, is_symmetrization_enabled);
+                else
+                    LOG_ERROR("Cannot read depth table intrinsic values, using default values");
+                break;
             }
             case d500_calibration_table_id::rgb_calibration_id:
             {
-                return get_d500_color_intrinsic_by_resolution(raw_data, width, height);
+                if ( !raw_data.empty() )
+                    return get_d500_color_intrinsic_by_resolution(raw_data, width, height);
+                else
+                    LOG_ERROR("Cannot read color table intrinsic values, using default values");
+                break;
             }
             default:
                 throw invalid_value_exception(rsutils::string::from() << "Parsing Calibration table type " << static_cast<int>(table_id) << " is not supported");
             }
+
+            // If we got here, the table is empty so continue with default values
+            rs2_intrinsics intrinsics = {0};
+            intrinsics.height = height;
+            intrinsics.width = width;
+            intrinsics.ppx = intrinsics.fx = width / 2.f;
+            intrinsics.ppy = intrinsics.fy = height / 2.f;
+            return intrinsics;
         }
 
         // Algorithm prepared by Oscar Pelc in matlab:
@@ -157,8 +173,8 @@ namespace librealsense
         {
             auto& rgb_coefficients_table = rgb_calib_table.rgb_coefficients_table;
 
-            // checking if the fisheye distortion is needed
-            if (rgb_coefficients_table.distortion_model == RS2_DISTORTION_BROWN_CONRADY)
+            // checking if the fisheye distortion (2 in calibration table) is needed
+            if( rgb_coefficients_table.distortion_model != d500_calibration_distortion::brown_and_fisheye )
                 return;
 
             // matrix with the intrinsics - after they have been adapted to required resolution
@@ -191,13 +207,11 @@ namespace librealsense
             intrinsics.ppy = k_brown.z.y;
             intrinsics.fx = k_brown.x.x;
             intrinsics.fy = k_brown.y.y;
-            intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
 
             // update values in the distortion params of the calibration table
-            rgb_coefficients_table.distortion_model = RS2_DISTORTION_BROWN_CONRADY;
+            rgb_coefficients_table.distortion_model = d500_calibration_distortion::brown;
 
-            // Since we override the table we need an indication that the table had changed from
-            // outside this function Decided to use a reserve field for that
+            // Since we override the table we need an indication that the table has changed
             if( rgb_coefficients_table.reserved[3] != 0 )
                 throw invalid_value_exception( "reserved field read from RGB distortion model table is expected to be zero" );
 
@@ -230,12 +244,13 @@ namespace librealsense
             intrinsics.width = width;
             intrinsics.height = height;
 
-            // For D555e, model will be brown and we need the unrectified intrinsics
-            // We use reserved[3] as a flag here to indicate the full distortion module is not
-            // really brown but we treat it as such because the HW fixes fisheye distortion.
+            // For D555, model will be brown and we need the unrectified intrinsics
+            // For SC, model will be brown_and_fisheye and we need the rectified
+            // NOTE that update_table_to_correct_fisheye_distortion() changes the model to brown, so we use reserved[3]
+            // as a flag to indicate this happened
             bool use_base_intrinsics
-                = ( table->rgb_coefficients_table.distortion_model == RS2_DISTORTION_BROWN_CONRADY
-                    && table->rgb_coefficients_table.reserved[3] == 0 );
+                = table->rgb_coefficients_table.distortion_model == d500_calibration_distortion::brown
+               && table->rgb_coefficients_table.reserved[3] == 0;
 
             auto rect_params = compute_rect_params_from_resolution(
                 use_base_intrinsics ? table->rgb_coefficients_table.base_instrinsics
@@ -248,7 +263,7 @@ namespace librealsense
             intrinsics.fy = rect_params[1];
             intrinsics.ppx = rect_params[2];
             intrinsics.ppy = rect_params[3];
-            intrinsics.model = table->rgb_coefficients_table.distortion_model;
+            intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
             std::memcpy( intrinsics.coeffs,
                          table->rgb_coefficients_table.distortion_coeffs,
                          sizeof( intrinsics.coeffs ) );
@@ -271,6 +286,81 @@ namespace librealsense
             trans_vector.z *= trans_scale;
 
             return{ rect_rot_mat,trans_vector };
+        }
+
+        std::string d500_coefficients_table::to_string() const
+        {
+            std::string res;
+            res += "\n--- header ---\n";
+            res += header.to_string();
+            res += "--- left coeffs ---\n";
+            res += left_coefficients_table.to_string();
+            res += "--- right coeffs ---\n";
+            res += right_coefficients_table.to_string();
+            res += "--- --- ---\n";
+            res += "baseline:\t" + std::to_string(baseline) + "\n";
+            res += "translation_dir:\t" + std::to_string(translation_dir) + "\n";
+            res += "realignment_essential:\t" + std::to_string(realignment_essential) + "\n";
+            res += "vertical_shift:\t" + std::to_string(vertical_shift) + "\n";
+            res += "--- rectified intrinsics ---\n";
+            res += rectified_intrinsics.to_string();
+            return res;
+        }
+
+        std::string single_sensor_coef_table::to_string() const
+        {
+            std::string res;
+            res += "-- base_instrinsics --\n";
+            res += base_instrinsics.to_string();
+            res += "distortion_non_parametric:" + std::to_string(distortion_non_parametric) + "\n";
+            res += "distortion_model:\t\t" + std::to_string(int(distortion_model)) + "\n";
+            for (int i = 0; i < 13; ++i)
+            {
+                res += "distortion_coeffs[" + std::to_string(i) + "]:\t" + std::to_string(distortion_coeffs[i]) + "\n";
+            }
+            res += "radial_distortion_lut_range_degs:\t" + std::to_string(radial_distortion_lut_range_degs) + "\n";
+            res += "radial_distortion_lut_focal_length:\t" + std::to_string(radial_distortion_lut_focal_length) + "\n";
+            res += "-- undist config --\n";
+            res += undist_config.to_string();
+            res += "rotation_matrix[0]:\t" + std::to_string(rotation_matrix.x.x) + "\n";
+            res += "rotation_matrix[1]:\t" + std::to_string(rotation_matrix.x.y) + "\n";
+            res += "rotation_matrix[2]:\t" + std::to_string(rotation_matrix.x.z) + "\n";
+            res += "rotation_matrix[3]:\t" + std::to_string(rotation_matrix.y.x) + "\n";
+            res += "rotation_matrix[4]:\t" + std::to_string(rotation_matrix.y.y) + "\n";
+            res += "rotation_matrix[5]:\t" + std::to_string(rotation_matrix.y.z) + "\n";
+            res += "rotation_matrix[6]:\t" + std::to_string(rotation_matrix.z.x) + "\n";
+            res += "rotation_matrix[7]:\t" + std::to_string(rotation_matrix.z.y) + "\n";
+            res += "rotation_matrix[8]:\t" + std::to_string(rotation_matrix.z.z) + "\n";
+            return res;
+        }
+
+        std::string mini_intrinsics::to_string() const
+        {
+            std::string res;
+            res += "image_width:\t" + std::to_string(image_width) + "\n";
+            res += "image_height:\t" + std::to_string(image_height) + "\n";
+            res += "ppx:\t" + std::to_string(ppx) + "\n";
+            res += "ppy:\t" + std::to_string(ppy) + "\n";
+            res += "fx:\t" + std::to_string(fx) + "\n";
+            res += "fy:\t" + std::to_string(fy) + "\n";
+
+            return res;
+
+        }
+
+        std::string d500_undist_configuration::to_string() const
+        {
+            std::string res;
+            res += "fx:\t" + std::to_string(fx) + "\n";
+            res += "fy:\t" + std::to_string(fy) + "\n";
+            res += "x0:\t" + std::to_string(x0) + "\n";
+            res += "y0:\t" + std::to_string(y0) + "\n";
+            res += "x_shift_in:\t" + std::to_string(x_shift_in) + "\n";
+            res += "y_shift_in:\t" + std::to_string(y_shift_in) + "\n";
+            res += "x_scale_in:\t" + std::to_string(x_scale_in) + "\n";
+            res += "y_scale_in:\t" + std::to_string(y_scale_in) + "\n";
+            
+            return res;
         }
 
     } // librealsense::ds

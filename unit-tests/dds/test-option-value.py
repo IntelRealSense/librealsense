@@ -130,7 +130,10 @@ with test.closure( 'IP address' ):
     test.check_throws( lambda:
         dds.option.from_json( ['ip', '', 'desc', ['IPv4']] ),
         RuntimeError, 'not an IP address: ""' )
-    dds.option.from_json( ['ip', '0.0.0.0', 'desc', ['IPv4']] )
+    test.check_throws( lambda:  # 0.0.0.0 is used to denote an "invalid" IP
+        dds.option.from_json( ['ip', '0.0.0.0', 'desc', ['IPv4']] ),
+        RuntimeError, 'not an IP address: "0.0.0.0"' )
+    dds.option.from_json( ['ip', '0.0.0.1', 'desc', ['IPv4']] )
     dds.option.from_json( ['ip', '255.255.255.255', 'desc', ['IPv4']] )
     test.check_throws( lambda:
         dds.option.from_json( ['ip', '255.255.255.256', 'desc', ['IPv4']] ),
@@ -160,6 +163,26 @@ with test.closure( 'IP address' ):
         dds.option.from_json( ['ip', '1.2.3', 'desc', ['IPv4']] ),
         RuntimeError, 'not an IP address: "1.2.3"' )
 
+with test.closure( 'rect' ):
+    test.check_equal( dds.option.from_json( ['r', [0,0,1,1], 'r/o'] ).value_type(), 'rect' )
+    test.check_equal( dds.option.from_json( ['r', None, 'r/o', ['rect','optional']] ).value_type(), 'rect' )
+    test.check_equal( dds.option.from_json( ['r', [0,1,2,3], 'r/o'] ).get_value(), [0,1,2,3] )
+    test.check_equal( dds.option.from_json( ['r', [0,1,2,3], [1,2,3,4], 'r/w'] ).value_type(), 'rect' )
+    test.check_equal( dds.option.from_json( ['r', [0,1,2,3], [1,2,3,4], 'r/w'] ).get_default_value(), [1,2,3,4] )
+    test.check_throws( lambda:  # non-integer inside the default value
+        dds.option.from_json( ['r', [0,1,2,3], [1,2,3.,4], 'r/w'] ),
+        RuntimeError, 'cannot deduce value type: ["r",[0,1,2,3],[1,2,3.0,4],"r/w"]' )
+    test.check_throws( lambda:  # no range for rect
+        dds.option.from_json( ['r', [0,1,2,3], 0, 2, 1, [1,2,3,4], 'r/w'] ),
+        RuntimeError, 'not [x1,y1,x2,y2]: 0' )
+    test.check_throws( lambda:  # with 5 args, it looks like an enum
+        dds.option.from_json( ['r', [0,1,2,3], [1,2,3,4], [1,2,3,4], 'r/w'] ),
+        RuntimeError, 'non-string enum values' )
+    # With a range supplied, operator<() for JSON takes effect
+    test.check_equal( dds.option.from_json( ['r', [1,2,3,4], [0,1,2,3], [2,3,4,5], [3,4,5,6], [2,3,4,5], 'r/w'] ).value_type(), 'rect' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['r', [1,2,3,4], [0,1,2,3.], [2,3,4,5], [3,4,5,6], [2,3,4,5], 'r/w'] ),
+        RuntimeError, 'non-integers found: [0,1,2,3.0]' )
 
 #############################################################################################
 test.print_results()

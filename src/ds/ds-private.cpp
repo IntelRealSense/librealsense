@@ -106,5 +106,16 @@ namespace librealsense
 
             return rv;
         }
+
+        std::string table_header::to_string() const
+        {
+            std::string res;
+            res += "version:\t" + std::to_string(version) + "\n";
+            res += "table_type:\t" + std::to_string(table_type) + "\n";
+            res += "table_size:\t" + std::to_string(table_size) + "\n";
+            res += "param:\t" + std::to_string(param) + "\n";
+            res += "crc32:\t" + std::to_string(crc32) + "\n";
+            return res;
+        }
     } // librealsense::ds
 } // namespace librealsense

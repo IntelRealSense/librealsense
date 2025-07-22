@@ -1,3 +1,9 @@
+## This file is also being used to generate our build flags document at https://intelrealsense.github.io/librealsense/build-flags-docs/build-flags.html
+## Formatting notes for this file:
+## Options are listed as: <name> | <description> [comment] | <value>
+## regular comments should be ABOVE their relevent option
+## use double # for comments that should not show in the options doc
+
 option(ENABLE_CCACHE "Build with ccache." ON)
 option(BUILD_WITH_CUDA "Enable CUDA" OFF)
 option(BUILD_GLSL_EXTENSIONS "Build GLSL extensions API" ON)
@@ -8,7 +14,6 @@ option(HWM_OVER_XU "Send HWM commands over UVC XU control" ON)
 option(COM_MULTITHREADED "Set OFF to initialize COM library with COINIT_APARTMENTTHREADED (Windows only)" ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(BUILD_UNIT_TESTS "Build LibCI unit tests. If enabled, additional test data may be downloaded" OFF)
-option(BUILD_LEGACY_LIVE_TEST "Build the live-test.exe test used in Travis. If enabled, additional test data may be downloaded" OFF)
 option(BUILD_EXAMPLES "Build examples (not including graphical examples -- see BUILD_GRAPHICAL_EXAMPLES)" ON)
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples (Viewer & DQT) -- Implies BUILD_GLSL_EXTENSIONS" ON)
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
@@ -48,4 +53,7 @@ endif()
 option(BUILD_PC_STITCHING "Build pointcloud-stitching example" OFF)
 option(BUILD_WITH_DDS "Access camera devices through DDS topics (requires CMake 3.16.3)" OFF)
 option(BUILD_RS2_ALL "Build realsense2-all static bundle containing all realsense libraries (with BUILD_SHARED_LIBS=OFF)" ON)
- 
+option(ENABLE_SECURITY_FLAGS "Enable additional compiler security flags to enhance the build's security" OFF)
+option(USE_EXTERNAL_LZ4 "Use externally build LZ4 library instead of building and using the in this repo provided version" OFF)
+option(BUILD_ASAN "Enable AddressSanitizer" OFF)
+mark_as_advanced(BUILD_ASAN)

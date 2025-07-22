@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.8)
 include(ExternalProject)
 
 
@@ -18,7 +18,7 @@ function(get_nlohmann_json)
     # So instead, we invoke a new CMake project just to download pybind:
     configure_file( CMake/json-download.cmake.in
                     ${CMAKE_BINARY_DIR}/external-projects/json-download/CMakeLists.txt )
-    execute_process( COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+    execute_process( COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" . "--no-warn-unused-cli"
                      -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
                      -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
                      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}

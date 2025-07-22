@@ -10,6 +10,7 @@
 #include <thread>
 #include <condition_variable>
 #include <model-views.h>
+#include <realsense_imgui.h>
 #include <viewer.h>
 #include "calibration-model.h"
 #include "os.h"
@@ -26,12 +27,20 @@ namespace rs2
         : process_manager("On-Chip Calibration"), _model(model), _dev(dev), _sub(sub), _viewer(viewer), _sub_color(sub_color), py_px_only(!uvmapping_calib_full)
     {
         device_name_string = "Unknown";
-        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID))
+        if (dev.supports(RS2_CAMERA_INFO_NAME))
         {
             device_name_string = _dev.get_info( RS2_CAMERA_INFO_NAME );
             if( val_in_range( device_name_string, { std::string( "Intel RealSense D415" ) } ) )
                 speed = 4;
         }
+
+        if( dev.supports( RS2_CAMERA_INFO_CONNECTION_TYPE ) )
+        {
+            auto con_type = std::string( dev.get_info( RS2_CAMERA_INFO_CONNECTION_TYPE ) );
+            if( con_type == "GMSL" )
+                host_assistance = 1;  // To be used for MIPI SKU only
+        }
+
         if (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
         {
             std::string fw_version = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
@@ -132,6 +141,9 @@ namespace rs2
         if( it != _sub->options_metadata.end() )  // Option supported
         {
             it->second.set_option( RS2_OPTION_EMITTER_ENABLED, value, ignored_error_message );
+            if( it->second.value_as_float() != value )
+                throw std::runtime_error( rsutils::string::from()
+                                          << "Failed to set laser " << ( value == off_value ? "off" : "on" ) );
         }
     }
 
@@ -143,6 +155,9 @@ namespace rs2
         if( it != _sub->options_metadata.end() )  // Option supported
         {
             it->second.set_option( RS2_OPTION_THERMAL_COMPENSATION, value, ignored_error_message );
+            if( it->second.value_as_float() != value )
+                throw std::runtime_error( rsutils::string::from()
+                                          << "Failed to set thermal compensation " << ( value == off_value ? "off" : "on" ) );
         }
     }
 
@@ -268,11 +283,18 @@ namespace rs2
             _sub->ui.selected_format_id.clear();
             _sub->ui.selected_format_id[_uid] = 0;
 
-            _sub->ui.selected_shared_fps_id = 0; // For Ground Truth default is the lowest common FPS for USB2/# compatibility
             // Select FPS value
+            auto fps = 30;
+            if (_sub->dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+            {
+                std::string desc = _sub->dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+                if (!starts_with(desc, "3."))
+                    fps = 6; //USB2 bandwidth limitation for 720P
+            }
+            _sub->ui.selected_shared_fps_id = 0; // If requested FPS is not found use lowest common FPS for USB2 compatibility (sorted lowest first)
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
             {
-                if (_sub->shared_fps_values[i] == 0)
+                if (_sub->shared_fps_values[i] == fps)
                     _sub->ui.selected_shared_fps_id = i;
             }
 
@@ -805,7 +827,7 @@ namespace rs2
             const plane p,
             const rs2::region_of_interest roi,
             const float baseline_mm,
-            const float focal_length_pixels,
+            const rs2_intrinsics* intrin,
             const int ground_thruth_mm,
             const bool plane_fit,
             const float plane_fit_to_ground_truth_mm,
@@ -1663,7 +1685,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("%s", "Calibrate intrinsic parameters of the camera");
+            RsImGui::CustomTooltip("%s", "Calibrate intrinsic parameters of the camera");
         }
         ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
 
@@ -1675,7 +1697,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("%s", "Calibrate extrinsic parameters between left and right cameras");
+            RsImGui::CustomTooltip("%s", "Calibrate extrinsic parameters between left and right cameras");
         }
 
         get_manager().intrinsic_scan = intrinsic;
@@ -1782,7 +1804,7 @@ namespace rs2
                 ImGui::Checkbox("Px/Py only", &get_manager().py_px_only);
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "Calibrate: {Fx/Fy/Px/Py}/{Px/Py}");
+                    RsImGui::CustomTooltip("%s", "Calibrate: {Fx/Fy/Px/Py}/{Px/Py}");
                 }
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 25) });
@@ -1803,7 +1825,7 @@ namespace rs2
                 }
 
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "Begin UV-Mapping calibration after adjusting camera position");
+                    RsImGui::CustomTooltip("%s", "Begin UV-Mapping calibration after adjusting camera position");
                 ImGui::PopStyleColor(2);
 
                 string id = rsutils::string::from() << "Py Px Calibration only##py_px_only" << index;
@@ -1819,7 +1841,7 @@ namespace rs2
                 ImGui::Text("%s", "Target Width:");
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "The width of the rectangle in millimeter inside the specific target");
+                    RsImGui::CustomTooltip("%s", "The width of the rectangle in millimeter inside the specific target");
                 }
 
                 const int MAX_SIZE = 256;
@@ -1844,7 +1866,7 @@ namespace rs2
                 ImGui::Text("%s", "Target Height:");
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "The height of the rectangle in millimeter inside the specific target");
+                    RsImGui::CustomTooltip("%s", "The height of the rectangle in millimeter inside the specific target");
                 }
 
                 ImGui::SetCursorScreenPos({ float(x + 135), float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
@@ -1896,7 +1918,7 @@ namespace rs2
 
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "Begin calculating Tare Calibration/Distance to Target");
+                    RsImGui::CustomTooltip("%s", "Begin calculating Tare Calibration/Distance to Target");
                 }
             }
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS)
@@ -1938,7 +1960,7 @@ namespace rs2
 
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "Retry calculating ground truth");
+                    RsImGui::CustomTooltip("%s", "Retry calculating ground truth");
                 }
             }
             else if (update_state == RS2_CALIB_STATE_TARE_INPUT || update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
@@ -1957,9 +1979,9 @@ namespace rs2
                 if (ImGui::IsItemHovered())
                 {
                     if (update_state == RS2_CALIB_STATE_TARE_INPUT)
-                        ImGui::SetTooltip("%s", "More Options...");
+                        RsImGui::CustomTooltip("%s", "More Options...");
                     else
-                        ImGui::SetTooltip("%s", "Less Options...");
+                        RsImGui::CustomTooltip("%s", "Less Options...");
                 }
 
                 ImGui::PopStyleColor(2);
@@ -1969,7 +1991,7 @@ namespace rs2
                     ImGui::Text("%s", "Avg Step Count:");
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Number of frames to average, Min = 1, Max = 30, Default = 20");
+                        RsImGui::CustomTooltip("%s", "Number of frames to average, Min = 1, Max = 30, Default = 20");
                     }
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
 
@@ -1984,7 +2006,7 @@ namespace rs2
                     ImGui::Text("%s", "Step Count:");
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Max iteration steps, Min = 5, Max = 30, Default = 20");
+                        RsImGui::CustomTooltip("%s", "Max iteration steps, Min = 5, Max = 30, Default = 20");
                     }
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
 
@@ -2000,7 +2022,7 @@ namespace rs2
                     ImGui::Text("%s", "Accuracy:");
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Subpixel accuracy level, Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%)");
+                        RsImGui::CustomTooltip("%s", "Subpixel accuracy level, Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%)");
                     }
 
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
@@ -2040,7 +2062,7 @@ namespace rs2
                 }
 
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "Distance in millimeter to the flat wall, between 60 and 10000.");
+                    RsImGui::CustomTooltip("%s", "Distance in millimeter to the flat wall, between 60 and 10000.");
 
                 std::string id = rsutils::string::from() << "##ground_truth_for_tare" << index;
                 get_manager().ground_truth = config_file::instance().get_or_default(configurations::viewer::ground_truth_r, 1200.0f);
@@ -2079,15 +2101,14 @@ namespace rs2
                     get_manager().start_gt_viewer();
                 }
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "Calculate ground truth for the specific target");
+                    RsImGui::CustomTooltip("%s", "Calculate ground truth for the specific target");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 30) });
-                get_manager().host_assistance = (get_manager().device_name_string ==  std::string("Intel RealSense D457") ); // To be used for MIPI SKU only
                 bool assistance = (get_manager().host_assistance != 0);
                 if (ImGui::Checkbox("Host Assistance", &assistance))
                     get_manager().host_assistance = (assistance ? 1 : 0);
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
+                    RsImGui::CustomTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
 
                 std::string button_name = rsutils::string::from() << "Calibrate" << "##tare" << index;
 
@@ -2111,7 +2132,7 @@ namespace rs2
 
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "Begin Tare Calibration");
+                    RsImGui::CustomTooltip("%s", "Begin Tare Calibration");
                 }
             }
             else if (update_state == RS2_CALIB_STATE_SELF_INPUT)
@@ -2158,7 +2179,7 @@ namespace rs2
                     if (ImGui::Checkbox("Adjust both sides focal length", &restore))
                         get_manager().adjust_both_sides = (restore ? 1 : 0);
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
+                        RsImGui::CustomTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
                 }*/
 
                 // Deprecase OCC-Extended
@@ -2169,20 +2190,19 @@ namespace rs2
                 //if (ImGui::RadioButton("OCC", (int*)&(get_manager().action), 1))
                 //    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB;
                 //if (ImGui::IsItemHovered())
-                //    ImGui::SetTooltip("%s", "On-chip calibration");
+                //    RsImGui::CustomTooltip("%s", "On-chip calibration");
 
                 //ImGui::SetCursorScreenPos({ float(x + 135),  tmp_y });
                 //if (ImGui::RadioButton("OCC Extended", (int *)&(get_manager().action), 0))
                 //    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
                 //if (ImGui::IsItemHovered())
-                //    ImGui::SetTooltip("%s", "On-Chip Calibration Extended");
+                //    RsImGui::CustomTooltip("%s", "On-Chip Calibration Extended");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 31) });
-                get_manager().host_assistance = (get_manager().device_name_string ==  std::string("Intel RealSense D457") ); // To be used for MIPI SKU only
                 bool assistance = (get_manager().host_assistance != 0);
                 ImGui::Checkbox("Host Assistance", &assistance);
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
+                    RsImGui::CustomTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
 
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
@@ -2206,7 +2226,7 @@ namespace rs2
                 ImGui::PopStyleColor(2);
 
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "Begin On-Chip Calibration");
+                    RsImGui::CustomTooltip("%s", "Begin On-Chip Calibration");
             }
             else if (update_state == RS2_CALIB_STATE_FL_INPUT)
             {
@@ -2217,7 +2237,7 @@ namespace rs2
                 ImGui::Text("%s", "Target Width (mm):");
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "The width of the rectangle in millimeters inside the specific target");
+                    RsImGui::CustomTooltip("%s", "The width of the rectangle in millimeters inside the specific target");
                 }
 
                 const int MAX_SIZE = 256;
@@ -2242,7 +2262,7 @@ namespace rs2
                 ImGui::Text("%s", "Target Height (mm):");
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "The height of the rectangle in millimeters inside the specific target");
+                    RsImGui::CustomTooltip("%s", "The height of the rectangle in millimeters inside the specific target");
                 }
 
                 ImGui::SetCursorScreenPos({ float(x + 145), float(y + 77 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
@@ -2265,7 +2285,7 @@ namespace rs2
                 if (ImGui::Checkbox("Adjust both sides focal length", &adj_both))
                     get_manager().adjust_both_sides = (adj_both ? 1 : 0);
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
+                    RsImGui::CustomTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 25) });
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
@@ -2290,7 +2310,7 @@ namespace rs2
                     enable_dismiss = false;
                 }
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "Start focal length calibration after setting up camera position correctly.");
+                    RsImGui::CustomTooltip("%s", "Start focal length calibration after setting up camera position correctly.");
                 ImGui::PopStyleColor(2);
             }
             else if (update_state == RS2_CALIB_STATE_FAILED)
@@ -2343,7 +2363,7 @@ namespace rs2
                     ImGui::PopStyleColor(2);
 
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("%s", "Retry on-chip calibration process");
+                        RsImGui::CustomTooltip("%s", "Retry on-chip calibration process");
                 }
             }
             else if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
@@ -2377,7 +2397,7 @@ namespace rs2
                     std::string text_name_1 = rsutils::string::from() << "##notification_text_1_" << index;
                     ImGui::InputTextMultiline(text_name_1.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("%s", "Health check for PX");
+                        RsImGui::CustomTooltip("%s", "Health check for PX");
 
                     ImGui::SetCursorScreenPos({ float(x + 220), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
                     std::stringstream ss_2;
@@ -2386,7 +2406,7 @@ namespace rs2
                     std::string text_name_2 = rsutils::string::from() << "##notification_text_2_" << index;
                     ImGui::InputTextMultiline(text_name_2.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("%s", "Health check for PY");
+                        RsImGui::CustomTooltip("%s", "Health check for PY");
 
                     ImGui::SetCursorScreenPos({ float(x + 220), float(y + 40) + 2 * ImGui::GetTextLineHeightWithSpacing() });
                     std::stringstream ss_3;
@@ -2395,7 +2415,7 @@ namespace rs2
                     std::string text_name_3 = rsutils::string::from() << "##notification_text_3_" << index;
                     ImGui::InputTextMultiline(text_name_3.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("%s", "Health check for FX");
+                        RsImGui::CustomTooltip("%s", "Health check for FX");
 
                     ImGui::SetCursorScreenPos({ float(x + 220), float(y + 45) + 3 * ImGui::GetTextLineHeightWithSpacing() });
                     std::stringstream ss_4;
@@ -2404,7 +2424,7 @@ namespace rs2
                     std::string text_name_4 = rsutils::string::from() << "##notification_text_4_" << index;
                     ImGui::InputTextMultiline(text_name_4.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("%s", "Health check for FY");
+                        RsImGui::CustomTooltip("%s", "Health check for FY");
 
                     ImGui::PopStyleColor(7);
 
@@ -2430,7 +2450,7 @@ namespace rs2
 
                     ImGui::PopStyleColor(2);
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("%s", "New calibration values will be saved in device");
+                        RsImGui::CustomTooltip("%s", "New calibration values will be saved in device");
                 }
                 else
                 {
@@ -2482,7 +2502,7 @@ namespace rs2
                             ImGui::PopStyleColor(7);
 
                             if (ImGui::IsItemHovered())
-                                ImGui::SetTooltip("%s", "Health-check number before Tare Calibration");
+                                RsImGui::CustomTooltip("%s", "Health-check number before Tare Calibration");
 
                             ImGui::SetCursorScreenPos({ float(x + 10), float(y + 38) + ImGui::GetTextLineHeightWithSpacing() });
                             ImGui::Text("%s", "Health-Check After Calibration: ");
@@ -2505,7 +2525,7 @@ namespace rs2
                             ImGui::PopStyleColor(7);
 
                             if (ImGui::IsItemHovered())
-                                ImGui::SetTooltip("%s", "Health-check number after Tare Calibration");
+                                RsImGui::CustomTooltip("%s", "Health-check number after Tare Calibration");
                         }
                     }
                     else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
@@ -2550,7 +2570,7 @@ namespace rs2
 
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::SetTooltip("%s", "OCC Health-Check captures how far camera calibration is from the optimal one\n"
+                            RsImGui::CustomTooltip("%s", "OCC Health-Check captures how far camera calibration is from the optimal one\n"
                                 "[0, 0.25) - Good\n"
                                 "[0.25, 0.75) - Can be Improved\n"
                                 "[0.75, ) - Requires Calibration");
@@ -2597,7 +2617,7 @@ namespace rs2
 
                         if (ImGui::IsItemHovered())
                         {
-                            ImGui::SetTooltip("%s", "OCC-FL Health-Check captures how far camera calibration is from the optimal one\n"
+                            RsImGui::CustomTooltip("%s", "OCC-FL Health-Check captures how far camera calibration is from the optimal one\n"
                                 "[0, 0.15) - Good\n"
                                 "[0.15, 0.75) - Can be Improved\n"
                                 "[0.75, ) - Requires Calibration");
@@ -2689,14 +2709,14 @@ namespace rs2
                         {
                             if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB)
                             {
-                                ImGui::SetTooltip("%s", "Calibration Health-Check captures how far camera calibration is from the optimal one\n"
+                                RsImGui::CustomTooltip("%s", "Calibration Health-Check captures how far camera calibration is from the optimal one\n"
                                     "[0, 0.25) - Good\n"
                                     "[0.25, 0.75) - Can be Improved\n"
                                     "[0.75, ) - Requires Calibration");
                             }
                             else
                             {
-                                ImGui::SetTooltip("%s", "Calibration Health-Check captures how far camera calibration is from the optimal one\n"
+                                RsImGui::CustomTooltip("%s", "Calibration Health-Check captures how far camera calibration is from the optimal one\n"
                                     "[0, 0.15) - Good\n"
                                     "[0.15, 0.75) - Can be Improved\n"
                                     "[0.75, ) - Requires Calibration");
@@ -2868,7 +2888,7 @@ namespace rs2
                         ImGui::PopStyleColor(2);
 
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("%s", "New calibration values will be saved in device");
+                        RsImGui::CustomTooltip("%s", "New calibration values will be saved in device");
                 }
             }
 
@@ -2917,7 +2937,7 @@ namespace rs2
 
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "Keep the camera pointing at an object or a wall");
+                    RsImGui::CustomTooltip("%s", "Keep the camera pointing at an object or a wall");
                 }
             }
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS)
@@ -3124,7 +3144,7 @@ namespace rs2
         }
     }
 
-    autocalib_notification_model::autocalib_notification_model(std::string name, std::shared_ptr<on_chip_calib_manager> manager, bool exp)
+    autocalib_notification_model::autocalib_notification_model(std::string name, std::shared_ptr<process_manager> manager, bool exp)
         : process_notification_model(manager)
     {
         enable_expand = false;

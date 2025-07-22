@@ -15,10 +15,7 @@
 #include <chrono>
 #include <condition_variable>
 
-#include "tclap/CmdLine.h"
-#include "tclap/ValueArg.h"
-
-using namespace TCLAP;
+#include <common/cli.h>
 
 #define WAIT_FOR_DEVICE_TIMEOUT 15
 
@@ -103,15 +100,16 @@ std::vector<uint8_t> read_firmware_data(bool is_set, const std::string& file_pat
 }
 
 
-void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image)
-{  
+void update( rs2::update_device fwu_dev, std::vector< uint8_t > const & fw_image )
+{
     std::cout << std::endl << "Firmware update started. Please don't disconnect device!"<< std::endl << std::endl;
-    
+
     if (ISATTY(FILENO(stdout)))
     {
         fwu_dev.update(fw_image, [&](const float progress)
             {
                 printf("\rFirmware update progress: %d[%%]", (int)(progress * 100));
+                std::cout.flush();
             });
     }
     else
@@ -121,28 +119,9 @@ void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image)
     std::cout << std::endl << std::endl << "Firmware update done" << std::endl;
 }
 
-rs2::device_list query_devices( rs2::context ctx, bool only_sw_devs )
+void list_devices( rs2::context ctx )
 {
     auto devs = ctx.query_devices();
-    if( only_sw_devs )
-    {
-        // For SW-only devices, allow some time for DDS devices to connect
-        int tries = 5;
-        std::cout << "No device detected. Waiting..." << std::flush;
-        while( !devs.size() && tries-- )
-        {
-            std::cout << "." << std::flush;
-            std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
-            devs = ctx.query_devices();
-        }
-        std::cout << std::endl;
-    }
-    return devs;
-}
-
-void list_devices( rs2::context ctx, bool only_sw_devs )
-{
-    auto devs = query_devices( ctx, only_sw_devs );
     if (devs.size() == 0)
     {
         std::cout << std::endl << "There are no connected devices" << std::endl;
@@ -197,13 +176,13 @@ int write_fw_to_mipi_device( const rs2::device & dev, const std::vector< uint8_t
         printf( "    \r" ); // Delete progress, as it is not accurate, don't leave 85% when writing done
         if( ! fw_path_in_device.good() )
         {
-            std::cout << std::endl << "Firmware Update failed - write to device error";
+            std::cout << std::endl << "Firmware Update failed - write to device error" << std::endl;
             return EXIT_FAILURE;
         }
     }
     else 
     {
-        std::cout << std::endl << "Firmware Update failed - wrong path or permissions missing";
+        std::cout << std::endl << "Firmware Update failed - wrong path or permissions missing" << std::endl;
         return EXIT_FAILURE;
     }
     std::cout << std::endl << "Firmware update done" << std::endl;
@@ -213,15 +192,14 @@ int write_fw_to_mipi_device( const rs2::device & dev, const std::vector< uint8_t
 
 bool is_mipi_device( const rs2::device & dev )
 {
-    std::string usb_type = "unknown";
-
-    if( dev.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
-        usb_type = dev.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
-
-    bool d457_device = strcmp( dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ), "ABCD" ) == 0;
-
-    // Currently only D457 model has MIPI connection
-    return d457_device && usb_type.compare( "unknown" ) == 0;
+    bool is_mipi_device = false;
+    if (dev.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
+    {
+        std::string connection_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
+        if (connection_type == "GMSL")
+            is_mipi_device = true;
+    }
+    return is_mipi_device;
 }
 
 int main( int argc, char ** argv )
@@ -236,61 +214,38 @@ try
 
     bool done = false;
 
-    CmdLine cmd("librealsense rs-fw-update tool", ' ', RS2_API_FULL_VERSION_STR);
+    using rs2::cli;
+    cli cmd( "librealsense rs-fw-update tool" );
 
-    SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
-    SwitchArg list_devices_arg("l", "list_devices", "List all available devices");
-    SwitchArg recover_arg("r", "recover", "Recover all connected devices which are in recovery mode");
-    SwitchArg unsigned_arg("u", "unsigned", "Update unsigned firmware, available only for unlocked cameras");
-    ValueArg<std::string> backup_arg("b", "backup", "Create a backup to the camera flash and saved it to the given path", false, "", "string");
-    ValueArg<std::string> file_arg("f", "file", "Path of the firmware image file", false, "", "string");
-    ValueArg<std::string> serial_number_arg("s", "serial_number", "The serial number of the device to be update, this is mandetory if more than one device is connected", false, "", "string");
-    SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)" );
+    cli::flag list_devices_arg( 'l', "list_devices", "List all available devices" );
+    cli::flag recover_arg( 'r', "recover", "Recover all connected devices which are in recovery mode" );
+    cli::flag unsigned_arg( 'u', "unsigned", "Update unsigned firmware, available only for unlocked cameras" );
+    cli::value<std::string> backup_arg('b', "backup", "path", "", "Create a backup to the camera flash and saved it to the given path");
+    cli::value<std::string> file_arg('f', "file", "path", "", "Path of the firmware image file");
+    cli::value<std::string> serial_number_arg('s', "serial_number", "string", "", "The serial number of the device to be update, this is mandatory if more than one device is connected");
 
-    cmd.add(debug_arg);
+    cmd.default_log_level( RS2_LOG_SEVERITY_WARN );
     cmd.add(list_devices_arg);
     cmd.add(recover_arg);
     cmd.add(unsigned_arg);
     cmd.add(file_arg);
     cmd.add(serial_number_arg);
     cmd.add(backup_arg);
-    cmd.add(only_sw_arg);
-#ifdef BUILD_WITH_DDS
-    ValueArg< int > domain_arg( "", "dds-domain", "Set the DDS domain ID (default to 0)", false, 0, "0-232" );
-    cmd.add( domain_arg );
-#endif
 
-    cmd.parse(argc, argv);
-
-#ifdef BUILD_EASYLOGGINGPP
-    bool debugging = debug_arg.getValue();
-    rs2::log_to_console( debugging ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_WARN );
-#endif
-
-    json settings = json::object();
-#ifdef BUILD_WITH_DDS
-    json dds;
-    if( domain_arg.isSet() )
-        dds["domain"] = domain_arg.getValue();
-    if( only_sw_arg.isSet() )
-        dds["enabled"];  // null: remove global dds:false or dds/enabled:false, if any
-    settings["dds"] = std::move( dds );
-#endif
-    if( only_sw_arg.getValue() )
-        settings["device-mask"] = RS2_PRODUCT_LINE_SW_ONLY | RS2_PRODUCT_LINE_ANY;
+    auto settings = cmd.process( argc, argv );
     rs2::context ctx( settings.dump() );
 
     if (!list_devices_arg.isSet() && !recover_arg.isSet() && !unsigned_arg.isSet() &&
         !backup_arg.isSet() && !file_arg.isSet() && !serial_number_arg.isSet())
     {
         std::cout << std::endl << "Nothing to do, run again with -h for help" << std::endl;
-        list_devices( ctx, only_sw_arg.isSet() );
+        list_devices( ctx );
         return EXIT_SUCCESS;
     }
 
     if (list_devices_arg.isSet())
     {
-        list_devices( ctx, only_sw_arg.isSet() );
+        list_devices( ctx );
         return EXIT_SUCCESS;
     }
 
@@ -315,7 +270,7 @@ try
         std::vector<uint8_t> fw_image = read_firmware_data(file_arg.isSet(), file_arg.getValue());
 
         std::cout << std::endl << "Update to FW: " << file_arg.getValue() << std::endl;
-        auto devs = query_devices( ctx, only_sw_arg.getValue() );
+        auto devs = ctx.query_devices();
         rs2::device recovery_device;
 
         for (auto&& d : devs)
@@ -340,6 +295,7 @@ try
         try
         {
             update_serial_number = recovery_device.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+            bool d457_recovery_device = strcmp( recovery_device.get_info( RS2_CAMERA_INFO_PRODUCT_ID ), "BBCD" ) == 0;
             volatile bool recovery_device_found = false;
             ctx.set_devices_changed_callback( [&]( rs2::event_information & info ) {
                 for( auto && d : info.get_new_devices() )
@@ -362,6 +318,7 @@ try
             print_device_info( recovery_device );
             update( recovery_device, fw_image );
             std::cout << "Waiting for new device..." << std::endl;
+            if (!d457_recovery_device)
             {
                 std::unique_lock< std::mutex > lk( mutex );
                 if( ! recovery_device_found
@@ -374,6 +331,12 @@ try
                 }
             }
             std::cout << std::endl << "Recovery done" << std::endl;
+            if (d457_recovery_device)
+            {
+                std::cout << std::endl << "For GMSL device please reload d4xx driver:" << std::endl;
+                std::cout << "sudo rmmod d4xx && sudo modprobe d4xx" << std::endl;
+                std::cout << "or reboot the system" << std::endl;
+            }
             return EXIT_SUCCESS;
         }
         catch (...)
@@ -403,7 +366,7 @@ try
             cv.notify_one();
     });
 
-    auto devs = query_devices( ctx, only_sw_arg.getValue() );
+    auto devs = ctx.query_devices();
 
     if (!serial_number_arg.isSet() && devs.size() > 1)
     {
@@ -462,6 +425,7 @@ try
             {
                 flash = d.as< rs2::updatable >().create_flash_backup( [&]( const float progress ) {
                     printf( "\rFlash backup progress: %d[%%]", (int)( progress * 100 ) );
+                    std::cout.flush();
                     } );
             }
             else
@@ -505,13 +469,13 @@ try
             print_device_info( d );
 
             // If device is D457 connected by MIPI connector
-            if( is_mipi_device( d ) )
+            if( is_mipi_device( d ) && !unsigned_arg.isSet())
             {
-                if( unsigned_arg.isSet() )
-                {
-                    std::cout << std::endl << "Only signed FW is currently supported for MIPI devices" << std::endl;
-                    return EXIT_FAILURE;
-                }
+                // if( unsigned_arg.isSet() )
+                // {
+                //     std::cout << std::endl << "Only signed FW is currently supported for MIPI devices" << std::endl;
+                //     return EXIT_FAILURE;
+                // }
 
                 return write_fw_to_mipi_device( d, fw_image );
             }
@@ -525,6 +489,7 @@ try
                     d.as<rs2::updatable>().update_unsigned( fw_image, [&]( const float progress )
                         {
                             printf( "\rFirmware update progress: %d[%%]", (int)( progress * 100 ) );
+                            std::cout.flush();
                         } );
                 }
                 else
@@ -562,7 +527,8 @@ try
                     }
                 }
 
-                 update( new_fw_update_device, fw_image );
+                new_device = rs2::device();  // otherwise the wait will exit right away
+                update( new_fw_update_device, fw_image );
 
                 done = true;
                 break;

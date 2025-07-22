@@ -136,9 +136,17 @@ namespace librealsense
 
                 void open()
                 {
-                    for (auto && kvp : _dev_to_profiles) {
-                        auto&& sub = _results.at(kvp.first);
-                        sub->open(kvp.second);
+                    // Camera has a limitation such that opening the color sensor after the
+                    // depth sensor may cause the depth sensor a reset. 
+                    // This artifact may cause unexpected behavior when we ask to stop the sensor in parallel or control it
+                    // while it is doing a reset. 
+                    // As a workaround for pipeline API usage, we use the assumption that depth sensor is first in the map if it is added to the configuration,
+                    // When we reverse iterate it, the depth sensor opening will be last This should not affect other stream
+                    // which are capable of being opened decoupled from other sensors
+                    for( auto it = _dev_to_profiles.rbegin(); it != _dev_to_profiles.rend(); it++ )
+                    {
+                        auto && sub = _results.at( it->first );
+                        sub->open( it->second );
                     }
                 }
 
@@ -147,6 +155,19 @@ namespace librealsense
                 {
                     for (auto&& sensor : _results)
                         sensor.second->start(callback);
+                }
+
+                template< class T >
+                void open_and_start( T callback )
+                {
+                    // Calling open() than start() opens all relevant sensors before starting any of them.
+                    // For some device backends we want to open and start each sensor before opening the next sensor.
+                    for( auto it = _dev_to_profiles.rbegin(); it != _dev_to_profiles.rend(); it++ )
+                    {
+                        auto && sub = _results.at( it->first );
+                        sub->open( it->second );
+                        sub->start( callback );
+                    }
                 }
 
                 void stop()

@@ -1,8 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 from rspy import log, test
 import pyrealdds as dds
@@ -44,7 +44,6 @@ with test.remote.fork( nested_indent=None ) as remote:
     ###############################################################################################################
     # The client is a device from which we send controls
     #
-    from dds import wait_for_devices
 
     with test.closure( 'Start the client participant' ):
         participant = dds.participant()
@@ -140,6 +139,5 @@ with test.remote.fork( nested_indent=None ) as remote:
         test.check_equal( reply_count[device.guid()], dev1_replies + 1 )
         test.check_equal( reply_count[device2.guid()], dev2_replies + 1 )
 
-    device = None
-
 test.print_results()
+

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
 
 #include "fw-update-device.h"
 #include "../types.h"
@@ -8,11 +8,15 @@
 #include "ds/d400/d400-private.h"
 
 #include <rsutils/string/hexdump.h>
+#include <rsutils/time/stopwatch.h>
 
 #include <chrono>
 #include <stdexcept>
 #include <algorithm>
 #include <thread>
+#include <string>
+#include <regex>
+#include <fstream>
 
 #define DEFAULT_TIMEOUT 100
 #define FW_UPDATE_INTERFACE_NUMBER 0
@@ -55,12 +59,20 @@ namespace librealsense
             LOG_WARNING("DFU - failed to detach device");
     }
 
-    void update_device::read_device_info(std::shared_ptr<platform::usb_messenger> messenger)
+    void update_device::read_device_info( std::shared_ptr< platform::usb_messenger > messenger )
     {
-        auto state = get_dfu_state(messenger);
-
-        if (state != RS2_DFU_STATE_DFU_IDLE)
-            throw std::runtime_error("DFU detach failed!");
+        auto state = get_dfu_state( messenger );
+        if( state != RS2_DFU_STATE_DFU_IDLE )
+        {
+            LOG_DEBUG( "DFU state is: " << state << "; detaching..." );
+            detach( messenger );
+            state = get_dfu_state( messenger );
+            if( state != RS2_DFU_STATE_DFU_IDLE )
+            {
+                LOG_ERROR( "DFU detach failed!" << "; state is " << state );
+                throw std::runtime_error( "DFU detach failed!" );
+            }
+        }
 
         dfu_fw_status_payload payload;
         uint32_t transferred = 0;
@@ -74,11 +86,32 @@ namespace librealsense
         _highest_fw_version = get_formatted_fw_version(payload.fw_highest_version);
         _last_fw_version = get_formatted_fw_version(payload.fw_last_version);
 
-        std::string lock_status = _is_dfu_locked ? "device is locked" : "device is unlocked";
-        LOG_INFO("This device is in DFU mode, previously-installed firmware: " << _last_fw_version <<
-            ", the highest firmware ever installed: " << _highest_fw_version);
+        LOG_INFO( "DFU payload for " << get_device_info()->get_address() << ":"
+                  << "\n\tSerial number: "
+                      << rsutils::string::hexdump( payload.serial_number.serial, sizeof( payload.serial_number.serial ) )
+                  << "\n\tDevice is " << ( _is_dfu_locked ? "locked" : "unlocked" )
+                  << "\n\tDFU version is: " << payload.dfu_version
+                  << "\n\tPrevious version: " << _last_fw_version
+                  << "\n\tHighest ever installed: " << _highest_fw_version );
+    }
 
-        LOG_INFO("DFU status: " << lock_status << " , DFU version is: " << payload.dfu_version);
+    std::ostream & operator<<( std::ostream & os, rs2_dfu_state state )
+    {
+        switch( state )
+        {
+        case RS2_DFU_STATE_DFU_IDLE:                 return os << "IDLE";
+        case RS2_DFU_STATE_DFU_ERROR:                return os << "ERROR";
+        case RS2_DFU_STATE_APP_IDLE:                 return os << "APP_IDLE";
+        case RS2_DFU_STATE_APP_DETACH:               return os << "APP_DETACH";
+        case RS2_DFU_STATE_DFU_DOWNLOAD_SYNC:        return os << "DFU_DOWNLOAD_SYNC";
+        case RS2_DFU_STATE_DFU_DOWNLOAD_BUSY:        return os << "DFU_DOWNLOAD_BUSY";
+        case RS2_DFU_STATE_DFU_DOWNLOAD_IDLE:        return os << "DFU_DOWNLOAD_IDLE";
+        case RS2_DFU_STATE_DFU_MANIFEST_SYNC:        return os << "DFU_MANIFEST_SYNC";
+        case RS2_DFU_STATE_DFU_MANIFEST:             return os << "DFU_MANIFEST";
+        case RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET:  return os << "DFU_MANIFEST_WAIT_RESET";
+        case RS2_DFU_STATE_DFU_UPLOAD_IDLE:          return os << "DFU_UPLOAD_IDLE";
+        }
+        return os << (int)state;
     }
 
     bool update_device::wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout) const
@@ -112,6 +145,14 @@ namespace librealsense
         return false;
     }
 
+    float update_device::compute_progress(float progress, float start, float end, float threshold) const
+    {
+        // NOTE: this is usually overriden; see derived classes!
+        if( threshold > 1.f )
+            progress = ceil( progress * threshold ) / threshold;
+        return start + progress * (end - start);
+    }
+
     update_device::update_device( std::shared_ptr< const device_info > const & dev_info,
                                   std::shared_ptr< platform::usb_device > const & usb_device,
                                   const std::string & product_line )
@@ -123,21 +164,35 @@ namespace librealsense
     {
         if (auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER))
         {
-            auto state = get_dfu_state(messenger);
-            LOG_DEBUG("DFU state is: " << state);
-            if (state != RS2_DFU_STATE_DFU_IDLE)
-                detach(messenger);
-
-            read_device_info(messenger);
+            read_device_info( messenger );
         }
         else
         {
-            std::stringstream s;
+            std::ostringstream s;
             s << "access failed for " << std::hex <<  _usb_device->get_info().vid << ":"
               <<_usb_device->get_info().pid << " uid: " <<  _usb_device->get_info().id << std::dec;
-            LOG_ERROR(s.str().c_str());
-            throw std::runtime_error(s.str().c_str());
+            LOG_ERROR( s.str() );
+            throw std::runtime_error( s.str() );
         }
+    }
+
+    update_device::update_device( std::shared_ptr< const device_info > const & dev_info,
+                                  std::shared_ptr< platform::mipi_device > const & mipi_device,
+                                  const std::string & product_line )
+        : _dev_info( dev_info )
+        , _mipi_device( mipi_device )
+        , _physical_port( mipi_device->get_info().dfu_device_path )
+        , _pid( rsutils::string::from() << std::uppercase << rsutils::string::hexdump( mipi_device->get_info().pid ))
+        , _product_line( product_line )
+        , _serial_number( mipi_device->get_info().serial_number )
+    {
+        std::ifstream fw_path_in_device(_physical_port.c_str());
+        if (!fw_path_in_device)
+        {
+            throw std::runtime_error("Firmware Update failed - wrong path or permissions missing");
+            return;
+        }
+        fw_path_in_device.close();
     }
 
     update_device::~update_device()
@@ -145,7 +200,7 @@ namespace librealsense
 
     }
 
-    void update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
+    void update_device::update_usb(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
     {
         // checking fw compatibility (covering the case of recovery device with wrong product line fw )
         std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);
@@ -163,6 +218,7 @@ namespace librealsense
         size_t offset = 0;
         uint32_t transferred = 0;
         int retries = 10;
+        rsutils::time::stopwatch sw;
 
         while (remaining_bytes > 0)
         {
@@ -193,9 +249,18 @@ namespace librealsense
             offset += chunk_size;
 
             float progress = (float)block_number / (float)blocks_count;
-            LOG_DEBUG("fw update progress: " << progress);
-            if (update_progress_callback)
-                update_progress_callback->on_update_progress(progress);
+            if( sw.get_elapsed_ms() >= 500. )
+            {
+                // Only update every half-second to avoid spurious callbacks
+                // (we can get here many many times in a split second)
+                LOG_DEBUG( "transfer progress: " << progress );
+                if( update_progress_callback )
+                {
+                    auto progress_for_bar = compute_progress( progress, 0.f, 20.f, 0.f ) / 100.f;
+                    update_progress_callback->on_update_progress( progress_for_bar );
+                }
+                sw.reset();
+            }
         }
 
         // After the final block of firmware has been sent to the device and the status solicited, the host sends a
@@ -206,6 +271,12 @@ namespace librealsense
         if (sts != platform::RS2_USB_STATUS_SUCCESS)
             throw std::runtime_error("Failed to send final FW packet");
 
+        LOG_INFO( "Resetting device ..." );
+        dfu_manifest_phase(messenger, update_progress_callback);
+    }
+
+    void update_device::dfu_manifest_phase(const platform::rs_usb_messenger& messenger, rs2_update_progress_callback_sptr update_progress_callback) const
+    {
         // After the zero length DFU_DNLOAD request terminates the Transfer
         // phase, the device is ready to manifest the new firmware. As described
         // previously, some devices may accumulate the firmware image and perform
@@ -221,6 +292,63 @@ namespace librealsense
         // This command also reset the device
         if (!wait_for_state(messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000))
             throw std::runtime_error("Firmware manifest failed");
+    }
+
+    void update_device::update_mipi(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
+    {
+        // checking fw compatibility (covering the case of recovery device with wrong product line fw )
+        std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);
+        const size_t transfer_size = 1024;
+
+        size_t remaining_bytes = fw_image_size;
+        uint16_t blocks_count = uint16_t( fw_image_size / transfer_size );
+        uint16_t block_number = 0;
+
+        size_t offset = 0;
+        uint32_t transferred = 0;
+
+        if (!check_fw_compatibility(buffer))
+            throw librealsense::invalid_value_exception("Device: " + get_serial_number() + " failed to update firmware\nImage is unsupported for this device or corrupted");
+        // Write signed firmware to appropriate file descriptor
+
+        std::ofstream fw_path_in_device(_physical_port.c_str(), std::ios::binary);
+        if (!fw_path_in_device)
+        {
+            throw std::runtime_error("Firmware Update failed - wrong path or permissions missing");
+            return;
+        }
+        while (remaining_bytes > 0)
+        {
+            size_t chunk_size = std::min(transfer_size, remaining_bytes);
+
+            auto curr_block = ((uint8_t*)fw_image + offset);
+
+            fw_path_in_device.write(reinterpret_cast<const char*>(curr_block), chunk_size);
+
+            block_number++;
+            remaining_bytes -= chunk_size;
+            offset += chunk_size;
+
+            float progress = (float)block_number / (float)blocks_count;
+            LOG_DEBUG("fw update progress: " << progress);
+            if (update_progress_callback)
+                update_progress_callback->on_update_progress(progress);
+        }
+        LOG_INFO("Firmware Update for MIPI device done.");
+        fw_path_in_device.close();
+    }
+
+    void update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
+    {
+        LOG_INFO( "Uploading FW image ..." );
+        if(_pid == "ABCD" || _pid == "BBCD" || _pid == "ABCE")
+        {
+            update_mipi(fw_image, fw_image_size, update_progress_callback);
+        }
+        else
+        {
+            update_usb(fw_image, fw_image_size, update_progress_callback);
+        }
     }
 
     sensor_interface& update_device::get_sensor(size_t i)

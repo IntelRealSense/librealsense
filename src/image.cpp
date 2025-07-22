@@ -49,7 +49,7 @@ namespace librealsense
         case RS2_FORMAT_INZI: return 32;
         case RS2_FORMAT_INVI: return 16;
         case RS2_FORMAT_W10: return 32;
-        case RS2_FORMAT_Z16H: return 16;
+        case RS2_FORMAT_Z16H: return 16; // DEPRECATED!
         case RS2_FORMAT_FG: return 16;
         case RS2_FORMAT_Y411: return 12;
         case RS2_FORMAT_Y16I: return 32;

@@ -30,6 +30,7 @@
 #include "proc/disparity-transform.h"
 #include "proc/syncer-processing-block.h"
 #include "proc/decimation-filter.h"
+#include "proc/rotation-filter.h"
 #include "proc/spatial-filter.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/color-formats-converter.h"
@@ -133,6 +134,24 @@ struct rs2_option_value_wrapper : rs2_option_value
                     throw invalid_value_exception( get_string( option_id )
                                                    + " value is not a string: " + p_json->dump() );
                 as_string = p_json->string_ref().c_str();
+                break;
+
+            case RS2_OPTION_TYPE_RECT:
+                if( ! p_json->is_array() || 4 != p_json->size() )
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not a rect: " + p_json->dump() );
+                try
+                {
+                    p_json->at( 0 ).get_to( as_rect.x1 );
+                    p_json->at( 1 ).get_to( as_rect.y1 );
+                    p_json->at( 2 ).get_to( as_rect.x2 );
+                    p_json->at( 3 ).get_to( as_rect.y2 );
+                }
+                catch( json::exception const & e )
+                {
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not a rect: " + e.what() );
+                }
                 break;
 
             default:
@@ -446,16 +465,41 @@ void rs2_delete_stream_profiles_list(rs2_stream_profile_list* list) BEGIN_API_CA
 }
 NOEXCEPT_RETURN(, list)
 
-void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrinsics* intr, rs2_error** error) BEGIN_API_CALL
+
+std::ostream & operator<<( std::ostream & os, rs2_stream_profile const & p )
 {
-    VALIDATE_NOT_NULL(from);
+    if( ! p.profile )
+    {
+        os << "NULL";
+    }
+    else
+    {
+        os << "[ " << librealsense::get_abbr_string( p.profile->get_stream_type() );
+        os << " " << librealsense::get_string( p.profile->get_format() );
+        os << " " << p.profile->get_stream_index();
+        if( auto vsp = As< video_stream_profile, stream_profile_interface >( p.profile ) )
+        {
+            os << " " << vsp->get_width();
+            os << "x" << vsp->get_height();
+        }
+        os << " @ " << p.profile->get_framerate();
+        os << " ]";
+    }
+    return os;
+}
+
+
+void rs2_get_video_stream_intrinsics(const rs2_stream_profile* profile, rs2_intrinsics* intr, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( profile );
     VALIDATE_NOT_NULL(intr);
 
-    auto vid = VALIDATE_INTERFACE(from->profile, librealsense::video_stream_profile_interface);
+    auto vid = VALIDATE_INTERFACE( profile->profile, librealsense::video_stream_profile_interface);
 
     *intr = vid->get_intrinsics();
 }
-HANDLE_EXCEPTIONS_AND_RETURN( , from, intr )
+EXPECTED_EXCEPTION( not_implemented_exception, , profile, output_arg( intr ) )  // only accepted way of checking if profile has intrinsics
+HANDLE_EXCEPTIONS_AND_RETURN(, profile, output_arg( intr ) )
 
 // librealsense wrapper around a C function
 class calibration_change_callback : public rs2_calibration_change_callback
@@ -493,7 +537,7 @@ void rs2_register_calibration_change_callback( rs2_device* dev, rs2_calibration_
     VALIDATE_NOT_NULL( dev );
     VALIDATE_NOT_NULL( callback );
 
-    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::device_calibration );
+    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::calibration_change_device );
 
     // Wrap the C function with a callback interface that will get deleted when done
     d2r->register_calibration_change_callback(
@@ -515,7 +559,7 @@ void rs2_register_calibration_change_callback_cpp( rs2_device* dev, rs2_calibrat
 
     VALIDATE_NOT_NULL( dev );
 
-    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::device_calibration );
+    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::calibration_change_device );
     d2r->register_calibration_change_callback( callback_ptr );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , dev, callback )
@@ -732,13 +776,13 @@ float rs2_get_option(const rs2_options* options, rs2_option option_id, rs2_error
     case RS2_OPTION_TYPE_BOOLEAN:
         return (float)option.get_value().get< bool >();
 
-    case RS2_OPTION_TYPE_STRING:
+    case RS2_OPTION_TYPE_STRING: {
         // We can convert "enum" options to a float value
         auto r = option.get_range();
         if( r.min == 0.f && r.step == 1.f )
         {
             json value = option.get_value();
-            for( auto i = 0.f; i < r.max; i += r.step )
+            for( auto i = 0.f; i <= r.max; i += r.step )
             {
                 auto desc = option.get_value_description( i );
                 if( ! desc )
@@ -748,6 +792,10 @@ float rs2_get_option(const rs2_options* options, rs2_option option_id, rs2_error
             }
         }
         throw not_implemented_exception( "use rs2_get_option_value to get string values" );
+    }
+
+    case RS2_OPTION_TYPE_RECT:
+        throw not_implemented_exception( "use rs2_get_option_value to get rect values" );
     }
     return option.query();
 }
@@ -780,43 +828,43 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
     VALIDATE_OPTION_ENABLED(options, option);
     auto& option_ref = options->options->get_option(option);
     auto range = option_ref.get_range();
-    switch( option_ref.get_value_type() )
+    switch (option_ref.get_value_type())
     {
     case RS2_OPTION_TYPE_FLOAT:
-        if( range.min != range.max && range.step )
-            VALIDATE_RANGE( value, range.min, range.max );
-        option_ref.set( value );
+        if (range.min != range.max && range.step)
+            VALIDATE_RANGE(value, range.min, range.max);
+        option_ref.set(value);
         break;
 
     case RS2_OPTION_TYPE_INTEGER:
-        if( range.min != range.max && range.step )
-            VALIDATE_RANGE( value, range.min, range.max );
-        if( (int)value != value )
-            throw invalid_value_exception( rsutils::string::from() << "not an integer: " << value );
-        option_ref.set( value );
+        if (range.min != range.max && range.step)
+            VALIDATE_RANGE(value, range.min, range.max);
+        if ((int)value != value)
+            throw invalid_value_exception(rsutils::string::from() << "not an integer: " << value);
+        option_ref.set(value);
         break;
 
     case RS2_OPTION_TYPE_BOOLEAN:
-        if( value == 0.f )
-            option_ref.set_value( false );
-        else if( value == 1.f )
-            option_ref.set_value( true );
+        if (value == 0.f)
+            option_ref.set_value(false);
+        else if (value == 1.f)
+            option_ref.set_value(true);
         else
-            throw invalid_value_exception( rsutils::string::from() << "not a boolean: " << value );
+            throw invalid_value_exception(rsutils::string::from() << "not a boolean: " << value);
         break;
 
     case RS2_OPTION_TYPE_STRING:
         // We can convert "enum" options to a float value
-        if( (int)value == value && range.min == 0.f && range.step == 1.f )
+        if ((int)value == value && range.min == 0.f && range.step == 1.f)
         {
-            auto desc = option_ref.get_value_description( value );
-            if( desc )
+            auto desc = option_ref.get_value_description(value);
+            if (desc)
             {
-                option_ref.set_value( desc );
+                option_ref.set_value(desc);
                 break;
             }
         }
-        throw not_implemented_exception( "use rs2_set_option_value to set string values" );
+        throw not_implemented_exception("use rs2_set_option_value to set string values");
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
@@ -856,6 +904,13 @@ void rs2_set_option_value( rs2_options const * options, rs2_option_value const *
         option.set_value( option_value->as_string );
         break;
 
+    case RS2_OPTION_TYPE_RECT:
+        option.set_value( json::array( { option_value->as_rect.x1,
+                                         option_value->as_rect.y1,
+                                         option_value->as_rect.x2,
+                                         option_value->as_rect.y2 } ) );
+        break;
+
     default:
         throw not_implemented_exception( "unexpected option type " + get_string( option_type ) );
     }
@@ -865,6 +920,9 @@ HANDLE_EXCEPTIONS_AND_RETURN( , options, option_value )
 rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
+    rsutils::deferred bulk_op;
+    if( auto sensor = dynamic_cast<sensor_base *>(options->options) )
+        bulk_op = sensor->bulk_operation();
     auto rs2_list = new rs2_options_list;
     auto option_ids = options->options->get_supported_options();
     rs2_list->list.reserve( option_ids.size() );
@@ -1364,6 +1422,13 @@ const rs2_stream_profile* rs2_get_frame_stream_profile(const rs2_frame* frame_re
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame_ref)
 
+const char * rs2_get_stream_profile_name( const rs2_stream_profile * profile, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( profile );
+    return profile->profile->get_name();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, profile )
+
 int rs2_get_frame_bits_per_pixel(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);
@@ -1440,7 +1505,14 @@ void rs2_set_options_changed_callback( rs2_options * options,
         {
             rs2_options_list * updated_options_list = new rs2_options_list(); // Should be on heap if user will choose to save for later use.
             populate_options_list( updated_options_list, updated_options );
-            callback( updated_options_list );
+            try
+            {
+                callback( updated_options_list );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Caught exception from options-changed callback" );
+            }
         } );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , options, callback )
@@ -1464,7 +1536,14 @@ void rs2_set_options_changed_callback_cpp( rs2_options * options,
         {
             rs2_options_list * updated_options_list = new rs2_options_list(); // Should be on heap if user will choose to save for later use.
             populate_options_list( updated_options_list, updated_options );
-            cb->on_value_changed( updated_options_list );
+            try
+            {
+                cb->on_value_changed( updated_options_list );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Caught exception from options-changed callback" );
+            }
         } );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , options, callback )
@@ -1876,6 +1955,7 @@ int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_ext
     switch (extension_type)
     {
     case RS2_EXTENSION_DECIMATION_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::decimation_filter) != nullptr;
+    case RS2_EXTENSION_ROTATION_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::rotation_filter) != nullptr;
     case RS2_EXTENSION_THRESHOLD_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::threshold) != nullptr;
     case RS2_EXTENSION_DISPARITY_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::disparity_transform) != nullptr;
     case RS2_EXTENSION_SPATIAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::spatial_filter) != nullptr;
@@ -2172,7 +2252,16 @@ void rs2_pipeline_stop(rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
-rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout_ms, rs2_error ** error) BEGIN_API_CALL
+void rs2_pipeline_set_device( rs2_pipeline * pipe, rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( pipe );
+    VALIDATE_NOT_NULL( device );
+
+    pipe->pipeline->set_device( device->device );
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe, device ) 
+
+rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout_ms, rs2_error ** error)BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(pipe);
 
@@ -2702,6 +2791,14 @@ rs2_processing_block* rs2_create_decimation_filter_block(rs2_error** error) BEGI
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
+rs2_processing_block* rs2_create_rotation_filter_block( rs2_streams_list streams_to_rotate, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto block = std::make_shared< librealsense::rotation_filter >( streams_to_rotate.list );
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN( nullptr )
+
 rs2_processing_block* rs2_create_temporal_filter_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::temporal_filter>();
@@ -3097,24 +3194,24 @@ void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error
     switch (severity)
     {
     case RS2_LOG_SEVERITY_DEBUG:
-        LOG_DEBUG(message);
+        LOG_DEBUG_STR(message);
         break;
     case RS2_LOG_SEVERITY_INFO:
-        LOG_INFO(message);
+        LOG_INFO_STR(message);
         break;
     case RS2_LOG_SEVERITY_WARN:
-        LOG_WARNING(message);
+        LOG_WARNING_STR(message);
         break;
     case RS2_LOG_SEVERITY_ERROR:
-        LOG_ERROR(message);
+        LOG_ERROR_STR(message);
         break;
     case RS2_LOG_SEVERITY_FATAL:
-        LOG_FATAL(message);
+        LOG_FATAL_STR(message);
         break;
     case RS2_LOG_SEVERITY_NONE:
         break;
     default:
-        LOG_INFO(message);
+        LOG_INFO_STR(message);
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, severity, message)
@@ -3699,6 +3796,24 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
 
+void rs2_start_collecting_fw_logs( rs2_device * dev, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( dev );
+    auto fw_logger = VALIDATE_INTERFACE( dev->device, librealsense::firmware_logger_extensions );
+
+    fw_logger->start();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev )
+
+void rs2_stop_collecting_fw_logs( rs2_device * dev, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( dev );
+    auto fw_logger = VALIDATE_INTERFACE( dev->device, librealsense::firmware_logger_extensions );
+
+    fw_logger->stop();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev )
+
 rs2_firmware_log_message* rs2_create_fw_log_message(rs2_device* dev, rs2_error** error)BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
@@ -3827,49 +3942,57 @@ NOEXCEPT_RETURN(, fw_log_parsed_msg)
 const char* rs2_get_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(fw_log_parsed_msg);
-    return fw_log_parsed_msg->firmware_log_parsed->get_message().c_str();
+    return fw_log_parsed_msg->firmware_log_parsed->message.c_str();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_log_parsed_msg)
 
 const char* rs2_get_fw_log_parsed_file_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(fw_log_parsed_msg);
-    return fw_log_parsed_msg->firmware_log_parsed->get_file_name().c_str();
+    return fw_log_parsed_msg->firmware_log_parsed->file_name.c_str();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_log_parsed_msg)
 
 const char* rs2_get_fw_log_parsed_thread_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(fw_log_parsed_msg);
-    return fw_log_parsed_msg->firmware_log_parsed->get_thread_name().c_str();
+    return fw_log_parsed_msg->firmware_log_parsed->source_name.c_str();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_log_parsed_msg)
+
+const char* rs2_get_fw_log_parsed_module_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(fw_log_parsed_msg);
+    return fw_log_parsed_msg->firmware_log_parsed->module_name.c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, fw_log_parsed_msg)
+
 
 rs2_log_severity rs2_get_fw_log_parsed_severity(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(fw_log_parsed_msg);
-    return fw_log_parsed_msg->firmware_log_parsed->get_severity();
+    return fw_log_parsed_msg->firmware_log_parsed->severity;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_LOG_SEVERITY_NONE, fw_log_parsed_msg)
 
 unsigned int rs2_get_fw_log_parsed_line(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(fw_log_parsed_msg);
-    return fw_log_parsed_msg->firmware_log_parsed->get_line();
+    return fw_log_parsed_msg->firmware_log_parsed->line;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, fw_log_parsed_msg)
 
 unsigned int rs2_get_fw_log_parsed_timestamp(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(fw_log_parsed_msg);
-    return fw_log_parsed_msg->firmware_log_parsed->get_timestamp();
+    return fw_log_parsed_msg->firmware_log_parsed->timestamp;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, fw_log_parsed_msg)
 
 unsigned int rs2_get_fw_log_parsed_sequence_id(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(fw_log_parsed_msg);
-    return fw_log_parsed_msg->firmware_log_parsed->get_sequence_id();
+    return fw_log_parsed_msg->firmware_log_parsed->sequence;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, fw_log_parsed_msg)
 
@@ -3910,7 +4033,9 @@ rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_p
     VALIDATE_NOT_NULL(command);
     VALIDATE_NOT_NULL(response);
     VALIDATE_LE(size_of_command, 1000); //bufer shall be less than 1000 bytes or similar
-    VALIDATE_LE(size_of_response, 5000);//bufer shall be less than 5000 bytes or similar
+
+    // some commands may return a longer length as a response
+    //VALIDATE_LE(size_of_response, 5000);//bufer shall be less than 5000 bytes or similar
 
 
     std::string command_string;
@@ -3987,48 +4112,58 @@ void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics* int
     pixel[1] = y * intrin->fy + intrin->ppy;
 }
 NOEXCEPT_RETURN(, pixel)
+/* Helper inner function (not part of the API) */
+inline bool is_intrinsics_distortion_zero(const struct rs2_intrinsics* intrin)
+{
+    return (std::fabs(intrin->coeffs[0]) < FLT_EPSILON && std::fabs(intrin->coeffs[1]) < FLT_EPSILON &&
+            std::fabs(intrin->coeffs[2]) < FLT_EPSILON && std::fabs(intrin->coeffs[3]) < FLT_EPSILON &&
+            std::fabs(intrin->coeffs[4]) < FLT_EPSILON);
+}
 
 void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* intrin, const float pixel[2], float depth) BEGIN_API_CALL
 {
     assert(intrin->model != RS2_DISTORTION_MODIFIED_BROWN_CONRADY); // Cannot deproject from a forward-distorted image
-    //assert(intrin->model != RS2_DISTORTION_BROWN_CONRADY); // Cannot deproject to an brown conrady model
-
+ 
     float x = (pixel[0] - intrin->ppx) / intrin->fx;
     float y = (pixel[1] - intrin->ppy) / intrin->fy;
 
     float xo = x;
     float yo = y;
+    
 
-    if (intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
+    if (!is_intrinsics_distortion_zero(intrin))
     {
-        // need to loop until convergence 
-        // 10 iterations determined empirically
-        for (int i = 0; i < 10; i++)
+        if (intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
         {
-            float r2 = x * x + y * y;
-            float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
-            float xq = x / icdist;
-            float yq = y / icdist;
-            float delta_x = 2 * intrin->coeffs[2] * xq * yq + intrin->coeffs[3] * (r2 + 2 * xq * xq);
-            float delta_y = 2 * intrin->coeffs[3] * xq * yq + intrin->coeffs[2] * (r2 + 2 * yq * yq);
-            x = (xo - delta_x) * icdist;
-            y = (yo - delta_y) * icdist;
+            // need to loop until convergence
+            // 10 iterations determined empirically
+            for (int i = 0; i < 10; i++)
+            {
+                float r2 = x * x + y * y;
+                float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
+                float xq = x / icdist;
+                float yq = y / icdist;
+                float delta_x = 2 * intrin->coeffs[2] * xq * yq + intrin->coeffs[3] * (r2 + 2 * xq * xq);
+                float delta_y = 2 * intrin->coeffs[3] * xq * yq + intrin->coeffs[2] * (r2 + 2 * yq * yq);
+                x = (xo - delta_x) * icdist;
+                y = (yo - delta_y) * icdist;
+            }
         }
-    }
-    if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
-    {
-        // need to loop until convergence 
-        // 10 iterations determined empirically
-        for (int i = 0; i < 10; i++)
+        if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
         {
-            float r2 = x * x + y * y;
-            float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
-            float delta_x = 2 * intrin->coeffs[2] * x * y + intrin->coeffs[3] * (r2 + 2 * x * x);
-            float delta_y = 2 * intrin->coeffs[3] * x * y + intrin->coeffs[2] * (r2 + 2 * y * y);
-            x = (xo - delta_x) * icdist;
-            y = (yo - delta_y) * icdist;
-        }
+            // need to loop until convergence
+            // 10 iterations determined empirically
+            for (int i = 0; i < 10; i++)
+            {
+                float r2 = x * x + y * y;
+                float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
+                float delta_x = 2 * intrin->coeffs[2] * x * y + intrin->coeffs[3] * (r2 + 2 * x * x);
+                float delta_y = 2 * intrin->coeffs[3] * x * y + intrin->coeffs[2] * (r2 + 2 * y * y);
+                x = (xo - delta_x) * icdist;
+                y = (yo - delta_y) * icdist;
+            }
 
+        }
     }
     if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
     {
@@ -4043,7 +4178,7 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
         for (int i = 0; i < 4; i++)
         {
             float f = theta * (1 + theta2 * (intrin->coeffs[0] + theta2 * (intrin->coeffs[1] + theta2 * (intrin->coeffs[2] + theta2 * intrin->coeffs[3])))) - rd;
-            if (fabs(f) < FLT_EPSILON)
+            if (std::fabs(f) < FLT_EPSILON)
             {
                 break;
             }
@@ -4062,7 +4197,7 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
         {
             rd = FLT_EPSILON;
         }
-        float r = (float)(tan(intrin->coeffs[0] * rd) / atan(2 * tan(intrin->coeffs[0] / 2.0f)));
+        float r = (std::fabs(intrin->coeffs[0]) < FLT_EPSILON) ? 0.0f : (float)(tan(intrin->coeffs[0] * rd) / atan(2 * tan(intrin->coeffs[0] / 2.0f)));
         x *= r / rd;
         y *= r / rd;
     }
@@ -4115,9 +4250,9 @@ bool is_pixel_in_line(const float curr[2], const float start[2], const float end
 void adjust_2D_point_to_boundary(float p[2], int width, int height)
 {
     if (p[0] < 0) p[0] = 0;
-    if (p[0] > width) p[0] = (float)width;
+    if (p[0] >= width) p[0] = (float)width - 1;
     if (p[1] < 0) p[1] = 0;
-    if (p[1] > height) p[1] = (float)height;
+    if (p[1] >= height) p[1] = (float)height - 1;
 }
 
 
@@ -4325,3 +4460,37 @@ float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_fr
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(-1.f, device, queue1, queue2, queue3, target_width, target_height)
+
+const rs2_raw_data_buffer* rs2_get_calibration_config(
+    rs2_device* device,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    auto ret_str = auto_calib->get_calibration_config();
+    std::vector<uint8_t> vec(ret_str.begin(), ret_str.end());
+    return new rs2_raw_data_buffer{ std::move(vec) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+void rs2_set_calibration_config(
+    rs2_device* device,
+    const char* calibration_config_json_str,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(calibration_config_json_str);
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    auto_calib->set_calibration_config(calibration_config_json_str);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, calibration_config_json_str)
+
+void rs2_hw_monitor_get_opcode_string(int opcode, char* buffer, size_t buffer_size,
+    rs2_device* device,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    auto device_interface = VALIDATE_INTERFACE(device->device, librealsense::debug_interface);
+    strncpy(buffer, device_interface->get_opcode_string(opcode).c_str(), buffer_size);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)

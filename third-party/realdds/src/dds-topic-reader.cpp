@@ -7,6 +7,7 @@
 #include <realdds/dds-subscriber.h>
 #include <realdds/dds-serialization.h>
 #include <realdds/dds-utilities.h>
+#include <realdds/dds-guid.h>
 
 #include <rsutils/time/stopwatch.h>
 
@@ -16,6 +17,7 @@
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 
+#include <rsutils/time/timer.h>
 #include <rsutils/json.h>
 
 
@@ -32,6 +34,7 @@ dds_topic_reader::dds_topic_reader( std::shared_ptr< dds_topic > const & topic,
                                     std::shared_ptr< dds_subscriber > const & subscriber )
     : _topic( topic )
     , _subscriber( subscriber )
+    , _n_writers( 0 )
 {
 }
 
@@ -89,6 +92,12 @@ dds_topic_reader::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind rel
 }
 
 
+dds_guid const & dds_topic_reader::guid() const
+{
+    return _reader ? _reader->guid() : unknown_guid;
+}
+
+
 void dds_topic_reader::qos::override_from_json( rsutils::json const & qos_settings )
 {
     // Default values should be set before we're called:
@@ -110,6 +119,21 @@ void dds_topic_reader::run( qos const & rqos )
     status_mask << eprosima::fastdds::dds::StatusMask::data_available();
     status_mask << eprosima::fastdds::dds::StatusMask::sample_lost();
     _reader = DDS_API_CALL( _subscriber->get()->create_datareader( _topic->get(), rqos, this, status_mask ) );
+}
+
+
+bool dds_topic_reader::wait_for_writers( dds_time timeout )
+{
+    // Better to use on_subscription_matched, but that would require additional data members etc.
+    // For now, keep it simple:
+    rsutils::time::timer timer( std::chrono::nanoseconds( timeout.to_ns() ) );
+    while( _n_writers.load() < 1 )
+    {
+        if( timer.has_expired() )
+            return false;
+        std::this_thread::sleep_for( std::chrono::milliseconds( 250 ) );
+    }
+    return true;
 }
 
 

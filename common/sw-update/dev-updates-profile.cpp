@@ -66,6 +66,11 @@ namespace rs2
                 version_info recommened_update;
                 if (try_parse_update(_versions_db, _update_profile.device_name, RECOMMENDED, comp, recommened_update) == VERSION_FOUND)
                 {
+                    // In case of software versions ignore build number to compare only major, minor, and patch versions
+                    if( comp == LIBREALSENSE )
+                    {
+                        recommened_update.ver = recommened_update.ver.without_build();
+                    }
                     if (current_version < recommened_update.ver)
                     {
                         versions_vec[recommened_update.ver] = recommened_update;
@@ -76,6 +81,11 @@ namespace rs2
                 version_info required_update;
                 if (try_parse_update(_versions_db, _update_profile.device_name, ESSENTIAL, comp, required_update) == VERSION_FOUND)
                 {
+                    // In case of software versions ignore build number to compare only major, minor, and patch versions
+                    if( comp == LIBREALSENSE )
+                    {
+                        required_update.ver = required_update.ver.without_build();
+                    }
                     if (current_version < required_update.ver)
                     {
                         versions_vec[required_update.ver] = required_update;

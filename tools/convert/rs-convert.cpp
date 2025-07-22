@@ -1,13 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2018 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2018-25 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
 
 #include "librealsense2/rs.hpp"
 
-#include "tclap/CmdLine.h"
+#include <common/cli.h>
 
 #include "converters/converter-csv.hpp"
+#include "converters/converter-3d-csv.hpp"
 #include "converters/converter-png.hpp"
 #include "converters/converter-raw.hpp"
 #include "converters/converter-ply.hpp"
@@ -19,46 +20,45 @@
 #define SECONDS_TO_NANOSECONDS 1000000000
  
 using namespace std;
-using namespace TCLAP;
 
 
 int main(int argc, char** argv) try
 {
-#ifdef BUILD_EASYLOGGINGPP
-    rs2::log_to_file(RS2_LOG_SEVERITY_WARN);
-#endif
-
     // Parse command line arguments
-    CmdLine cmd("librealsense rs-convert tool", ' ');
-    ValueArg<string> inputFilename("i", "input", "ROS-bag filename", true, "", "ros-bag-file");
-    ValueArg<string> outputFilenamePng("p", "output-png", "output PNG file(s) path", false, "", "png-path");
-    ValueArg<string> outputFilenameCsv("v", "output-csv", "output CSV (depth matrix) file(s) path", false, "", "csv-path");
-    ValueArg<string> outputFilenameRaw("r", "output-raw", "output RAW file(s) path", false, "", "raw-path");
-    ValueArg<string> outputFilenamePly("l", "output-ply", "output PLY file(s) path", false, "", "ply-path");
-    ValueArg<string> outputFilenameBin("b", "output-bin", "output BIN (depth matrix) file(s) path", false, "", "bin-path");
-    SwitchArg switchDepth("d", "depth", "convert depth frames (default - all supported)", false);
-    SwitchArg switchColor("c", "color", "convert color frames (default - all supported)", false);
-    SwitchArg switchTextOutput( "T", "output-text", "output text to stdout", false );
-    ValueArg <string> frameNumberStart("f", "first-framenumber", "ignore frames whose frame number is less than this value", false, "", "first-framenumber");
-    ValueArg <string> frameNumberEnd("t", "last-framenumber", "ignore frames whose frame number is greater than this value", false, "", "last-framenumber");
-    ValueArg <string> startTime("s", "start-time", "ignore frames whose timestamp is less than this value (the first frame is at time 0)", false, "", "start-time");
-    ValueArg <string> endTime("e", "end-time", "ignore frames whose timestamp is greater than this value (the first frame is at time 0)", false, "", "end-time");
+    using cli = rs2::cli;
 
+    cli::value<string> inputFilename('i', "input", "ros-bag-file", "", "ROS-bag filename", cli::required );
+    cli::value<string> outputFilenamePng('p', "output-png", "png-path", "", "output PNG file(s) path");
+    cli::value<string> outputFilenameCsv('v', "output-csv", "csv-path", "", "output CSV (depth matrix) file(s) path");
+    cli::value<string> outputFilename3dCsv('V', "output-3d-csv", "3d-csv-path", "", "output 3d CSV (depth matrix) file(s) path");
+    cli::value<string> outputFilenameRaw('r', "output-raw", "raw-path", "", "output RAW file(s) path");
+    cli::value<string> outputFilenamePly('l', "output-ply", "ply-path", "", "output PLY file(s) path");
+    cli::value<string> outputFilenameBin('b', "output-bin", "bin-path", "", "output BIN (depth matrix) file(s) path");
+    cli::flag switchDepth( 'd', "depth", "convert depth frames (default - all supported)" );
+    cli::flag switchColor( 'c', "color", "convert color frames (default - all supported)" );
+    cli::flag switchTextOutput( 'T', "output-text", "output text to stdout" );
+    cli::value <string> frameNumberStart('f', "first-framenumber", "frame", "", "ignore frames whose frame number is less than this value");
+    cli::value <string> frameNumberEnd('t', "last-framenumber", "frame", "", "ignore frames whose frame number is greater than this value");
+    cli::value <string> startTime('s', "start-time", "seconds", "", "ignore frames whose timestamp is less than this value (the first frame is at time 0)");
+    cli::value <string> endTime('e', "end-time", "seconds", "", "ignore frames whose timestamp is greater than this value (the first frame is at time 0)" );
 
-    cmd.add(inputFilename);
-    cmd.add(frameNumberEnd);
-    cmd.add(frameNumberStart);
-    cmd.add(endTime);
-    cmd.add(startTime);
-    cmd.add(outputFilenamePng);
-    cmd.add(outputFilenameCsv);
-    cmd.add(outputFilenameRaw);
-    cmd.add(outputFilenamePly);
-    cmd.add(outputFilenameBin);
-    cmd.add(switchDepth);
-    cmd.add(switchColor);
-    cmd.add( switchTextOutput );
-    cmd.parse(argc, argv);
+    auto settings = cli( "librealsense rs-convert tool" )
+                        .default_log_level( RS2_LOG_SEVERITY_WARN )
+                        .arg( inputFilename )
+                        .arg( frameNumberEnd )
+                        .arg( frameNumberStart )
+                        .arg( endTime )
+                        .arg( startTime )
+                        .arg( outputFilenamePng )
+                        .arg( outputFilenameCsv )
+                        .arg( outputFilename3dCsv )
+                        .arg( outputFilenameRaw )
+                        .arg( outputFilenamePly )
+                        .arg( outputFilenameBin )
+                        .arg( switchDepth )
+                        .arg( switchColor )
+                        .arg( switchTextOutput )
+                        .process( argc, argv );
 
     vector<shared_ptr<rs2::tools::converter::converter_base>> converters;
     shared_ptr<rs2::tools::converter::converter_ply> plyconverter;
@@ -72,6 +72,14 @@ int main(int argc, char** argv) try
         converters.push_back(
             make_shared<rs2::tools::converter::converter_csv>(
                 outputFilenameCsv.getValue()
+                , streamType));
+    }
+
+    if (outputFilename3dCsv.isSet())
+    {
+        converters.push_back(
+            make_shared<rs2::tools::converter::converter_3d_csv>(
+                outputFilename3dCsv.getValue()
                 , streamType));
     }
 
@@ -138,7 +146,7 @@ int main(int argc, char** argv) try
         // we don't want to prevent process termination if some of the frames
         // did not find a match and hence were not serviced
         auto pipe = std::shared_ptr<rs2::pipeline>(
-            new rs2::pipeline(), [](rs2::pipeline*) {});
+            new rs2::pipeline( settings.dump() ), [](rs2::pipeline*) {});
 
         plyconverter = make_shared<rs2::tools::converter::converter_ply>(
             outputFilenamePly.getValue());

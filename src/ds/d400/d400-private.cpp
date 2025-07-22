@@ -29,6 +29,7 @@ namespace librealsense
                     case RS460_PID:
                     case RS430_PID:
                     case RS420_PID:
+                    case RS421_PID:
                     case RS400_IMU_PID:
                         found = (result.mi == 3);
                         break;
@@ -288,6 +289,90 @@ namespace librealsense
             }
 
             return calc_intrinsic;
+        }
+
+        //D405 needs special calculation because the ISP crops the full sensor image using non linear transformation.
+        rs2_intrinsics get_d405_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
+        {
+            struct resolution
+            {
+                uint32_t width = 0;
+                uint32_t height = 0;
+            };
+
+            // Convert normalized focal length and principal point to pixel units (K matrix format)
+            auto normalized_k_to_pixels = [&]( float3x3 & k, resolution res )
+            {
+                if( res.width == 0 || res.height == 0 )
+                    throw invalid_value_exception( rsutils::string::from() <<
+                                                   "Unsupported resolution used (" << width << ", " << height << ")" );
+
+                k( 0, 0 ) = k( 0, 0 ) * res.width / 2.f;      // fx
+                k( 1, 1 ) = k( 1, 1 ) * res.height / 2.f;     // fy
+                k( 2, 0 ) = ( k( 2, 0 ) + 1 ) * res.width / 2.f;  // ppx
+                k( 2, 1 ) = ( k( 2, 1 ) + 1 ) * res.height / 2.f;  // ppy
+            };
+
+            // Scale focal length and principal point in pixel units from one resolution to another (K matrix format)
+            auto scale_pixel_k = [&]( float3x3 & k, resolution in_res, resolution out_res)
+            {
+                if( in_res.width == 0 || in_res.height == 0 || out_res.width == 0 || out_res.height == 0 )
+                    throw invalid_value_exception( rsutils::string::from() <<
+                                                   "Unsupported resolution used (" << width << ", " << height << ")" );
+
+                float scale_x = out_res.width / static_cast< float >( in_res.width );
+                float scale_y = out_res.height / static_cast< float >( in_res.height );
+                float scale = max( scale_x, scale_y );
+                float shift_x = ( in_res.width * scale - out_res.width ) / 2.f;
+                float shift_y = ( in_res.height * scale - out_res.height ) / 2.f;
+
+                k( 0, 0 ) = k( 0, 0 ) * scale;  // fx
+                k( 1, 1 ) = k( 1, 1 ) * scale;  // fy
+                k( 2, 0 ) = k( 2, 0 ) * scale - shift_x;  // ppx
+                k( 2, 1 ) = k( 2, 1 ) * scale - shift_y;  // ppy
+            };
+
+            auto table = check_calib< ds::d400_rgb_calibration_table >( raw_data );
+            auto output_res = resolution{ width, height };
+            auto calibration_res = resolution{ table->calib_width, table->calib_height };
+
+            float3x3 k = table->intrinsic;
+            if( width == 1280 && height == 720 )
+                normalized_k_to_pixels( k, output_res );
+            else if( width == 640 && height == 480 ) // 640x480 is 4:3 not 16:9 like other available resolutions, ISP handling is different.
+            {
+                auto raw_res = resolution{ 1280, 800 };
+                // Extrapolate K to raw resolution
+                float scale_y = calibration_res.height / static_cast< float >( raw_res.height );
+                k( 1, 1 ) = k( 1, 1 ) * scale_y;  // fy
+                k( 2, 1 ) = k( 2, 1 ) * scale_y;  // ppy
+                normalized_k_to_pixels( k, raw_res );
+                // Handle ISP scaling to 770x480
+                auto scale_res = resolution{ 770, 480 };
+                scale_pixel_k( k, raw_res, scale_res );
+                // Handle ISP cropping to 640x480
+                k( 2, 0 ) = k( 2, 0 ) - ( scale_res.width - output_res.width ) / 2;  // ppx
+                k( 2, 1 ) = k( 2, 1 ) - ( scale_res.height - output_res.height ) / 2;  // ppy
+            }
+            else
+            {
+                normalized_k_to_pixels( k, calibration_res );
+                scale_pixel_k( k, calibration_res, output_res );
+            }
+
+            // Convert k matrix format to rs2 format
+            rs2_intrinsics rs2_intr{
+                static_cast< int >( width ),
+                static_cast< int >( height ),
+                k( 2, 0 ),
+                k( 2, 1 ),
+                k( 0, 0 ),
+                k( 1, 1 ),
+                RS2_DISTORTION_INVERSE_BROWN_CONRADY  // The coefficients shall be use for undistort
+            };
+            std::memcpy( rs2_intr.coeffs, table->distortion, sizeof( table->distortion ) );
+
+            return rs2_intr;
         }
 
         // Parse intrinsics from newly added RECPARAMSGET command

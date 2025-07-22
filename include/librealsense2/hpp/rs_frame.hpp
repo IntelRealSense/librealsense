@@ -112,10 +112,19 @@ namespace rs2
         */
         std::string stream_name() const
         {
-            std::stringstream ss;
-            ss << rs2_stream_to_string(stream_type());
-            if (stream_index() != 0) ss << " " << stream_index();
-            return ss.str();
+            rs2_error * e = nullptr;
+            std::string name = rs2_get_stream_profile_name( _profile, &e );
+
+            if( name.empty() )
+            {
+                std::stringstream ss;
+                ss << rs2_stream_to_string( stream_type() );
+                if( stream_index() != 0 )
+                    ss << " " << stream_index();
+                name = ss.str();
+            }
+
+            return name;
         }
 
         /**
@@ -903,13 +912,23 @@ namespace rs2
             error::handle(e);
         }
         /**
-        * Retrieve the motion data from IMU sensor
-        * \return rs2_vector - 3D vector in Euclidean coordinate space.
-        */
+         * Retrieve the motion data for frames with RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO or RS2_STREAM_ACCEL.
+         * For RS2_STREAM_MOTION and RS2_FORMAT_COMBINED_MOTION, use get_combined_motion_data().
+         * \return rs2_vector - 3D vector in Euclidean coordinate space.
+         */
         rs2_vector get_motion_data() const
         {
             auto data = reinterpret_cast<const float*>(get_data());
             return rs2_vector{ data[0], data[1], data[2] };
+        }
+        /**
+         * Retrieve the combined motion data for frames with RS2_FORMAT_COMBINED_MOTION and RS2_STREAM_MOTION.
+         * For RS2_FORMAT_MOTION_XYZ32F and RS2_STREAM_GYRO or RS2_STREAM_ACCEL, use get_motion_data().
+         * \return rs2_combined_motion - including linear acceleration and angular velocity.
+         */
+        rs2_combined_motion get_combined_motion_data() const
+        {
+            return *reinterpret_cast< rs2_combined_motion const * >( get_data() );
         }
     };
 

@@ -6,7 +6,10 @@
 #include <src/fw-update/fw-update-device-interface.h>
 #include <src/core/debug.h>
 #include "sid_index.h"
+#include "rsdds-serializable.h"
+#include <src/auto-calibrated-proxy.h>
 
+#include <rsutils/json-fwd.h>
 #include <memory>
 #include <vector>
 
@@ -40,19 +43,24 @@ class dds_device_proxy
     , public debug_interface
     , public updatable                // unsigned, non-recovery-mode
     , public update_device_interface  // signed, recovery-mode
+    , public dds_serializable
+    , public auto_calibrated_proxy
 {
     std::shared_ptr< realdds::dds_device > _dds_dev;
     std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
     std::map< std::string, std::shared_ptr< librealsense::stream > > _stream_name_to_librs_stream;
     std::map< std::string, std::shared_ptr< dds_sensor_proxy > > _stream_name_to_owning_sensor;
-
+    
+    rsutils::subscription _calibration_changed_subscription;
     rsutils::subscription _metadata_subscription;
 
     int get_index_from_stream_name( const std::string & name ) const;
-    void set_profile_intrinsics( std::shared_ptr< stream_profile_interface > & profile,
+    int get_unique_index_in_sensor( const std::shared_ptr< dds_sensor_proxy > & sensor,
+                                    const std::string & stream_name, rs2_stream stream_type ) const;
+    void set_profile_intrinsics( std::shared_ptr< stream_profile_interface > const & profile,
                                  const std::shared_ptr< realdds::dds_stream > & stream ) const;
-    void set_video_profile_intrinsics( std::shared_ptr< stream_profile_interface > profile,
-                                       std::shared_ptr< realdds::dds_video_stream > stream ) const;
+    void set_video_profile_intrinsics( std::shared_ptr< stream_profile_interface > const & profile,
+                                       std::shared_ptr< const realdds::dds_video_stream > const & stream ) const;
     void set_motion_profile_intrinsics( std::shared_ptr< stream_profile_interface > profile,
                                        std::shared_ptr< realdds::dds_motion_stream > stream ) const;
 
@@ -78,6 +86,7 @@ private:
                                           uint32_t param4 = 0,
                                           uint8_t const * data = nullptr,
                                           size_t dataLength = 0 ) const override;
+    std::string get_opcode_string(int opcode) const override;
 
     // updatable: unsigned, non-recovery-mode
 private:
@@ -90,6 +99,11 @@ private:
 private:
     void update( const void * image, int image_size, rs2_update_progress_callback_sptr = nullptr ) const override;
 
+    // dds_serializable
+private:
+    device_interface const & get_serializable_device() const override { return *this; }
+    std::vector< sensor_interface * > get_serializable_sensors() override;
+    std::vector< sensor_interface const * > get_serializable_sensors() const override;
 };
 
 

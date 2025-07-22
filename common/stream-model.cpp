@@ -6,6 +6,7 @@
 #include "viewer.h"
 #include "os.h"
 #include <imgui_internal.h>
+#include <realsense_imgui.h>
 
 
 namespace rs2
@@ -48,9 +49,24 @@ namespace rs2
             else
                 frame_md.md_attributes[i].first = false;
         }
-
+        create_graph(profile.stream_type());
         texture->upload(f);
         return texture;
+    }
+
+    void stream_model::create_graph(rs2_stream stream_type)
+    {
+        if (!graph_initialized) 
+        {
+            // create graph if the stream is gyro/accel
+            if (profile.stream_type() == RS2_STREAM_GYRO) {
+                graph = std::make_shared<graph_model>("Gyro graph", RS2_STREAM_GYRO);
+            }
+            else if (profile.stream_type() == RS2_STREAM_ACCEL) {
+                graph = std::make_shared<graph_model>("Accel graph", RS2_STREAM_ACCEL);
+            }
+            graph_initialized = true;
+        }
     }
 
     void outline_rect(const rect& r)
@@ -281,69 +297,67 @@ namespace rs2
                 // x,y remain the same, only update the width,height with new mouse position relative to starting mouse position
                 roi_display_rect.w = mouse.cursor.x - roi_display_rect.x;
                 roi_display_rect.h = mouse.cursor.y - roi_display_rect.y;
-            }
-            // Case 3: We are in middle of dragging (capturing) and mouse was released
-            if (!mouse.mouse_down[0] && capturing_roi && stream_rect.contains(mouse.cursor))
-            {
-                // Update width,height one last time
-                roi_display_rect.w = mouse.cursor.x - roi_display_rect.x;
-                roi_display_rect.h = mouse.cursor.y - roi_display_rect.y;
-                capturing_roi = false; // Mark that we are no longer dragging
 
-                if (roi_display_rect) // If the rect is not empty?
+                // Case 3: We are in middle of dragging (capturing) and mouse was released
+                if( ! mouse.mouse_down[0] )
                 {
-                    // Convert from local (pixel) coordinate system to device coordinate system
-                    auto r = roi_display_rect;
-                    r = r.normalize(stream_rect).unnormalize(_normalized_zoom.unnormalize(get_original_stream_bounds()));
-                    dev->roi_rect = r; // Store new rect in device coordinates into the subdevice object
+                    capturing_roi = false; // Mark that we are no longer dragging
 
-                    // Send it to firmware:
-                    // Step 1: get rid of negative width / height
-                    region_of_interest roi{};
-                    roi.min_x = static_cast<int>(std::min(r.x, r.x + r.w));
-                    roi.max_x = static_cast<int>(std::max(r.x, r.x + r.w));
-                    roi.min_y = static_cast<int>(std::min(r.y, r.y + r.h));
-                    roi.max_y = static_cast<int>(std::max(r.y, r.y + r.h));
-
-                    try
+                    if (roi_display_rect) // If the rect is not empty?
                     {
-                        // Step 2: send it to firmware
-                        if (sensor->is<roi_sensor>())
+                        // Convert from local (pixel) coordinate system to device coordinate system
+                        auto r = roi_display_rect;
+                        r = r.normalize(stream_rect).unnormalize(_normalized_zoom.unnormalize(get_original_stream_bounds()));
+                        dev->roi_rect = r; // Store new rect in device coordinates into the subdevice object
+
+                        // Send it to firmware:
+                        // Step 1: get rid of negative width / height
+                        region_of_interest roi{};
+                        roi.min_x = static_cast<int>(std::min(r.x, r.x + r.w));
+                        roi.max_x = static_cast<int>(std::max(r.x, r.x + r.w));
+                        roi.min_y = static_cast<int>(std::min(r.y, r.y + r.h));
+                        roi.max_y = static_cast<int>(std::max(r.y, r.y + r.h));
+
+                        try
                         {
-                            sensor->as<roi_sensor>().set_region_of_interest(roi);
+                            // Step 2: send it to firmware
+                            if (sensor->is<roi_sensor>())
+                            {
+                                sensor->as<roi_sensor>().set_region_of_interest(roi);
+                            }
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
                         }
                     }
-                    catch (const error& e)
+                    else // If the rect is empty
                     {
-                        error_message = error_to_string(e);
-                    }
-                }
-                else // If the rect is empty
-                {
-                    try
-                    {
-                        // To reset ROI, just set ROI to the entire frame
-                        auto x_margin = (int)size.x / 8;
-                        auto y_margin = (int)size.y / 8;
-
-                        // Default ROI behavior is center 3/4 of the screen:
-                        if (sensor->is<roi_sensor>())
+                        try
                         {
-                            sensor->as<roi_sensor>().set_region_of_interest({ x_margin, y_margin,
-                                                                             (int)size.x - x_margin - 1,
-                                                                             (int)size.y - y_margin - 1 });
+                            // To reset ROI, just set ROI to the entire frame
+                            auto x_margin = (int)size.x / 8;
+                            auto y_margin = (int)size.y / 8;
+
+                            // Default ROI behavior is center 3/4 of the screen:
+                            if (sensor->is<roi_sensor>())
+                            {
+                                sensor->as<roi_sensor>().set_region_of_interest({ x_margin, y_margin,
+                                                                                 (int)size.x - x_margin - 1,
+                                                                                 (int)size.y - y_margin - 1 });
+                            }
+
+                            roi_display_rect = { 0, 0, 0, 0 };
+                            dev->roi_rect = { 0, 0, 0, 0 };
                         }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                    }
 
-                        roi_display_rect = { 0, 0, 0, 0 };
-                        dev->roi_rect = { 0, 0, 0, 0 };
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
+                    dev->roi_checked = false;
                 }
-
-                dev->roi_checked = false;
             }
             // If we left stream bounds while capturing, stop capturing
             if (capturing_roi && !stream_rect.contains(mouse.cursor))
@@ -368,7 +382,7 @@ namespace rs2
     bool draw_combo_box(const std::string& id, const std::vector<std::string>& device_names, int& new_index)
     {
         std::vector<const char*>  device_names_chars = get_string_pointers(device_names);
-        return ImGui::Combo(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
+        return RsImGui::CustomComboBox(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
     }
 
     void stream_model::show_stream_header(ImFont* font, const rect &stream_rect, viewer_model& viewer)
@@ -379,8 +393,9 @@ namespace rs2
         if (!viewer.allow_stream_close) --num_of_buttons;
         if (viewer.streams.size() > 1) ++num_of_buttons;
         if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
+        if (RS2_FORMAT_MOTION_XYZ32F == profile.format()) ++num_of_buttons; // Motion graph button
 
-        ImGui_ScopePushFont(font);
+        RsImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
@@ -456,12 +471,43 @@ namespace rs2
         ImGui::PushTextWrapPos(stream_rect.x + stream_rect.w - 32 * num_of_buttons - 5);
         ImGui::Text("%s", label.c_str());
         if (tooltip != label && ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", tooltip.c_str());
+            RsImGui::CustomTooltip("%s", tooltip.c_str());
         ImGui::PopTextWrapPos();
 
         ImGui::SetCursorScreenPos({ stream_rect.x + stream_rect.w - 32 * num_of_buttons, stream_rect.y - top_bar_height });
-
-
+        
+        if (graph)
+        {
+            label = rsutils::string::from() << textual_icons::bar_chart << "##graph view" << profile.unique_id();
+            if (show_graph)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    graph->clear();
+                    show_graph = false;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    RsImGui::CustomTooltip("Close graph view");
+                }
+                ImGui::PopStyleColor(2);
+            }
+            else
+            {
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    show_graph = true;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    RsImGui::CustomTooltip("Open graph view");
+                }
+            }
+            ImGui::SameLine();
+        }
+        
         label = rsutils::string::from() << textual_icons::metadata << "##Metadata" << profile.unique_id();
         if (show_metadata)
         {
@@ -473,7 +519,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Hide frame metadata");
+                RsImGui::CustomTooltip("Hide frame metadata");
             }
             ImGui::PopStyleColor(2);
         }
@@ -485,7 +531,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Show frame metadata");
+                RsImGui::CustomTooltip("Show frame metadata");
             }
         }
         ImGui::SameLine();
@@ -504,7 +550,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Hide color map ruler");
+                    RsImGui::CustomTooltip("Hide color map ruler");
                 }
                 ImGui::PopStyleColor(2);
             }
@@ -517,7 +563,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Show color map ruler");
+                    RsImGui::CustomTooltip("Show color map ruler");
                 }
             }
             ImGui::SameLine();
@@ -539,7 +585,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Resume sensor");
+                RsImGui::CustomTooltip("Resume sensor");
             }
             ImGui::PopStyleColor(2);
         }
@@ -557,7 +603,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Pause sensor");
+                RsImGui::CustomTooltip("Pause sensor");
             }
         }
         ImGui::SameLine();
@@ -574,7 +620,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Save snapshot");
+            RsImGui::CustomTooltip("Save snapshot");
         }
         ImGui::SameLine();
 
@@ -593,7 +639,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Hide stream info overlay");
+                RsImGui::CustomTooltip("Hide stream info overlay");
             }
 
             ImGui::PopStyleColor(2);
@@ -609,7 +655,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Show stream info overlay");
+                RsImGui::CustomTooltip("Show stream info overlay");
             }
         }
         ImGui::SameLine();
@@ -627,7 +673,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Maximize stream to full-screen");
+                    RsImGui::CustomTooltip("Maximize stream to full-screen");
                 }
 
                 ImGui::SameLine();
@@ -645,7 +691,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Restore tile view");
+                    RsImGui::CustomTooltip("Restore tile view");
                 }
 
                 ImGui::PopStyleColor(2);
@@ -666,7 +712,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Stop this sensor");
+                RsImGui::CustomTooltip("Stop this sensor");
             }
         }
 
@@ -733,11 +779,11 @@ namespace rs2
                         }
                         else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
                         {
-                            ImGui::SetTooltip("Timestamp: Global Time");
+                            RsImGui::CustomTooltip("Timestamp: Global Time");
                         }
                         else
                         {
-                            ImGui::SetTooltip("Timestamp: Hardware Clock");
+                            RsImGui::CustomTooltip("Timestamp: Hardware Clock");
                         }
                     }
 
@@ -767,7 +813,7 @@ namespace rs2
                         ImGui::Text("%s", label.c_str());
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Stream Resolution, Format");
+                        RsImGui::CustomTooltip("%s", "Stream Resolution, Format");
                     }
 
                     ImGui::SameLine();
@@ -782,7 +828,7 @@ namespace rs2
                         ImGui::Text("%s", label.c_str());
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
+                        RsImGui::CustomTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
                     }
                 }
 
@@ -792,6 +838,21 @@ namespace rs2
 
         if (show_metadata)
             stream_model::draw_stream_metadata(timestamp, timestamp_domain, frame_number, profile, original_size, stream_rect);
+
+        if (show_graph && graph)
+        {
+            if (dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
+            {
+                graph->pause();
+            }
+            else
+            {
+                if(graph->is_paused())
+                    graph->resume();
+            }
+            graph->process_frame(texture->get_last_frame());
+            graph->draw(stream_rect);
+        }
 
         ImGui::PopStyleColor(5);
     }
@@ -1009,7 +1070,7 @@ namespace rs2
                 {
                     if( ImGui::IsItemHovered() )
                     {
-                        ImGui::SetTooltip( "%s", at.description.c_str() );
+                        RsImGui::CustomTooltip( "%s", at.description.c_str() );
                     }
                 }
 
@@ -1116,7 +1177,7 @@ namespace rs2
 
                 // Draw maximum usable depth range
                 auto ds = sensor_from_frame(texture->get_last_frame())->as<depth_sensor>();
-                if (!viewer.is_option_skipped(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
+                if (ds && !viewer.is_option_skipped(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
                 {
                     if (ds.supports(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) &&
                         (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) == 1.0f))
@@ -1201,7 +1262,7 @@ namespace rs2
 
             std::string msg(ss.str().c_str());
 
-            ImGui_ScopePushFont(font);
+            RsImGui_ScopePushFont(font);
 
             // adjust windows size to the message length
             auto new_line_start_idx = msg.find_first_of('\n');
@@ -1245,12 +1306,18 @@ namespace rs2
     }
 
     // This function contains a cursor behavior on IMU stream with no metadata on
-    void stream_model::show_stream_imu(ImFont* font, const rect &stream_rect, const  rs2_vector& axis, const mouse_info& mouse)
+    float stream_model::show_stream_imu( ImFont * font,
+                                         const rect & stream_rect,
+                                         const rs2_vector & axis,
+                                         const mouse_info & mouse,
+                                         char const * const units,
+                                         char const * const title,
+                                         float y_offset )
     {
+        float total_h = 0.f;
         if (stream_rect.contains(mouse.cursor) && !show_metadata)
         {
             const auto precision = 3;
-            rs2_stream stream_type = profile.stream_type();
 
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
@@ -1259,7 +1326,6 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
 
-            float y_offset = 0;
             if (show_stream_details)
             {
                 y_offset += 30;
@@ -1267,8 +1333,20 @@ namespace rs2
 
             std::string label = rsutils::string::from() << "IMU Stream Info of " << profile.unique_id();
 
+            int const line_h = 18;
+
             ImVec2 pos{ stream_rect.x, stream_rect.y + y_offset };
             ImGui::SetCursorScreenPos({ pos.x + 5, pos.y + 5 });
+            if( title )
+            {
+                auto rc = ImGui::GetCursorPos();
+                ImGui::SetCursorPos( { rc.x + 12, rc.y + 4 } );
+                ImGui::PushStyleColor( ImGuiCol_Text, from_rgba( 255, 255, 255, 255, true ) );
+                ImGui::Text( "%s", title );
+                ImGui::PopStyleColor( 1 );
+                ImGui::SetCursorPos( { rc.x, rc.y + line_h } );
+                total_h += line_h;
+            }
 
             struct motion_data {
                 std::string name;
@@ -1282,13 +1360,11 @@ namespace rs2
 
             float norm = std::sqrt((axis.x*axis.x) + (axis.y*axis.y) + (axis.z*axis.z));
 
-            std::map<rs2_stream, std::string> motion_unit = { { RS2_STREAM_GYRO, "Radians/Sec" },{ RS2_STREAM_ACCEL, "Meter/Sec^2" } };
-            std::vector<motion_data> motion_vector = { { "X", axis.x, motion_unit[stream_type].c_str(), "Vector X", from_rgba(233, 0, 0, 255, true) , from_rgba(233, 0, 0, 255, true), 0},
-                                                    { "Y", axis.y, motion_unit[stream_type].c_str(), "Vector Y", from_rgba(0, 255, 0, 255, true) , from_rgba(2, 100, 2, 255, true), 0},
-                                                    { "Z", axis.z, motion_unit[stream_type].c_str(), "Vector Z", from_rgba(85, 89, 245, 255, true) , from_rgba(0, 0, 245, 255, true), 0},
+            std::vector<motion_data> motion_vector = { { "X", axis.x, units, "Vector X", from_rgba(233, 0, 0, 255, true) , from_rgba(233, 0, 0, 255, true), 0},
+                                                    { "Y", axis.y, units, "Vector Y", from_rgba(0, 255, 0, 255, true) , from_rgba(2, 100, 2, 255, true), 0},
+                                                    { "Z", axis.z, units, "Vector Z", from_rgba(85, 89, 245, 255, true) , from_rgba(0, 0, 245, 255, true), 0},
                                                     { "N", norm, "Norm", "||V|| = SQRT(X^2 + Y^2 + Z^2)",from_rgba(255, 255, 255, 255, true) , from_rgba(255, 255, 255, 255, true), 0} };
 
-            int line_h = 18;
             for (auto&& motion : motion_vector)
             {
                 auto rc = ImGui::GetCursorPos();
@@ -1297,17 +1373,17 @@ namespace rs2
                 ImGui::Text("%s:", motion.name.c_str());
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", motion.toolTip.c_str());
+                    RsImGui::CustomTooltip("%s", motion.toolTip.c_str());
                 }
                 ImGui::PopStyleColor(1);
 
                 ImGui::SameLine();
-                ImGui::PushStyleColor(ImGuiCol_FrameBg, black);
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, motion.colorBg);
 
                 ImGui::PushItemWidth(100);
                 ImGui::SetCursorPos({ rc.x + 27 + motion.nameExtraSpace, rc.y + 1 });
-                std::string label = rsutils::string::from() << "##" << profile.unique_id() << " " << motion.name.c_str();
+                std::string label = rsutils::string::from() << "##" << profile.unique_id() << "." << rc.y << " " << motion.name.c_str();
                 std::string coordinate = rsutils::string::from() << std::fixed << std::setprecision(precision) << std::showpos << motion.coordinate;
                 ImGui::InputText(label.c_str(), (char*)coordinate.c_str(), coordinate.size() + 1, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopItemWidth();
@@ -1318,10 +1394,12 @@ namespace rs2
 
                 ImGui::PopStyleColor(3);
                 ImGui::SetCursorPos({ rc.x, rc.y + line_h });
+                total_h += line_h;
             }
 
             ImGui::PopStyleColor(5);
         }
+        return total_h;
     }
 
     void stream_model::show_stream_pose(ImFont* font, const rect &stream_rect,
@@ -1396,7 +1474,7 @@ namespace rs2
             ImGui::Text("%s:", pose.name.c_str());
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", pose.toolTip.c_str());
+                RsImGui::CustomTooltip("%s", pose.toolTip.c_str());
             }
 
             if (pose.fixedColor == false)
@@ -1622,7 +1700,7 @@ namespace rs2
     {
         auto zoom_val = 1.f;
         // Allow mouse scrolling for zoom when not displaying scrollable metadata
-        if (stream_rect.contains(g.cursor) && !show_metadata)
+        if(stream_rect.contains(g.cursor) && !show_metadata && !show_graph)
         {
             static const auto wheel_step = 0.1f;
             auto mouse_wheel_value = -g.mouse_wheel * 0.1f;

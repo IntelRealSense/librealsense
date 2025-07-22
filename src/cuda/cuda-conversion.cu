@@ -223,6 +223,34 @@ __global__ void kernel_unpack_yuy2_bgra8_cuda(const uint8_t * src, uint8_t *dst,
     }
 }
 
+__global__ void kernel_uyvy_to_yuyv_cuda(uint16_t* src, uint16_t* dst, int count)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (i >= count)
+        return;
+
+    dst[i] = ( ( src[i] >> 8 ) & 0x00FF ) | ( ( src[i] << 8 ) & 0xFF00 );
+}
+
+void rscuda::uyvy_to_yuyv_cuda_helper(const uint16_t* src, uint16_t* dst, int count)
+{
+    int numBlocks = count / RS2_CUDA_THREADS_PER_BLOCK;
+    auto d_src = alloc_dev<uint16_t>(count);
+    auto d_dst = alloc_dev<uint16_t>(count);
+
+    auto result = cudaMemcpy(d_src.get(), src, count * sizeof(uint16_t), cudaMemcpyHostToDevice);
+    assert(result == cudaSuccess);
+
+    kernel_uyvy_to_yuyv_cuda <<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK >>>(d_src.get(), d_dst.get(), count);
+    cudaStreamSynchronize(0);
+
+    result = cudaGetLastError();
+    assert(result == cudaSuccess);
+
+    result = cudaMemcpy(dst, d_dst.get(), count * sizeof(uint16_t), cudaMemcpyDeviceToHost);
+    assert(result == cudaSuccess);
+}
 
 void rscuda::unpack_yuy2_cuda_helper(const uint8_t* h_src, uint8_t* h_dst, int n, rs2_format format)
 {
@@ -342,7 +370,53 @@ void rscuda::y8_y8_from_y8i_cuda_helper(uint8_t* const dest[], int count, const 
         std::cout << milliseconds << std::endl; */
 }
 
-__global__ void kernel_split_frame_y16_y16_from_y12i_cuda(uint16_t* a, uint16_t* b, int count, const rscuda::y12i_pixel * source)
+__global__ void kernel_split_frame_y8_y8_from_y8i_mipi_cuda(uint8_t* a, uint8_t* b, int count, const rscuda::y8i_pixel_mipi * source)
+{
+    int pair_index = blockDim.x * blockIdx.x + threadIdx.x;
+    int pair_count = count / 2;
+    if (pair_index >= pair_count)
+        return;
+
+    int i = pair_index * 2;
+    
+    // temporary workaround - swapping ordering of left, caused due to received frame
+    // when fixed we can use the regular kernel_split_frame_y8_y8_from_y8i_cuda
+    a[i]     = source[i + 1].l;
+    b[i]     = source[i].r;
+
+    a[i + 1] = source[i].l;
+    b[i + 1] = source[i + 1].r;
+}
+
+void rscuda::y8_y8_from_y8i_mipi_cuda_helper(uint8_t* const dest[], int count, const rscuda::y8i_pixel_mipi * source)
+{
+    int pair_count = count / 2;
+    int numBlocks = pair_count / RS2_CUDA_THREADS_PER_BLOCK;
+    uint8_t* a = dest[0];
+    uint8_t* b = dest[1];
+
+    auto d_src = alloc_dev<rscuda::y8i_pixel_mipi>(count);
+    auto d_dst_0 = alloc_dev<uint8_t>(count);
+    auto d_dst_1 = alloc_dev<uint8_t>(count);
+
+    auto result = cudaMemcpy(d_src.get(), source, count * sizeof(rscuda::y8i_pixel_mipi), cudaMemcpyHostToDevice);
+    assert(result == cudaSuccess);
+
+    kernel_split_frame_y8_y8_from_y8i_mipi_cuda << <numBlocks, RS2_CUDA_THREADS_PER_BLOCK >> > (d_dst_0.get(), d_dst_1.get(), count, d_src.get());
+    cudaStreamSynchronize(0);
+
+    result = cudaGetLastError();
+    assert(result == cudaSuccess);
+
+    result = cudaMemcpy(a, d_dst_0.get(), count * sizeof(uint8_t), cudaMemcpyDeviceToHost);
+    assert(result == cudaSuccess);
+    result = cudaMemcpy(b, d_dst_1.get(), count * sizeof(uint8_t), cudaMemcpyDeviceToHost);
+    assert(result == cudaSuccess);
+}
+
+
+template<class SOURCE>
+__global__ void kernel_split_frame_y16_y16_from_y12i_cuda(uint16_t* a, uint16_t* b, int count, const SOURCE * source)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -354,7 +428,8 @@ __global__ void kernel_split_frame_y16_y16_from_y12i_cuda(uint16_t* a, uint16_t*
 }
 
 
-void rscuda::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, const rscuda::y12i_pixel * source)
+template<class SOURCE>
+void rscuda::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, const SOURCE * source)
 {
     /*
         cudaEvent_t start, stop;
@@ -362,18 +437,18 @@ void rscuda::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, 
         cudaEventCreate(&stop);
         cudaEventRecord(start); */
 
-    source = reinterpret_cast<const y12i_pixel*>(source);
+    source = reinterpret_cast<const SOURCE*>(source);
 
     int numBlocks = count / RS2_CUDA_THREADS_PER_BLOCK;
     uint16_t* a = reinterpret_cast<uint16_t*>(dest[0]);
     uint16_t* b = reinterpret_cast<uint16_t*>(dest[1]);
 
-    auto d_src = alloc_dev<rscuda::y12i_pixel>(count);
+    auto d_src = alloc_dev<SOURCE>(count);
     auto d_dst_0 = alloc_dev<uint16_t>(count);
     auto d_dst_1 = alloc_dev<uint16_t>(count);
 
 
-    auto result = cudaMemcpy(d_src.get(), source, count * sizeof(rscuda::y12i_pixel), cudaMemcpyHostToDevice);
+    auto result = cudaMemcpy(d_src.get(), source, count * sizeof(SOURCE), cudaMemcpyHostToDevice);
     assert(result == cudaSuccess);
 
     kernel_split_frame_y16_y16_from_y12i_cuda <<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK>>> (d_dst_0.get(), d_dst_1.get(), count, d_src.get());
@@ -396,6 +471,10 @@ void rscuda::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, 
     */
 }
 
+template void rscuda::y16_y16_from_y12i_10_cuda_helper<rscuda::y12i_pixel>(uint8_t* const dest[], int count, const rscuda::y12i_pixel * source);
+
+
+template void rscuda::y16_y16_from_y12i_10_cuda_helper<rscuda::y12i_pixel_mipi>(uint8_t* const dest[], int count, const rscuda::y12i_pixel_mipi * source);
 
 __global__ void kernel_z16_y8_from_sr300_inzi_cuda(const uint16_t* source, uint8_t* const dest, int count)
 {

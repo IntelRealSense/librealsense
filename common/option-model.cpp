@@ -2,6 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include "option-model.h"
+#include <realsense_imgui.h>
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -125,7 +126,7 @@ bool option_model::draw( std::string & error_message,
             ImGui::PopStyleColor();
 
             if( ImGui::IsItemHovered() )
-                ImGui::SetTooltip( "Select custom region of interest for the auto-exposure "
+                RsImGui::CustomTooltip( "Select custom region of interest for the auto-exposure "
                                    "algorithm\nClick the button, then draw a rect on the frame" );
         }
     }
@@ -215,12 +216,13 @@ std::vector< const char * > option_model::get_combo_labels( int * p_selected ) c
 
         switch( value->type )
         {
-        case RS2_OPTION_TYPE_FLOAT:
-            if( std::fabs( i - value->as_float ) < 0.001f )
-                selected = counter;
-            break;
         case RS2_OPTION_TYPE_STRING:
             if( 0 == strcmp( label, value->as_string ) )
+                selected = counter;
+            break;
+
+        default:
+            if( std::fabs( i - value_as_float() ) < 0.001f )
                 selected = counter;
             break;
         }
@@ -248,14 +250,14 @@ bool option_model::draw_combobox( notifications_model & model,
     ImGui::Text( "%s", txt.c_str() );
     if( ImGui::IsItemHovered() && description )
     {
-        ImGui::SetTooltip( "%s", description );
+        RsImGui::CustomTooltip( "%s", description );
     }
 
     ImGui::SameLine();
     if( new_line )
         ImGui::SetCursorPosX( combo_position_x );
 
-    ImGui::PushItemWidth( new_line ? -1.f : 100.f );
+    ImGui::PushItemWidth( new_line ? ImGui::GetContentRegionAvail().x - 25 : 100.f );
 
     int selected;
     std::vector< const char * > labels = get_combo_labels( &selected );
@@ -263,7 +265,7 @@ bool option_model::draw_combobox( notifications_model & model,
 
     try
     {
-        if( ImGui::Combo( id.c_str(), &selected, labels.data(), static_cast< int >( labels.size() ) ) )
+        if( RsImGui::CustomComboBox( id.c_str(), &selected, labels.data(), static_cast< int >( labels.size() ) ) )
         {
             float tmp_value = range.min + range.step * selected;
             model.add_log( rsutils::string::from()
@@ -284,6 +286,61 @@ bool option_model::draw_combobox( notifications_model & model,
     return item_clicked;
 }
 
+
+float option_model::value_as_float() const
+{
+    switch( value->type )
+    {
+    case RS2_OPTION_TYPE_FLOAT:
+        return value->as_float;
+        break;
+
+    case RS2_OPTION_TYPE_INTEGER:
+    case RS2_OPTION_TYPE_BOOLEAN:
+        return float( value->as_integer );
+        break;
+    case RS2_OPTION_TYPE_STRING:
+        if( range.min == 0.f && range.step == 1.f ) // We can convert enum option to float
+        {
+            for( auto i = 0.f; i <= range.max; i += range.step )
+            {
+                auto desc = endpoint->get_option_value_description( opt, i );
+                if( ! desc )
+                    break;
+                if( strcmp( value->as_string, desc ) == 0 )
+                    return i;
+            }
+        }
+        break;
+    }
+    return 0.f;
+}
+
+
+std::string option_model::value_as_string() const
+{
+    switch( value->type )
+    {
+    case RS2_OPTION_TYPE_FLOAT:
+        if( is_all_integers() )
+            return rsutils::string::from() << (int) value->as_float;
+        else
+            return rsutils::string::from() << value->as_float;
+        break;
+
+    case RS2_OPTION_TYPE_INTEGER:
+    case RS2_OPTION_TYPE_BOOLEAN:
+        return rsutils::string::from() << value->as_integer;
+        break;
+
+    case RS2_OPTION_TYPE_STRING:
+        return value->as_string;
+        break;
+    }
+    return {};
+}
+
+
 bool option_model::draw_slider( notifications_model & model,
                                 std::string & error_message,
                                 const char * description,
@@ -294,7 +351,7 @@ bool option_model::draw_slider( notifications_model & model,
     ImGui::Text( "%s", txt.c_str() );
 
     ImGui::SameLine();
-    ImGui::SetCursorPosX( read_only ? 268.f : 245.f );
+    ImGui::SetCursorPosX( read_only ? 280.f : 257.f );
     ImGui::PushStyleColor( ImGuiCol_Text, grey );
     ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, grey );
     ImGui::PushStyleColor( ImGuiCol_ButtonActive, { 1.f, 1.f, 1.f, 0.f } );
@@ -304,13 +361,13 @@ bool option_model::draw_slider( notifications_model & model,
     ImGui::PopStyleColor( 5 );
     if( ImGui::IsItemHovered() && description )
     {
-        ImGui::SetTooltip( "%s", description );
+        RsImGui::CustomTooltip( "%s", description );
     }
 
     if( ! read_only )
     {
         ImGui::SameLine();
-        ImGui::SetCursorPosX( 268 );
+        ImGui::SetCursorPosX( 280 );
         if( ! edit_mode )
         {
             std::string edit_id = rsutils::string::from() << textual_icons::edit << "##" << id;
@@ -320,15 +377,12 @@ bool option_model::draw_slider( notifications_model & model,
             ImGui::PushStyleColor( ImGuiCol_Button, { 1.f, 1.f, 1.f, 0.f } );
             if( ImGui::Button( edit_id.c_str(), { 20, 20 } ) )
             {
-                if( is_all_integers() )
-                    edit_value = rsutils::string::from() << (int)value->as_float;
-                else
-                    edit_value = rsutils::string::from() << value->as_float;
+                edit_value = value_as_string();
                 edit_mode = true;
             }
             if( ImGui::IsItemHovered() )
             {
-                ImGui::SetTooltip( "Enter text-edit mode" );
+                RsImGui::CustomTooltip( "Enter text-edit mode" );
             }
             ImGui::PopStyleColor( 4 );
         }
@@ -345,31 +399,31 @@ bool option_model::draw_slider( notifications_model & model,
             }
             if( ImGui::IsItemHovered() )
             {
-                ImGui::SetTooltip( "Exit text-edit mode" );
+                RsImGui::CustomTooltip( "Exit text-edit mode" );
             }
             ImGui::PopStyleColor( 4 );
         }
     }
-
-    ImGui::PushItemWidth( -1 );
-
+    float customWidth = 295 - ImGui::GetCursorPosX(); //set slider width from the current Xpos to the right border at 295 (the edit button pos)
+    ImGui::PushItemWidth(customWidth);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, black);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, black);
     try
     {
         if( read_only )
         {
             ImVec2 vec{ 0, 20 };
-            std::string text = ( value->as_float == (int)value->as_float ) ? std::to_string( (int)value->as_float )
-                                                                           : std::to_string( value->as_float );
+            std::string text = value_as_string();
             if( range.min != range.max )
             {
-                ImGui::ProgressBar( ( value->as_float / ( range.max - range.min ) ), vec, text.c_str() );
+                ImGui::ProgressBar( ( value_as_float() / ( range.max - range.min ) ), vec, text.c_str() );
             }
             else  // constant value options
             {
                 auto c = ImGui::ColorConvertU32ToFloat4( ImGui::GetColorU32( ImGuiCol_FrameBg ) );
                 ImGui::PushStyleColor( ImGuiCol_FrameBgActive, c );
                 ImGui::PushStyleColor( ImGuiCol_FrameBgHovered, c );
-                float dummy = std::floor( value->as_float );
+                float dummy = std::floor( value_as_float() );
                 if( ImGui::DragFloat( id.c_str(), &dummy, 1, 0, 0, text.c_str() ) )
                 {
                     // Changing the depth units not on advanced mode is not allowed,
@@ -403,7 +457,7 @@ bool option_model::draw_slider( notifications_model & model,
 
             char buff[TEXT_BUFF_SIZE];
             memset( buff, 0, TEXT_BUFF_SIZE );
-            strcpy( buff, buff_str.c_str() );
+            strncpy( buff, buff_str.c_str(), TEXT_BUFF_SIZE - 1 );
 
             if( ImGui::InputText( id.c_str(),
                                   buff,
@@ -414,7 +468,7 @@ bool option_model::draw_slider( notifications_model & model,
                 {
                     buff_str = convert_float_str( std::string( buff ), 0.01f );
                     memset( buff, 0, TEXT_BUFF_SIZE );
-                    strcpy( buff, buff_str.c_str() );
+                    strncpy( buff, buff_str.c_str(), TEXT_BUFF_SIZE - 1 );
                 }
                 float new_value;
                 if( ! rsutils::string::string_to_value< float >( buff, new_value ) )
@@ -438,7 +492,7 @@ bool option_model::draw_slider( notifications_model & model,
                     {
                         if (invalidate_flag)
                             *invalidate_flag = true;
-                        model.add_log(rsutils::string::from() << "Setting " << opt << " to " << value->as_float);
+                        model.add_log( rsutils::string::from() << "Setting " << opt << " to " << value_as_string() );
                     }
                 }
                 edit_mode = false;
@@ -447,20 +501,20 @@ bool option_model::draw_slider( notifications_model & model,
             {
                 buff_str = convert_float_str( buff_str, 0.01f );
                 memset( buff, 0, TEXT_BUFF_SIZE );
-                strcpy( buff, buff_str.c_str() );
+                strncpy( buff, buff_str.c_str(), TEXT_BUFF_SIZE - 1 );
             }
             edit_value = buff;
         }
         else if( is_all_integers() )
         {
             // runs when changing a value with slider and not the textbox
-            auto int_value = static_cast< int >( value->as_float );
+            auto int_value = static_cast< int >( value_as_float() );
 
-            if( ImGui::SliderIntWithSteps( id.c_str(),
+            if( RsImGui::SliderIntWithSteps( id.c_str(),
                                            &int_value,
                                            static_cast< int >( range.min ),
                                            static_cast< int >( range.max ),
-                                           static_cast< int >( range.step ) ) )
+                                           static_cast< int >( range.step )) )
             {
                 // TODO: Round to step?
                 slider_clicked = slider_selected( opt,
@@ -478,7 +532,7 @@ bool option_model::draw_slider( notifications_model & model,
         }
         else
         {
-            float tmp_value = value->as_float;
+            float tmp_value = value_as_float();
             float temp_value_displayed = tmp_value;
             float min_range_displayed = range.min;
             float max_range_displayed = range.max;
@@ -539,7 +593,8 @@ bool option_model::draw_slider( notifications_model & model,
     {
         error_message = error_to_string( e );
     }
-
+    ImGui::PopStyleColor(2);
+    ImGui::PopItemWidth();
     return slider_clicked;
 }
 
@@ -554,7 +609,8 @@ bool option_model::draw_checkbox( notifications_model & model,
 {
     bool checkbox_was_clicked = false;
 
-    auto bool_value = value->as_float > 0.0f;
+    bool bool_value = value_as_float() > 0.f;
+
     if( ImGui::Checkbox( label.c_str(), &bool_value ) )
     {
         checkbox_was_clicked = true;
@@ -567,7 +623,7 @@ bool option_model::draw_checkbox( notifications_model & model,
     }
     if( ImGui::IsItemHovered() && description )
     {
-        ImGui::SetTooltip( "%s", description );
+        RsImGui::CustomTooltip( "%s", description );
     }
     return checkbox_was_clicked;
 }

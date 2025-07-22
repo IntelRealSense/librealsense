@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include "ds-motion-common.h"
 
@@ -22,22 +22,23 @@
 #include "ds-options.h"
 #include "ds-private.h"
 #include <src/stream.h>
-#include <src/fourcc.h>
 #include <src/metadata-parser.h>
 
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
 #include <cstddef>
 
 namespace librealsense
 {
     using namespace ds;
 
-    const std::map<uint32_t, rs2_format> fisheye_fourcc_to_rs2_format = {
-        {rs_fourcc('R','A','W','8'), RS2_FORMAT_RAW8},
-        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_RAW8},
+    const std::map<fourcc::value_type, rs2_format> fisheye_fourcc_to_rs2_format = {
+        {fourcc('R','A','W','8'), RS2_FORMAT_RAW8},
+        {fourcc('G','R','E','Y'), RS2_FORMAT_RAW8},
     };
-    const std::map<uint32_t, rs2_stream> fisheye_fourcc_to_rs2_stream = {
-        {rs_fourcc('R','A','W','8'), RS2_STREAM_FISHEYE},
-        {rs_fourcc('G','R','E','Y'), RS2_STREAM_FISHEYE},
+    const std::map<fourcc::value_type, rs2_stream> fisheye_fourcc_to_rs2_stream = {
+        {fourcc('R','A','W','8'), RS2_STREAM_FISHEYE},
+        {fourcc('G','R','E','Y'), RS2_STREAM_FISHEYE},
     };
 
     void fisheye_auto_exposure_roi_method::set(const region_of_interest& roi)
@@ -285,9 +286,6 @@ namespace librealsense
         _fps_and_sampling_frequency_per_rs2_stream =
         { { RS2_STREAM_GYRO,     {{unsigned(odr::IMU_FPS_200),  hid_fps_translation.at(odr::IMU_FPS_200)},
                                  { unsigned(odr::IMU_FPS_400),  hid_fps_translation.at(odr::IMU_FPS_400)}}} };
-
-        // motion correction
-        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->get_pid());
     }
 
     rs2_motion_device_intrinsic ds_motion_common::get_motion_intrinsics(rs2_stream stream) const
@@ -445,18 +443,15 @@ namespace librealsense
 
     }
 
-    std::shared_ptr<synthetic_sensor> ds_motion_common::create_hid_device(std::shared_ptr<context> ctx, 
-        const std::vector<platform::hid_device_info>& all_hid_infos, 
-        const firmware_version& camera_fw_version,
-        std::shared_ptr<time_diff_keeper> tf_keeper)
+    std::shared_ptr<synthetic_sensor> ds_motion_common::create_hid_device( std::shared_ptr<context> ctx, 
+                                                                           const std::vector<platform::hid_device_info>& all_hid_infos, 
+                                                                           std::shared_ptr<time_diff_keeper> tf_keeper )
     {
         if (all_hid_infos.empty())
         {
             LOG_WARNING("No HID info provided, IMU is disabled");
             return nullptr;
         }
-
-        static const char* custom_sensor_fw_ver = "5.6.0.0";
 
         std::unique_ptr<frame_timestamp_reader> iio_hid_ts_reader(new iio_hid_timestamp_reader());
         std::unique_ptr<frame_timestamp_reader> custom_hid_ts_reader(new ds_custom_hid_timestamp_reader());
@@ -465,8 +460,17 @@ namespace librealsense
         // Dynamically populate the supported HID profiles according to the selected IMU module
         std::vector<odr> accel_fps_rates;
         std::map<unsigned, unsigned> fps_and_frequency_map;
-        if (ds::ds_caps::CAP_BMI_085 && _device_capabilities)
-            accel_fps_rates = { odr::IMU_FPS_100,odr::IMU_FPS_200 };
+        if ((_device_capabilities & ds::ds_caps::CAP_BMI_085) != ds::ds_caps::CAP_UNDEFINED || 
+            (_device_capabilities & ds::ds_caps::CAP_BMI_088) != ds::ds_caps::CAP_UNDEFINED)
+        {
+               accel_fps_rates = { odr::IMU_FPS_100, odr::IMU_FPS_200 };
+            if( _owner->supports_info( RS2_CAMERA_INFO_PRODUCT_LINE )
+                && _owner->get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) == "D400" )
+            {
+                // D400 new BMI's also support rate of 400 for the accelerometer
+                accel_fps_rates.push_back( odr::IMU_FPS_400 );
+            }
+        }
         else // Applies to BMI_055 and unrecognized sensors
             accel_fps_rates = { odr::IMU_FPS_63,odr::IMU_FPS_250 };
 
@@ -479,8 +483,8 @@ namespace librealsense
 
         auto raw_hid_ep = std::make_shared< hid_sensor >(
             _owner->get_backend()->create_hid_device( all_hid_infos.front() ),
-            std::unique_ptr< frame_timestamp_reader >(
-                new global_timestamp_reader( std::move( iio_hid_ts_reader ), tf_keeper, enable_global_time_option ) ),
+            std::unique_ptr< frame_timestamp_reader >( new global_timestamp_reader( std::move( iio_hid_ts_reader ),
+                                                                                    tf_keeper, enable_global_time_option ) ),
             std::unique_ptr< frame_timestamp_reader >( new global_timestamp_reader( std::move( custom_hid_ts_reader ),
                                                                                     tf_keeper,
                                                                                     enable_global_time_option ) ),
@@ -507,7 +511,7 @@ namespace librealsense
         }
         catch (...) {}
 
-        bool high_accuracy =  _fw_version >= firmware_version( 5, 16, 0, 0 );    
+        bool high_accuracy = _owner->is_imu_high_accuracy();    
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
@@ -515,14 +519,12 @@ namespace librealsense
             { return std::make_shared< acceleration_transform >( _mm_calib, mm_correct_opt, high_accuracy );
             });
 
-        //TODO this FW version is relevant for d400 devices. Need to change for propre d500 devices support.
-        bool high_sensitivity = _owner->is_gyro_high_sensitivity();
-        double gyro_scale_factor = high_sensitivity ? 0.003814697265625 : ( _fw_version >= firmware_version( 5, 16, 0, 0 ) ? 0.0001: 0.1 );    
+        double gyro_scale_factor = _owner->get_gyro_default_scale();
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-                                           [&, mm_correct_opt, gyro_scale_factor]() {
-                                               return std::make_shared< gyroscope_transform >( _mm_calib, mm_correct_opt, gyro_scale_factor );
+            [&, mm_correct_opt, gyro_scale_factor, high_accuracy]()
+            { return std::make_shared< gyroscope_transform >( _mm_calib, mm_correct_opt, gyro_scale_factor, high_accuracy );
             });
 
         return hid_ep;

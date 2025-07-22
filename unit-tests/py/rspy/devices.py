@@ -35,7 +35,7 @@ from rspy import repo
 pyrs_dir = repo.find_pyrs_dir()
 sys.path.insert( 1, pyrs_dir )
 
-MAX_ENUMERATION_TIME = 10  # [sec]
+MAX_ENUMERATION_TIME = 17  # [sec]
 
 # We need both pyrealsense2 and hub. We can work without hub, but
 # without pyrealsense2 no devices at all will be returned.
@@ -43,7 +43,7 @@ from rspy import device_hub
 try:
     import pyrealsense2 as rs
     log.d( rs )
-    hub = device_hub.create()
+    hub = device_hub.create() # if there's no hub, this will hold None
     sys.path = sys.path[:-1]  # remove what we added
 except ModuleNotFoundError:
     log.w( 'No pyrealsense2 library is available! Running as if no cameras available...' )
@@ -72,19 +72,32 @@ class Device:
             self._product_line = dev.get_info( rs.camera_info.product_line )
         self._physical_port = dev.supports( rs.camera_info.physical_port ) and dev.get_info( rs.camera_info.physical_port ) or None
 
+        if dev.supports(rs.camera_info.connection_type):
+            self._connection_type = dev.get_info(rs.camera_info.connection_type)
+            self._is_dds = self._connection_type == "DDS"
+        else:
+            log.w("connection_type is not supported! Assuming not a dds device")
+            self._is_dds = False
+
         self._usb_location = None
         try:
             self._usb_location = _get_usb_location(self._physical_port)
         except Exception as e:
             log.e('Failed to get usb location:', e)
+
+        self._mac_address = get_mac_address(dev, self._is_dds)
+
         self._port = None
         if hub:
             try:
-                self._port = hub.get_port_by_location(self._usb_location)
+                if self._is_dds:
+                    self._port = hub.get_port_by_location(self._mac_address)
+                else:
+                    self._port = hub.get_port_by_location(self._usb_location)
             except Exception as e:
                 log.e('Failed to get device port:', e)
                 log.d('    physical port is', self._physical_port)
-                log.d('    USB location is', self._usb_location)
+                log.d('    location is', self._mac_address if self._is_dds else self._usb_location)
 
         self._removed = False
 
@@ -119,6 +132,10 @@ class Device:
     @property
     def enabled( self ):
         return self._removed is False
+
+    @property
+    def is_dds(self):
+        return self._is_dds
 
 
 def wait_until_all_ports_disabled( timeout = 5 ):
@@ -200,13 +217,14 @@ def map_unknown_ports():
         log.debug_unindent()
 
 
-def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
+def query( monitor_changes=True, hub_reset=False, recycle_ports=True, disable_dds=True ):
     """
     Start a new LRS context, and collect all devices
     :param monitor_changes: If True, devices will update dynamically as they are removed/added
     :param recycle_ports: True to recycle all ports before querying devices; False to leave as-is
     :param hub_reset: Whether we want to reset the hub - this might be a better way to
         recycle the ports in certain cases that leave the ports in a bad state
+    :param disable_dds: Whether we want to see dds devices or not
     """
     global rs
     if not rs:
@@ -223,7 +241,10 @@ def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
-    _context = rs.context( { 'dds': False } )
+    settings = {}
+    if disable_dds:
+        settings['dds'] = { 'enabled': False }
+    _context = rs.context( settings )
     _device_by_sn = dict()
     try:
         log.debug_indent()
@@ -264,15 +285,15 @@ def _device_change_callback( info ):
     global _device_by_sn
     for device in _device_by_sn.values():
         if device.enabled  and  info.was_removed( device.handle ):
-            log.d( 'device removed:', device.serial_number )
             device._removed = True
+            log.d( 'device removed:', device.serial_number )
     for handle in info.get_new_devices():
         sn = handle.get_info( rs.camera_info.firmware_update_id )
         log.d( 'device added:', sn, handle )
         if sn in _device_by_sn:
             device = _device_by_sn[sn]
-            device._removed = False
             device._dev = handle     # Because it has a new handle!
+            device._removed = False
         else:
             # shouldn't see new devices...
             log.d( 'new device detected!?' )
@@ -535,6 +556,8 @@ def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME
         #
     else:
         log.d( 'no hub; ports left as-is' )
+        # even without reset, enable_only should wait for the devices to be available again
+        _wait_for(serial_numbers, timeout=timeout)
 
 
 def enable_all():
@@ -615,16 +638,19 @@ def hw_reset( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     :param timeout: Maximum # of seconds to wait for the devices to come back online
     :return: True if all devices have come back online before timeout
     """
+    # we can wait for usb and dds devices to be removed, but not for mipi devices
+    removable_devs_sns = {sn for sn in serial_numbers if
+                          _device_by_sn[sn].port is not None or _device_by_sn[sn].is_dds}
 
-    usb_serial_numbers = { sn for sn in serial_numbers if _device_by_sn[sn].port is not None }
-
+    _wait_for(serial_numbers, timeout=timeout) # make sure devices are added before doing hw reset
     for sn in serial_numbers:
         dev = get( sn ).handle
         dev.hardware_reset()
     #
 
-    if usb_serial_numbers:
-        _wait_until_removed( usb_serial_numbers )
+    if removable_devs_sns:
+        _wait_until_removed( removable_devs_sns )
+        # if relevant, we need to handle case where we have both removable and non-removable devices
     else:
         # normally we will get here with a mipi device,
         # we want to allow some time for the device to reinitialize as it was not disconnected
@@ -646,6 +672,8 @@ if 'windows' in platform.system().lower():
         #   \\?\usb#vid_8086&pid_0b07&mi_00#6&8bfcab3&0&0000#{e5323777-f976-4f5b-9b55-b94699c46e44}\global
         #
         re_result = re.match( r'.*\\(.*)#vid_(.*)&pid_(.*)(?:&mi_(.*))?#(.*)#', physical_port, flags = re.IGNORECASE )
+        if not re_result:
+            return None
         dev_type = re_result.group(1)
         vid = re_result.group(2)
         pid = re_result.group(3)
@@ -654,11 +682,11 @@ if 'windows' in platform.system().lower():
         #
         import winreg
         if mi:
-            registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}&MI_{}\{}".format(
+            registry_path = r"SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}&MI_{}\{}".format(
                 dev_type, vid, pid, mi, unique_identifier
                 )
         else:
-            registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}\{}".format(
+            registry_path = r"SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}\{}".format(
                 dev_type, vid, pid, unique_identifier
                 )
         try:
@@ -692,13 +720,25 @@ else:
         return port_location
 
 
+def get_mac_address(dev, is_dds):
+    if not is_dds:
+        return None
+
+    GET_ETH_CONFIG_OPCODE = 187
+    raw_command = rs.debug_protocol(dev).build_command(GET_ETH_CONFIG_OPCODE,1)
+    raw_result = rs.debug_protocol(dev).send_and_receive_raw_data(raw_command)
+    if raw_result[0] == GET_ETH_CONFIG_OPCODE: # success
+        return ":".join([hex(num)[2:] for num in raw_result[52:58]]) # bytes for the MAC address
+
+    return None
+
 ###############################################################################################
 if __name__ == '__main__':
     import os, sys, getopt
 
     try:
         opts,args = getopt.getopt( sys.argv[1:], '',
-            longopts = [ 'help', 'recycle', 'all', 'none', 'list', 'port=', 'ports' ])
+            longopts = [ 'help', 'recycle', 'all', 'none', 'list', 'port=', 'PORT=', 'ports' ])
     except getopt.GetoptError as err:
         print( '-F-', err )   # something like "option -a not recognized"
         usage()
@@ -718,7 +758,7 @@ if __name__ == '__main__':
         for opt,arg in opts:
             if opt in ('--list'):
                 action = 'list'
-            elif opt in ('--port'):
+            elif opt in ('--port','--PORT'):
                 if not hub:
                     log.f( 'No hub available' )
                 all_ports = hub.all_ports()
@@ -726,7 +766,11 @@ if __name__ == '__main__':
                 ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
                 if len(ports) != len(str_ports):
                     log.f( 'Invalid ports', str_ports )
-                hub.enable_ports( ports, disable_other_ports=False )
+                # With --port, leave other ports alone
+                # With --PORT, disable other ports
+                #       This would otherwise require --none, wait, --port)
+                #       Note that it does not recycle the port if it was already enabled
+                hub.enable_ports( ports, disable_other_ports=(opt == '--PORT') )
                 action = 'none'
             elif opt in ('--ports'):
                 printer = get_phys_port
@@ -746,7 +790,8 @@ if __name__ == '__main__':
                 usage()
         #
         if action == 'list':
-            query( monitor_changes=False, recycle_ports=False, hub_reset=False )
+            query( monitor_changes=False, recycle_ports=False, hub_reset=False, disable_dds=False )
+            map_unknown_ports()
             for sn in all():
                 device = get( sn )
                 print( '{port} {name:30} {sn:20} {handle}'.format(

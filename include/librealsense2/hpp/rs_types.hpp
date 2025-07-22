@@ -21,6 +21,7 @@
 #include <iterator>
 #include <sstream>
 #include <chrono>
+#include <cstring>
 
 struct rs2_frame_callback
 {
@@ -29,6 +30,11 @@ struct rs2_frame_callback
     virtual                                 ~rs2_frame_callback() {}
 };
 typedef std::shared_ptr<rs2_frame_callback> rs2_frame_callback_sptr;
+
+struct rs2_streams_list 
+{
+    std::vector< rs2_stream > list;
+};
 
 struct rs2_frame_processor_callback
 {

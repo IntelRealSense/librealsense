@@ -13,10 +13,12 @@
 
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"
+#include "rsutils/accelerators/gpu.h"
 #endif
 #ifdef __SSSE3__
 #include <tmmintrin.h> // For SSSE3 intrinsics
 #endif
+#include "neon/image-neon.h"
 
 #if defined (ANDROID) || (defined (__linux__) && !defined (__x86_64__)) || (defined (__APPLE__) && !defined (__x86_64__))
 
@@ -56,8 +58,11 @@ namespace librealsense
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 #ifdef RS2_USE_CUDA
-        rscuda::unpack_yuy2_cuda<FORMAT>(d, s, n);
-        return;
+        if (rsutils::rs2_is_gpu_available())
+        {
+            rscuda::unpack_yuy2_cuda<FORMAT>(d, s, n);
+            return;
+        }
 #endif
 #if defined __SSSE3__ && ! defined ANDROID
         static bool do_avx = has_avx();
@@ -220,6 +225,16 @@ namespace librealsense
                 }
             }
         }
+
+#elif defined(__ARM_NEON)  && ! defined ANDROID
+
+        if (FORMAT == RS2_FORMAT_Y8) unpack_yuy2_neon_y8(d, s, n);
+        if (FORMAT == RS2_FORMAT_Y16) unpack_yuy2_neon_y16(d, s, n);
+        if (FORMAT == RS2_FORMAT_RGB8) unpack_yuy2_neon_rgb8(d, s, n);
+        if (FORMAT == RS2_FORMAT_RGBA8) unpack_yuy2_neon_rgba8(d, s, n);
+        if (FORMAT == RS2_FORMAT_BGR8) unpack_yuy2_neon_bgr8(d, s, n);
+        if (FORMAT == RS2_FORMAT_BGRA8) unpack_yuy2_neon_bgra8(d, s, n);
+
 #else  // Generic code for when SSSE3 is not available.
         auto src = reinterpret_cast<const uint8_t *>(s);
         auto dst = reinterpret_cast<uint8_t *>(d[0]);
@@ -1124,5 +1139,20 @@ namespace librealsense
     void m420_converter::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         unpack_m420(_target_format, _target_stream, dest, source, width, height, actual_size);
+    }
+
+    void uyvy_to_yuyv::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
+    {
+        auto in = reinterpret_cast< const uint16_t * >( source );
+        auto out = reinterpret_cast< uint16_t * >( dest[0] );
+
+        // Time measurments on Jetson yielded better results for the non-CUDA version
+    //#ifdef RS2_USE_CUDA
+        //if( rsutils::rs2_is_gpu_available() )
+        //    rscuda::uyvy_to_yuyv_cuda_helper( in, out, width * height );
+    //#else
+        for( size_t i = 0; i < width * height; ++i )
+            out[i] = ( ( in[i] >> 8 ) & 0x00FF ) | ( ( in[i] << 8 ) & 0xFF00 );
+    //#endif
     }
 }

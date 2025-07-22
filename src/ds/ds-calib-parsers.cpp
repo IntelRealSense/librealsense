@@ -5,6 +5,7 @@
 #include "ds-private.h"
 
 #include "ds/d400/d400-private.h"
+#include "ds/d500/d500-private.h"
 
 namespace librealsense
 {
@@ -162,6 +163,16 @@ namespace librealsense
         {
             // D455 specific - Bosch BMI055
             _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.03022f, 0.0074f, 0.01602f } };
+            _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
+        }
+        else if( _pid == ds::RS457_PID )
+        {
+            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.09530f, -0.00056f, 0.01740f } };
+            _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
+        }
+        else if( _pid == ds::D555_PID )
+        {
+            _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.0374f, 0.00719f, 0.0223f } };
             _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
         }
         else // unmapped configurations

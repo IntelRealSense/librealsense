@@ -24,8 +24,8 @@ extern "C" {
 #include "h/rs_sensor.h"
 
 #define RS2_API_MAJOR_VERSION    2
-#define RS2_API_MINOR_VERSION    55
-#define RS2_API_PATCH_VERSION    1
+#define RS2_API_MINOR_VERSION    56
+#define RS2_API_PATCH_VERSION    4
 #define RS2_API_BUILD_VERSION    0
 
 #ifndef STRINGIFY
@@ -135,6 +135,8 @@ float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2
 * \return            the time at specific time point, in live and record mode it will return the system time and in playback mode it will return the recorded time
 */
 rs2_time_t rs2_get_time( rs2_error** error);
+
+void rs2_hw_monitor_get_opcode_string(int opcode, char* buffer, size_t buffer_size,rs2_device* device, rs2_error** error);
 
 #ifdef __cplusplus
 }

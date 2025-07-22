@@ -15,7 +15,6 @@ xhci_patch=0
 build_usbcore_modules=0
 rebuild_ko=0
 debug_uvc=0
-retpoline_retrofit=0
 
 #Parse input
 while test $# -gt 0; do
@@ -75,21 +74,15 @@ if [[ ( ${xhci_patch} -eq 1 ) && ( ${k_maj_min} -ne 404 ) ]]; then
 	exit 1
 fi
 
-# Construct branch name from distribution codename {xenial,bionic,..} and kernel version
+# Construct branch name from distribution codename {focal, jammy...} and kernel version
 ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
-if [ -z "${ubuntu_codename}" ];
-then
-	# Trusty Tahr shall use xenial code base
-	ubuntu_codename="xenial"
-	retpoline_retrofit=1
-fi
 
 kernel_branch=$(choose_kernel_branch ${LINUX_BRANCH} ${ubuntu_codename})
 kernel_name="ubuntu-${ubuntu_codename}-$kernel_branch"
 echo -e "\e[32mCreate patches workspace in \e[93m${kernel_name} \e[32mfolder\n\e[0m"
 
 #Distribution-specific packages
-if { [ ${ubuntu_codename} == "bionic" ] || [ ${ubuntu_codename} == "focal" ];  } ;
+if [ "${ubuntu_codename}" == "focal" ]; 
 then
 	require_package libelf-dev
 	require_package elfutils
@@ -210,8 +203,6 @@ then
 	#Vermagic identity is required
 	sudo sed -i "s/\".*\"/\"$LINUX_BRANCH\"/g" ./include/generated/utsrelease.h
 	sudo sed -i "s/.*/$LINUX_BRANCH/g" ./include/config/kernel.release
-	#Patch for Trusty Tahr (Ubuntu 14.05) with GCC not retrofitted with the retpoline patch.
-	[ $retpoline_retrofit -eq 1 ] && sudo sed -i "s/#ifdef RETPOLINE/#if (1)/g" ./include/linux/vermagic.h
 
 
 	if [[ ( $xhci_patch -eq 1 ) && ( $build_usbcore_modules -eq 0 ) ]]; then

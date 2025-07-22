@@ -1,9 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-log-consumer.h>
 #include <realdds/topics/dds-topic-names.h>
+
+#include <fastdds/rtps/flowcontrol/FlowControllerDescriptor.hpp>
+
 
 namespace realdds {
 
@@ -58,6 +61,17 @@ void log_consumer::Consume( const eprosima::fastdds::dds::Log::Entry & e )
         LOG_DDS_ENTRY( e, Info, e.message );
         break;
     }
+}
+
+
+// Calculate approximately how long it will take to send X bytes to the destination, given specific flow control. The
+// flow control will slow down the send and do it asynchronously: any write() call will return immediately rather than
+// wait until the send is complete, so the caller will have to manually wait if an ack or reply is expected!
+//
+double estimate_seconds_to_send( size_t size, eprosima::fastdds::rtps::FlowControllerDescriptor const & controller )
+{
+    auto seconds_to_send = size * controller.period_ms / ( 1000. * controller.max_bytes_per_period );
+    return seconds_to_send;
 }
 
 

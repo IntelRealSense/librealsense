@@ -11,6 +11,7 @@
 #include "updates-model.h"
 #include "calibration-model.h"
 #include "objects-in-frame.h"
+#include "dds-model.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -108,6 +109,11 @@ namespace rs2
         {
             static const char* enable_writing{ "calibration.enable_writing" };
         }
+        namespace dds
+        {
+            static const char* enable_dds{ "context.dds.enabled" };
+            static const char* domain_id{ "context.dds.domain" };
+        }
         namespace viewer
         {
             static const char* is_3d_view{ "viewer_model.is_3d_view" };
@@ -153,7 +159,7 @@ namespace rs2
         namespace performance
         {
             static const char* glsl_for_rendering{ "performance.glsl_for_rendering.v2" };
-            static const char* glsl_for_processing{ "performance.glsl_for_processing.v2" };
+            static const char* glsl_for_processing{ "performance.glsl_for_processing.v3" };
             static const char* enable_msaa{ "performance.msaa" };
             static const char* msaa_samples{ "performance.msaa_samples" };
             static const char* show_fps{ "performance.show_fps" };
@@ -439,6 +445,10 @@ namespace rs2
             std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile,
             bool reset_delay = false );
 
+        void draw_device_panel_auto_calib(viewer_model& viewer, bool& something_to_show, std::string& error_message);
+        bool draw_device_panel_auto_calib_d400(viewer_model& viewer, bool& something_to_show, std::string& error_message);
+        bool draw_device_panel_auto_calib_d500(viewer_model& viewer, bool& something_to_show, std::string& error_message);
+
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
         rsutils::time::periodic_timer      _update_readonly_options_timer;
@@ -447,6 +457,7 @@ namespace rs2
         std::shared_ptr<updates_model> _updates;
         std::shared_ptr<sw_update::dev_updates_profile::update_profile >_updates_profile;
         calibration_model _calib_model;
+        dds_model _dds_model;
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);

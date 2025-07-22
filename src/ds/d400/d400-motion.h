@@ -13,6 +13,8 @@ namespace librealsense
     {
     public:
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
+        bool is_imu_high_accuracy() const override;
+        double get_gyro_default_scale() const override;
 
         std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(synthetic_sensor* ep,
             const platform::extension_unit* fisheye_xu);
@@ -35,7 +37,6 @@ namespace librealsense
         std::shared_ptr<stream_interface> _gyro_stream;
 
         uint16_t _pid;    // product PID
-        std::shared_ptr<mm_calib_handler>        _mm_calib;
         optional_value<uint8_t> _motion_module_device_idx;
     };
 
@@ -44,11 +45,11 @@ namespace librealsense
     public:
         d400_motion( std::shared_ptr< const d400_info > const & dev_info );
 
-        std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
-            const std::vector<platform::hid_device_info>& all_hid_infos,
-            const firmware_version& camera_fw_version);
+        std::shared_ptr<synthetic_sensor> create_hid_device( std::shared_ptr<context> ctx,
+                                                             const std::vector<platform::hid_device_info>& all_hid_infos );
         ds_motion_sensor & get_motion_sensor();
         std::shared_ptr<hid_sensor > get_raw_motion_sensor();
+
 
     protected:
         friend class ds_motion_common;

@@ -1,19 +1,24 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 from rspy import log, test
-import pyrealsense2 as rs
-import dds
+from rspy import librs as rs
 
 if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )
 log.nested = 'C  '
 
-context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'test-formats-conversion' }} )
-only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any)
+context = rs.context( {
+    'dds': {
+        'enabled': True,
+        'domain': 123,
+        'participant': 'test-formats-conversion'
+        },
+    'device-mask': rs.only_sw_devices
+    } )
 
 import os.path
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -25,10 +30,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test setup", on_fail=test.ABORT ):
         remote.run( 'create_server()' )
-        n_devs = 0
-        for dev in dds.wait_for_devices( context, only_sw_devices ):
-            n_devs += 1
-        test.check_equal( n_devs, 1 )
+        dev = rs.wait_for_devices( context, n=1. )
         sensors = {sensor.get_info( rs.camera_info.name ) : sensor for sensor in dev.query_sensors()}
     #
     #############################################################################################

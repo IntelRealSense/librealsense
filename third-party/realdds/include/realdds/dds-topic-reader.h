@@ -1,13 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
+#include "dds-defines.h"
 
 #include <rsutils/json-fwd.h>
 #include <functional>
 #include <memory>
+#include <atomic>
 
 
 namespace eprosima {
@@ -31,15 +33,17 @@ class dds_subscriber;
 // You may choose to create one via a 'subscriber' that manages the activities of several readers.
 // on_data_available callback will be called when a sample is received.
 //
-class dds_topic_reader : public eprosima::fastdds::dds::DataReaderListener
+class dds_topic_reader
+    : public eprosima::fastdds::dds::DataReaderListener
+    , public std::enable_shared_from_this< dds_topic_reader >
 {
 protected:
     std::shared_ptr< dds_topic > const _topic;
-    std::shared_ptr < dds_subscriber > const _subscriber;
+    std::shared_ptr< dds_subscriber > const _subscriber;
 
     eprosima::fastdds::dds::DataReader * _reader = nullptr;
 
-    int _n_writers = 0;
+    std::atomic< int > _n_writers;
 
 public:
     dds_topic_reader( std::shared_ptr< dds_topic > const & topic );
@@ -53,6 +57,7 @@ public:
     bool has_writers() const { return _n_writers > 0; }
 
     std::shared_ptr< dds_topic > const & topic() const { return _topic; }
+    dds_guid const & guid() const;
 
     typedef std::function< void() > on_data_available_callback;
     typedef std::function< void( eprosima::fastdds::dds::SubscriptionMatchedStatus const & ) >
@@ -86,6 +91,9 @@ public:
 
     // The callbacks should be set before we actually create the underlying DDS objects, so the reader does not
     virtual void run( qos const & );
+
+    // Waits until writers are detected; return false on timeout
+    bool wait_for_writers( dds_time timeout );
 
     // Go back to a pre-run() state, such that is_running() returns false
     virtual void stop();

@@ -96,33 +96,33 @@ namespace librealsense
             if(tokens.size() < 1 || (tokens[0] != R"(\\?\usb)" && tokens[0] != R"(\\?\hid)")) return false; // Not a USB device
             if(tokens.size() < 3)
             {
-                LOG_ERROR("malformed usb device path: " << name);
+                LOG_WARNING( "malformed usb device path: " << name );
                 return false;
             }
 
             auto ids = tokenize(tokens[1], '&');
             if(ids[0].size() != 8 || ids[0].substr(0,4) != "vid_" || !(std::istringstream(ids[0].substr(4,4)) >> std::hex >> vid))
             {
-                LOG_ERROR("malformed vid string: " << tokens[1]);
+                LOG_DEBUG("malformed vid string: " << tokens[1]);
                 return false;
             }
 
             if(ids[1].size() != 8 || ids[1].substr(0,4) != "pid_" || !(std::istringstream(ids[1].substr(4,4)) >> std::hex >> pid))
             {
-                LOG_ERROR("malformed pid string: " << tokens[1]);
+                LOG_DEBUG( "malformed pid string: " << tokens[1] );
                 return false;
             }
 
             if(ids.size() > 2 && (ids[2].size() != 5 || ids[2].substr(0,3) != "mi_" || !(std::istringstream(ids[2].substr(3,2)) >> mi)))
             {
-                LOG_ERROR("malformed mi string: " << tokens[1]);
+                LOG_DEBUG( "malformed mi string: " << tokens[1] );
                 return false;
             }
 
             ids = tokenize(tokens[2], '&');
             if(ids.size() == 0)
             {
-                LOG_ERROR("malformed id string: " << tokens[2]);
+                LOG_DEBUG( "malformed id string: " << tokens[2] );
                 return false;
             }
 
@@ -491,14 +491,16 @@ namespace librealsense
                 }
 
                 // Enumerate all imaging devices
-                for (int member_index = 0; ; ++member_index)
+                // 0x1000 ia a large enough limit to permit maximum connection, while avoiding infinite loop
+                for (DWORD member_index = 0; member_index < 0x1000; ++member_index)
                 {
                     // Get device information element from the device information set
                     if (SetupDiEnumDeviceInfo(device_info, member_index, &devInfo) == FALSE)
                     {
-                        if( GetLastError() == ERROR_NO_MORE_ITEMS )
-                            break; // stop when none left
-                        continue; // silently ignore other errors
+                        DWORD last_error = GetLastError();
+                        if (last_error == ERROR_NO_MORE_ITEMS) 
+                            break; // stop when none left 
+                        continue; // silently ignore other errors }
                     }
 
                     std::string parent_uid;

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include "metadata-parser.h"
 #include "metadata.h"
@@ -10,8 +10,9 @@
 #include "d500-private.h"
 #include "d500-options.h"
 #include "d500-info.h"
-#include "ds/ds-options.h"
-#include "ds/ds-timestamp.h"
+#include <src/ds/ds-options.h>
+#include <src/ds/ds-timestamp.h>
+#include <src/ds/ds-thermal-monitor.h>
 #include <src/depth-sensor.h>
 #include "stream.h"
 #include "environment.h"
@@ -21,15 +22,18 @@
 
 #include "proc/depth-formats-converter.h"
 #include "proc/y8i-to-y8y8.h"
-#include "proc/y16i-to-y10msby10msb.h"
+#include "proc/y16i-10msb-to-y16y16.h"
 
-#include <src/fourcc.h>
+#include <rsutils/type/fourcc.h>
+using rs_fourcc = rsutils::type::fourcc;
 
 #include <rsutils/string/hexdump.h>
 #include <rsutils/version.h>
 
 #include <vector>
 #include <string>
+
+#include <src/ds/d500/d500-debug-protocol-calibration-engine.h>
 
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
@@ -50,7 +54,6 @@ namespace librealsense
         {rs_fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
         {rs_fourcc('Y','1','6','I'), RS2_FORMAT_Y16I},
         {rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
-        {rs_fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
         {rs_fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
         {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
         {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
@@ -112,6 +115,11 @@ namespace librealsense
         throw not_implemented_exception("D500 device does not support unsigned FW update");
     }
 
+    std::string d500_device::get_opcode_string(int opcode) const 
+    {
+        return _hw_monitor_response->hwmon_error2str(opcode);
+    }
+
     class d500_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:
@@ -152,11 +160,17 @@ namespace librealsense
                 set_frame_metadata_modifier([&](frame_additional_data& data) {data.depth_units = _depth_units.load(); });
 
                 synthetic_sensor::open(requests);
-                }); //group_multiple_fw_calls
+
+                if( _owner && _owner->_thermal_monitor )
+                    _owner->_thermal_monitor->update( true );
+            }); //group_multiple_fw_calls
         }
 
         void close() override
         {
+            if( _owner && _owner->_thermal_monitor )
+                _owner->_thermal_monitor->update( false );
+
             synthetic_sensor::close();
         }
 
@@ -271,8 +285,18 @@ namespace librealsense
     float d500_device::get_stereo_baseline_mm() const // to be d500 adapted
     {
         using namespace ds;
-        auto table = check_calib<d500_coefficients_table>(*_coefficients_table_raw);
-        return fabs(table->baseline);
+        float baseline = 100.0f; // so we will have a non zero value if cannot read from table
+        try
+        {
+            auto table = check_calib<d500_coefficients_table>(*_coefficients_table_raw);
+            baseline = fabs(table->baseline);
+        }
+        catch( const std::exception &e )
+        {
+            LOG_ERROR("Failed reading stereo baseline, using default value --> " << e.what() );
+        }
+
+        return baseline;
     }
 
     std::vector<uint8_t> d500_device::get_d500_raw_calibration_table(ds::d500_calibration_table_id table_id) const // to be d500 adapted
@@ -332,8 +356,19 @@ namespace librealsense
         using namespace ds;
 
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
-        for( auto & info : filter_by_mi( all_device_infos, 0 ) )  // Filter just mi=0, DEPTH
-            depth_devices.push_back( get_backend()->create_uvc_device( info ) );
+        auto depth_devs_info = filter_by_mi( all_device_infos, 0 );
+
+        for (auto&& info : depth_devs_info) // Filter just mi=0, DEPTH
+        {
+            auto depth_uvc_device = get_backend()->create_uvc_device(info);
+            if (depth_uvc_device)
+                depth_devices.push_back(depth_uvc_device);
+        }
+
+        if (depth_devs_info.empty() || depth_devices.empty())
+        {
+            throw backend_exception("cannot access depth sensor", RS2_EXCEPTION_TYPE_BACKEND);
+        }
 
         std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
@@ -360,11 +395,13 @@ namespace librealsense
 
     d500_device::d500_device( std::shared_ptr< const d500_info > const & dev_info )
         : backend_device(dev_info), global_time_interface(),
+          d500_auto_calibrated(std::make_shared<d500_debug_protocol_calibration_engine>(this), this),
           _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
-          _color_stream(nullptr)
+          _color_stream(nullptr),
+          _hw_monitor_response(std::make_shared<ds::d500_hwmon_response>())
     {
         _depth_device_idx
             = add_sensor( create_depth_device( dev_info->get_context(), dev_info->get_group().uvc_devices ) );
@@ -389,13 +426,13 @@ namespace librealsense
             _hw_monitor = std::make_shared<hw_monitor_extended_buffers>(
                 std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>( *raw_sensor, depth_xu, DS5_HWMONITOR ),
-                    raw_sensor));
+                    raw_sensor), _hw_monitor_response);
         }
         else
         {
             _hw_monitor = std::make_shared< hw_monitor_extended_buffers >(
                 std::make_shared< locked_transfer >( get_backend()->create_usb_device( group.usb_devices.front() ),
-                                                     raw_sensor ) );
+                                                     raw_sensor ), _hw_monitor_response);
         }
 
         _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor);
@@ -428,6 +465,8 @@ namespace librealsense
         auto& depth_sensor = get_depth_sensor();
         auto raw_depth_sensor = get_raw_depth_sensor();
 
+        d500_auto_calibrated::set_depth_sensor( &depth_sensor );
+
         using namespace platform;
 
         std::string pid_hex_str, usb_type_str;
@@ -435,8 +474,19 @@ namespace librealsense
         bool advanced_mode = false;
         bool usb_modality = true;
         group_multiple_fw_calls(depth_sensor, [&]() {
+            
+            // D500 device can get enumerated before the whole HW in the camera is ready.
+            // Since GVD gather all information from all the HW, it might need some more time to finish all hand shakes.
+            // on this case it will return HW_NOT_READY error code.
+            // Note: D500 error codes list is different than D400.
 
-            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::fw_cmd::GVD);
+            const std::set< int32_t > gvd_retry_errors{ _hw_monitor_response->HW_NOT_READY };
+
+            _hw_monitor->get_gvd( gvd_buff.size(),
+                                  gvd_buff.data(),
+                                  ds::fw_cmd::GVD,
+                                  &gvd_retry_errors );
+
             get_gvd_details(gvd_buff, &gvd_parsed_fields);
             
             _device_capabilities = ds_caps::CAP_ACTIVE_PROJECTOR | ds_caps::CAP_RGB_SENSOR | ds_caps::CAP_IMU_SENSOR |
@@ -454,8 +504,6 @@ namespace librealsense
 
             _is_symmetrization_enabled = check_symmetrization_enabled();
 
-            depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
-
             depth_sensor.register_processing_block(
                 { {RS2_FORMAT_Y8I} },
                 { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
@@ -465,7 +513,7 @@ namespace librealsense
             depth_sensor.register_processing_block(
                 { RS2_FORMAT_Y16I },
                 { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                []() {return std::make_shared<y16i_to_y10msby10msb>(); }
+                []() {return std::make_shared<y16i_10msb_to_y16y16>(); }
             );
                 
             pid_hex_str = rsutils::string::from() << std::uppercase << rsutils::string::hexdump( _pid );
@@ -527,17 +575,20 @@ namespace librealsense
                         rsutils::lazy< float >( [default_depth_units]() { return default_depth_units; } ) ) );
             }
 
-            depth_sensor.register_option(RS2_OPTION_SOC_PVT_TEMPERATURE,
-                std::make_shared<temperature_option>(_hw_monitor,
-                    temperature_option::temperature_component::HKR_PVT, "Temperature reading for SOC PVT"));
+            // defining the temperature options
+            auto pvt_temperature = std::make_shared< temperature_xu_option >(raw_depth_sensor,
+                depth_xu,
+                DS5_HKR_PVT_TEMPERATURE,
+                "PVT Temperature");
 
-            depth_sensor.register_option(RS2_OPTION_OHM_TEMPERATURE,
-                std::make_shared<temperature_option>(_hw_monitor,
-                    temperature_option::temperature_component::LEFT_IR, "Temperature reading for Left Infrared Sensor"));
+            auto ohm_temperature = std::make_shared< temperature_xu_option >(raw_depth_sensor,
+                depth_xu,
+                DS5_HKR_OHM_TEMPERATURE,
+                "OHM Temperature");
 
-            depth_sensor.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                std::make_shared<temperature_option>(_hw_monitor,
-                    temperature_option::temperature_component::LEFT_PROJ, "Temperature reading for Left Projector"));
+            // registering the temperature options
+            depth_sensor.register_option(RS2_OPTION_SOC_PVT_TEMPERATURE, pvt_temperature);
+            depth_sensor.register_option(RS2_OPTION_OHM_TEMPERATURE, ohm_temperature);
 
             auto error_control = std::make_shared< uvc_xu_option< uint8_t > >( raw_depth_sensor,
                                                                                depth_xu,
@@ -553,25 +604,25 @@ namespace librealsense
             depth_sensor.register_option( RS2_OPTION_ERROR_POLLING_ENABLED,
                                           std::make_shared< polling_errors_disable >( _polling_error_handler ) );
 
-            // Metadata registration
-            depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
         }); //group_multiple_fw_calls
 
         // attributes of md_capture_timing
         auto md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_depth_mode, depth_y_mode) +
             offsetof(md_depth_y_normal_mode, intel_capture_timing);
-
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&uvc_header::timestamp),
-            make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
-
+        
         // attributes of md_capture_stats
-        md_prop_offset = metadata_raw_mode_offset +
+       auto md_prop_offset_stats = metadata_raw_mode_offset +
             offsetof(md_depth_mode, depth_y_mode) +
             offsetof(md_depth_y_normal_mode, intel_capture_stats);
 
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, 
+            make_rs400_sensor_ts_parser(make_attribute_parser(&md_capture_stats::hw_timestamp, md_capture_stat_attributes::hw_timestamp_attribute, md_prop_offset_stats),
+                make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
+
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_attribute_parser(&md_capture_stats::hw_timestamp, md_capture_stat_attributes::hw_timestamp_attribute, md_prop_offset_stats));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset_stats));
 
         // attributes of md_depth_control
         md_prop_offset = metadata_raw_mode_offset +
@@ -641,7 +692,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, gvd_parsed_fields.optical_module_sn);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, gvd_parsed_fields.fw_version);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
-        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
+        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GET_FW_LOGS)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D500");
@@ -650,9 +701,18 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 
         if (usb_modality)
+        {
+            register_info(RS2_CAMERA_INFO_CONNECTION_TYPE, "USB");
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+        }
 
         register_features();
+
+        d500_auto_calibrated::add_depth_write_observer( [this]()
+        {
+            _coefficients_table_raw.reset();
+            _new_calib_table_raw.reset();
+        } );
     }
 
     void d500_device::register_features()
@@ -702,20 +762,36 @@ namespace librealsense
 
     command d500_device::get_firmware_logs_command() const
     {
-        return command{ ds::GLD, 0x1f4 };
-    }
-
-    command d500_device::get_flash_logs_command() const
-    {
-        return command{ ds::FRB, 0x17a000, 0x3f8 };
+        return command{ ds::GET_FW_LOGS };
     }
 
     bool d500_device::check_symmetrization_enabled() const
     {
-        command cmd{ ds::MRD, 0x80000004, 0x80000008 };
-        auto res = _hw_monitor->send(cmd);
-        uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
-        return val == 1;
+        // The following try catch block has been added to avoid
+        // device's constructor failure for users working with new librealsense
+        // version and old fw version (which would not have the stream pipe config table)
+        // Only the content of the try statements should be kept, after some time.
+        try
+        {
+            using namespace ds;
+            command cmd(GET_HKR_CONFIG_TABLE,
+                static_cast<int>(d500_calib_location::d500_calib_ram_memory),
+                static_cast<int>(d500_calibration_table_id::stream_pipe_config_id),
+                static_cast<int>(d500_calib_type::d500_calib_dynamic));
+            auto res = _hw_monitor->send(cmd);
+       
+            if (res.size() != sizeof(d500_stream_pipe_config_table))
+                throw invalid_value_exception("Stream Config table has unexpected length");
+            auto stream_pipe_config_table = check_calib<d500_stream_pipe_config_table>(res);
+            return stream_pipe_config_table->is_depth_symmetrization_enabled == 1;
+        }
+        catch (...)
+        {
+            command cmd{ ds::MRD, 0x80000004, 0x80000008 };
+            auto res = _hw_monitor->send(cmd);
+            uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
+            return val == 1;
+        }
     }
     
     void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, ds::d500_gvd_parsed_fields* parsed_fields) const
@@ -732,10 +808,9 @@ namespace librealsense
         constexpr size_t gvd_header_size = 8;
         auto gvd_payload_data = gvd_buff.data() + gvd_header_size;
         auto computed_crc = rsutils::number::calc_crc32( gvd_payload_data, parsed_fields->payload_size );
-        LOG_INFO( "D500 GVD version is: " << static_cast< int >( parsed_fields->gvd_version[0] )
-                                          << "."
-                                          << static_cast< int >( parsed_fields->gvd_version[1] ) );
-        LOG_INFO( "D500 GVD payload_size is: " << parsed_fields->payload_size );
+        LOG_DEBUG( "D500 GVD version is: " << static_cast< int >( parsed_fields->gvd_version[0] ) << "."
+                                           << static_cast< int >( parsed_fields->gvd_version[1] )
+                                           << "\n\tD500 GVD payload_size is: " << parsed_fields->payload_size );
 
         if( computed_crc != parsed_fields->crc32 )
         {

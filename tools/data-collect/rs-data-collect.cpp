@@ -1,5 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2018 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2018-24 Intel Corporation. All Rights Reserved.
+
 // Minimalistic command-line collect & analyze bandwidth/performance tool for Realsense Cameras.
 // The data is gathered and serialized in csv-compatible format for offline analysis.
 // Extract and store frame headers info for video streams; for IMU&Tracking streams also store the actual data
@@ -7,20 +8,20 @@
 // See rs-data-collect.h for config examples
 
 #include <librealsense2/rs.hpp>
+#include <common/cli.h>
 #include "rs-data-collect.h"
-#include "tclap/CmdLine.h"
 #include <thread>
 #include <regex>
 #include <iostream>
 #include <algorithm>
 
 using namespace std;
-using namespace TCLAP;
 using namespace rs_data_collect;
+using rs2::cli;
 
 
 data_collector::data_collector(std::shared_ptr<rs2::device> dev,
-    ValueArg<int>& timeout, ValueArg<int>& max_frames) : _dev(dev)
+    cli::value<int>& timeout, cli::value<int>& max_frames) : _dev(dev)
 {
     _max_frames = max_frames.isSet() ? max_frames.getValue() :
         timeout.isSet() ? std::numeric_limits<uint64_t>::max() : DEF_FRAMES_NUMBER;
@@ -29,7 +30,7 @@ data_collector::data_collector(std::shared_ptr<rs2::device> dev,
     _stop_cond = static_cast<application_stop>((int(max_frames.isSet()) << 1) + int(timeout.isSet()));
 }
 
-void data_collector::parse_and_configure(ValueArg<string>& config_file)
+void data_collector::parse_and_configure(cli::value<string>& config_file)
 {
     if (!config_file.isSet())
         throw std::runtime_error(stringify()
@@ -81,9 +82,15 @@ void data_collector::parse_and_configure(ValueArg<string>& config_file)
     configure_sensors();
 
     // Report results
+    std::string connection_type = _dev->supports(RS2_CAMERA_INFO_CONNECTION_TYPE) ? 
+        std::string(_dev->get_info(RS2_CAMERA_INFO_CONNECTION_TYPE)) : std::string(" ");
+    if (connection_type == "USB" && _dev->supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+    {
+        connection_type += " Type: ";
+        connection_type += _dev->get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+    }
     std::cout << "\nDevice selected: \n\t" << _dev->get_info(RS2_CAMERA_INFO_NAME)
-        << (_dev->supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) ?
-            std::string((stringify() << ". USB Type: " << _dev->get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))) : "")
+        << ". " << connection_type << " "
         << "\n\tS.N: " << (_dev->supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? _dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "")
         << "\n\tFW Ver: " << _dev->get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
         << "\n\nUser streams requested: " << user_requests.size()
@@ -283,23 +290,19 @@ bool data_collector::configure_sensors()
 
 int main(int argc, char** argv) try
 {
-
-#ifdef BUILD_EASYLOGGINGPP
-    rs2::log_to_file(RS2_LOG_SEVERITY_WARN);
-#endif
-
     // Parse command line arguments
-    CmdLine cmd("librealsense rs-data-collect example tool", ' ');
-    ValueArg<int>    timeout("t", "Timeout", "Max amount of time to receive frames (in seconds)", false, 10, "");
-    ValueArg<int>    max_frames("m", "MaxFrames_Number", "Maximum number of frames-per-stream to receive", false, 100, "");
-    ValueArg<string> out_file("f", "FullFilePath", "the file where the data will be saved to", false, "", "");
-    ValueArg<string> config_file("c", "ConfigurationFile", "Specify file path with the requested configuration", false, "", "");
+    cli::value<int>    timeout('t', "Timeout", "seconds", 10, "Max amount of time to receive frames (in seconds)");
+    cli::value<int>    max_frames('m', "MaxFrames_Number", "", 100, "Maximum number of frames-per-stream to receive");
+    cli::value<string> out_file('f', "FullFilePath", "path", "", "the file where the data will be saved to");
+    cli::value<string> config_file('c', "ConfigurationFile", "path", "", "Specify file path with the requested configuration");
 
-    cmd.add(timeout);
-    cmd.add(max_frames);
-    cmd.add(out_file);
-    cmd.add(config_file);
-    cmd.parse(argc, argv);
+    auto settings = cli( "librealsense rs-data-collect tool" )
+                        .default_log_level( RS2_LOG_SEVERITY_WARN )
+                        .arg( timeout )
+                        .arg( max_frames )
+                        .arg( out_file )
+                        .arg( config_file )
+                        .process( argc, argv );
 
     std::cout << "Running rs-data-collect: ";
     for (auto i=1; i < argc; ++i)
@@ -315,7 +318,7 @@ int main(int argc, char** argv) try
     }
 
     bool succeed = false;
-    rs2::context ctx;
+    rs2::context ctx( settings.dump() );
     rs2::device_list list;
 
     while (!succeed)

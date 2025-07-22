@@ -33,7 +33,7 @@ std::string from::datetime( tm const * time, char const * format )
     std::string buffer;
     if( time )
     {
-        buffer.reserve( 50 );
+        buffer.resize( 50 );
         size_t cch = strftime( const_cast< char * >( buffer.data() ), buffer.capacity(), format, time );
         // "Provided that the result string, including the terminating null byte, does not exceed max bytes, strftime()
         // returns the number of bytes (excluding the terminating null byte) placed in the array. If the length of the
@@ -50,7 +50,7 @@ std::string from::datetime( char const * format )
 {
     time_t t = time( nullptr );
     tm buf;
-#ifdef WIN32
+#ifdef _WIN32
     localtime_s( &buf, &t );
     auto time = &buf;
 #else

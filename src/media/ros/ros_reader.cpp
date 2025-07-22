@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019-24 Intel Corporation. All Rights Reserved.
 
 #include "ros_reader.h"
 #include "ds/ds-device-common.h"
@@ -10,6 +10,7 @@
 #include <src/core/motion-frame.h>
 #include <src/core/video-frame.h>
 #include <src/color-sensor.h>
+#include <src/context.h>
 
 #include <rsutils/string/from.h>
 #include <cstring>
@@ -391,10 +392,7 @@ namespace librealsense
                 }
                 auto size_of_enum = sizeof(rs2_frame_metadata_value);
                 auto size_of_data = sizeof(rs2_metadata_type);
-                if (total_md_size + size_of_enum + size_of_data > 255)
-                {
-                    continue; //stop adding metadata to frame
-                }
+               
                 memcpy(additional_data.metadata_blob.data() + total_md_size, &type, size_of_enum);
                 total_md_size += static_cast<uint32_t>(size_of_enum);
                 memcpy(additional_data.metadata_blob.data() + total_md_size, &md, size_of_data);
@@ -488,9 +486,11 @@ namespace librealsense
             get_frame_metadata(m_file, info_topic, stream_id, motion_data, additional_data);
         }
 
+        size_t size_of_imu_data = (stream_id.stream_type == RS2_STREAM_MOTION) ? sizeof(rs2_combined_motion) : 3 * sizeof(float);
+
         frame_interface * frame = m_frame_source->alloc_frame(
             { stream_id.stream_type, stream_id.stream_index, RS2_EXTENSION_MOTION_FRAME },
-            3 * sizeof( float ),
+            size_of_imu_data,
             std::move( additional_data ),
             true );
         if (frame == nullptr)
@@ -519,6 +519,24 @@ namespace librealsense
             data[1] = static_cast<float>(msg->angular_velocity.y);
             data[2] = static_cast<float>(msg->angular_velocity.z);
             LOG_DEBUG("RS2_STREAM_GYRO " << motion_frame);
+        }
+        else if (stream_id.stream_type == RS2_STREAM_MOTION)
+        {
+            auto data = reinterpret_cast<rs2_combined_motion*>(motion_frame->data.data());
+            // orientation part
+            data->orientation.x = msg->orientation.x;
+            data->orientation.y = msg->orientation.y;
+            data->orientation.z = msg->orientation.z;
+            data->orientation.w = msg->orientation.w;
+            // GYRO part
+            data->angular_velocity.x = msg->angular_velocity.x;
+            data->angular_velocity.y = msg->angular_velocity.y;
+            data->angular_velocity.z = msg->angular_velocity.z;
+            // ACCEL part
+            data->linear_acceleration.x = msg->linear_acceleration.x;
+            data->linear_acceleration.y = msg->linear_acceleration.y;
+            data->linear_acceleration.z = msg->linear_acceleration.z;
+            LOG_DEBUG("RS2_STREAM_MOTION " << motion_frame);
         }
         else
         {

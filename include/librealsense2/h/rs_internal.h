@@ -360,6 +360,20 @@ void rs2_software_sensor_detach(rs2_sensor* sensor, rs2_error** error);
 
 
 /**
+ * \brief Starts collecting FW log messages in the device.
+ * \param[in] dev            Device that will start collecting log messages.
+ * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are
+ */
+void rs2_start_collecting_fw_logs( rs2_device * dev, rs2_error ** error );
+
+/**
+ * \brief Stops collecting FW log messages in the device.
+ * \param[in] dev            Device that will stop collecting log messages.
+ * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are
+ */
+void rs2_stop_collecting_fw_logs( rs2_device * dev, rs2_error ** error );
+
+/**
 * \brief Creates RealSense firmware log message.
 * \param[in] dev            Device from which the FW log will be taken using the created message
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
@@ -483,12 +497,22 @@ const char* rs2_get_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_lo
 const char* rs2_get_fw_log_parsed_file_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
 
 /**
-* \brief Gets RealSense firmware log parsed message thread name.
+* \brief Gets RealSense firmware log parsed message source (SoC) or thread name.
 * \param[in] fw_log_parsed_msg      firmware log parsed message object
 * \param[out] error                 If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return                           thread name of the firmware log parsed message
+* \return                           source (SoC) or thread name of the firmware log parsed message
 */
 const char* rs2_get_fw_log_parsed_thread_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
+
+/**
+ * \brief Gets RealSense firmware log parsed message module name.
+ * \param[in] fw_log_parsed_msg      firmware log parsed message object
+ * \param[out] error                 If non-null, receives any error that occurs during this call, otherwise, errors are
+ * ignored. \return                  module name of the firmware log parsed message
+ */
+const char * rs2_get_fw_log_parsed_module_name( rs2_firmware_log_parsed_message * fw_log_parsed_msg,
+                                                rs2_error ** error );
+
 
 /**
 * \brief Gets RealSense firmware log parsed message severity.

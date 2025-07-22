@@ -23,6 +23,11 @@
 using namespace librealsense;
 
 
+static void dummy_callback( rs2_log_severity, rs2_log_message const *, void * )
+{
+}
+
+
 TEST_CASE( "rs2_log vs LOG() - internal", "[log]" )
 {
     size_t n_callbacks = 0;
@@ -46,16 +51,30 @@ TEST_CASE( "rs2_log vs LOG() - internal", "[log]" )
 
     // LOG(XXX) should log to the default logger, which is NOT the librealsense logger
     LOG(INFO) << "Log message to default logger";
-    REQUIRE( n_callbacks == 1 );
+    CHECK( n_callbacks == 1 );
 
-    CLOG(INFO, LIBREALSENSE_ELPP_ID) << "Log message to \"librealsense\" logger";
-    REQUIRE( n_callbacks == 2 );
+    // The librealsense logging mechanism is still off, so we don't get any callbacks
+
+    CLOG( INFO, LIBREALSENSE_ELPP_ID ) << "Log message to \"librealsense\" logger";
+    CHECK( n_callbacks == 1 );
 
     LOG_INFO( "Log message using LOG_INFO()" );
-    REQUIRE( n_callbacks == 3 );
+    CHECK( n_callbacks == 1 );
+
+    REQUIRE_NOTHROW( rs2_log( RS2_LOG_SEVERITY_INFO, "Log message using rs2_log()", nullptr ) );
+    CHECK( n_callbacks == 1 );
+
+    // But once we turn it on...
+    rs2_log_to_callback( RS2_LOG_SEVERITY_INFO, &dummy_callback, nullptr, nullptr );
+
+    CLOG(INFO, LIBREALSENSE_ELPP_ID) << "Log message to \"librealsense\" logger";
+    CHECK( n_callbacks == 2 );
+
+    LOG_INFO( "Log message using LOG_INFO()" );
+    CHECK( n_callbacks == 3 );
 
     REQUIRE_NOTHROW( rs2_log( RS2_LOG_SEVERITY_INFO, "Log message using rs2_log()", nullptr ));
-    REQUIRE( n_callbacks == 4 );
+    CHECK( n_callbacks == 4 );
 
     // NOTE that all the above called the same callback!! Callbacks are not logger-specific!
 }

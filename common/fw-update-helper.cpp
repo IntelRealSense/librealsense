@@ -4,6 +4,7 @@
 #include "fw-update-helper.h"
 #include "model-views.h"
 #include "viewer.h"
+#include <realsense_imgui.h>
 #include "ux-window.h"
 
 #include <rsutils/os/special-folder.h>
@@ -128,29 +129,36 @@ namespace rs2
 
     void firmware_update_manager::process_mipi()
     {
+        bool is_mipi_recovery = !(strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "BBCD"));
         if (!_is_signed)
         {
             fail("Signed FW update for MIPI device - This FW file is not signed ");
             return;
         }
-        auto dev_updatable = _dev.as<updatable>();
-        if(!(dev_updatable && dev_updatable.check_firmware_compatibility(_fw)))
+        if (!is_mipi_recovery)
         {
-            fail("Firmware Update failed - fw version must be newer than version 5.13.1.1");
-            return;
+            auto dev_updatable = _dev.as<updatable>();
+            if(!(dev_updatable && dev_updatable.check_firmware_compatibility(_fw)))
+            {
+                std::stringstream ss;
+                ss << "The firmware version is not compatible with ";
+                ss << _dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+                fail(ss.str());
+                return;
+            }
         }
-
         log("Burning Signed Firmware on MIPI device");
-
-        // Enter DFU mode
-        auto device_debug = _dev.as<rs2::debug_protocol>();
-        uint32_t dfu_opcode = 0x1e;
-        device_debug.build_command(dfu_opcode, 1);
-
+        if (!is_mipi_recovery)
+        {
+            // Enter DFU mode
+            auto device_debug = _dev.as<rs2::debug_protocol>();
+            uint32_t dfu_opcode = 0x1e;
+            device_debug.build_command(dfu_opcode, 1);
+        }
         _progress = 30;
-
+        rs2_camera_info _dfu_port_info = (is_mipi_recovery)?(RS2_CAMERA_INFO_PHYSICAL_PORT):(RS2_CAMERA_INFO_DFU_DEVICE_PATH);
         // Write signed firmware to appropriate file descriptor
-        std::ofstream fw_path_in_device(_dev.get_info(RS2_CAMERA_INFO_DFU_DEVICE_PATH), std::ios::binary);
+        std::ofstream fw_path_in_device(_dev.get_info(_dfu_port_info), std::ios::binary);
         if (fw_path_in_device)
         {
             fw_path_in_device.write(reinterpret_cast<const char*>(_fw.data()), _fw.size());
@@ -160,20 +168,35 @@ namespace rs2
             fail("Firmware Update failed - wrong path or permissions missing");
             return;
         }
-        LOG_INFO("Firmware Update for MIPI device done.");
+        log("FW update process completed successfully.");
+        LOG_INFO("FW update process completed successfully.");
         fw_path_in_device.close();
 
         _progress = 100;
+        if (is_mipi_recovery)
+        {
+            log("For GMSL MIPI device please reboot, or reload d4xx driver\n"\
+                "sudo rmmod d4xx && sudo modprobe d4xx\n"\
+                "and restart the realsense-viewer");
+            LOG_INFO("For GMSL MIPI device please reboot, or reload d4xx driver\n"\
+                     "sudo rmmod d4xx && sudo modprobe d4xx\n"\
+                     "and restart the realsense-viewer");
+        }
         _done = true;
-        // need to find a way to update the fw version field in the viewer
+        // Restart the device to reconstruct with the new version information
+        _dev.hardware_reset();
     }
 
     void firmware_update_manager::process_flow(
         std::function<void()> cleanup,
         invoker invoke)
     {
-        // if device is D457, and fw is signed - using mipi specific procedure
-        if (!strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD") && _is_signed)
+        // if device is MIPI device, and fw is signed - using mipi specific procedure
+        if (_is_signed
+                && (!strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD")
+                 || !strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "BBCD")
+                 || !strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCE"))
+                )
         {
             process_mipi();
             return;
@@ -271,11 +294,8 @@ namespace rs2
 
             if ( !log_backup_status.empty() )
                 log(log_backup_status);
-            
 
-            
-
-            next_progress = 40;
+            next_progress = static_cast<int>(_progress) + 10;
 
             if (_is_signed)
             {
@@ -494,7 +514,7 @@ namespace rs2
 
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "New firmware will be flashed to the device");
+                    RsImGui::CustomTooltip("%s", "New firmware will be flashed to the device");
                 }
             }
             else if (update_state == RS2_FWU_STATE_IN_PROGRESS)
@@ -542,7 +562,7 @@ namespace rs2
             if (ImGui::IsItemHovered())
             {
                 win.link_hovered();
-                ImGui::SetTooltip("%s", "Internet connection required");
+                RsImGui::CustomTooltip("%s", "Internet connection required");
             }
         }
     }

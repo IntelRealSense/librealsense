@@ -3,12 +3,16 @@
 
 #include <librealsense2/rs.hpp>
 #include "example-imgui.hpp"
+#include <common/cli.h>
 
 #include <sstream>
 #include <iostream>
 #include <fstream>
 #include <algorithm>
 #include <cstring>
+#include "imgui_impl_glfw.h"
+#include <imgui_impl_opengl3.h>
+#include <realsense_imgui.h>
 
 void render_slider(rect location, float& clipping_dist);
 void remove_background(rs2::video_frame& other, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist);
@@ -18,14 +22,21 @@ bool profile_changed(const std::vector<rs2::stream_profile>& current, const std:
 
 int main(int argc, char * argv[]) try
 {
+    auto settings = rs2::cli( "rs-aligned-advanced example" )
+        .process( argc, argv );
+
     // Create and initialize GUI related objects
     window app(1280, 720, "RealSense Align (Advanced) Example"); // Simple window handling
-    ImGui_ImplGlfw_Init(app, false);      // ImGui library intializition
+    // Setup Dear ImGui context
+    ImGui::CreateContext();
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(app, false);
+    ImGui_ImplOpenGL3_Init();
     rs2::colorizer c;                     // Helper to colorize depth images
     texture renderer;                     // Helper for renderig images
 
     // Create a pipeline to easily configure and start the camera
-    rs2::pipeline pipe;
+    rs2::pipeline pipe( settings.dump() );
     //Calling pipeline's start() without any additional parameters will start the first device
     // with its default streams.
     //The start function returns the pipeline profile which the pipeline used to start the device
@@ -105,11 +116,14 @@ int main(int argc, char * argv[]) try
         renderer.show(pip_stream);
 
         // Using ImGui library to provide a slide controller to select the depth clipping distance
-        ImGui_ImplGlfw_NewFrame(1);
+        RsImGui::PushNewFrame();
         render_slider({ 5.f, 0, w, h }, depth_clipping_distance);
         ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     }
+    // Cleanup
+    RsImGui::PopNewFrame();
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
@@ -154,13 +168,13 @@ void render_slider(rect location, float& clipping_dist)
 
     //Render the vertical slider
     ImGui::Begin("slider", nullptr, flags);
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor(215.f / 255, 215.0f / 255, 215.0f / 255));
-    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImColor(215.f / 255, 215.0f / 255, 215.0f / 255));
-    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImColor(215.f / 255, 215.0f / 255, 215.0f / 255));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor(215.f / 255, 215.0f / 255, 215.0f / 255).Value);
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImColor(215.f / 255, 215.0f / 255, 215.0f / 255).Value);
+    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImColor(215.f / 255, 215.0f / 255, 215.0f / 255).Value);
     auto slider_size = ImVec2(slider_window_width / 2, location.h - (pixels_to_buttom_of_stream_text * 2) - 20);
-    ImGui::VSliderFloat("", slider_size, &clipping_dist, 0.0f, 6.0f, "", 1.0f, true);
+    RsImGui::VSliderFloat("##vslider", slider_size, &clipping_dist, 0.0f, 6.0f, "", 1.0f, true);
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Depth Clipping Distance: %.3f", clipping_dist);
+        RsImGui::CustomTooltip("Depth Clipping Distance: %.3f", clipping_dist);
     ImGui::PopStyleColor(3);
 
     //Display bars next to slider

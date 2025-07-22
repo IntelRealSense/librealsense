@@ -39,7 +39,7 @@ Consumes data produced by a server: a *stream* is the client to a stream-server,
 
 #### ROS2
 
-[ROS2](https://docs.ros.org/) is one of the clients for which effort has been expended in order to be compliant. This compliance is direct-to-ROS compliance that does not require use of a custom node (based on librealsense) for translation (as the [ROS wrapper for librealsense](https://github.com/IntelRealSense/realsense-ros) is): ROS is a DDS participant like any other Client.
+[ROS2](https://docs.ros.org/) is one of the clients for which effort has been expended in order to be compliant. This is direct-to-ROS compliance that does not require use of a custom node (based on librealsense) for translation (as the [ROS Wrapper for Intel® RealSense™ cameras](https://github.com/IntelRealSense/realsense-ros) is): ROS is a DDS participant like any other Client.
 
 Specifically, at this time, the requirement is that ROS nodes should be able to:
 1. See any streams that RealDDS exposes
@@ -60,6 +60,8 @@ The client for DDS devices is librealsense and anything built with it, notably t
 Alternatively, one can use RealDDS to bypass librealsense. This will avoid some overhead but will also hide many of the capabilities that librealsense enables.
 
 Or you can directly interact with the DDS subsystem, using any implementation. This bypasses librealsense and RealDDS completely. While the protocol used by RealDDS (the topic structure, message formats, etc.) will likely not change much, it is not guaranteed to stay static in the face of new features or bugs.
+
+**Note**: In some systems where firewall is enabled, you may see the message "Do you want to allow networks to access this app", make sure to allow this in your network to ensure proper communication with the DDS device. This message shows up since we open and bind a socket when using DDS, so it should be allowed in the network security settings.
 
 # Next
 

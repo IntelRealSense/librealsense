@@ -8,14 +8,13 @@
 
 ### 1. Prerequisites
 
-* NVIDIA® **Jetson Nano™**, **Jetson TX2™**, **Jetson AGX Xavier™** or **Jetson Orin™** board (may also work on other Jetson devices)
+* NVIDIA® **Jetson Nano™**, **Jetson TX2™**, **Jetson AGX Xavier™** or **Jetson AGX Orin™** board (may also work on other Jetson devices)
 * A supported RealSense Camera device
 
 ### 2. Establish Developer's Environment
 
 Follow [official instructions](https://developer.nvidia.com/embedded/learn/getting-started-jetson) to get your board ready. This guide will assume you are using **NVIDIA® L4T Ubuntu 18.04/20.04/22.04** image with kernels 4.9/5.10/5.15. Note that in most cases it is necessary to install a toll named "SDK Manager" to flash and install **Jetson** boards with both the L4T (Linux for Tegra) and NVIDIA-specific software packages (CUDA, Tensor Flow, AI, etc.)
 
-For **Jetson Orin™** with JetPack 6.0 you will need to follow build for MIPI driver as NVIDIA released Kernel 5.15 default configuration with disabled HID: [Intel® RealSense™ camera driver for GMSL* interface](https://github.com/IntelRealSense/realsense_mipi_platform_driver)
 
 For **Jetson Nano™** we strongly recommend enabling the Barrel Jack connector for extra power (See [jetsonhacks.com/jetson-nano-use-more-power/](https://www.jetsonhacks.com/2019/04/10/jetson-nano-use-more-power/) to learn how)
 
@@ -42,10 +41,10 @@ In order to enable the full capabilities of RealSense devices certain modificati
 NVIDIA's L4T delivers an Ubuntu-based distribution with a customized kernel based on version 4.9/5.10. The way the kernel is configured and deployed is different from a desktop Ubuntu image with two notable differences being the list of kernel modules included in default configuration and the way a new image is flashed.
 
 And while it is possible to rebuild and flash a new kernel image the procedure can be perceived as challenging and shall be performed with extra caution.
-This guide comes with a script that allows to modify the kernel modules with Librealsense2-related patches without replacing the kernel image. The script has been verified with **Jetson AGX Xavier™** board using L4T versions 4.6.1 (Sept 2020) and 5.0.2. Scroll to the end of the guide for details.
+This guide comes with a script that allows to modify the kernel modules with Librealsense2-related patches without replacing the kernel image. The script has been verified with **Jetson AGX Xavier™** board using L4T versions 5.0.2 and 6.0. Scroll to the end of the guide for details.
 
 ### 4. Install with Debian Packages
- The minimum JetPack SDK required to run the precompiled Debians is [JetPack version 4.4.1](https://developer.nvidia.com/jetpack-sdk-441-archive) ( L4T 32.4.4 , CUDA version 10.2).
+ The minimum JetPack SDK required to run the precompiled Debians is [JetPack version 5.0.2](https://developer.nvidia.com/jetpack-sdk-441-archive) ( L4T 35.1 , CUDA version 11.4).
 
 Note that a lower version may not work due to non compatible CUDA versions limitation.
 
@@ -93,11 +92,10 @@ You can also double-TAB after typing `rs-` to see the full list of SDK examples.
 
 ⮕ Use the V4L Native backend by applying the kernel patching
 
-The method was verified with **Jetson AGX** boards with JetPack **4.4**[L4T 32.4.3], **4.6.1**[L4T 32.7.1] and **5.0.2**[L4T 35.1.0].
+The method was verified with **Jetson AGX Orin™** with JetPack 6.0, **Jetson AGX Xavier™** boards with JetPack **5.0.2**[L4T 35.1.0].
 
-The method has not yet been verified on the **Jetson Nano** board.
+For **Jetson Nano™** setup, please see the following user instructions [NVIDIA Jetson Nano with Intel RealSense Depth Camera Using ROS2 Humble | by Kabilankb | May, 2024 | Medium](https://medium.com/@kabilankb2003/nvidia-jetson-nano-with-intel-realsense-depth-camera-using-ros2-humble-c5926566a4d8)
 
-This method is incompatible for board **Jetson Orin™** with JetPack 6.0, checkout [Intel® RealSense™ camera driver for GMSL* interface](https://github.com/IntelRealSense/realsense_mipi_platform_driver)
 
 * **Prerequisite**
 

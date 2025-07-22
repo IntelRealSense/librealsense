@@ -190,8 +190,11 @@ namespace librealsense
             std::lock_guard<std::mutex> lock(_mtx);
             _resolved_profile.reset();
 
+            std::shared_ptr< librealsense::device_interface > requested_device = pipe->get_device();
+            if(! requested_device )
+                requested_device = resolve_device_requests( pipe, timeout );
+
             //Resolve the the device that was specified by the user, this call will wait in case the device is not availabe.
-            auto requested_device = resolve_device_requests(pipe, timeout);
             if (requested_device != nullptr)
             {
                 _resolved_profile = resolve(requested_device);

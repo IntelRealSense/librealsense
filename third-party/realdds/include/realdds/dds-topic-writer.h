@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <fastdds/dds/publisher/DataWriterListener.hpp>
@@ -73,10 +72,10 @@ public:
                = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS,  // default
              eprosima::fastdds::dds::DurabilityQosPolicyKind durability
                = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS );  // default is transient local
-    
-        // Override default values with JSON contents
-        void override_from_json( rsutils::json const & );
     };
+
+    // Override default values with JSON contents
+    void override_qos_from_json( qos &, rsutils::json const & );
 
     // The callbacks should be set before we actually create the underlying DDS objects, so the writer does not
     void run( qos const & = qos() );

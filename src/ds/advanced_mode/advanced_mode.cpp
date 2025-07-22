@@ -5,6 +5,7 @@
 #include "json_loader.hpp"
 #include "ds/d400/d400-color.h"
 #include "ds/d500/d500-color.h"
+#include "ds/d500/d500-private.h"
 
 #include <src/ds/features/amplitude-factor-feature.h>
 #include <src/ds/features/remove-ir-pattern-feature.h>
@@ -108,14 +109,17 @@ namespace librealsense
             case ds::RS415_PID:
                 default_410(p);
                 break;
+            case ds::RS421_PID:
             case ds::RS430_PID:
             case ds::RS430I_PID:
+            case ds::RS430_GMSL_PID:
             case ds::RS435_RGB_PID:
             case ds::RS435I_PID:
                 default_430(p);
                 break;
             case ds::RS455_PID:
             case ds::RS457_PID:
+            case ds::D555_PID:
                 default_450_mid_low_res(p);
                 switch (res)
                 {
@@ -731,6 +735,8 @@ namespace librealsense
     preset ds_advanced_mode_base::get_all() const
     {
         preset p;
+
+        rsutils::deferred depth_bulk = _depth_sensor.bulk_operation();
         get_depth_control_group(&p.depth_controls);
         get_rsm(&p.rsm);
         get_rau_support_vector_control(&p.rsvc);
@@ -750,6 +756,10 @@ namespace librealsense
         get_depth_auto_exposure(&p.depth_auto_exposure);
         get_depth_gain(&p.depth_gain);
         get_depth_auto_white_balance(&p.depth_auto_white_balance);
+
+        rsutils::deferred color_bulk;
+        if( *_color_sensor )
+            color_bulk = ( *_color_sensor )->bulk_operation();
         get_color_exposure(&p.color_exposure);
         get_color_auto_exposure(&p.color_auto_exposure);
         get_color_backlight_compensation(&p.color_backlight_compensation);
@@ -763,6 +773,7 @@ namespace librealsense
         get_color_white_balance(&p.color_white_balance);
         get_color_auto_white_balance(&p.color_auto_white_balance);
         get_color_power_line_frequency(&p.color_power_line_frequency);
+
         return p;
     }
 
@@ -775,6 +786,8 @@ namespace librealsense
 
     void ds_advanced_mode_base::set_all_depth(const preset& p)
     {
+        rsutils::deferred depth_bulk = _depth_sensor.bulk_operation();
+
         set(p.depth_controls, advanced_mode_traits<STDepthControlGroup>::group);
         set(p.rsm           , advanced_mode_traits<STRsm>::group);
         set(p.rsvc          , advanced_mode_traits<STRauSupportVectorControl>::group);
@@ -810,6 +823,10 @@ namespace librealsense
 
     void ds_advanced_mode_base::set_all_rgb( const preset & p )
     {
+        rsutils::deferred color_bulk;
+        if( *_color_sensor )
+            color_bulk = ( *_color_sensor )->bulk_operation();
+
         set_color_auto_exposure(p.color_auto_exposure);
         if (p.color_auto_exposure.was_set && p.color_auto_exposure.auto_exposure == 0)
         {

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "flexible/flexible.h"
@@ -9,15 +9,6 @@
 #include <string>
 #include <memory>
 #include <vector>
-
-
-namespace eprosima {
-namespace fastdds {
-namespace dds {
-struct SampleInfo;
-}
-}  // namespace fastdds
-}  // namespace eprosima
 
 
 namespace realdds {
@@ -69,7 +60,7 @@ public:
     //
     static bool take_next( dds_topic_reader &,
                            flexible_msg * output,
-                           eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
+                           dds_sample * optional_sample = nullptr );
 
     // WARNING: this moves the message content!
     raw::flexible to_raw() &&;
