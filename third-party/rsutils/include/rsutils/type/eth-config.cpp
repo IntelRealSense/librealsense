@@ -197,12 +197,12 @@ void eth_config::validate() const
     if( ( link.mtu % 500 ) != 0 )
         throw std::invalid_argument( rsutils::string::from() << "MTU size must be divisible by 500. Current " << link.mtu );
     if( header.version == 3 && link.mtu != 9000 )
-        throw std::invalid_argument( "Camera FW supports Ethernet configuration ver 3. Only MTU 9000 is supported." );
+        throw std::invalid_argument( "Camera FW supports only MTU 9000." );
 
     if( transmission_delay > 144 )
         throw std::invalid_argument( rsutils::string::from() << "Transmission delay should be 0-144. Current " << transmission_delay );
     if( ( transmission_delay % 3 ) != 0)
         throw std::invalid_argument( rsutils::string::from() << "Transmission delay must be divisible by 3. Current " << transmission_delay );
     if( header.version == 3 && transmission_delay != 0 )
-        throw std::invalid_argument( "Camera FW supports Ethernet configuration ver 3. Transmission delay is not supported." );
+        throw std::invalid_argument( "Camera FW does not support transmission delay." );
 }

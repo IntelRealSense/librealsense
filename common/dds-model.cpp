@@ -55,25 +55,33 @@ eth_config dds_model::get_eth_config( int curr_or_default )
 
 void rs2::dds_model::set_eth_config( eth_config & new_config, std::string & error_message )
 {
-    rs2::debug_protocol hwm( _device );
-    auto cmd = hwm.build_command( SET_ETH_CONFIG, 0, 0, 0, 0, new_config.build_command() );
-    auto data = hwm.send_and_receive_raw_data( cmd );
-    int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
-    if( data.size() != sizeof( code ) )
+    try
     {
-        error_message = rsutils::string::from() << "Failed to change: bad response size " << data.size() << ' '
-                                                << rsutils::string::hexdump( data.data(), data.size() );
-        close_window();
+        rs2::debug_protocol hwm( _device );
+        auto cmd = hwm.build_command( SET_ETH_CONFIG, 0, 0, 0, 0, new_config.build_command() );
+        auto data = hwm.send_and_receive_raw_data( cmd );
+        int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
+        if( data.size() != sizeof( code ) )
+        {
+            error_message = rsutils::string::from() << "Failed to change: bad response size " << data.size() << ' '
+                                                    << rsutils::string::hexdump( data.data(), data.size() );
+            close_window();
+        }
+        if( code != SET_ETH_CONFIG )
+        {
+            error_message = rsutils::string::from() << "Failed to change: bad response " << code;
+            close_window();
+        }
+        if( ! _no_reset )
+        {
+            close_window();
+            _device.hardware_reset();
+        }
     }
-    if( code != SET_ETH_CONFIG )
+    catch( const std::exception & e )
     {
-        error_message = rsutils::string::from() << "Failed to change: bad response " << code;
+        error_message = rsutils::string::from() << "Failed to set Ethernet configuration: " << e.what();
         close_window();
-    }
-    if( ! _no_reset )
-    {
-        close_window();
-        _device.hardware_reset();
     }
 }
 
@@ -207,10 +215,19 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         ImGui::BeginChild( "MainContent", ImVec2( w - 10, h - 100 ), true );
         ImGui::PushItemWidth( 150.0f );
 
-        // Connection Priority Section
-        priority connection_priority = classifyPriority( _changed_config.link.priority );
+        ImGui::Text( "Domain ID" );
+        ImGui::SameLine();
+        if( ImGui::InputInt( "##Domain ID", &_changed_config.dds.domain_id ) )
+        {
+            if( _changed_config.dds.domain_id < 0 )
+                _changed_config.dds.domain_id = 0;
+            else if( _changed_config.dds.domain_id > 232 )
+                _changed_config.dds.domain_id = 232;
+        }
+
         if( ImGui::CollapsingHeader( "Connection Priority" ) )
         {
+            priority connection_priority = classifyPriority( _changed_config.link.priority );
             ImGui::Text( "Select connection priority:" );
             ImGui::RadioButton( "Ethernet First", reinterpret_cast< int * >( &connection_priority ), 0 );
             if( static_cast< int >( connection_priority ) == 0 )
@@ -244,7 +261,6 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
             }
         }
 
-        // Network Configuration Section
         if( ImGui::CollapsingHeader( "Network Configuration" ) )
         {
             ImGui::Checkbox( "Enable DHCP", &_changed_config.dhcp.on );
@@ -276,17 +292,35 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
             }
         }
 
-        ImGui::Text( "Domain ID" );
-        ImGui::SameLine();
-        if( ImGui::InputInt( "##Domain ID", &_changed_config.dds.domain_id ) )
+        if( ImGui::CollapsingHeader( "Traffic Shaping" ) )
         {
-            if( _changed_config.dds.domain_id < 0 )
-                _changed_config.dds.domain_id = 0;
-            else if( _changed_config.dds.domain_id > 232 )
-                _changed_config.dds.domain_id = 232;
-        }
-        ImGui::Checkbox( "No Reset after changes", &_no_reset );
+            ImGui::Text( "MTU" );
+            ImGui::SameLine();
+            int temp_mtu = static_cast< int >( _changed_config.link.mtu );
+            if( ImGui::InputInt( "##MTU", &temp_mtu, 500 ) )
+            {
+                if( temp_mtu < 500 )
+                    temp_mtu = 500;
+                else if( temp_mtu > 9000 )
+                    temp_mtu = 9000;
+                _changed_config.link.mtu = static_cast< uint32_t >( temp_mtu );
+            }
 
+            ImGui::Text( "Transmission Delay" );
+            ImGui::SameLine();
+            int temp_delay = static_cast< int >( _changed_config.transmission_delay );
+            if( ImGui::InputInt( "##Transmission Delay", &temp_delay, 3 ) )
+            {
+                if( temp_delay < 0 )
+                    temp_delay = 0;
+                else if( temp_delay > 144 )
+                    temp_delay = 144;
+                _changed_config.transmission_delay = static_cast< uint32_t >( temp_delay );
+            }
+        }
+        
+        ImGui::Separator();
+        ImGui::Checkbox( "No Reset after changes", &_no_reset );
         if( ImGui::Checkbox( "Load defult values", &_set_defult ) )
         {
             if( _set_defult )
