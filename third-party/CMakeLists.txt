@@ -5,7 +5,11 @@ add_subdirectory( "${CMAKE_CURRENT_LIST_DIR}/rsutils" )
 
 pop_security_flags() # remove security flags for third party, as we cannot guarantee their security enforcment
 
-include(CMake/external_json.cmake)
+if(USE_EXTERNAL_NLOHMANN_JSON)
+    find_package(nlohmann_json 3.11.3 REQUIRED)
+else()
+    include(CMake/external_json.cmake)
+endif()
 # Add additional include directories to allow file to include rosbag headers
 include(${_rel_path}/realsense-file/config.cmake)
 
