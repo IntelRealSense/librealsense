@@ -23,8 +23,8 @@ namespace rs2 {
     uint32_t const GET_ETH_CONFIG = 0xBB;
     uint32_t const SET_ETH_CONFIG = 0xBA;
 
-    int const CURRENT_VALUES = 0;
-    int const DEFULT_VALUES = 1;
+    int const CURRENT_VALUES = 1;
+    int const DEFULT_VALUES = 0;
 }
 
 dds_model::dds_model( rs2::device dev )
@@ -211,6 +211,12 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         ImGui::Separator();
         ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 15 );
 
+        // Window button sizes
+        float button_width = 115.0f;
+        float spacing = 10.0f;
+        float total_buttons_width = button_width * 3 + spacing * 2;
+        float start_x = ( w - total_buttons_width ) / 2.0f;
+
         // Main Scrollable Section
         ImGui::BeginChild( "MainContent", ImVec2( w - 10, h - 100 ), true );
         ImGui::PushItemWidth( 150.0f );
@@ -321,22 +327,29 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         
         ImGui::Separator();
         ImGui::Checkbox( "No Reset after changes", &_no_reset );
-        if( ImGui::Checkbox( "Load defult values", &_set_defult ) )
+        if( ImGui::Button( "Defult values" ) )
         {
-            if( _set_defult )
-                _changed_config = _defult_config;
-            else
-                _changed_config = _current_config;
+            _changed_config = _defult_config;
+        }
+        if( ImGui::IsItemHovered() )
+        {
+            window.link_hovered();
+            RsImGui::CustomTooltip( "%s", "Use default configuration values" );
+        }
+        ImGui::SameLine();
+        if( ImGui::Button( "Revert changes" ) )
+        {
+            _changed_config = _current_config;
+        }
+        if( ImGui::IsItemHovered() )
+        {
+            window.link_hovered();
+            RsImGui::CustomTooltip( "%s", "Revert to current configuration values" );
         }
 
         ImGui::PopItemWidth();
         ImGui::EndChild();
 
-        // window buttons
-        float button_width = 115.0f;
-        float spacing = 10.0f;
-        float total_buttons_width = button_width * 4 + spacing * 2;
-        float start_x = ( w - total_buttons_width ) / 2.0f;
         bool hasChanges = ( _changed_config != _current_config );
 
         ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 8 );
@@ -362,21 +375,6 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         {
             window.link_hovered();
             RsImGui::CustomTooltip( "%s", "Reset settings back to defult values" );
-        }
-        ImGui::SameLine();
-        RsImGui::RsImButton(
-            [&]()
-            {
-                if( ImGui::ButtonEx( "Revert changes", ImVec2( button_width, 25 ) ) )
-                {
-                    _changed_config = _current_config;
-                };
-            },
-            ! hasChanges );
-        if( ImGui::IsItemHovered() )
-        {
-            window.link_hovered();
-            RsImGui::CustomTooltip( "%s", "Revert to current configuration values" );
         }
         ImGui::SameLine();
         RsImGui::RsImButton(
