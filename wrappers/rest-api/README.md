@@ -83,9 +83,9 @@ It simplifies remote control and data streaming from RealSense devices by handli
     ```bash
     pytest==8.3.5
     pytest-asyncio==0.26.0
+    typeguard==4.4.4
+    jinja2==3.1.6
     pyyaml==6.0.2
     lark==1.2.2
     httpx==0.28.1
-    jinja2==3.1.6
-    typeguard==4.4.4
     ```
