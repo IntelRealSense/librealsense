@@ -16,13 +16,23 @@ using rsutils::json;
 
 namespace rs2 {
 hdr_preset::control_item::control_item()
-    : control_item( 1, 1 )
+    : control_item( 0, 0 )
 {
 }
 
 hdr_preset::control_item::control_item( int gain, int exp )
     : depth_gain( gain )
-    , depth_man_exp( exp )
+    , depth_exp( exp )
+    , delta_gain( gain )
+    , delta_exp( exp )
+{
+}
+
+hdr_preset::control_item::control_item( int gain, int exp, int delta_gain, int delta_exp )
+    : depth_gain( gain )
+    , depth_exp( exp )
+    , delta_gain( delta_gain )
+    , delta_exp( delta_exp )
 {
 }
 
@@ -34,6 +44,7 @@ hdr_preset::preset_item::preset_item()
 hdr_preset::hdr_preset::hdr_preset()
     : id( "0" )
     , iterations( 0 )
+    , control_type_auto( false )
 {
 }
 
@@ -45,6 +56,18 @@ std::string hdr_preset::to_json() const
     hp["iterations"] = std::to_string( iterations );
 
     hp["items"] = json::array();
+    if (control_type_auto)
+    {
+        json ae_item;
+        ae_item["iterations"] = "1";
+        ae_item["controls"] = json::array();
+        
+        json ae;
+        ae["depth-ae"] = "1";  // value can be anything
+
+        ae_item["controls"].push_back(ae);
+        hp["items"].push_back( ae_item );
+    }
     for( auto const & item : items )
     {
         json item_j;
@@ -52,10 +75,18 @@ std::string hdr_preset::to_json() const
         item_j["controls"] = json::array();
 
         auto const& ctrl = item.controls;
-        json gain_j;
-        gain_j["depth-gain"] = std::to_string(ctrl.depth_gain);
-        json exp_j;
-        exp_j["depth-exposure"] = std::to_string(ctrl.depth_man_exp);
+        json gain_j, exp_j;
+        if (control_type_auto)
+        {
+            gain_j["depth-ae-gain"] = std::to_string( ctrl.delta_gain );
+            exp_j["depth-ae-exp"] = std::to_string( ctrl.delta_exp );
+        }
+        else
+        {
+            gain_j["depth-gain"] = std::to_string( ctrl.depth_gain );
+            exp_j["depth-exposure"] = std::to_string( ctrl.depth_exp );
+        }
+
         item_j["controls"].push_back(gain_j);
         item_j["controls"].push_back(exp_j);
 
@@ -79,6 +110,7 @@ void hdr_preset::from_json( const std::string & json_str )
     id = hp.value( "id", "0" );
     iterations = std::stoi( hp.value( "iterations", "0" ) );
 
+    control_type_auto = false;
     items.clear();
     for( auto & item_j : hp["items"] )
     {
@@ -86,15 +118,39 @@ void hdr_preset::from_json( const std::string & json_str )
         item.iterations = std::stoi( item_j.value( "iterations", "1" ) );
 
         const auto & ctrls = item_j["controls"];
-        if( ctrls.size() >= 2 )
+
+        control_item new_ctrl;
+        bool skip = false;
+        for (auto& ctrl : ctrls)
         {
-            control_item ctrl;
-            if( ctrls[0].contains( "depth-gain" ) )
-                ctrl.depth_gain = std::stoi( ctrls[0]["depth-gain"].get< std::string >() );
-            if( ctrls[1].contains( "depth-exposure" ) )
-                ctrl.depth_man_exp = std::stoi( ctrls[1]["depth-exposure"].get< std::string >() );
-            item.controls = ctrl;
+            if( ctrl.contains( "depth-ae" ) )
+            {
+                control_type_auto = true;
+                skip = true; // depth-ae is expected to be a single item w/o actual values
+                continue;
+            }
+            else if( ctrl.contains( "depth-ae-gain" ) && !new_ctrl.delta_gain )
+            {
+                control_type_auto = true;
+                new_ctrl.delta_gain = static_cast<int>( std::stoll(ctrl.value("depth-ae-gain", "0")) );
+            }
+            else if( ctrl.contains( "depth-ae-exp" ) && !new_ctrl.delta_exp )
+            {
+                control_type_auto = true;
+                new_ctrl.delta_exp = static_cast<int>( std::stoll(ctrl.value("depth-ae-exp", "0")) );
+            }
+            else if( ctrl.contains( "depth-gain" ) && !new_ctrl.depth_gain )
+            {
+                new_ctrl.depth_gain = std::stoi( ctrl.value( "depth-gain", "1" ) );
+            }
+            else if( ctrl.contains( "depth-exposure" ) && !new_ctrl.depth_exp)
+            {
+                new_ctrl.depth_exp = std::stoi( ctrl.value( "depth-exposure", "1" ) );
+            }
         }
+
+        if (skip) continue;
+        item.controls = new_ctrl;
         items.push_back( std::move( item ) );
     }
 }
@@ -103,7 +159,6 @@ hdr_model::hdr_model( rs2::device dev )
     : _device( dev )
     , _window_open( false )
     , _hdr_supported( false )
-    , _set_default( false )
 {
     _hdr_supported = check_HDR_support();
     if( _hdr_supported )
@@ -112,7 +167,7 @@ hdr_model::hdr_model( rs2::device dev )
         _gain_range = _device.first< rs2::depth_sensor >().get_option_range(RS2_OPTION_GAIN);
 
         initialize_default_config();
-        load_hdr_config_from_device();
+        //load_hdr_config_from_device();
         _changed_config = _current_config;
         if( _changed_config.items.empty() )
         {
@@ -143,12 +198,14 @@ void hdr_model::initialize_default_config()
     _default_config.iterations = 0;
 
     // pairs of gain and exposure
-    const std::vector< std::pair< int, int > > defaults = { { 16, (int)_exp_range.min }, { 16, 32000 } };
-    for (auto const& p : defaults)
+    const std::vector< std::pair< int, int > > man_defaults = { { 16, (int)_exp_range.min }, { 16, 32000 } };
+    const std::vector< std::pair< int, int > > auto_defaults = { { 30, 3000 }, { -30, -3000 } };
+    for (int i = 0; i < man_defaults.size(); i++)
     {
         hdr_preset::preset_item it;
         it.iterations = 1;
-        it.controls = hdr_preset::control_item( p.first, p.second );
+        it.controls = hdr_preset::control_item( man_defaults[i].first, man_defaults[i].second, 
+                                                 auto_defaults[i].first, auto_defaults[i].second );
         _default_config.items.push_back( it );
     }
 }
@@ -165,6 +222,7 @@ void hdr_model::load_hdr_config_from_file( const std::string & filename )
         throw std::runtime_error( "Cannot open file " + filename );
     std::string content( ( std::istreambuf_iterator< char >( file ) ), {} );
     _changed_config.from_json( content );
+    _is_auto = _changed_config.control_type_auto;
 }
 
 void hdr_model::save_hdr_config_to_file( const std::string & filename )
@@ -210,19 +268,27 @@ void hdr_model::render_control_item( hdr_preset::control_item & control)
 {
     ImGui::PushID( &control );
 
-    ImGui::Text( "Depth Gain:" );
+    auto text_gain = _is_auto ? "Gain Delta" : "Gain Value:";
+    ImGui::Text( text_gain );
     ImGui::SameLine();
     ImGui::SetNextItemWidth( 140 );
-    int g = control.depth_gain;
+    int g = _is_auto ? control.delta_gain : control.depth_gain;
     if (ImGui::InputInt("##gain", &g, 0, 0))
-        control.depth_gain = (int)clamp((float)g, _gain_range.min, _gain_range.max);
+        if (_is_auto)
+            control.delta_gain = (int)clamp((float)g, -_gain_range.max, _gain_range.max);
+        else
+            control.depth_gain = (int)clamp((float)g, _gain_range.min, _gain_range.max);
 
-    ImGui::Text( "Depth Exposure:" );
+    auto text_exp = _is_auto ? "Exposure Delta" : "Exposure Value:";
+    ImGui::Text( text_exp );
     ImGui::SameLine();
     ImGui::SetNextItemWidth( 140 );
-    int e = control.depth_man_exp;
+    int e = _is_auto ? control.delta_exp : control.depth_exp;
     if (ImGui::InputInt("##exp", &e, 0, 0))
-        control.depth_man_exp = (int)clamp((float)e, _exp_range.min, _exp_range.max);
+        if (_is_auto)
+            control.delta_exp = (int)clamp((float)e, -_exp_range.max, _exp_range.max);
+        else
+            control.depth_exp = (int)clamp((float)e, _exp_range.min, _exp_range.max);
 
     ImGui::PopID();
 }
@@ -256,6 +322,7 @@ void hdr_model::render_hdr_config_window( ux_window & window, std::string & erro
     if (_window_open)
     {
         ImGui::OpenPopup(window_name);
+        load_hdr_config_from_device();
         _window_open = false;
     }
 
@@ -290,17 +357,24 @@ void hdr_model::render_hdr_config_window( ux_window & window, std::string & erro
             if (ImGui::InputText("##id", buf, 32))
                 _changed_config.id = buf;
 
-            ImGui::Text("Global Iterations:");
-            // tooltip
+            if (ImGui::Checkbox("Auto HDR", &_is_auto))
+            {
+                _changed_config.control_type_auto = _is_auto;
+            }
             if (ImGui::IsItemHovered())
-                RsImGui::CustomTooltip("Number of times the specified preset will be run, 0 - infinite");
-
+                RsImGui::CustomTooltip("Enable auto exposure for HDR, otherwise manual exposure and gain will be used");
             ImGui::SameLine();
+            //ImGui::Text("Global Iterations:"); // decided to be set to 0 to avoid confusion
+            // tooltip
+            /*if (ImGui::IsItemHovered())
+                RsImGui::CustomTooltip("Number of times the specified preset will be run, 0 - infinite");*/
+
+            /*ImGui::SameLine();
             int gi = _changed_config.iterations;
             ImGui::SetNextItemWidth(150);
             if (ImGui::InputInt("##gi", &gi))
-                _changed_config.iterations = std::max(0, gi);
-
+                _changed_config.iterations = std::max(0, gi);*/
+            _changed_config.iterations = 0;
             ImGui::Spacing();
             ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "Preset Items");
             ImGui::SameLine();
@@ -321,7 +395,7 @@ void hdr_model::render_hdr_config_window( ux_window & window, std::string & erro
 
                     if (ImGui::Button("+", { 22, 22 }))
                     {
-                        hdr_preset::control_item control = hdr_preset::control_item((int)_gain_range.def, (int)_exp_range.def);
+                        hdr_preset::control_item control = hdr_preset::control_item((int)_gain_range.def, (int)_exp_range.def, 0 , 0);
                         hdr_preset::preset_item item;
                         item.iterations = 1;
                         item.controls = control;
@@ -342,6 +416,7 @@ void hdr_model::render_hdr_config_window( ux_window & window, std::string & erro
             if (ImGui::Button("Load defaults", btnSize))
             {
                 _changed_config = _default_config;
+                _is_auto = _changed_config.control_type_auto;
             }
             ImGui::SameLine();
 

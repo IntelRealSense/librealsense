@@ -133,6 +133,7 @@ namespace librealsense
         {
             preset_header header;
             std::vector<std::pair<item_header, std::vector<sub_control>>> items;
+            bool is_auto = false; // flag for us to enable auto exposure if needed
             size_t size() const
             {
                 size_t size = header.size();
@@ -150,13 +151,19 @@ namespace librealsense
             DEPTH_LASER_MODE   = 0,
             DEPTH_EXPOSURE     = 1,
             DEPTH_GAIN         = 2,
+            DEPTH_AE_EXP       = 3,
+            DEPTH_AE_GAIN      = 4,
+            DEPTH_AE           = 5,
             MAX_NUM_OF_CONTROLS_ID,
         } control_id;
 
         static const std::unordered_map< control_id, std::string > control_id_string_map = {
-            { DEPTH_LASER_MODE,     "depth-laser-mode"  },
-            { DEPTH_EXPOSURE,       "depth-exposure"    },
-            { DEPTH_GAIN,           "depth-gain"        },
+            { DEPTH_LASER_MODE,     "depth-laser-mode"    },    // for future use
+            { DEPTH_EXPOSURE,       "depth-exposure"      },
+            { DEPTH_GAIN,           "depth-gain"          },
+            { DEPTH_AE_EXP,         "depth-ae-exp"        },
+            { DEPTH_AE_GAIN,        "depth-ae-gain"       },
+            { DEPTH_AE,             "depth-ae"            },
         };
     }
 
