@@ -12,7 +12,8 @@ class DummyOfferStat:
 
 # Mock the dependencies
 mock_oauth2_scheme = MagicMock()
-
+# Create mock sio instance for RealSenseManager
+mock_sio = MagicMock()
 
 
 # Pytest fixture to patch dependencies in your app
@@ -23,7 +24,7 @@ def patch_dependencies(monkeypatch):
     This fixture will automatically be used in all tests.
     """
     # Create mock instances
-    rs_manager = RealSenseManager()
+    rs_manager = RealSenseManager(mock_sio)
     webrtc_manager = WebRTCManager(rs_manager)
 
 
