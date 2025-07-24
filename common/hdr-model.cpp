@@ -60,35 +60,29 @@ std::string hdr_preset::to_json() const
     {
         json ae_item;
         ae_item["iterations"] = "1";
-        ae_item["controls"] = json::array();
-        
-        json ae;
-        ae["depth-ae"] = "1";  // value can be anything
+        ae_item["controls"]["depth-ae"] = "1";  // value can be anything for depth-ae
 
-        ae_item["controls"].push_back(ae);
         hp["items"].push_back( ae_item );
     }
     for( auto const & item : items )
     {
         json item_j;
         item_j["iterations"] = std::to_string( item.iterations );
-        item_j["controls"] = json::array();
+        item_j["controls"] = json::object();
 
         auto const& ctrl = item.controls;
         json gain_j, exp_j;
+        auto& item_ctrls = item_j["controls"];
         if (control_type_auto)
         {
-            gain_j["depth-ae-gain"] = std::to_string( ctrl.delta_gain );
-            exp_j["depth-ae-exp"] = std::to_string( ctrl.delta_exp );
+            item_ctrls["depth-ae-gain"] = std::to_string(ctrl.delta_gain);
+            item_ctrls["depth-ae-exp"]  = std::to_string(ctrl.delta_exp);
         }
         else
         {
-            gain_j["depth-gain"] = std::to_string( ctrl.depth_gain );
-            exp_j["depth-exposure"] = std::to_string( ctrl.depth_exp );
+            item_ctrls["depth-gain"]     = std::to_string(ctrl.depth_gain);
+            item_ctrls["depth-exposure"] = std::to_string(ctrl.depth_exp);
         }
-
-        item_j["controls"].push_back(gain_j);
-        item_j["controls"].push_back(exp_j);
 
         hp["items"].push_back( item_j );
     }
@@ -121,31 +115,33 @@ void hdr_preset::from_json( const std::string & json_str )
 
         control_item new_ctrl;
         bool skip = false;
-        for (auto& ctrl : ctrls)
+        for (auto& kv : ctrls.items())
         {
-            if( ctrl.contains( "depth-ae" ) )
+            const auto& ctrl_name = kv.key();
+            const auto& ctrl_value = kv.value().get<std::string>();
+            if( ctrl_name ==  "depth-ae" )
             {
                 control_type_auto = true;
                 skip = true; // depth-ae is expected to be a single item w/o actual values
                 continue;
             }
-            else if( ctrl.contains( "depth-ae-gain" ) && !new_ctrl.delta_gain )
+            else if( ctrl_name == "depth-ae-gain" && !new_ctrl.delta_gain )
             {
                 control_type_auto = true;
-                new_ctrl.delta_gain = static_cast<int>( std::stoll(ctrl.value("depth-ae-gain", "0")) );
+                new_ctrl.delta_gain = static_cast<int>( std::stoll(ctrl_value) );
             }
-            else if( ctrl.contains( "depth-ae-exp" ) && !new_ctrl.delta_exp )
+            else if( ctrl_name == "depth-ae-exp" && !new_ctrl.delta_exp )
             {
                 control_type_auto = true;
-                new_ctrl.delta_exp = static_cast<int>( std::stoll(ctrl.value("depth-ae-exp", "0")) );
+                new_ctrl.delta_exp = static_cast<int>( std::stoll(ctrl_value) );
             }
-            else if( ctrl.contains( "depth-gain" ) && !new_ctrl.depth_gain )
+            else if( ctrl_name == "depth-gain" && !new_ctrl.depth_gain )
             {
-                new_ctrl.depth_gain = std::stoi( ctrl.value( "depth-gain", "1" ) );
+                new_ctrl.depth_gain = std::stoi( ctrl_value );
             }
-            else if( ctrl.contains( "depth-exposure" ) && !new_ctrl.depth_exp)
+            else if( ctrl_name == "depth-exposure" && !new_ctrl.depth_exp)
             {
-                new_ctrl.depth_exp = std::stoi( ctrl.value( "depth-exposure", "1" ) );
+                new_ctrl.depth_exp = std::stoi( ctrl_value );
             }
         }
 
@@ -159,15 +155,13 @@ hdr_model::hdr_model( rs2::device dev )
     : _device( dev )
     , _window_open( false )
     , _hdr_supported( false )
+    , _exp_range(dev.first<rs2::depth_sensor>().get_option_range(RS2_OPTION_EXPOSURE))
+    , _gain_range(dev.first<rs2::depth_sensor>().get_option_range(RS2_OPTION_GAIN))
 {
     _hdr_supported = check_HDR_support();
     if( _hdr_supported )
     {
-        _exp_range = _device.first<rs2::depth_sensor>().get_option_range(RS2_OPTION_EXPOSURE);
-        _gain_range = _device.first< rs2::depth_sensor >().get_option_range(RS2_OPTION_GAIN);
-
         initialize_default_config();
-        //load_hdr_config_from_device();
         _changed_config = _current_config;
         if( _changed_config.items.empty() )
         {
@@ -198,7 +192,7 @@ void hdr_model::initialize_default_config()
     _default_config.iterations = 0;
 
     // pairs of gain and exposure
-    const std::vector< std::pair< int, int > > man_defaults = { { 16, (int)_exp_range.min }, { 16, 32000 } };
+    const std::vector< std::pair< int, int > > man_defaults = { { 16, 1 }, { 16, 32000 } };
     const std::vector< std::pair< int, int > > auto_defaults = { { 30, 3000 }, { -30, -3000 } };
     for (int i = 0; i < man_defaults.size(); i++)
     {
@@ -240,6 +234,11 @@ void hdr_model::load_hdr_config_from_device()
     auto serializable = _device.as< rs2::serializable_device >();
     std::string hdr_config = serializable.serialize_json();
     _current_config.from_json(hdr_config);
+    if (_current_config.items.size())
+    {
+        _changed_config = _current_config;
+        _is_auto = _changed_config.control_type_auto;
+    }
 }
 
 void hdr_model::apply_hdr_config()
@@ -364,17 +363,7 @@ void hdr_model::render_hdr_config_window( ux_window & window, std::string & erro
             if (ImGui::IsItemHovered())
                 RsImGui::CustomTooltip("Enable auto exposure for HDR, otherwise manual exposure and gain will be used");
             ImGui::SameLine();
-            //ImGui::Text("Global Iterations:"); // decided to be set to 0 to avoid confusion
-            // tooltip
-            /*if (ImGui::IsItemHovered())
-                RsImGui::CustomTooltip("Number of times the specified preset will be run, 0 - infinite");*/
-
-            /*ImGui::SameLine();
-            int gi = _changed_config.iterations;
-            ImGui::SetNextItemWidth(150);
-            if (ImGui::InputInt("##gi", &gi))
-                _changed_config.iterations = std::max(0, gi);*/
-            _changed_config.iterations = 0;
+            _changed_config.iterations = 0; // 0 is used to indicate it is repeated infinitely, practically we can set other numbers there for a set amount of repetitions 
             ImGui::Spacing();
             ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "Preset Items");
             ImGui::SameLine();

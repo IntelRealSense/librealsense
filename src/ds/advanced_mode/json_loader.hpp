@@ -588,14 +588,14 @@ namespace librealsense
                 const auto& ih = auto_hdr.items[i].first;
                 json item;
                 item["iterations"] = std::to_string(ih.iterations);
-
+                item["controls"] = json::object();
                 // build 'controls' array for the item
                 for (int c = 0; c < ih.num_of_controls; ++c) {
                     const hdr_preset::sub_control& ctrl = auto_hdr.items[i].second[c];
                     const std::string control_name = control_name_from_id( hdr_preset::control_id( ctrl.control_id ) );
                     const std::string control_value = std::to_string( ctrl.control_value );
                     
-                    item["controls"].push_back({ { control_name, control_value } });
+                    item["controls"][control_name] = control_value;
                 }
 
                 hdr_preset["items"].push_back(std::move(item));
@@ -719,10 +719,10 @@ namespace librealsense
                 item_header.iterations = static_cast<uint16_t>(std::stoi(item.at("iterations").get<std::string>()));
 
                 const auto& controls = item.at("controls");
-                for (const auto& control : controls) {
+                for (const auto& kv : controls.items()) {
                     // just begin() because the control is a single object
-                    const std::string key = control.begin().key();
-                    const std::string value = control.begin().value().get<std::string>();
+                    const std::string key = kv.key();
+                    const std::string value = kv.value();
 
                     hdr_preset::sub_control ctrl{};
                     auto control_id = get_control_id_from_string(key);
