@@ -91,6 +91,8 @@ class TestRealSenseAPI:
 
         def mock_refresh_devices():
             # Populate the devices dictionary with our mock devices
+            rs_manager.devices.clear()
+            rs_manager.device_infos.clear()
             for dev in self.fake_devices:
                 device_id = dev.get_info(camera_info.serial_number)
                 rs_manager.devices[device_id] = dev
@@ -421,3 +423,262 @@ class TestRealSenseAPI:
         # Verify session is closed
         response = client.get(f"/api/webrtc/sessions/{session_id}")
         assert response.status_code == 404
+
+
+class TestRealSenseAPIIntegration:
+    """
+    Integration tests that work against actual RealSense devices.
+    These tests bypass mocking and test the real API functionality.
+    """
+
+    @classmethod
+    def setup_class(cls):
+        # Create a separate test client that doesn't use mocked dependencies
+        from main import app
+        from fastapi.testclient import TestClient
+
+        # Clear any existing mock patches for these tests
+        cls.real_client = TestClient(app)
+
+    @pytest.fixture
+    def real_rs_manager(self):
+        """Create a real RealSenseManager instance for integration tests"""
+        from app.services.socketio import sio
+        from app.services.rs_manager import RealSenseManager
+
+        # Create a real RealSenseManager (not mocked)
+        manager = RealSenseManager(sio)
+        return manager
+
+    def test_get_device_rs(self, real_rs_manager):
+        """Test getting device information using real RealSense API"""
+        # Get real devices
+        devices = real_rs_manager.get_devices()
+
+
+        # Test getting the first device
+        device = devices[0]
+        assert device.device_id is not None
+        assert device.name is not None
+        assert device.serial_number is not None
+        assert isinstance(device.sensors, list)
+        assert len(device.sensors) > 0
+
+        # Test getting device by ID
+        retrieved_device = real_rs_manager.get_device(device.device_id)
+        assert retrieved_device.device_id == device.device_id
+        assert retrieved_device.name == device.name
+        assert retrieved_device.serial_number == device.serial_number
+
+    def test_get_sensor_rs(self, real_rs_manager):
+        """Test getting sensor information using real RealSense API"""
+        # Get real devices
+        devices = real_rs_manager.get_devices()
+
+        device = devices[0]
+        device_id = device.device_id
+
+        # Get sensors for the device
+        sensors = real_rs_manager.get_sensors(device_id)
+        assert len(sensors) > 0
+
+        # Test getting the first sensor
+        sensor = sensors[0]
+        assert sensor.sensor_id is not None
+        assert sensor.name is not None
+        assert sensor.type is not None
+        assert isinstance(sensor.supported_stream_profiles, list)
+        assert isinstance(sensor.options, list)
+
+        # Test getting sensor by ID
+        retrieved_sensor = real_rs_manager.get_sensor(device_id, sensor.sensor_id)
+        assert retrieved_sensor.sensor_id == sensor.sensor_id
+        assert retrieved_sensor.name == sensor.name
+        assert retrieved_sensor.type == sensor.type
+
+    def test_set_option_rs(self, real_rs_manager):
+        """Test setting sensor options using real RealSense API"""
+        # Get real devices
+        devices = real_rs_manager.get_devices()
+
+        device = devices[0]
+        device_id = device.device_id
+
+        # Get sensors for the device
+        sensors = real_rs_manager.get_sensors(device_id)
+
+        # Find a sensor with writable options
+        writable_option = None
+        sensor_id = None
+        original_value = None
+
+        for sensor in sensors:
+            for option in sensor.options:
+                if not option.read_only and option.min_value != option.max_value:
+                    writable_option = option
+                    sensor_id = sensor.sensor_id
+                    original_value = option.current_value
+                    break
+            if writable_option:
+                break
+
+        # Test setting option to a different value
+        option_id = writable_option.option_id
+
+        # Calculate a safe test value within the range
+        min_val = writable_option.min_value
+        max_val = writable_option.max_value
+        step = writable_option.step
+
+        # Choose a value different from current, respecting step if > 0
+        if step > 0:
+            test_value = min_val + step
+            if test_value == original_value and (min_val + 2 * step) <= max_val:
+                test_value = min_val + 2 * step
+        else:
+            # For continuous values, use midpoint
+            test_value = (min_val + max_val) / 2
+            if abs(test_value - original_value) < 0.001:  # Too close to original
+                test_value = min_val + (max_val - min_val) * 0.75
+
+        # Ensure test value is within bounds
+        test_value = max(min_val, min(max_val, test_value))
+
+        try:
+            # Set the option
+            success = real_rs_manager.set_sensor_option(device_id, sensor_id, option_id, test_value)
+            assert success == True
+
+            # Verify the option was set by reading it back
+            updated_option = real_rs_manager.get_sensor_option(device_id, sensor_id, option_id)
+
+            # For stepped values, check exact match; for continuous, allow small tolerance
+            if step > 0:
+                assert updated_option.current_value == test_value
+            else:
+                assert abs(updated_option.current_value - test_value) < 0.01
+
+        finally:
+            # Restore original value
+            try:
+                real_rs_manager.set_sensor_option(device_id, sensor_id, option_id, original_value)
+            except Exception:
+                # If restoration fails, don't fail the test
+                pass
+    # Additional integration tests for API endpoints
+    def test_devices_endpoint_rs(self):
+        """Test the /api/devices endpoint with real devices"""
+        # Temporarily bypass mocking by creating a new app instance
+        import importlib
+        import sys
+
+        # Remove mock patches from the dependencies module
+        if 'app.api.dependencies' in sys.modules:
+            importlib.reload(sys.modules['app.api.dependencies'])
+
+        from main import app
+        from fastapi.testclient import TestClient
+
+        real_client = TestClient(app)
+
+        response = real_client.get("/api/devices")
+
+        if response.status_code == 500:
+            pytest.skip("No RealSense devices connected or RealSense library issue")
+
+        assert response.status_code == 200
+        devices = response.json()
+
+        if devices:  # Only test if devices are connected
+            assert isinstance(devices, list)
+            device = devices[0]
+            assert "device_id" in device
+            assert "name" in device
+            assert "serial_number" in device
+            assert "sensors" in device
+
+    def test_sensors_endpoint_rs(self):
+        """Test the /api/devices/{device_id}/sensors endpoint with real devices"""
+        import importlib
+        import sys
+
+        # Remove mock patches from the dependencies module
+        if 'app.api.dependencies' in sys.modules:
+            importlib.reload(sys.modules['app.api.dependencies'])
+
+        from main import app
+        from fastapi.testclient import TestClient
+
+        real_client = TestClient(app)
+
+        # First get devices
+        response = real_client.get("/api/devices")
+
+
+        devices = response.json()
+        device_id = devices[0]["device_id"]
+
+        # Test sensors endpoint
+        response = real_client.get(f"/api/devices/{device_id}/sensors")
+        assert response.status_code == 200
+
+        sensors = response.json()
+        assert isinstance(sensors, list)
+        assert len(sensors) > 0
+
+        sensor = sensors[0]
+        assert "sensor_id" in sensor
+        assert "name" in sensor
+        assert "type" in sensor
+        assert "supported_stream_profiles" in sensor
+        assert "options" in sensor
+
+    def test_options_endpoint_rs(self):
+        """Test the options endpoints with real devices"""
+        import importlib
+        import sys
+
+        # Remove mock patches from the dependencies module
+        if 'app.api.dependencies' in sys.modules:
+            importlib.reload(sys.modules['app.api.dependencies'])
+
+        from main import app
+        from fastapi.testclient import TestClient
+
+        real_client = TestClient(app)
+
+        # First get devices
+        response = real_client.get("/api/devices")
+
+
+        devices = response.json()
+
+        device_id = devices[0]["device_id"]
+
+        # Get sensors
+        response = real_client.get(f"/api/devices/{device_id}/sensors")
+        sensors = response.json()
+        sensor_id = sensors[0]["sensor_id"]
+
+        # Test options endpoint
+        response = real_client.get(f"/api/devices/{device_id}/sensors/{sensor_id}/options")
+        assert response.status_code == 200
+
+        options = response.json()
+        assert isinstance(options, list)
+        assert len(options) > 0
+
+        option = options[0]
+        assert "option_id" in option
+        assert "name" in option
+        assert "current_value" in option
+        assert "min_value" in option
+        assert "max_value" in option
+
+        # Test getting specific option
+        option_id = option["option_id"]
+        response = real_client.get(f"/api/devices/{device_id}/sensors/{sensor_id}/options/{option_id}")
+        assert response.status_code == 200
+
+        retrieved_option = response.json()
+        assert retrieved_option["option_id"] == option_id
