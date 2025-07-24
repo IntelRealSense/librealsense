@@ -1,4 +1,4 @@
-# Headless C Sample Code for Intel® RealSense™ cameras
+# Headless C Sample Code for RealSense™ cameras
 **Code Examples to start prototyping quickly:** These C simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications using C API.
 
 ## List of Samples:

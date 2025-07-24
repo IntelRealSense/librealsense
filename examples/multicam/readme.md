@@ -9,7 +9,7 @@ The multicam sample demonstrates the ability to use the SDK for streaming and re
 The application opens and renders a mosaic view of all automatically-selected streams provided by the connected devices. (The selection is device-tailored and takes into account USB-type constrains).
 Each tile displays an unique stream produced by a specific camera. The stream name appear at the top left.
 
-In the following snapshot we use five Intel® RealSense™ devices to produce the mosaic: D435i, D415, SR300 and two T265 tracking cameras. Those are responsible to generate:
+In the following snapshot we use five RealSense™ devices to produce the mosaic: D435i, D415, SR300 and two T265 tracking cameras. Those are responsible to generate:
  - Three Depth streams (D435i, D415, SR300)
  - Three Color streams (D435i, D415, SR300)
  - Two Pose streams (T265x2)
@@ -23,7 +23,7 @@ In the following snapshot we use five Intel® RealSense™ devices to produce th
 
 ## Code Overview
 
-As with any SDK application we include the Intel RealSense Cross Platform API:
+As with any SDK application we include the RealSense Cross Platform API:
 
 ```cpp
 #include <librealsense2/rs.hpp>     // Include RealSense Cross Platform API
@@ -59,7 +59,7 @@ std::vector<rs2::pipeline>            pipelines;
 The `rs2::context` encapsulates all of the devices and sensors, and provides some additional functionalities. We employ the `rs2::colorizer ` to convert depth data to RGB format.
 In the example we use multiple `rs2::pipeline` objects, each controlling a lifetime of a single HW device. Similarly, we initialize a separate `rs2::colorizer` object for each device. We keep a mapping from the device's serial number to it's `rs2::colorizer` object, this way we'll be able to apply the correct `rs2::colorizer` to each frame.
 
-The example's flow starts with listing and activating all the connected Intel® RealSense™ devices:
+The example's flow starts with listing and activating all the connected RealSense™ devices:
 ```cpp
 // Start a streaming pipe per each connected device
 for (auto&& dev : ctx.query_devices())

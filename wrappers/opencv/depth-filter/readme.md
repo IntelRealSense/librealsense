@@ -134,7 +134,7 @@ Here are some rough performance measurements with these optimisations in-place:
 |Intel® Core™ i5-4250U CPU @ 1.30GHz x 4|2500 usec|
 |Intel® Atom™ x5-Z8350 CPU @ 1.44GHz x 4|10000 usec|
 
-> [Intel TBB (Threading Building Blocks)](https://github.com/intel/tbb) is a good alternative to OpenMP and can be used with minimal code changes
+> [Intel TBB (Threading Building Blocks)](https://github.com/uxlfoundation/oneTBB) is a good alternative to OpenMP and can be used with minimal code changes
 
 ## SDK Integration
 

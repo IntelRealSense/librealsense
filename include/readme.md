@@ -46,7 +46,7 @@ This file defines the concept of RealSense device.
 
 |Class|Description|
 |-----|-----------|
-|[device](librealsense2/hpp/rs_device.hpp#L109)| Encapsulates Intel RealSense device |
+|[device](librealsense2/hpp/rs_device.hpp#L109)| Encapsulates RealSense device |
 |[device_list](librealsense2/hpp/rs_device.hpp#L186)| Wrapper around list of devices |
 |[debug_protocol](librealsense2/hpp/rs_device.hpp#L151)| Debug-extension that allows to send data directly to the firmware |
 

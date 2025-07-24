@@ -1,7 +1,7 @@
 # Linux Distribution
 
 #### Using pre-build packages
-**Intel® RealSense™ SDK 2.0** provides installation packages for Intel X86/AMD64/ARM-based Debian distributions in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 20/22/24 [LTS](https://wiki.ubuntu.com/LTS).
+**RealSense™ SDK 2.0** provides installation packages for Intel X86/AMD64/ARM-based Debian distributions in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 20/22/24 [LTS](https://wiki.ubuntu.com/LTS).
 
 > Note: For EOL Ubuntu distributions please use the following versions:  
 Ubuntu 16 -> [2.51.1](https://github.com/IntelRealSense/librealsense/releases/tag/v2.51.1).  
@@ -44,7 +44,7 @@ sudo apt-get update
   `sudo apt-get install librealsense2-dbg`  
   With `dev` package installed, you can compile an application with **librealsense** using `g++ -std=c++11 filename.cpp -lrealsense2` or an IDE of your choice.
 
-Reconnect the Intel RealSense depth camera and run: `realsense-viewer` to verify the installation.
+Reconnect the RealSense depth camera and run: `realsense-viewer` to verify the installation.
 
 Verify that the kernel is updated :    
 `modinfo uvcvideo | grep "version:"` should include `realsense` string

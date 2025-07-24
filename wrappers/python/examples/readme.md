@@ -12,7 +12,7 @@ These Examples demonstrate how to use the python wrapper of the SDK.
 6. [Read bag file](./read_bag_example.py) - Example on how to read bag file and use colorizer to show recorded depth stream in jet colormap.
 7. [Box Dimensioner Multicam](./box_dimensioner_multicam/box_dimensioner_multicam_demo.py) - Simple demonstration for calculating the length, width and height of an object using multiple cameras.
 8. [Realsense over Ethernet](./ethernet_client_server/README.md) - This example shows how to stream depth data from RealSense depth cameras over ethernet.
-9. [D400 self-calibration demo](./depth_auto_calibration_example.py) - Provides a reference implementation for D400 Self-Calibration Routines flow. The scripts performs On-Chip Calibration, followed by Focal-Length calibration and finally, the Tare Calibration sub-routines. Follow the [White Paper Link](https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras) for in-depth description of the provided calibration methods.
+9. [D400 self-calibration demo](./depth_auto_calibration_example.py) - Provides a reference implementation for D400 Self-Calibration Routines flow. The scripts performs On-Chip Calibration, followed by Focal-Length calibration and finally, the Tare Calibration sub-routines. Follow the [White Paper Link](https://dev.realsenseai.com/docs/self-calibration-for-depth-cameras) for in-depth description of the provided calibration methods.
 10. [Numpy To Pyrealsense Frame](./numpy_to_pyrealsense_frame.py) - Example of how to convert a numpy array to a pyrealsense frame using a software device.
 11. [Stream alignment using SW device](./align-with-software-device.py) - Demonstrates how to align depth and RGB images using a software device.
 ## Pointcloud Visualization

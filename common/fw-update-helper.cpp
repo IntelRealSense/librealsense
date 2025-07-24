@@ -26,7 +26,7 @@ const char* fw_get_D4XX_FW_Image(int) { return NULL; }
 
 #endif // INTERNAL_FW
 
-constexpr const char* recommended_fw_url = "https://dev.intelrealsense.com/docs/firmware-updates";
+constexpr const char* recommended_fw_url = "https://dev.realsenseai.com/docs/firmware-updates";
 
 namespace rs2
 {

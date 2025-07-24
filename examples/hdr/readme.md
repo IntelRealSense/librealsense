@@ -5,7 +5,7 @@
 The tutorial demonstrates High Dynamic Range (HDR) implementation* applied to the Depth sensor.
 It walks through the sensor configuration phase and visualizes the algorithm inputs and output to facilitate the feature adaptation in production code. 
 
-\* For in-depth review of the subject please read the accompanying [white paper](https://dev.intelrealsense.com/docs/high-dynamic-range-with-stereoscopic-depth-cameras).
+\* For in-depth review of the subject please read the accompanying [white paper](https://dev.realsenseai.com/docs/high-dynamic-range-with-stereoscopic-depth-cameras).
 
 
 

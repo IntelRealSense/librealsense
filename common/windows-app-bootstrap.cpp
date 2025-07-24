@@ -100,7 +100,7 @@ void report_error(std::string error)
         ss << "|---|---|\n";
         ss << "|**librealsense**|" << rs2::api_version_to_string(rs2_get_api_version(&e)) << (rs2::is_debug() ? " DEBUG" : " RELEASE") << "|\n";
         ss << "|**OS**|" << rsutils::os::get_os_name() << "|\n\n";
-        ss << "Intel RealSense Viewer / Depth Quality Tool has crashed with the following error message:\n";
+        ss << "RealSense Viewer / Depth Quality Tool has crashed with the following error message:\n";
         ss << "```\n";
         ss << error;
         ss << "\n```";

@@ -9,7 +9,7 @@ Assuming camera is connected you should see `"The camera is facing an object X m
 
 ## Code Overview 
 
-First, we include the Intel® RealSense™ Cross-Platform API.  
+First, we include the RealSense™ Cross-Platform API.  
 All but advanced functionality is provided through a single header:
 ```cpp
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API

@@ -296,7 +296,7 @@ int main(int argc, const char** argv) try
     std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
 
     context ctx( settings.dump() );
-    ux_window window("Intel RealSense Viewer", ctx);
+    ux_window window("RealSense Viewer", ctx);
 
     // Create RealSense Context
     device_changes devices_connection_changes(ctx);

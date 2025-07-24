@@ -810,7 +810,7 @@ namespace rs2
         _first_frame = true;
         _app_ready = false;
         _splash_timer.reset();
-        _dev_stat_message = u8"\uf287 Please connect Intel RealSense device!";
+        _dev_stat_message = u8"\uf287 Please connect RealSense device!";
 
         {
             std::lock_guard<std::mutex> lock(_on_load_message_mtx);

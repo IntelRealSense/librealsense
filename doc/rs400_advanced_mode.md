@@ -9,7 +9,7 @@ However, while tinkering with the advanced controls, depth quality and stream fr
 
 ## Long-term vs. Short-term
 * In the short-term, librealsense provides a set of advanced APIs you can use to access advanced mode. Since, this includes as much as 100 new parameters we also provide a way to serialize and load these parameters, using JSON file structure. We encourage the community to explore the range of possibilities and share interesting presets for different use-cases. The limitation of this approach is that the existing protocol is cumbersome and not efficient. We can't provide clear estimate on how much time it will take until any set of controls will take effect, and the controls are not standard in any way in the OS.
-* In the long-term, Intel algorithm developers will come up with best set of recommended presets, as well as most popular presets from our customers, and these will be hard-coded into the camera firmware.
+* In the long-term, algorithm developers will come up with best set of recommended presets, as well as most popular presets from our customers, and these will be hard-coded into the camera firmware.
 This will provide fast, reliable way to optimize the device for a specific use case.
 
 ## Building Advanced Mode APIs

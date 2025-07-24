@@ -1,9 +1,9 @@
-# Intel® RealSense™ 
+# RealSense™ 
 
 ## Third Party Programs
 
 
-### This file specifies all 3rd party SW components used for Intel® RealSense™ SDK and the inbound license for each of these 3rd party components.
+### This file specifies all 3rd party SW components used for RealSense™ SDK and the inbound license for each of these 3rd party components.
 
 #### MIT License 
 
