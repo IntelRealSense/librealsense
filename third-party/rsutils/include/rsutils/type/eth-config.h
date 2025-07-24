@@ -36,6 +36,7 @@ std::ostream & operator<<( std::ostream &, ip_3 const & );
 
 
 struct eth_config_v3;
+struct eth_config_v4;
 
 
 struct eth_config
@@ -52,21 +53,24 @@ struct eth_config
     {
         unsigned mtu;      // bytes per packet
         unsigned speed;    // Mbps read-only; 0 if link is off
-        unsigned timeout;  // The threshold to wait eth link(ms)
+        unsigned timeout;  // The threshold to wait eth link [ms]
         link_priority priority;
     } link;
     struct
     {
         bool on;
-        int timeout;  // The threshold to wait valid ip when DHCP is on(s)
+        int timeout;  // The threshold to wait valid ip when DHCP is on [s]
     } dhcp;
+    unsigned transmission_delay; // Delay between packets [us]
 
     eth_config() {}
     explicit eth_config( std::vector< uint8_t > const & hwm_response_without_code );
     eth_config( eth_config_v3 const & );
+    eth_config( eth_config_v4 const & );
 
     bool operator==( eth_config const & ) const noexcept;
     bool operator!=( eth_config const & ) const noexcept;
 
     std::vector< uint8_t > build_command() const;
+    void validate() const; // Check field integrity, throws if not valid
 };
