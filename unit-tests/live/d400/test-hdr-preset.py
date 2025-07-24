@@ -14,69 +14,45 @@ hdr_config = {
         "items": [
             {
                 "iterations": "1",
-                "controls": [
-                    {
-                        "depth-gain": "16"
-                    },
-                    {
-                        "depth-exposure": "1"
-                    }
-                ]
+                "controls": {
+                    "depth-gain": "16",
+                    "depth-exposure": "1"
+                }
             },
             {
                 "iterations": "2",
-                "controls": [
-                    {
-                        "depth-gain": "61"
-                    },
-                    {
-                        "depth-exposure": "10"
-                    }
-                ]
+                "controls": {
+                    "depth-gain": "61",
+                    "depth-exposure": "10"
+                }
             },
             {
                 "iterations": "1",
-                "controls": [
-                    {
-                        "depth-gain": "116"
-                    },
-                    {
-                        "depth-exposure": "100"
-                    }
-                ]
+                "controls": {
+                    "depth-gain": "116",
+                    "depth-exposure": "100"
+                }
             },
             {
                 "iterations": "3",
-                "controls": [
-                    {
-                        "depth-gain": "161"
-                    },
-                    {
-                        "depth-exposure": "1000"
-                    }
-                ]
+                "controls": {
+                    "depth-gain": "161",
+                    "depth-exposure": "1000"
+                }
             },
             {
                 "iterations": "1",
-                "controls": [
-                    {
-                        "depth-gain": "22"
-                    },
-                    {
-                        "depth-exposure": "10000"
-                    }
-                ]
+                "controls": {
+                    "depth-gain": "22",
+                    "depth-exposure": "10000"
+                }
             },
             {
                 "iterations": "2",
-                "controls": [
-                    {
-                        "depth-gain": "222"
-                    },
-                    {
-                        "depth-exposure": "4444"
-                    }
-                ]
+                "controls": {
+                    "depth-gain": "222",
+                    "depth-exposure": "4444"
+                }
             }
         ]
     }
@@ -113,8 +89,7 @@ with test.closure("Checking streaming data matches config"):
         for _ in range(iterations):
             controls = item["controls"]
             # expected that i == sequence id
-            expected_data[i] = {"depth-gain": controls[0]["depth-gain"],
-                                  "depth-exposure": controls[1]["depth-exposure"]}
+            expected_data[i] = {key: value for key, value in controls.items()}
     batch_size = len(expected_data)
 
     for _ in range(0, batch_size * 5 + 1):

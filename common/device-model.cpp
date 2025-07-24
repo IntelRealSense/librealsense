@@ -1435,9 +1435,6 @@ namespace rs2
                     }
                 }
 
-                if ( _hdr_model.supports_HDR() )
-                    _hdr_model.render_hdr_config_window(window, error_message);
-
                 ImGuiSelectableFlags is_streaming_flag = (is_streaming) ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None;
                 if( _dds_model.supports_DDS() )
                 {
