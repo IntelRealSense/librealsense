@@ -151,6 +151,34 @@ void hdr_preset::from_json( const std::string & json_str )
     }
 }
 
+void hdr_preset::copy_active_mode(const hdr_preset& other)
+{
+    // Save the values we want to preserve from the current object
+    std::vector<control_item> original_controls;
+
+    for (const auto& item : items) {
+        original_controls.push_back(item.controls);
+    }
+
+    *this = other;
+
+    // restore the values for the other type of controls - 
+    // in auto mode, keep the manual mode values, and in manual, keep the auto values
+    for (size_t i = 0; i < items.size() && i < original_controls.size(); ++i) {
+        auto& ctrls = items[i].controls;
+        const auto& orig_ctrls = original_controls[i];
+
+        if (control_type_auto) {
+            ctrls.depth_gain = orig_ctrls.depth_gain;
+            ctrls.depth_exp = orig_ctrls.depth_exp;
+        }
+        else {
+            ctrls.delta_gain = orig_ctrls.delta_gain;
+            ctrls.delta_exp = orig_ctrls.delta_exp;
+        }
+    }
+}
+
 hdr_model::hdr_model( rs2::device dev )
     : _device( dev )
     , _window_open( false )
@@ -236,7 +264,7 @@ void hdr_model::load_hdr_config_from_device()
     _current_config.from_json(hdr_config);
     if (_current_config.items.size())
     {
-        _changed_config = _current_config;
+        _changed_config.copy_active_mode( _current_config );
         _is_auto = _changed_config.control_type_auto;
     }
 }

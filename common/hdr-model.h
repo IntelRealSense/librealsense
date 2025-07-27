@@ -44,6 +44,7 @@ struct hdr_preset
 
     std::string to_json() const;
     void from_json( const std::string & json_str );
+    void copy_active_mode( const hdr_preset& other );
 
     bool operator==( const hdr_preset& other ) const
     {

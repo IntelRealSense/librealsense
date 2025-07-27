@@ -720,7 +720,6 @@ namespace librealsense
 
                 const auto& controls = item.at("controls");
                 for (const auto& kv : controls.items()) {
-                    // just begin() because the control is a single object
                     const std::string key = kv.key();
                     const std::string value = kv.value();
 
