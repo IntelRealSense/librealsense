@@ -232,8 +232,8 @@ for i, config in enumerate(configs_to_test):
             avg_delta = sum(timestamp_deltas) / len(timestamp_deltas)
             max_delta = max(timestamp_deltas)
             
-            # Maximum allowed timestamp difference is 1ms
-            max_allowed_delta = 1.0  # 1ms fixed threshold
+            # Maximum allowed timestamp difference is defined by MAX_ALLOWED_TIMESTAMP_DELTA_MS
+            max_allowed_delta = MAX_ALLOWED_TIMESTAMP_DELTA_MS
             
             timestamp_sync_ok = max_delta <= max_allowed_delta
             test.check(timestamp_sync_ok, f"Timestamp sync acceptable: max delta {max_delta:.2f}ms <= {max_allowed_delta:.2f}ms")
