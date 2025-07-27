@@ -92,7 +92,7 @@ def test_stream_sync_configuration(device, config):
                                and p.as_video_stream_profile().height() == h)
         except StopIteration:
             log.d(f"Depth profile not found for {w}x{h}@{fps}fps")
-            return False, 0, 0
+            return False, 0, 0, []
         
         # Start streaming
         color_sensor.open(color_profile)
