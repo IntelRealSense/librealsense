@@ -7,7 +7,10 @@
 import sys
 import time
 import pyrealsense2 as rs
-from rspy import test
+from rspy import test, log
+
+#disabled until we stabilize lab
+#test:donotrun
 
 def on_chip_calibration_json(occ_json_file, host_assistance, interactive_mode):
     occ_json = None
@@ -193,49 +196,35 @@ def calculate_target_z():
 
     return target_z
 
-test.start("OCC calibration test")   
-host_assistance = False
-health_factor = calibration_main(host_assistance, True, None)
-test.check(abs(health_factor) < 0.5)        
-print("Done\n")
-test.finish()
+with test.closure("OCC calibration test"):
+    host_assistance = False
+    health_factor = calibration_main(host_assistance, True, None)
+    test.check(abs(health_factor) < 0.5)        
+    print("Done\n")
 
-test.start("OCC calibration test with host assistance")
-host_assistance = True
-health_factor = calibration_main(host_assistance, True, None)
-test.check(abs(health_factor) < 0.5)     
-print("Done\n")
-test.finish()
+with test.closure("OCC calibration test with host assistance"):
+    host_assistance = True
+    health_factor = calibration_main(host_assistance, True, None)
+    test.check(abs(health_factor) < 0.5)     
+    print("Done\n")
 
 
-test.start("Tare calibration test with host assistance")  
-host_assistance = True
-target_z = calculate_target_z()
-test.check(target_z > 0 and target_z < 1500)   
-health_factor = calibration_main(host_assistance, False, target_z)
-test.check(abs(health_factor) < 0.5)     
-print("Done\n")
-test.finish()
+with test.closure("Tare calibration test with host assistance"):
+    host_assistance = True
 
-test.start("Tare calibration test") 
-host_assistance = False
-target_z = calculate_target_z()
-test.check(target_z > 0 and target_z < 1500)     
-health_factor = calibration_main(host_assistance, False, target_z)
-test.check(abs(health_factor) < 0.5)        
-print("Done\n")
-test.finish()
+    target_z = calculate_target_z()
+    test.check(target_z > 0 and target_z < 1500)   
+    health_factor = calibration_main(host_assistance, False, target_z)
+    test.check(abs(health_factor) < 0.5)     
+    print("Done\n")
 
-
-with test.closure("Focal calibration test"):
-    device, ctx = test.find_first_device_or_exit()
-    depth_sensor = device.first_depth_sensor()
-test.finish()
-
-with test.closure("Test calibration table"):
-    device, ctx = test.find_first_device_or_exit()
-    depth_sensor = device.first_depth_sensor()
-test.finish()
+with test.closure("Tare calibration test"):
+    host_assistance = False
+    target_z = calculate_target_z()
+    test.check(target_z > 0 and target_z < 1500)     
+    health_factor = calibration_main(host_assistance, False, target_z)
+    test.check(abs(health_factor) < 0.5)        
+    print("Done\n")
 
 test.print_results_and_exit()
 
