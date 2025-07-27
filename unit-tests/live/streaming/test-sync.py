@@ -224,8 +224,8 @@ for i, config in enumerate(configs_to_test):
         color_ok = color_frames >= min_expected_frames
         depth_ok = depth_frames >= min_expected_frames
         
-        test.check(color_ok, f"Color stream received {color_frames} frames (expected >= {min_expected_frames })")
-        test.check(depth_ok, f"Depth stream received {depth_frames} frames (expected >= {min_expected_frames })")
+        test.check(color_ok, f"Color stream received {color_frames} frames (expected >= {min_expected_frames})")
+        test.check(depth_ok, f"Depth stream received {depth_frames} frames (expected >= {min_expected_frames})")
         
         # Check timestamp synchronization
         if timestamp_deltas:
