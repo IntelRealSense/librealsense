@@ -24,7 +24,7 @@ def test_stream_sync_configuration(device, config):
     latest_frames = {rs.stream.depth: None, rs.stream.color: None}
     timestamp_deltas = []
     frameset_id = 0
-    duration = 3  # test sleep duration.
+    duration = TEST_SLEEP_DURATION  # test sleep duration.
     
     def callback(frame):
         nonlocal frame_collect, arrived_frames, latest_frames, timestamp_deltas, frameset_id
