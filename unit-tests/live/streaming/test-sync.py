@@ -153,7 +153,7 @@ def reset_device(device):
             log.d(f"Software reset also failed: {e2}")
 
 # Test configurations - different sets for normal vs nightly runs
-normal_test_configurations = [
+gated_test_configurations = [
     # Quick subset for regular testing
     {'w': 640, 'h': 480, 'fps': 30},
     {'w': 848, 'h': 480, 'fps': 30},
@@ -200,7 +200,7 @@ if 'nightly' in test.context:
     log.d("Running in NIGHTLY context - using full configuration set (20 configs)")
 else:
     # Use reduced set for normal/CI runs
-    configs_to_test = normal_test_configurations  
+    configs_to_test = gated_test_configurations  
     log.d("Running in NORMAL context - using reduced configuration set (4 configs)")
 
 total_configs = len(configs_to_test)
