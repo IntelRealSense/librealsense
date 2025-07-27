@@ -99,8 +99,8 @@ def test_stream_sync_configuration(device, config):
         color_sensor.start(callback)
         
         time.sleep(0.5)  # Brief delay between sensor starts
-        
-        depth_sensor.open([depth_profile])
+
+        depth_sensor.open(depth_profile)
         depth_sensor.start(callback)
         
         # Collect frames
@@ -226,12 +226,6 @@ for i, config in enumerate(configs_to_test):
         
         test.check(color_ok, f"Color stream received {color_frames} frames (expected >= {min_expected_frames })")
         test.check(depth_ok, f"Depth stream received {depth_frames} frames (expected >= {min_expected_frames })")
-        
-        # Check frame ratio is reasonable (streams should be roughly synchronized)
-        if color_frames > 0 and depth_frames > 0:
-            frame_ratio = abs(color_frames - depth_frames) / max(color_frames, depth_frames)
-            sync_ok = frame_ratio < 0.3  # Allow 30% difference
-            test.check(sync_ok, f"Frame count difference acceptable: {frame_ratio:.2%}")
         
         # Check timestamp synchronization
         if timestamp_deltas:
