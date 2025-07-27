@@ -1,4 +1,5 @@
 #test:device D455
+#test:donotrun:!linux
 
 import pyrealsense2 as rs
 from rspy import log, repo, test
