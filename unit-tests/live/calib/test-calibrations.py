@@ -76,8 +76,7 @@ def calibration_main(host_assistance, occ, ground_truth):
     pipeline = rs.pipeline()
     pipeline_wrapper = rs.pipeline_wrapper(pipeline)
     pipeline_profile = config.resolve(pipeline_wrapper)
-    device = pipeline_profile.get_device()
-    auto_calibrated_device = rs.auto_calibrated_device(device)
+    auto_calibrated_device = rs.auto_calibrated_device(pipeline_profile.get_device())
     if not auto_calibrated_device:
         test.fail("Failed to open device for calibration")
         test.finish()
