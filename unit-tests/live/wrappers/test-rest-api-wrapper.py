@@ -11,7 +11,7 @@ test.start( "Run test-rest-api-wrapper test" )
 import subprocess
 run_time_stopwatch = Stopwatch()
 run_time_threshold = 3
-p = subprocess.run( ["pytest", "../wrappers/rest-api/tests/test_api_service.py"],
+p = subprocess.run( ["pytest", "./wrappers/rest-api/tests/test_api_service.py"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 universal_newlines=True,
