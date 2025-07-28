@@ -151,22 +151,21 @@ void hdr_preset::from_json( const std::string & json_str )
     }
 }
 
+/*
+ * Copy the full preset from 'other', preserving inactive control values.
+ * Avoids per-field copying so future hdr_preset changes won’t need to be updated here.
+ */
 void hdr_preset::copy_active_mode(const hdr_preset& other)
 {
-    // Save the values we want to preserve from the current object
-    std::vector<control_item> original_controls;
-
-    for (const auto& item : items) {
-        original_controls.push_back(item.controls);
-    }
+    // Preserve inactive mode values
+    std::vector<preset_item> original_controls = items;
 
     *this = other;
 
-    // restore the values for the other type of controls - 
-    // in auto mode, keep the manual mode values, and in manual, keep the auto values
+    // Restore inactive controls: keep manual values in auto, and vice versa
     for (size_t i = 0; i < items.size() && i < original_controls.size(); ++i) {
         auto& ctrls = items[i].controls;
-        const auto& orig_ctrls = original_controls[i];
+        const auto& orig_ctrls = original_controls[i].controls;
 
         if (control_type_auto) {
             ctrls.depth_gain = orig_ctrls.depth_gain;

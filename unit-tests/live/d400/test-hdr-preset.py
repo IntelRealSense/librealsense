@@ -127,7 +127,7 @@ test_json_load(AUTO_HDR_CONFIG, "Auto mode: Loading HDR preset config")
 
 seq_id_0_exp = 0
 seq_id_0_gain = 0
-# TODO: take claude's expected_iterations thingy and make it on manual AND auto, to make sure it works right
+
 with test.closure("Auto mode: Checking streaming data matches config"):
     # after loading config for Auto mode, we should have AE enabled and be in RS2_DEPTH_AUTO_EXPOSURE_ACCELERATED mode
     test.check(sensor.get_option(rs.option.enable_auto_exposure) == 1)
