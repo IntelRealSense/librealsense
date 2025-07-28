@@ -106,6 +106,9 @@ rs2::dds_model::priority rs2::dds_model::classifyPriority( link_priority & pr )
 
 bool dds_model::check_DDS_support()
 {
+    if (!_device.supports(RS2_CAMERA_INFO_PRODUCT_LINE) || !(std::string(_device.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D500"))
+        return false;
+
     if( _device.is< rs2::debug_protocol >() )
     {
         if( _device.supports( RS2_CAMERA_INFO_NAME ) )
