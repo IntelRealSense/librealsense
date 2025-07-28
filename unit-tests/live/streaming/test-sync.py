@@ -1,13 +1,17 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2025 RealSense Inc. All Rights Reserved.
 
-# test:device each(D400*)
-# test:context nightly 
+ # test:device D455
+# test:device D457
 
 import pyrealsense2 as rs
 import time
 from rspy import test, log
 from rspy.timer import Timer
+
+
+TEST_SLEEP_DURATION = 3
+MAX_ALLOWED_TIMESTAMP_DELTA_MS = 1  # Maximum allowed timestamp difference in milliseconds
 
 # Test synchronization between color and depth streams across multiple configurations
 # This test verifies that both streams can successfully stream frames simultaneously
@@ -78,10 +82,11 @@ def test_stream_sync_configuration(device, config):
                                and p.format() == rs.format.rgb8
                                and p.as_video_stream_profile().width() == w
                                and p.as_video_stream_profile().height() == h)
+            # If no color profile found, return failure
         except StopIteration:
             log.d(f"Color profile not found for {w}x{h}@{fps}fps")
-            return False, 0, 0
-        
+            return False, 0, 0, []
+
         depth_profiles = depth_sensor.profiles
         try:
             depth_profile = next(p for p in depth_profiles 
@@ -90,6 +95,7 @@ def test_stream_sync_configuration(device, config):
                                and p.format() == rs.format.z16
                                and p.as_video_stream_profile().width() == w
                                and p.as_video_stream_profile().height() == h)
+            # If no depth profile found, return failure
         except StopIteration:
             log.d(f"Depth profile not found for {w}x{h}@{fps}fps")
             return False, 0, 0, []
