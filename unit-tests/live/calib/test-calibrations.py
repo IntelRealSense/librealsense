@@ -96,10 +96,10 @@ def calibration_main(host_assistance, occ, ground_truth):
 
     interactive_mode = False
 
-    config = rs.config()
-    config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
+    stream_config = rs.config()
+    stream_config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
 
-    conf = pipeline.start(config)
+    conf = pipeline.start(stream_config)
     pipeline.wait_for_frames() # Verify streaming started before calling calibration methods
     calib_dev = rs.auto_calibrated_device(conf.get_device())
 
