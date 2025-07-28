@@ -27,7 +27,7 @@ def on_chip_calibration_json(occ_json_file, host_assistance, interactive_mode):
         occ_json = '{\n  '+\
                     '"calib type": 0,\n'+\
                     '"host assistance": ' + str(int(host_assistance)) + ',\n'+\
-                    '"keep new value after sucessful scan": 0,\n'+\
+                    '"keep new value after successful scan": 0,\n'+\
                     '"fl data sampling": 0,\n'+\
                     '"adjust both sides": 0,\n'+\
                     '"fl scan location": 0,\n'+\
