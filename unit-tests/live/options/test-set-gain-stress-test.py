@@ -4,6 +4,7 @@
 # test:device each(D400*)
 # test:device each(D500*)
 # test:donotrun:!nightly
+# test:timeout 600
 
 import pyrealsense2 as rs
 from rspy import test, log

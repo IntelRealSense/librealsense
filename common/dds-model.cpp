@@ -23,20 +23,19 @@ namespace rs2 {
     uint32_t const GET_ETH_CONFIG = 0xBB;
     uint32_t const SET_ETH_CONFIG = 0xBA;
 
-    int const CURRENT_VALUES = 0;
-    int const DEFULT_VALUES = 1;
+    int const CURRENT_VALUES = 1;
+    int const DEFAULT_VALUES = 0;
 }
 
 dds_model::dds_model( rs2::device dev )
     : _device( dev )
     , _window_open( false )
     , _no_reset( false )
-    , _set_defult( false )
     , _dds_supported( false )
 {
     if( check_DDS_support() )
     {
-        _defult_config = get_eth_config( DEFULT_VALUES );
+        _default_config = get_eth_config( DEFAULT_VALUES );
         _current_config = get_eth_config( CURRENT_VALUES );
         _changed_config = _current_config;
         _dds_supported = true;
@@ -55,25 +54,33 @@ eth_config dds_model::get_eth_config( int curr_or_default )
 
 void rs2::dds_model::set_eth_config( eth_config & new_config, std::string & error_message )
 {
-    rs2::debug_protocol hwm( _device );
-    auto cmd = hwm.build_command( SET_ETH_CONFIG, 0, 0, 0, 0, new_config.build_command() );
-    auto data = hwm.send_and_receive_raw_data( cmd );
-    int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
-    if( data.size() != sizeof( code ) )
+    try
     {
-        error_message = rsutils::string::from() << "Failed to change: bad response size " << data.size() << ' '
-                                                << rsutils::string::hexdump( data.data(), data.size() );
-        close_window();
+        rs2::debug_protocol hwm( _device );
+        auto cmd = hwm.build_command( SET_ETH_CONFIG, 0, 0, 0, 0, new_config.build_command() );
+        auto data = hwm.send_and_receive_raw_data( cmd );
+        int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
+        if( data.size() != sizeof( code ) )
+        {
+            error_message = rsutils::string::from() << "Failed to change: bad response size " << data.size() << ' '
+                                                    << rsutils::string::hexdump( data.data(), data.size() );
+            close_window();
+        }
+        if( code != SET_ETH_CONFIG )
+        {
+            error_message = rsutils::string::from() << "Failed to change: bad response " << code;
+            close_window();
+        }
+        if( ! _no_reset )
+        {
+            close_window();
+            _device.hardware_reset();
+        }
     }
-    if( code != SET_ETH_CONFIG )
+    catch( const std::exception & e )
     {
-        error_message = rsutils::string::from() << "Failed to change: bad response " << code;
+        error_message = rsutils::string::from() << "Failed to set Ethernet configuration: " << e.what();
         close_window();
-    }
-    if( ! _no_reset )
-    {
-        close_window();
-        _device.hardware_reset();
     }
 }
 
@@ -203,14 +210,29 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         ImGui::Separator();
         ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 15 );
 
+        // Window button sizes
+        float button_width = 115.0f;
+        float spacing = 10.0f;
+        float total_buttons_width = button_width * 3 + spacing * 2;
+        float start_x = ( w - total_buttons_width ) / 2.0f;
+
         // Main Scrollable Section
         ImGui::BeginChild( "MainContent", ImVec2( w - 10, h - 100 ), true );
         ImGui::PushItemWidth( 150.0f );
 
-        // Connection Priority Section
-        priority connection_priority = classifyPriority( _changed_config.link.priority );
+        ImGui::Text( "Domain ID" );
+        ImGui::SameLine();
+        if( ImGui::InputInt( "##Domain ID", &_changed_config.dds.domain_id ) )
+        {
+            if( _changed_config.dds.domain_id < 0 )
+                _changed_config.dds.domain_id = 0;
+            else if( _changed_config.dds.domain_id > 232 )
+                _changed_config.dds.domain_id = 232;
+        }
+
         if( ImGui::CollapsingHeader( "Connection Priority" ) )
         {
+            priority connection_priority = classifyPriority( _changed_config.link.priority );
             ImGui::Text( "Select connection priority:" );
             ImGui::RadioButton( "Ethernet First", reinterpret_cast< int * >( &connection_priority ), 0 );
             if( static_cast< int >( connection_priority ) == 0 )
@@ -227,6 +249,11 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
             }
             ImGui::RadioButton( "USB First", reinterpret_cast< int * >( &connection_priority ), 1 );
             ImGui::RadioButton( "Dynamic Priority", reinterpret_cast< int * >( &connection_priority ), 2 );
+            if( ImGui::IsItemHovered() )
+            {
+                window.link_hovered();
+                RsImGui::CustomTooltip( "%s", "Try connection type from last power up, switch if changed" );
+            }
             switch( connection_priority )
             {
             case ETH_FIRST:
@@ -244,7 +271,6 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
             }
         }
 
-        // Network Configuration Section
         if( ImGui::CollapsingHeader( "Network Configuration" ) )
         {
             ImGui::Checkbox( "Enable DHCP", &_changed_config.dhcp.on );
@@ -266,43 +292,68 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
             }
             else
             {
-                ImGui::Text( "DHCP Timeout (seconds)" );
+                ImGui::Text( "DHCP Timeout [seconds]" );
                 ImGui::SameLine();
                 int tempTimeout = static_cast< int >( _changed_config.dhcp.timeout );
-                if( ImGui::InputInt( "##DHCP Timeout (seconds)", &tempTimeout ) )
+                if( ImGui::InputInt( "##DHCP Timeout", &tempTimeout ) )
                 {
                     _changed_config.dhcp.timeout = static_cast< uint16_t >( std::max( 0, tempTimeout ) );
                 }
             }
         }
 
-        ImGui::Text( "Domain ID" );
-        ImGui::SameLine();
-        if( ImGui::InputInt( "##Domain ID", &_changed_config.dds.domain_id ) )
+        if( ImGui::CollapsingHeader( "Traffic Shaping" ) )
         {
-            if( _changed_config.dds.domain_id < 0 )
-                _changed_config.dds.domain_id = 0;
-            else if( _changed_config.dds.domain_id > 232 )
-                _changed_config.dds.domain_id = 232;
-        }
-        ImGui::Checkbox( "No Reset after changes", &_no_reset );
+            ImGui::Text( "MTU [bytes]" );
+            ImGui::SameLine();
+            int temp_mtu = static_cast< int >( _changed_config.link.mtu );
+            if( ImGui::InputInt( "##MTU", &temp_mtu, 500 ) )
+            {
+                if( temp_mtu < 500 )
+                    temp_mtu = 500;
+                else if( temp_mtu > 9000 )
+                    temp_mtu = 9000;
+                _changed_config.link.mtu = static_cast< uint32_t >( temp_mtu );
+            }
 
-        if( ImGui::Checkbox( "Load defult values", &_set_defult ) )
+            ImGui::Text( "Transmission Delay [us]" );
+            ImGui::SameLine();
+            int temp_delay = static_cast< int >( _changed_config.transmission_delay );
+            if( ImGui::InputInt( "##Transmission Delay", &temp_delay, 3 ) )
+            {
+                if( temp_delay < 0 )
+                    temp_delay = 0;
+                else if( temp_delay > 144 )
+                    temp_delay = 144;
+                _changed_config.transmission_delay = static_cast< uint32_t >( temp_delay );
+            }
+        }
+        
+        ImGui::Separator();
+        ImGui::Checkbox( "No Reset after changes", &_no_reset );
+        if( ImGui::Button( "Default values" ) )
         {
-            if( _set_defult )
-                _changed_config = _defult_config;
-            else
-                _changed_config = _current_config;
+            _changed_config = _default_config;
+        }
+        if( ImGui::IsItemHovered() )
+        {
+            window.link_hovered();
+            RsImGui::CustomTooltip( "%s", "Use default configuration values" );
+        }
+        ImGui::SameLine();
+        if( ImGui::Button( "Revert changes" ) )
+        {
+            _changed_config = _current_config;
+        }
+        if( ImGui::IsItemHovered() )
+        {
+            window.link_hovered();
+            RsImGui::CustomTooltip( "%s", "Revert to current configuration values" );
         }
 
         ImGui::PopItemWidth();
         ImGui::EndChild();
 
-        // window buttons
-        float button_width = 115.0f;
-        float spacing = 10.0f;
-        float total_buttons_width = button_width * 4 + spacing * 2;
-        float start_x = ( w - total_buttons_width ) / 2.0f;
         bool hasChanges = ( _changed_config != _current_config );
 
         ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 8 );
@@ -321,28 +372,13 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         ImGui::SameLine();
         if( ImGui::Button( "Factory Reset", ImVec2( button_width, 25 ) ) )
         {
-            set_eth_config( _defult_config, error_message );
+            set_eth_config( _default_config, error_message );
             close_window();
         }
         if( ImGui::IsItemHovered() )
         {
             window.link_hovered();
             RsImGui::CustomTooltip( "%s", "Reset settings back to defult values" );
-        }
-        ImGui::SameLine();
-        RsImGui::RsImButton(
-            [&]()
-            {
-                if( ImGui::ButtonEx( "Revert changes", ImVec2( button_width, 25 ) ) )
-                {
-                    _changed_config = _current_config;
-                };
-            },
-            ! hasChanges );
-        if( ImGui::IsItemHovered() )
-        {
-            window.link_hovered();
-            RsImGui::CustomTooltip( "%s", "Revert to current configuration values" );
         }
         ImGui::SameLine();
         RsImGui::RsImButton(

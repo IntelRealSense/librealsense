@@ -3,7 +3,7 @@
 
 
 #test:device each(D400*) !D457
-#test:device D585S
+#test:device each(D500*) !D555
 
 
 import pyrealsense2 as rs

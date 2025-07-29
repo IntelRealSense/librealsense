@@ -23,6 +23,7 @@ json_preset_reader::json_preset_reader( const std::string & json_content ) : _pa
     {
         _parameters = &_root;
     }
+    _hdr_preset = &_root["hdr-preset"];
 }
 
 device_info json_preset_reader::read_device_info() const
@@ -176,6 +177,11 @@ void json_preset_writer::write_schema()
 void json_preset_writer::write_param(const std::string& key, const json& value)
 {
     (*_parameters)[key] = value;
+}
+
+void json_preset_writer::write_root_param(const std::string& key, const json& value)
+{
+    _root[key] = value;
 }
 
 }  // namespace serialized_utilities

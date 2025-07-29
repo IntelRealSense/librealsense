@@ -1,11 +1,14 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 
+import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # to allow running this script directly
+sys.path.append(parent_dir)
 from rspy import log
 import time
 import platform, re
 from rspy import device_hub
-import os
 
 if __name__ == '__main__':
     import os, sys, getopt
@@ -194,11 +197,13 @@ class UniFiSwitch(device_hub.device_hub):
         return out
 
     def enable_ports(self, ports=None, disable_other_ports=False, sleep_on_change=0):
+        log.d(f"Enabling ports {ports if ports is not None else 'all'} on Unifi Switch"
+              f"{', disabling other ports' if disable_other_ports else ''}")
         if ports is None:
             ports = self.all_ports()
 
         if disable_other_ports:
-            other_ports = set(self.all_ports()) - set(ports)
+            other_ports = set(self.all_ports()) - set([int(p) for p in ports])
             self.disable_ports(list(other_ports), sleep_on_change)
 
         if not ports:  # ports is []
@@ -212,6 +217,7 @@ class UniFiSwitch(device_hub.device_hub):
         return True
 
     def disable_ports(self, ports=None, sleep_on_change=0):
+        log.d(f"Disabling ports {ports if ports is not None else 'all'} on Unifi Switch")
         if ports is None:
             ports = self.all_ports()
 
@@ -219,6 +225,8 @@ class UniFiSwitch(device_hub.device_hub):
             log.w("Attempted to disable a non-poe port! ignoring.")
             ports = [port for port in ports if port in self.POE_PORTS]
 
+        if not ports:  # ports is []
+            return True
         ports_str = ','.join(map(str, ports))
         cmd = f"swctrl poe set off id {ports_str}"
         self._run_command(cmd)

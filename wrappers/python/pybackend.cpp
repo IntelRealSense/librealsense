@@ -14,7 +14,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
-#include "core/options.h"   // Workaround for the missing DLL_EXPORT template
+#include <librealsense2/h/rs_option.h>
 #include "core/info.h"   // Workaround for the missing DLL_EXPORT template
 #include "../src/backend.h"
 #include <src/core/time-service.h>
@@ -102,7 +102,7 @@ PYBIND11_MODULE(NAME, m) {
                   .def_readwrite("id", &platform::extension_unit::id);
 
     py::class_<platform::command_transfer, std::shared_ptr<platform::command_transfer>> command_transfer(m, "command_transfer");
-    command_transfer.def("send_receive", &platform::command_transfer::send_receive, "data"_a, "timeout_ms"_a=5000, "require_response"_a=true);
+    command_transfer.def("send_receive", &platform::command_transfer::send_receive, "data"_a, "size"_a, "timeout_ms"_a=5000, "require_response"_a=true);
 
     py::enum_<rs2_option> option(m, "option");
     option.value("backlight_compensation", RS2_OPTION_BACKLIGHT_COMPENSATION)
@@ -292,11 +292,8 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<platform::hid_sensor_data> hid_sensor_data(m, "hid_sensor_data");
     hid_sensor_data.def_readwrite("x", &platform::hid_sensor_data::x)
-                   .def_property(BIND_RAW_RW_ARRAY(platform::hid_sensor_data, reserved1, char, 2))
                    .def_readwrite("y", &platform::hid_sensor_data::y)
-                   .def_property(BIND_RAW_RW_ARRAY(platform::hid_sensor_data, reserved2, char, 2))
                    .def_readwrite("z", &platform::hid_sensor_data::z)
-                   .def_property(BIND_RAW_RW_ARRAY(platform::hid_sensor_data, reserved3, char, 2))
                    .def_readwrite("ts_low", &platform::hid_sensor_data::ts_low)
                    .def_readwrite("ts_high", &platform::hid_sensor_data::ts_high);
 
@@ -477,7 +474,6 @@ PYBIND11_MODULE(NAME, m) {
 }
 
 // Workaroud for failure to export template <typename T> class recordable
-void librealsense::option::create_snapshot(std::shared_ptr<option>& snapshot) const {}
 void librealsense::info_container::create_snapshot(std::shared_ptr<librealsense::info_interface> &) const {}
 void librealsense::info_container::register_info(rs2_camera_info info, const std::string& val){}
 void librealsense::info_container::update_info(rs2_camera_info info, const std::string& val) {}

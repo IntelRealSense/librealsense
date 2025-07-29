@@ -39,13 +39,12 @@ namespace rs2
 
         rs2::device _device;
 
-        eth_config _defult_config;
+        eth_config _default_config;
         eth_config _current_config;
         eth_config _changed_config;
 
         bool _window_open;
         bool _no_reset;
-        bool _set_defult;
         bool _dds_supported;
 
         void ipInputText(std::string label, rsutils::type::ip_address &ip);

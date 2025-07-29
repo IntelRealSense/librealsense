@@ -148,28 +148,6 @@ namespace rs2
         open_issue(ss.str());
     }
 
-    template <typename T>
-    std::string safe_call(T t)
-    {
-        try
-        {
-            t();
-            return "";
-        }
-        catch (const error& e)
-        {
-            return error_to_string(e);
-        }
-        catch (const std::exception& e)
-        {
-            return e.what();
-        }
-        catch (...)
-        {
-            return "Unknown error occurred";
-        }
-    }
-
     std::pair<std::string, std::string> get_device_name(const device& dev)
     {
         // retrieve device name
@@ -200,9 +178,32 @@ namespace rs2
 
     device_model::~device_model()
     {
-        for (auto&& n : related_notifications) n->dismiss(false);
+        try
+        {
+            {
+                std::lock_guard<std::mutex> lock(dev_mutex);
+                for (auto&& n : related_notifications) n->dismiss(false);
 
-        _updates->set_device_status(*_updates_profile, false);
+                _updates->set_device_status(*_updates_profile, false);
+
+                stopping = true;
+            }
+
+            if (check_for_device_updates_thread.joinable())
+            {
+                LOG_DEBUG("Waiting for device updates thread to finish...");
+                check_for_device_updates_thread.join();
+                LOG_DEBUG("Device updates thread joined");
+            }
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR(rsutils::string::from() << "Exception in device_model destructor: " << e.what());
+        }
+        catch (...)
+        {
+            LOG_ERROR("Unknown exception in device_model destructor");
+        }
     }
 
     bool device_model::check_for_bundled_fw_update(const rs2::context &ctx, std::shared_ptr<notifications_model> not_model , bool reset_delay )
@@ -215,6 +216,9 @@ namespace rs2
 
         // 'notification_type_is_displayed()' is used to detect if fw_update notification is on to avoid displaying it during FW update process when
         // the device enters recovery mode
+        std::lock_guard<std::mutex> lock(dev_mutex); // locking to fix a bug where the destructor was called, destroying dev and causing access violation on this thread
+        if (stopping) return false;
+
         if( ! not_model->notification_type_is_displayed< fw_update_notification_model >()
             && ( dev.is< updatable >() || dev.is< update_device >() ) )
         {
@@ -373,7 +377,8 @@ namespace rs2
         _updates(viewer.updates),
         _updates_profile(std::make_shared<dev_updates_profile::update_profile>()),
         _allow_remove(remove),
-        _dds_model(dev)
+        _dds_model(dev),
+        _hdr_model(dev)
     {
         auto name = get_device_name(dev);
         id = rsutils::string::from() << name.first << ", " << name.second;
@@ -385,7 +390,7 @@ namespace rs2
             // checking if the sensor is color_sensor or is D405 (with integrated RGB in depth sensor)
             if (s->is<color_sensor>() || (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID) && !strcmp(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "0B5B")))
                 objects = _detected_objects;
-            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), objects, error_message, viewer, new_device_connected);
+            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), objects, error_message, viewer, this, new_device_connected);
             subdevices.push_back(model);
         }
 
@@ -1044,7 +1049,7 @@ namespace rs2
             _updates_profile );
         std::weak_ptr< notifications_model > notification_model_protected( viewer.not_model );
         const context & ctx( viewer.ctx );
-        std::thread check_for_device_updates_thread( [ctx,
+        check_for_device_updates_thread = std::thread( [ctx,
                                                       updates_model_protected,
                                                       notification_model_protected,
                                                       this,
@@ -1191,7 +1196,6 @@ namespace rs2
             }
         } );
 
-        check_for_device_updates_thread.detach();
     }
 
     float device_model::draw_device_panel(float panel_width,
@@ -1325,7 +1329,6 @@ namespace rs2
             RsImGui::CustomTooltip("%s", "Click for more");
             window.link_hovered();
         }
-        static bool keep_showing_advanced_mode_modal = false;
         bool open_calibration_ui = false;
         if (ImGui::BeginPopup(label.c_str()))
         {
@@ -1343,7 +1346,7 @@ namespace rs2
                     bool selected = is_advanced_mode_enabled;
                     if (ImGui::MenuItem("Advanced Mode", nullptr, &selected))
                     {
-                        keep_showing_advanced_mode_modal = true;
+                        show_advanced_mode_popup = true;
                     }
 
                     ImGui::Separator();
@@ -1431,6 +1434,7 @@ namespace rs2
                         }
                     }
                 }
+
                 ImGuiSelectableFlags is_streaming_flag = (is_streaming) ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None;
                 if( _dds_model.supports_DDS() )
                 {
@@ -1457,17 +1461,21 @@ namespace rs2
         }
 
 
-        if (keep_showing_advanced_mode_modal)
+        if (show_advanced_mode_popup)
         {
             const bool is_advanced_mode_enabled = dev.as<advanced_mode>().is_enabled();
             std::string msg = rsutils::string::from()
                            << "\t\tAre you sure you want to "
                            << ( is_advanced_mode_enabled ? "turn off Advanced mode" : "turn on Advanced mode" )
                            << "\t\t";
-            keep_showing_advanced_mode_modal = prompt_toggle_advanced_mode(!is_advanced_mode_enabled, msg, restarting_device_info, viewer, window, error_message);
+            show_advanced_mode_popup = prompt_toggle_advanced_mode(!is_advanced_mode_enabled, msg, restarting_device_info, viewer, window, error_message);
         }
 
         _calib_model.update(window, error_message);
+
+        if ( _hdr_model.supports_HDR() )
+            _hdr_model.render_hdr_config_window( window, error_message );
+
         if( _dds_model.supports_DDS() )
         {
             _dds_model.render_dds_config_window( window, error_message );
@@ -3615,5 +3623,10 @@ namespace rs2
         }
 
         return has_autocalib;
+    }
+
+    void device_model::open_hdr_config_tool_window()
+    {
+        _hdr_model.open_hdr_tool_window();
     }
 }
