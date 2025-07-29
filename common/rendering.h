@@ -11,6 +11,7 @@
 #include <librealsense2-gl/rs_processing_gl.hpp>
 #include <rsutils/time/stopwatch.h>
 #include <rsutils/string/from.h>
+#include <rsutils/number/byte-manipulation.h>
 
 #include "matrix4.h"
 #include "float3.h"
@@ -388,6 +389,7 @@ namespace rs2
     public:
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
+        std::shared_ptr<m420_decoder> m420_to_rgb;
         std::shared_ptr<y411_decoder> y411;
         bool zoom_preview = false;
         rect curr_preview_rect{};
@@ -477,32 +479,16 @@ namespace rs2
             // Allow upload of points frame type
             if (auto pc = frame.as<points>())
             {
-                if (!frame.is<gl::gpu_frame>())
-                {
-                    // Points can be uploaded as two different
-                    // formats: XYZ for verteces and UV for texture coordinates
-                    if (prefered_format == RS2_FORMAT_XYZ32F)
-                    {
-                        // Upload vertices
-                        data = pc.get_vertices();
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
-                    }
-                    else
-                    {
-                        // Upload texture coordinates
-                        data = pc.get_texture_coordinates();
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, width, height, 0, GL_RG, GL_FLOAT, data);
-                    }
-
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                }
-                else
-                {
-                    // Update texture_id based on desired format
-                    if (prefered_format == RS2_FORMAT_XYZ32F) texture_id = 0;
-                    else texture_id = 1;
-                }
+                upload_points(pc, width, height, prefered_format);
+            }
+            // Allow upload of labeled points frame type
+            else if (auto lpc = frame.as<labeled_points>())
+            {
+                upload_labeled_points(lpc, width, height);
+            }
+            else if (frame.get_profile().stream_type() == RS2_STREAM_OCCUPANCY)
+            {
+                upload_occupancy_frame(frame, data);
             }
             else
             {
@@ -694,6 +680,101 @@ namespace rs2
             glBindTexture(GL_TEXTURE_2D, 0);
 
             last_queue[1].enqueue(rendered_frame);
+        }
+
+        void upload_points(const points& pc, int width, int height, rs2_format prefered_format)
+        {
+            if (!pc.is<gl::gpu_frame>())
+            {
+                // Points can be uploaded as two different
+                // formats: XYZ for verteces and UV for texture coordinates
+                if (prefered_format == RS2_FORMAT_XYZ32F)
+                {
+                    // Upload vertices
+                    auto data = pc.get_vertices();
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
+                }
+                else
+                {
+                    // Upload texture coordinates
+                    auto data = pc.get_texture_coordinates();
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, width, height, 0, GL_RG, GL_FLOAT, data);
+                }
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            }
+            else
+            {
+                // Update texture_id based on desired format
+                if (prefered_format == RS2_FORMAT_XYZ32F) texture_id = 0;
+                else texture_id = 1;
+            }
+        }
+
+        void upload_labeled_points(const labeled_points& lpc, int width, int height)
+        {
+            if (!lpc.is<gl::gpu_frame>())
+            {
+                // Upload vertices
+                auto data = lpc.get_vertices();
+                auto lpc_width = lpc.get_width();
+                auto lpc_height = lpc.get_height();
+
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, lpc_width, lpc_height, 0, GL_RGB, GL_FLOAT, (const void*)data);
+
+                // TODO: use of labels 
+                auto labels = lpc.get_labels();
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            }
+            else
+            {
+                texture_id = 1;
+            }
+        }
+
+        void upload_occupancy_frame(const rs2::frame &frame, const void *data)
+        {
+            if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS) ||
+                !frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS))
+                throw std::runtime_error("Occupancy rows / columns could not be read from frame metadata");
+
+            auto occup_cols = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS)); // width
+            auto occup_rows = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS));    // height
+
+            // We want to reverse the data's bit, because AICV algo is packing each 8 cells into one byte, but in an opposite order
+            // than we (and OpenGL) expect. The rightest bit (LSB) inside the packed byte from AICV algo represnts the first bit we want to draw from this byte
+            // e.g. Occupancy Cells: 0 0 1 1 0 0 1 0 ---> AICV packing algo ---> bytes[i] = 01001100. The order is reversed, so we reverse it again.
+            // Each byte represents 8 cells (1 bit <==> 1 cell), therefore the size is ==> rows(height) * cols(width) / 8
+
+            std::vector<uint8_t> vec;
+            uint8_t *byte_array = (uint8_t *)data;
+
+            for (int i = 0; i < occup_rows * occup_cols / 8; i++)
+            {
+                for (int k = 0; k < 8; k++)
+                {
+                    vec.push_back(((byte_array[i] >> k) & 1) ? 0xFF : 0);
+                }
+            }
+
+            // Default alignment is 4 byte on windows, store it and work with 1 as our grid columns are not a multiple of 4
+            GLint unpackAlignment;
+            glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlignment);
+
+            // Change alignment to 1
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+            // Render
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, occup_cols, occup_rows, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, vec.data());
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+            // Restore default alignment
+            glPixelStorei(GL_UNPACK_ALIGNMENT, unpackAlignment);
         }
 
         static void  draw_axes(float axis_size = 1.f, float axisWidth = 4.f)

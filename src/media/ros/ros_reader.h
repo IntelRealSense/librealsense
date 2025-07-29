@@ -91,11 +91,13 @@ namespace librealsense
         void update_proccesing_blocks(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version, std::string pid, std::string sensor_name);
         void add_sensor_extension(snapshot_collection & sensor_extensions, std::string sensor_name);
        
-        bool is_depth_sensor( std::string sensor_name );
+        bool is_depth_sensor(const std::string& sensor_name);
         bool is_stereo_depth_sensor( std::string sensor_name );
-        bool is_color_sensor(std::string sensor_name);
-        bool is_motion_module_sensor(std::string sensor_name);
-        bool is_fisheye_module_sensor(std::string sensor_name);
+        bool is_color_sensor(const std::string& sensor_name);
+        bool is_motion_module_sensor(const std::string& sensor_name);
+        bool is_fisheye_module_sensor(const std::string& sensor_name); 
+        bool is_safety_module_sensor(const std::string& sensor_name);
+        bool is_depth_mapping_sensor(const std::string& sensor_name);
         bool is_ds_PID(int pid);
         std::shared_ptr<recommended_proccesing_blocks_snapshot> read_proccesing_blocks_for_version_under_4(std::string pid, std::string sensor_name, std::shared_ptr<options_interface> options);
         std::shared_ptr<recommended_proccesing_blocks_snapshot> read_proccesing_blocks(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp,

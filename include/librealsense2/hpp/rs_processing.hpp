@@ -526,6 +526,38 @@ namespace rs2
         }
     };
 
+    class m420_decoder : public filter
+    {
+    public:
+        /**
+        * Creates M420 decoder processing block.
+        * This block accepts raw M420 frames and outputs frames of other formats.
+        * M420 is a standard format,see:
+        *     https://www.kernel.org/doc/html/v4.10/media/uapi/v4l/pixfmt-m420.html
+        * Two lines (each of length equal to width of the current resolution) of luminance are followed by
+        * One line (of length width) of chrome values.
+        * The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
+        * best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+        * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        */
+        m420_decoder() : filter(init(), 1) { }
+
+    protected:
+        m420_decoder(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
+
+    private:
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_m420_decoder(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
+
     class y411_decoder : public filter
     {
     public:

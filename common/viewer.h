@@ -115,10 +115,13 @@ namespace rs2
 
         void update_3d_camera(ux_window& win, const rect& viewer_rect, bool force = false);
 
+        // Check if we should render the current frame (sometimes we have information only frames and the frame data itself has no visual affect)
+        bool should_render_frame(const rs2::stream_model& model) const;
+
         void show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices);
 
         void render_3d_view(const rect& view_rect, ux_window& win,
-            std::shared_ptr<texture_buffer> texture, rs2::points points);
+            std::shared_ptr<texture_buffer> texture, rs2::points points, rs2::labeled_points);
 
         void render_2d_view(const rect& view_rect, ux_window& win, int output_height,
             ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);
@@ -153,7 +156,8 @@ namespace rs2
 
         void draw_viewport(const rect& viewer_rect,
             ux_window& window, int devices, std::string& error_message,
-            std::shared_ptr<texture_buffer> texture, rs2::points  f = rs2::points());
+            std::shared_ptr<texture_buffer> texture, rs2::points  f = rs2::points(), 
+            rs2::labeled_points lp = rs2::labeled_points());
 
         bool allow_3d_source_change = true;
         bool allow_stream_close = true;
@@ -167,6 +171,7 @@ namespace rs2
         std::atomic<bool> synchronization_enable_prev_state;
 
         int selected_depth_source_uid = -1;
+        int selected_labeled_points_source_uid = -1;
         int selected_tex_source_uid = -1;
         std::vector<int> last_tex_sources;
         double texture_update_time = 0.0;
@@ -179,6 +184,15 @@ namespace rs2
         };
         shader_type selected_shader = shader_type::diffuse;
 
+        enum class lpc_points_size
+        {
+            lpc_small,
+            lpc_medium,
+            lpc_large
+        };
+        lpc_points_size selected_lpc_points_size = lpc_points_size::lpc_small;
+        bool show_safety_zones_3d = true;
+
         float dim_level = 1.f;
 
         bool continue_with_current_fw = false;
@@ -190,6 +204,7 @@ namespace rs2
         bool occlusion_invalidation = true;
         bool glsl_available = false;
         bool modal_notification_on = false; // a notification which was expanded
+        bool select_lpc_point_size = false;
 
         press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
 
@@ -228,6 +243,9 @@ namespace rs2
 
         void set_export_popup(ImFont* large_font, ImFont* font, rect stream_rect, std::string& error_message, config_file& temp_cfg);
         void init_depth_uid(int& selected_depth_source, std::vector<std::string>& depth_sources_str, std::vector<int>& depth_sources);
+        void init_labeled_points_uid();
+        void draw_3d_labeled_points(const rect& viewer_rect, rs2::labeled_points labeled_points);
+        bool should_texture_frame_be_updated(const rs2::frame& f) const;
 
         streams_layout _layout;
         streams_layout _old_layout;
@@ -244,6 +262,8 @@ namespace rs2
 
         rs2::points last_points;
         std::shared_ptr<texture_buffer> last_texture;
+        
+        rs2::labeled_points last_labeled_points;
 
         // Infinite pan / rotate feature:
         bool manipulating = false;
@@ -263,5 +283,11 @@ namespace rs2
 
         measurement _measurements;
 
+        typedef enum class Zone { Danger, Warning, Diagnostic } Zone;
+        void set_polygon_color(Zone zone);
+        std::vector<vertex> init_zone(Zone zone, const frame& frame, float scale_factor);
+        void draw_zone_2d(Zone zone, const rect& draw_within, const frame& frame);
+        void draw_zone_3d(Zone zone, const rs2::labeled_points& frame);
+        vertex transform_vertex(vertex v, const rect& normalize_from, const rect& unnormalize_to);
     };
 }

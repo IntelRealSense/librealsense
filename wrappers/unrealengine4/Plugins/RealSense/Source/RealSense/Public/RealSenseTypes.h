@@ -147,6 +147,9 @@ enum class ERealSenseOptionType : uint8
     RECEIVER_SENSITIVITY                       , /**< Control the receiver sensitivity to incoming light, both projected and ambient. */
     EMITTER_FREQUENCY                          , /**< Select emitter (laser) frequency:  0 --> 57[KHZ], 1 --> 97[KHZ] */
     DEPTH_AUTO_EXPOSURE_MODE                   , /**< Select depth sensor auto exposure mode:  0 --> REGULAR 1 --> ACCELERATED */
+    SAFETY_PRESET_ACTIVE_INDEX                 , /**< Set / Get current active safety preset index**/
+    SAFETY_MODE                                , /**< Safety camera operation mode see rs2_safety_mode for values. */
+    RGB_TNR_ENABLED                            , /**< RGB Temporal Noise Reduction enabling ON (1) / OFF (0)*/
 };
 
 UENUM(Blueprintable)

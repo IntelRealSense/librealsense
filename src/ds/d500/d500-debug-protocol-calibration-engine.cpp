@@ -43,6 +43,7 @@ void d500_debug_protocol_calibration_engine::update_triggered_calibration_status
 
     // slicing 4 first bytes - opcode
     res.erase(res.begin(), res.begin() + 4);
+
     // checking size of received buffer
     if (!check_buffer_size_from_get_calib_status(res))
         throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
@@ -139,6 +140,7 @@ std::string d500_debug_protocol_calibration_engine::get_calibration_config() con
 
     // slicing 4 first bytes - opcode
     response.erase(response.begin(), response.begin() + 4);
+
 
     // check CRC before returning result
     auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(librealsense::table_header),

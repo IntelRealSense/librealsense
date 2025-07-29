@@ -8,12 +8,9 @@
 
 #include <string>
 
-
 namespace librealsense {
 
-
 class frame_holder;
-
 
 class points : public frame
 {
@@ -22,9 +19,8 @@ public:
     void export_to_ply( const std::string & fname, const frame_holder & texture );
     size_t get_vertex_count() const;
     float2 * get_texture_coordinates();
+
 };
-
 MAP_EXTENSION( RS2_EXTENSION_POINTS, librealsense::points );
-
 
 }  // namespace librealsense

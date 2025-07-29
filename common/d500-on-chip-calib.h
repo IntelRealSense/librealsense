@@ -23,7 +23,8 @@ namespace rs2
     class d500_on_chip_calib_manager : public process_manager
     {
     public:
-        d500_on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, device dev);
+        d500_on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, 
+            device dev);
 
         enum calib_action
         {
