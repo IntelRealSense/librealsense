@@ -588,14 +588,14 @@ namespace librealsense
                 const auto& ih = auto_hdr.items[i].first;
                 json item;
                 item["iterations"] = std::to_string(ih.iterations);
-
+                item["controls"] = json::object();
                 // build 'controls' array for the item
                 for (int c = 0; c < ih.num_of_controls; ++c) {
                     const hdr_preset::sub_control& ctrl = auto_hdr.items[i].second[c];
                     const std::string control_name = control_name_from_id( hdr_preset::control_id( ctrl.control_id ) );
                     const std::string control_value = std::to_string( ctrl.control_value );
                     
-                    item["controls"].push_back({ { control_name, control_value } });
+                    item["controls"][control_name] = control_value;
                 }
 
                 hdr_preset["items"].push_back(std::move(item));
@@ -710,7 +710,7 @@ namespace librealsense
             auto_hdr.header.iterations = static_cast<uint16_t>(iterations);
 
             const auto& items = hdr_preset_from_json.at("items");
-
+            bool ae_controls = false, manual_controls = false;
             for (const auto& item : items) {
                 hdr_preset::item_header item_header{};
                 std::vector<hdr_preset::sub_control> item_controls;
@@ -719,16 +719,34 @@ namespace librealsense
                 item_header.iterations = static_cast<uint16_t>(std::stoi(item.at("iterations").get<std::string>()));
 
                 const auto& controls = item.at("controls");
-                for (const auto& control : controls) {
-                    // just begin() because the control is a single object
-                    const std::string key = control.begin().key();
-                    const std::string value = control.begin().value().get<std::string>();
+                for (const auto& kv : controls.items()) {
+                    const std::string key = kv.key();
+                    const std::string value = kv.value();
 
                     hdr_preset::sub_control ctrl{};
-                    ctrl.control_id = static_cast<uint8_t>(get_control_id_from_string(key)); // will throw if not found
+                    auto control_id = get_control_id_from_string(key);
+                    ctrl.control_id = static_cast<uint8_t>(control_id); // will throw if not found
                     ctrl.control_value = static_cast<uint32_t>(std::stoul(value));
                     item_controls.push_back(ctrl);
+                    if (control_id == hdr_preset::DEPTH_AE)
+                    {
+                        auto_hdr.is_auto = true;
+                    }
+                    else if( control_id == hdr_preset::DEPTH_AE_EXP || control_id == hdr_preset::DEPTH_AE_GAIN )
+                    {
+                        ae_controls = true;
+                    }
+                    else
+                    {
+                        manual_controls = true;
+                    }
                 }
+
+                if (manual_controls && ae_controls)
+                    throw std::invalid_argument("Error: HDR preset contains both manual and AE items");
+
+                if( ae_controls && ! auto_hdr.is_auto )
+                    throw std::invalid_argument( "Error: HDR contains AE items, but no depth-ae item" );
 
                 item_header.num_of_controls = static_cast<uint8_t>(item_controls.size());
 
@@ -736,8 +754,10 @@ namespace librealsense
             }
 
             auto num_of_items = auto_hdr.items.size();
-            if (num_of_items < 2 || num_of_items > 6)
-                throw std::invalid_argument( "Error: Incorrect number of items: \"" + std::to_string( num_of_items ) + "\"" + ", valid range <2:6>" );
+            auto actual_items = num_of_items - (auto_hdr.is_auto ? 1 : 0);  // we don't count the depth-ae item
+
+            if (actual_items < 2 || actual_items > 6)
+                throw std::invalid_argument( "Error: Incorrect number of items: \"" + std::to_string( actual_items ) + "\"" + ", valid range <2:6>" );
             auto_hdr.header.num_of_items = static_cast< uint8_t >( num_of_items );
 
             in_preset.auto_hdr = auto_hdr;

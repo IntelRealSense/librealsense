@@ -878,6 +878,23 @@ namespace librealsense
 
     void ds_advanced_mode_base::set_hdr_preset(const preset& p)
     {
+        // if auto exposure is not enabled, enable it if needed - temporary W/A until FW enable it
+        auto& auto_exp = _depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+        if (auto_exp.get_value() == 0 && p.auto_hdr.is_auto)
+        {
+            auto_exp.set(1);
+        }
+        
+        // some devices support multiple modes of auto exposure, for this feature to work correctly we need to set the correct mode
+        if (_depth_sensor.supports_option(RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE) && p.auto_hdr.is_auto)
+        {
+            auto& auto_exp_mode = _depth_sensor.get_option(RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE);
+            if (auto_exp_mode.get_value() != RS2_DEPTH_AUTO_EXPOSURE_ACCELERATED)
+            {
+                auto_exp_mode.set( RS2_DEPTH_AUTO_EXPOSURE_ACCELERATED );
+            }
+        }
+
         // serialize the hdr_preset and send it
         auto buffer = serialize_hdr_preset(p.auto_hdr.header, p.auto_hdr.items);
         command cmd(ds::SETSUBPRESET, static_cast<int>(buffer.size()));
