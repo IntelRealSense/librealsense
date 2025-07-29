@@ -299,7 +299,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
         ImGui::PushStyleColor(ImGuiCol_Text, white);
         ImGui::Text("%s", "Content:"); ImGui::SameLine();
         ImGui::PopStyleColor();
-        ImGui::Text("%s", "Intel RealSense SDK 2.0, Intel RealSense Viewer and Depth Quality Tool");
+        ImGui::Text("%s", "RealSense SDK 2.0, RealSense Viewer and Depth Quality Tool");
 
         sw_text_pos.y += 20;
         ImGui::SetCursorScreenPos(sw_text_pos);

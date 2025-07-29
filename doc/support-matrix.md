@@ -6,7 +6,7 @@ RealSense devices pass validation and stability cycles. Every firmware + libreal
 
 After passing unit-tests and basic functional testing release is made available under [librealsense/releases](https://github.com/IntelRealSense/librealsense/releases) and marked as a ![pre-release](./img/prerelease.png).
 
-Once full validation report is internally reviewed and approved, release is promoted to ![latest](./img/latest_release.png) and published at [www.intelrealsense.com/developers/](https://www.intelrealsense.com/developers/).
+Once full validation report is internally reviewed and approved, release is promoted to ![latest](./img/latest_release.png) and published at [www.realsenseai.com/developers/](https://realsenseai.com/developers).
 
 We recommend certain combinations (see **RECOMMENDED CONFIGURATIONS** at the link above) of firmware and software we have tested, but there is significant effort to keep maximum backward and forward compatibility between firmware and software versions.
 
@@ -15,5 +15,5 @@ Validation is done on x86 NUC machines running Windows 10 and Ubuntu 16.04 LTS.
 Additional platforms are tested and supported on demand, driven by community requests and feedback.
 
 ## D400 Stereoscopic Depth Cameras' Features
-Please check the Supported Features matrix at https://dev.intelrealsense.com/docs/supported-features-matrix
+Please check the Supported Features matrix at https://dev.realsenseai.com/docs/supported-features-matrix
 

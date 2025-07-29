@@ -2334,7 +2334,7 @@ namespace rs2
 
         ImGui::PushFont(window.get_font());
 
-        const char* menu_items[] = { "Report Issue", "Intel Store", "Settings", "About" };
+        const char* menu_items[] = { "Report Issue", "RS Store", "Settings", "About" };
         bool open_settings_popup = false;
         bool open_about_popup = false;
 
@@ -2356,7 +2356,7 @@ namespace rs2
 
             if( ImGui::Selectable( menu_items[1] ) )
             {
-                open_url("https://store.intelrealsense.com/");
+                open_url("https://store.realsenseai.com/");
             }
 
             if( ImGui::Selectable( menu_items[2] ) )
@@ -2997,11 +2997,19 @@ namespace rs2
 
             if (ImGui::BeginPopupModal(menu_items[3], nullptr, flags))
             {
+                // splash original width, height
+                auto width = 1920;
+                auto height = 1080;
+
+                // considering the pixels in which the Realsense logo is within splash image
+                ImVec2 uv0 = ImVec2(200.f / width, 300.f / height);
+                ImVec2 uv1 = ImVec2(1700.f / width, 600.f / height);
+
                 ImGui::Image((void*)(intptr_t)window.get_splash().get_gl_handle(),
-                             ImVec2(w - 30, 100), {0.20f, 0.38f}, {0.80f, 0.56f});
+                             ImVec2(w - 30, 100), uv0, uv1);
 
                 auto realsense_pos = ImGui::GetCursorPos();
-                ImGui::Text("Intel RealSense is a suite of depth-sensing and motion-tracking technologies.");
+                ImGui::Text("RealSense is a suite of depth-sensing and motion-tracking technologies.");
 
                 ImGui::Text("librealsense is an open-source cross-platform SDK for working with RealSense devices.");
 
@@ -3013,9 +3021,7 @@ namespace rs2
                 auto license_pos = ImGui::GetCursorPos();
                 ImGui::Text("Apache License, Version 2.0.");
 
-                ImGui::Text("RealSense is a registered trademark of Intel Corporation.");
-
-                ImGui::Text("Copyright 2018 Intel Corporation.");
+                ImGui::Text("Copyright RealSense Inc 2018-2025.");
 
                 if( RS2_API_BUILD_VERSION )
                 {
@@ -3032,7 +3038,7 @@ namespace rs2
 
                 ImGui::SetCursorPos({ realsense_pos.x - 4, realsense_pos.y - 3 });
 
-                hyperlink(window, "Intel RealSense", "https://realsense.intel.com/");
+                hyperlink(window, "RealSense", "https://realsenseai.com/");
 
                 ImGui::SetCursorPos({ github_pos.x - 4, github_pos.y - 3 });
                 hyperlink(window, "github.com/IntelRealSense/librealsense", "https://github.com/IntelRealSense/librealsense/");

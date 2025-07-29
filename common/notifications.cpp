@@ -1186,9 +1186,9 @@ namespace rs2
         ImGui::PopStyleColor();
 
         ImGui::SetCursorScreenPos({ float(x + 10), float(y + 47) });
-        hyperlink(win, "1. Self-Calibration Whitepaper", "https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras");
+        hyperlink(win, "1. Self-Calibration Whitepaper", "https://dev.realsenseai.com/docs/self-calibration-for-depth-cameras");
         ImGui::SetCursorScreenPos({ float(x + 10), float(y + 67) });
-        hyperlink(win, "2. Firmware Releases / Errata", "https://dev.intelrealsense.com/docs/firmware-releases");
+        hyperlink(win, "2. Firmware Releases / Errata", "https://dev.realsenseai.com/docs/firmware-updates");
 
     }
 
