@@ -1003,7 +1003,7 @@ namespace librealsense
         else if( is_fisheye_module_sensor( sensor_name ) )
         {
             sensor_extensions[RS2_EXTENSION_FISHEYE_SENSOR] = std::make_shared<fisheye_sensor_snapshot>();
-		}
+        }
         else if( is_depth_sensor( sensor_name ) )
         {
             if( sensor_extensions.find( RS2_EXTENSION_DEPTH_SENSOR ) == nullptr )
@@ -1026,27 +1026,23 @@ namespace librealsense
                 }
             }
         }
-		else if (is_safety_module_sensor(sensor_name))
+        else if (is_safety_module_sensor(sensor_name))
         {
             sensor_extensions[RS2_EXTENSION_SAFETY_SENSOR] = std::make_shared<safety_sensor_snapshot>();
         }
-		else if (is_depth_mapping_sensor(sensor_name))
-		{
-		    sensor_extensions[RS2_EXTENSION_DEPTH_MAPPING_SENSOR] = std::make_shared<depth_mapping_sensor_snapshot>();
-	    }
+        else if (is_depth_mapping_sensor(sensor_name))
+        {
+            sensor_extensions[RS2_EXTENSION_DEPTH_MAPPING_SENSOR] = std::make_shared<depth_mapping_sensor_snapshot>();
+        }
     }
 
 
     bool ros_reader::is_depth_sensor(const std::string& sensor_name)
     {
-        if (sensor_name.compare("Stereo Module") == 0 || sensor_name.compare("Coded-Light Depth Sensor") == 0)
-            return true;
-    bool ros_reader::is_stereo_depth_sensor( std::string sensor_name )
-    {
-        return sensor_name.compare( "Stereo Module" ) == 0;
+        return (sensor_name.compare("Stereo Module") == 0 || sensor_name.compare("Coded-Light Depth Sensor") == 0);
     }
-	
-	bool ros_reader::is_stereo_depth_sensor( std::string sensor_name )
+
+    bool ros_reader::is_stereo_depth_sensor( std::string sensor_name )
     {
         return sensor_name.compare( "Stereo Module" ) == 0;
     }
