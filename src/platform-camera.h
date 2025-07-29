@@ -17,12 +17,16 @@ public:
                      const std::vector< platform::uvc_device_info > & uvc_infos,
                      bool register_device_notifications );
 
+    ~platform_camera() override;
+
     virtual rs2_intrinsics get_intrinsics( unsigned int, const stream_profile & ) const { return rs2_intrinsics{}; }
 
     std::vector< tagged_profile > get_profiles_tags() const override;
 
 private:
     void initialize();
+    std::thread _init_thread;
+    std::atomic< bool > should_stop{ false };  // to avoid delay when closing and _init_thread is still running
 };
 
 

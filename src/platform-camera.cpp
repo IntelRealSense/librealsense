@@ -73,17 +73,23 @@ void platform_camera::initialize()
         {
             if (sensor->get_device().get_info(RS2_CAMERA_INFO_NAME) == "Platform Camera")
             {
-                sensor->try_register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
-                sensor->try_register_pu(RS2_OPTION_BRIGHTNESS);
-                sensor->try_register_pu(RS2_OPTION_CONTRAST);
-                sensor->try_register_pu(RS2_OPTION_EXPOSURE);
-                sensor->try_register_pu(RS2_OPTION_GAMMA);
-                sensor->try_register_pu(RS2_OPTION_HUE);
-                sensor->try_register_pu(RS2_OPTION_SATURATION);
-                sensor->try_register_pu(RS2_OPTION_SHARPNESS);
-                sensor->try_register_pu(RS2_OPTION_WHITE_BALANCE);
-                sensor->try_register_pu(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
-                sensor->try_register_pu(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+                auto options = std::vector< rs2_option >{ RS2_OPTION_BACKLIGHT_COMPENSATION,
+                                                          RS2_OPTION_BRIGHTNESS,
+                                                          RS2_OPTION_CONTRAST,
+                                                          RS2_OPTION_EXPOSURE,
+                                                          RS2_OPTION_GAMMA,
+                                                          RS2_OPTION_HUE,
+                                                          RS2_OPTION_SATURATION,
+                                                          RS2_OPTION_SHARPNESS,
+                                                          RS2_OPTION_WHITE_BALANCE,
+                                                          RS2_OPTION_ENABLE_AUTO_EXPOSURE,
+                                                          RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE };
+                for (auto option : options)
+                {
+                    if (should_stop)
+                        return;  // Stop initialization if requested
+                    sensor->try_register_pu(option);
+                }
             }
         }
     }
@@ -143,10 +149,17 @@ platform_camera::platform_camera( std::shared_ptr< const device_info > const & d
                                  make_uvc_header_parser( &platform::uvc_header::timestamp ) );
 
     // Create a thread to call initialize after a delay
-    std::thread([this]() {
-    std::this_thread::sleep_for(std::chrono::seconds(2)); // Delay for 2 seconds
-    this->initialize();
-    }).detach(); // Detach the thread to let it run independently
+    _init_thread = std::thread([this]() {
+        std::this_thread::sleep_for(std::chrono::seconds(2)); // Delay for 2 seconds
+        this->initialize();
+    });
+}
+
+platform_camera::~platform_camera()
+{
+    should_stop = true;
+    if( _init_thread.joinable() )
+        _init_thread.join();
 }
 
 std::vector< tagged_profile > platform_camera::get_profiles_tags() const
