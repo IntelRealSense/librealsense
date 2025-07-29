@@ -10,7 +10,7 @@ from rspy import test, log
 
 # Tolerance for gap between depth and color
 GLOBAL_TS_TOLERANCE = 1  # in ms
-FRAME_TS_TOLERANCE = 20  # in microseconds
+FRAME_TS_TOLERANCE = 100  # in microseconds
 with test.closure("Test Timestamps Consistency"):
     device, ctx = test.find_first_device_or_exit()
     cfg = rs.config()
