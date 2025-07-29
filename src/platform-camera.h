@@ -5,6 +5,7 @@
 
 #include "backend-device.h"
 #include "platform/platform-device-info.h"
+#include <thread>
 
 
 namespace librealsense {
