@@ -2334,7 +2334,7 @@ namespace rs2
 
         ImGui::PushFont(window.get_font());
 
-        const char* menu_items[] = { "Report Issue", "RealSense Store", "Settings", "About" };
+        const char* menu_items[] = { "Report Issue", "RS Store", "Settings", "About" };
         bool open_settings_popup = false;
         bool open_about_popup = false;
 
