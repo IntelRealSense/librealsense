@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2025 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2025 RealSense Inc. All Rights Reserved.
 
 # Currently only D555 supports DDS configuration natively
 # test:device each(D555)
@@ -16,8 +16,7 @@ default_values_param = 0
 current_values_param = 1
 
 
-ctx = rs.context()
-dev = ctx.query_devices()[0]
+dev, ctx = test.find_first_device_or_exit()
 
 def get_eth_config( get_default_config = False ):
     raw_command = rs.debug_protocol( dev ).build_command( get_eth_config_opcode, default_values_param if get_default_config else current_values_param )
