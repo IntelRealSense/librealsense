@@ -11,6 +11,7 @@
 #include <rsutils/number/stabilized-value.h>
 #include <rsutils/os/executable-name.h>
 #include <rsutils/os/special-folder.h>
+#include <rsutils/type/eth-config.h>
 
 
 #define NAME pyrsutils
@@ -163,4 +164,68 @@ PYBIND11_MODULE(NAME, m) {
         .value( "user_pictures", rsutils::os::special_folder::user_pictures )
         .value( "user_videos", rsutils::os::special_folder::user_videos );
     m.def( "get_special_folder", rsutils::os::get_special_folder );
+
+    using rsutils::type::ip_address;
+    py::class_< ip_address >( m, "ip_address" )
+        .def( py::init<>() )
+        .def( py::init< uint8_t, uint8_t, uint8_t, uint8_t >(), "b1", "b2", "b3", "b4" )
+        .def( py::init< const uint8_t* >(), "b" )
+        .def( "is_valid", &ip_address::is_valid )
+        .def( "empty", &ip_address::empty )
+        .def( "clear", &ip_address::clear )
+        .def( "__str__", &ip_address::to_string );
+
+    using rsutils::type::ip_3;
+    py::class_< ip_3 >( m, "ip_3" )
+        .def( py::init<>() )
+        .def_readwrite( "ip", &ip_3::ip )
+        .def_readwrite( "netmask", &ip_3::netmask )
+        .def_readwrite( "gateway", &ip_3::gateway );
+
+    using rsutils::type::eth_config_header;
+    py::class_< eth_config_header >( m, "eth_config_header" )
+        .def( py::init<>() )
+        .def_readwrite( "version", &eth_config_header::version )
+        .def_readwrite( "size", &eth_config_header::size )
+        .def_readwrite( "crc", &eth_config_header::crc );
+
+    using rsutils::type::link_priority;
+    py::enum_< link_priority >( m, "link_priority" )
+        .value( "usb_only", link_priority::usb_only )
+        .value( "eth_only", link_priority::eth_only )
+        .value( "eth_first", link_priority::eth_first )
+        .value( "usb_first", link_priority::usb_first )
+        .value( "dynamic_eth_first", link_priority::dynamic_eth_first )
+        .value( "dynamic_usb_first", link_priority::dynamic_usb_first );
+
+    using rsutils::type::eth_config;
+    py::class_< eth_config::dds_t >( m, "eth_config::dds_t" )
+        .def( py::init<>() )
+        .def_readwrite( "domain_id", &eth_config::dds_t::domain_id );
+
+    py::class_< eth_config::link_t >( m, "eth_config::link_t" )
+        .def( py::init<>() )
+        .def_readwrite( "mtu", &eth_config::link_t::mtu )
+        .def_readwrite( "speed", &eth_config::link_t::speed )
+        .def_readwrite( "timeout", &eth_config::link_t::timeout )
+        .def_readwrite( "priority", &eth_config::link_t::priority );
+
+    py::class_< eth_config::dhcp_t >( m, "eth_config::dhcp_t" )
+        .def( py::init<>() )
+        .def_readwrite( "on", &eth_config::dhcp_t::on )
+        .def_readwrite( "timeout", &eth_config::dhcp_t::timeout );
+
+    py::class_< eth_config >( m, "eth_config" )
+        .def( py::init<>() )
+        .def( py::init< std::vector< uint8_t > const & >() )
+        .def_readwrite( "header", &eth_config::header )
+        .def_readwrite( "mac_address", &eth_config::mac_address )
+        .def_readwrite( "configured", &eth_config::configured )
+        .def_readwrite( "actual", &eth_config::actual )
+        .def_readwrite( "dds", &eth_config::dds )
+        .def_readwrite( "link", &eth_config::link )
+        .def_readwrite( "dhcp", &eth_config::dhcp )
+        .def_readwrite( "transmission_delay", &eth_config::transmission_delay )
+        .def( "build_command", &eth_config::build_command )
+        .def( "validate", &eth_config::validate );
 }

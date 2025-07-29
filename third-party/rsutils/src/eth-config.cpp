@@ -1,14 +1,18 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include "eth-config.h"
-#include "eth-config-v3.h"
-#include "eth-config-v4.h"
+#include <rsutils/type/eth-config.h>
+#include <rsutils/type/eth-config-v3.h>
+#include <rsutils/type/eth-config-v4.h>
 
 #include <rsutils/number/crc32.h>
 #include <rsutils/string/hexdump.h>
 #include <rsutils/string/from.h>
 
+
+
+namespace rsutils {
+namespace type {
 
 std::ostream & operator<<( std::ostream & os, link_priority p )
 {
@@ -207,3 +211,6 @@ void eth_config::validate() const
     if( header.version == 3 && transmission_delay != 0 )
         throw std::invalid_argument( "Camera FW does not support transmission delay." );
 }
+
+}  // namespace type
+}  // namespace rsutils

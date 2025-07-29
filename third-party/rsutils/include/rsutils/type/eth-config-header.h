@@ -5,6 +5,9 @@
 #include <cstdint>
 
 
+namespace rsutils {
+namespace type {
+
 #pragma pack( push, 1 )
 
 // The header structure for eth config
@@ -16,3 +19,6 @@ struct eth_config_header
 };
 
 #pragma pack( pop )
+
+}  // namespace type
+}  // namespace rsutils

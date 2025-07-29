@@ -21,6 +21,8 @@
 
 using rsutils::json;
 using rsutils::type::ip_address;
+using rsutils::type::eth_config;
+using rsutils::type::link_priority;
 
 
 uint32_t const GET_ETH_CONFIG = 0xBB;
