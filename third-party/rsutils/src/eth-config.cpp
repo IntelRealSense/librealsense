@@ -192,7 +192,7 @@ void eth_config::validate() const
         throw std::invalid_argument( rsutils::string::from() << "Unrecognized Eth config table version " << header.version );
 
     if( dhcp.timeout < 0 )
-        throw std::invalid_argument( rsutils::string::from() << "DHCP timeout cannot be negative " << dhcp.timeout );
+        throw std::invalid_argument( rsutils::string::from() << "DHCP timeout cannot be negative. Current " << dhcp.timeout );
 
     if( dds.domain_id < 0 || dds.domain_id > 232 )
         throw std::invalid_argument( rsutils::string::from() << "Domain ID should be in 0-232 range. Current " << dds.domain_id );
