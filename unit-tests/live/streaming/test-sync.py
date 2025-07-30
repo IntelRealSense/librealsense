@@ -70,8 +70,8 @@ def test_stream_sync_configuration(device, config):
     
     try:
         sensors = device.query_sensors()
-        color_sensor = next(s for s in sensors if s.get_info(rs.camera_info.name) == 'RGB Camera')
-        depth_sensor = next(s for s in sensors if s.get_info(rs.camera_info.name) == 'Stereo Module')
+        color_sensor = device.first_color_sensor() 
+        depth_sensor = device.first_depth_sensor()
         
         # Find profiles
         color_profiles = color_sensor.profiles
