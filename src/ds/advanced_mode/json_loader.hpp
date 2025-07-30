@@ -717,6 +717,8 @@ namespace librealsense
 
                 item_header.header_size = hdr_preset::item_header::size();
                 item_header.iterations = static_cast<uint16_t>(std::stoi(item.at("iterations").get<std::string>()));
+                if( item_header.iterations <= 0 || item_header.iterations > 0xFFFF )  // not allowing 0 iterations
+                    throw std::invalid_argument("Error: Incorrect number of iterations: \"" + std::to_string(item_header.iterations) + "\"" + ", valid range <1:ffff>");
 
                 const auto& controls = item.at("controls");
                 for (const auto& kv : controls.items()) {
