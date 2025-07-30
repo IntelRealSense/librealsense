@@ -62,11 +62,11 @@ with test.closure("Test MTU configuration"):
         else:
             test.unreachable()
 
-        new_config.link.mtu = 123
+        new_config.link.mtu = 1234
         try:
             set_eth_config( new_config )
         except ValueError as e:
-            test.check_exception( e, ValueError, "MTU size must be divisible by 500. Current 123" )
+            test.check_exception( e, ValueError, "MTU size must be divisible by 500. Current 1234" )
         else:
             test.unreachable()
     new_config.link.mtu = orig_config.link.mtu # Restore field that might fail other tests, depending header version.
