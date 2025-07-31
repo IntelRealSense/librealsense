@@ -5,8 +5,9 @@
 
 import pyrealsense2 as rs
 from rspy import test, log
+import time
 
-# This test is checking that timestamps of depth and infrared frames are consistent
+# This test is checking that timestamps of depth, infrared and color frames are consistent
 
 # Tolerance for gap between depth and color
 GLOBAL_TS_TOLERANCE = 1  # in ms
@@ -19,8 +20,18 @@ with test.closure("Test Timestamps Consistency"):
     cfg.enable_stream(rs.stream.infrared, 2)
     cfg.enable_stream(rs.stream.color)
 
+    depth_sensor = device.first_depth_sensor()
+    color_sensor = device.first_color_sensor()
+    for sensor in [depth_sensor, color_sensor]:  # Enable global timestamp in case it is disabled
+        if sensor.supports(rs.option.global_time_enabled):
+            if not sensor.get_option(rs.option.global_time_enabled):
+                sensor.set_option(rs.option.global_time_enabled, 1)
+        else:
+            log.f(f"Sensor {sensor.name} does not support global time option")
+
     pipe = rs.pipeline(ctx)
     pipe.start(cfg)
+    time.sleep(2)
 
     try:
         for _ in range(50):
@@ -30,7 +41,7 @@ with test.closure("Test Timestamps Consistency"):
             ir2_frame = frames.get_infrared_frame(2)
             color_frame = frames.get_color_frame()
 
-            if not (depth_frame and ir1_frame and ir2_frame):
+            if not (depth_frame and ir1_frame and ir2_frame and color_frame):
                 log.e("One or more frames are missing")
                 continue
 
