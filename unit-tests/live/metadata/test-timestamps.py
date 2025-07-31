@@ -22,6 +22,9 @@ with test.closure("Test Timestamps Consistency"):
 
     depth_sensor = device.first_depth_sensor()
     color_sensor = device.first_color_sensor()
+
+    log.d(f"Depth Sensor: {depth_sensor.name}, Resolution: {depth_sensor.get_stream_profiles()[0]}")
+    log.d(f"Color Sensor: {color_sensor.name}, Resolution: {color_sensor.get_stream_profiles()[0]}")
     for sensor in [depth_sensor, color_sensor]:  # Enable global timestamp in case it is disabled
         if sensor.supports(rs.option.global_time_enabled):
             if not sensor.get_option(rs.option.global_time_enabled):
