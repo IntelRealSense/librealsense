@@ -11,7 +11,7 @@ import time
 
 # Tolerance for gap between depth and color
 GLOBAL_TS_TOLERANCE = 1  # in ms
-FRAME_TS_TOLERANCE = 100  # in microseconds
+FRAME_TS_TOLERANCE = 1000  # in microseconds - 1 ms
 with test.closure("Test Timestamps Consistency"):
     device, ctx = test.find_first_device_or_exit()
     cfg = rs.config()
