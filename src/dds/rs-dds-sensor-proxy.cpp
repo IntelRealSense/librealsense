@@ -272,7 +272,10 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
                                                    vsp->get_width(),
                                                    vsp->get_height() ) );
             if( video_profile )
+            {
                 realdds_profiles.push_back( video_profile );
+                calculate_bandwidth( vsp );
+            }
             else
                 LOG_ERROR( "no profile found in stream for rs2 profile " << vsp );
         }
@@ -305,6 +308,40 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
     {
         throw invalid_value_exception( e.what() );
     }
+}
+
+
+void dds_sensor_proxy::calculate_bandwidth( const std::shared_ptr< video_stream_profile > & vsp )
+{
+    size_t width = vsp->get_width();
+    size_t height = vsp->get_height();
+    size_t fps = vsp->get_framerate();
+    size_t bpp = 0;
+    switch( vsp->get_format() ) // Expected raw formats from the sensor
+    {
+    case RS2_FORMAT_Z16: bpp = 16; break;
+    case RS2_FORMAT_YUYV: bpp = 16; break;
+    case RS2_FORMAT_M420: bpp = 12; break;  // 16 pixels are represented with 24 bytes (16 of Y and 8 of Cr, Cb) - 24 / 16 * 8 = 12
+    case RS2_FORMAT_Y8: bpp = 8; break;
+    case RS2_FORMAT_Y16: bpp = 16; break;
+    case RS2_FORMAT_RAW16: bpp = 16; break;
+    case RS2_FORMAT_RAW8: bpp = 8; break;
+    case RS2_FORMAT_MJPEG: bpp = 8; break;  // Assumes compression ratio of 0.5 from raw YUYV profile. Based on system tests.
+    default:
+        LOG_ERROR( rsutils::string::from() << "Unexpected format " << get_string( vsp->get_format() ) << " cannot evaluate expected bandwidth usage" );
+        return;
+    }
+
+    auto stream_it = _streams.find( sid_index( vsp->get_unique_id(), vsp->get_stream_index() ) );
+    std::string stream_name = "";
+    if( stream_it != _streams.end() )
+        stream_name = stream_it->second->name();
+    else
+        LOG_ERROR( "Profile (" << vsp->get_unique_id() << "," << vsp->get_stream_index() << ") not found in streams!" );
+
+    size_t mbps = width * height * bpp * fps / ( 1000 * 1000 ); // Network bandwidth calculation use decimal megabits
+    LOG_INFO( rsutils::string::from() << stream_name << " bandwidth usage " << mbps << "Mbps. (width " << width
+                                      << " * height " << height << " * bpp " << bpp << " * fps " << fps << ")" );
 }
 
 
