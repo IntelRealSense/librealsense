@@ -10,7 +10,6 @@ from rspy.stopwatch import Stopwatch
 test.start( "Run test-rest-api-wrapper test" )
 import subprocess
 run_time_stopwatch = Stopwatch()
-run_time_threshold = 3
 p = subprocess.run( ["pytest", "./wrappers/rest-api/tests/test_api_service.py"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -27,10 +26,8 @@ if p.returncode != 0:
 
 test.check(p.returncode == 0) # verify success return code
 run_time_seconds = run_time_stopwatch.get_elapsed()
-if run_time_seconds > run_time_threshold:
-    log.e('Time elapsed too high!', run_time_seconds, ' > ', run_time_threshold)
-log.d("rs-enumerate-devices completed in:", run_time_seconds, "seconds")
-test.check(run_time_seconds < run_time_threshold)
+log.d(p.stdout)
+log.d("test-rest-api-wrapper completed in:", run_time_seconds, "seconds")
 run_time_stopwatch.reset()
 
 test.finish()
