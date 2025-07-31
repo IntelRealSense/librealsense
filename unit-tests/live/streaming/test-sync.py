@@ -222,7 +222,7 @@ for i, config in enumerate(configs_to_test):
     
     if success:
         # Check that both streams received frames
-        min_expected_frames = fps * 2  # Expect at least 2 seconds worth of frames
+        min_expected_frames = fps * (TEST_SLEEP_DURATION / 2)  # Expect at least 2 seconds worth of frames
         
         log.d(f"Received frames - Color: {color_frames}, Depth: {depth_frames}")
         
