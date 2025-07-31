@@ -93,8 +93,8 @@ private:
     bool _window_open;
     bool _hdr_supported;
     bool _is_auto = false;
-    const option_range _exp_range;
-    const option_range _gain_range;
+    option_range _exp_range;
+    option_range _gain_range;
 
     hdr_preset _current_config;  // the current configuration in the device
     hdr_preset _changed_config;  // the configuration that is being edited in the UI

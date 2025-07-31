@@ -12,6 +12,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <os.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 using rsutils::json;
 
 namespace rs2 {
@@ -182,19 +183,29 @@ hdr_model::hdr_model( rs2::device dev )
     : _device( dev )
     , _window_open( false )
     , _hdr_supported( false )
-    , _exp_range(dev.first<rs2::depth_sensor>().get_option_range(RS2_OPTION_EXPOSURE))
-    , _gain_range(dev.first<rs2::depth_sensor>().get_option_range(RS2_OPTION_GAIN))
 {
-    _hdr_supported = check_HDR_support();
-    if( _hdr_supported )
+    try
     {
-        initialize_default_config();
-        _changed_config = _current_config;
-        if( _changed_config.items.empty() )
+        auto depth_sensor = dev.first< rs2::depth_sensor >();
+        _exp_range = depth_sensor.get_option_range( RS2_OPTION_EXPOSURE );
+        _gain_range = depth_sensor.get_option_range( RS2_OPTION_GAIN );
+
+        _hdr_supported = check_HDR_support();
+        if (_hdr_supported)
         {
-            // if the device does not have a preset, use the default one
-            _changed_config = _default_config;
+            initialize_default_config();
+            _changed_config = _current_config;
+            if (_changed_config.items.empty())
+            {
+                // if the device does not have a preset, use the default one
+                _changed_config = _default_config;
+            }
         }
+    }
+    catch( const rs2::error & e )
+    {
+        _hdr_supported = false;
+        LOG_DEBUG( "Failed to initialize HDR model: " << e.what() );
     }
 }
 
@@ -294,8 +305,8 @@ void hdr_model::render_control_item( hdr_preset::control_item & control)
 {
     ImGui::PushID( &control );
 
-    auto text_gain = _is_auto ? "Gain Delta" : "Gain Value:";
-    ImGui::Text( text_gain );
+    auto text_gain = _is_auto ? "Gain Delta:" : "Gain Value:";
+    ImGui::Text( "%s", text_gain);
     ImGui::SameLine();
     ImGui::SetNextItemWidth( 140 );
     int g = _is_auto ? control.delta_gain : control.depth_gain;
@@ -305,8 +316,8 @@ void hdr_model::render_control_item( hdr_preset::control_item & control)
         else
             control.depth_gain = (int)clamp((float)g, _gain_range.min, _gain_range.max);
 
-    auto text_exp = _is_auto ? "Exposure Delta" : "Exposure Value:";
-    ImGui::Text( text_exp );
+    auto text_exp = _is_auto ? "Exposure Delta:" : "Exposure Value:";
+    ImGui::Text( "%s", text_exp);
     ImGui::SameLine();
     ImGui::SetNextItemWidth( 140 );
     int e = _is_auto ? control.delta_exp : control.depth_exp;
