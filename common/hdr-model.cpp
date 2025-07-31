@@ -205,7 +205,7 @@ hdr_model::hdr_model( rs2::device dev )
     catch( const rs2::error & e )
     {
         _hdr_supported = false;
-        LOG_ERROR( "Failed to initialize HDR model: " << e.what() );
+        LOG_DEBUG( "Failed to initialize HDR model: " << e.what() );
     }
 }
 
