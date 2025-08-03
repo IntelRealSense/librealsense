@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 // The utility shall be used to collect and analyze Realsense Cameras performance.
 // Therefore no UI is provided, and the data is gathered and serialized in csv-compatible format for offline analysis.
 // The utility is configured via command-line parameters and requires user-provided configuration file to run

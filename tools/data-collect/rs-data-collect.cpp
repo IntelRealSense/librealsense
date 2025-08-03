@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2018-24 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2018-24 RealSense, Inc. All Rights Reserved.
 
 // Minimalistic command-line collect & analyze bandwidth/performance tool for Realsense Cameras.
 // The data is gathered and serialized in csv-compatible format for offline analysis.
