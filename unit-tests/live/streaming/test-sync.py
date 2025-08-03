@@ -11,7 +11,6 @@ from rspy.timer import Timer
 
 TEST_SLEEP_DURATION = 3
 MAX_ALLOWED_TIMESTAMP_DELTA_MS = 1  # Maximum allowed timestamp difference in milliseconds
-# test:device each(D400*)!D457
 
 # Test synchronization between color and depth streams across multiple configurations
 # This test verifies that both streams can successfully stream frames simultaneously
