@@ -138,9 +138,12 @@ def is_depth_meaningful(save_image=False, show_image=False):
     if save_image or show_image:
         frames_to_image(depth, color, save_image, show_image)
     # If any distance is the same on more than DEPTH_PERCENTAGE of the pixels, there is no meaningful depth
-    meaningful_depth = not any(v > total * DEPTH_PERCENTAGE for v in dists_no_zero.values())
+    # Find the largest non-zero depth bin
+    max_nonzero_count = max(dists_no_zero.values()) if dists_no_zero else 0
+    max_nonzero_percent = 100.0 * max_nonzero_count / total if total > 0 else 0
+    meaningful_depth = not (max_nonzero_count > total * DEPTH_PERCENTAGE)
     fill_rate = 100.0 * (total - num_blank_pixels) / total if total > 0 else 0
-    log.i(f"Depth fill rate: {fill_rate:.1f}% (blank pixels: {num_blank_pixels}/{total}), meaningful depth: {meaningful_depth}")
+    log.i(f"Depth fill rate: {fill_rate:.1f}% (blank pixels: {num_blank_pixels}/{total}), meaningful depth: {meaningful_depth} (largest bin: {max_nonzero_percent:.1f}% - max allowed {DEPTH_PERCENTAGE * 100:.1f}%)")
     return meaningful_depth, num_blank_pixels
 
 
