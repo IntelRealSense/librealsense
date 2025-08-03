@@ -6,6 +6,49 @@
 
 namespace librealsense
 {
+    rgb_tnr_option::rgb_tnr_option(std::shared_ptr<hw_monitor> hwm, const std::weak_ptr< sensor_base > & ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 1, 1, 0 };
+        };
+    }
+
+    void rgb_tnr_option::set(float value)
+    {
+        auto strong_sensor = _sensor.lock();
+        if( ! strong_sensor )
+            throw std::runtime_error( "Cannot set option as sensor is not alive" );
+
+        if (strong_sensor->is_streaming())
+            throw std::runtime_error("Cannot change RGB TNR option while streaming!");
+
+        command cmd(ds::RGB_TNR);
+        cmd.param1 = SET_TNR_STATE;
+        cmd.param2 = static_cast<int>(value);
+
+        _hwm->send(cmd);
+        _record_action(*this);
+    }
+
+    float rgb_tnr_option::query() const
+    {
+        command cmd(ds::RGB_TNR);
+        cmd.param1 = GET_TNR_STATE;
+
+        auto res = _hwm->send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("rgb_tnr_option::query result is empty!");
+
+        return (res.front());
+    }
+
+    option_range rgb_tnr_option::get_range() const
+    {
+        return *_range;
+    }
+
     temperature_option::temperature_option( std::shared_ptr< hw_monitor > hwm,
                                             temperature_component component,
                                             const char * description )
@@ -96,4 +139,67 @@ namespace librealsense
     power_line_freq_option::power_line_freq_option(const std::weak_ptr< uvc_sensor >& ep, rs2_option id,
         const std::map< float, std::string >& description_per_value) :
         uvc_pu_option(ep, id, description_per_value) {}
-}
+    
+    d500_external_sync_mode::d500_external_sync_mode( hw_monitor & hwm, const std::weak_ptr< sensor_base > & ep,
+                                                      const std::map< float, std::string > & description_per_value )
+        : _hwm( hwm )
+        , _sensor( ep )
+        , _description_per_value( description_per_value )
+    {
+        _range = { RS2_D500_INTERCAM_SYNC_NONE,
+                   RS2_D500_INTERCAM_SYNC_EXTERNAL_MASTER,
+                   1,
+                   RS2_D500_INTERCAM_SYNC_NONE };
+    }
+
+    void d500_external_sync_mode::set( float value )
+    {
+        auto strong_sensor = _sensor.lock();
+        if( ! strong_sensor )
+            throw invalid_value_exception( "Cannot set option as sensor is not alive" );
+
+        if( strong_sensor->is_streaming() )
+            throw std::runtime_error( "Cannot change external sync mode while streaming!" );
+
+        if( ! is_valid( static_cast < rs2_d500_intercam_sync_mode >( value ) ) )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "d500_external_sync_mode::set invalid value " << value );
+
+        command cmd( ds::SET_CAM_SYNC );
+
+        cmd.param1 = static_cast< int >( value );
+        cmd.require_response = false;
+
+        _hwm.send( cmd );
+        _record_action( *this );
+    }
+
+    float d500_external_sync_mode::query() const
+    {
+        command cmd( ds::GET_CAM_SYNC );
+        auto res = _hwm.send( cmd );
+        if( res.empty() )
+            throw invalid_value_exception( "d500_external_sync_mode::query result is empty!" );
+
+        return static_cast< float >( res[0] );
+    }
+
+    bool d500_external_sync_mode::is_read_only() const 
+    { 
+        auto strong_sensor = _sensor.lock();
+        return strong_sensor && strong_sensor->is_opened();
+    }
+
+    const char * d500_external_sync_mode::get_value_description( float val ) const
+    {
+        try
+        {
+            return _description_per_value.at( val ).c_str();
+        }
+        catch( std::out_of_range )
+        {
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "d500_external_sync_mode description of value " << val << " not found." );
+        }
+    }
+} // namespace librealsense

@@ -2,6 +2,7 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #test:device D400*
+#test:device D500*
 
 import pyrealsense2 as rs
 from rspy import test

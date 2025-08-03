@@ -113,7 +113,7 @@ namespace librealsense
                 return false;
             }
 
-            if(ids.size() > 2 && (ids[2].size() != 5 || ids[2].substr(0,3) != "mi_" || !(std::istringstream(ids[2].substr(3,2)) >> mi)))
+            if(ids.size() > 2 && (ids[2].size() != 5 || ids[2].substr(0,3) != "mi_" || !(std::istringstream(ids[2].substr(3,2)) >> std::hex >> mi)))
             {
                 LOG_DEBUG( "malformed mi string: " << tokens[1] );
                 return false;

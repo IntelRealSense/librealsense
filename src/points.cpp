@@ -6,6 +6,7 @@
 #include "core/video-frame.h"
 #include "core/frame-holder.h"
 #include "librealsense-exception.h"
+#include <rsutils/string/from.h>
 #include <fstream>
 #include <cmath>
 
@@ -16,8 +17,7 @@ namespace librealsense {
 float3 * points::get_vertices()
 {
     get_frame_data();  // call GetData to ensure data is in main memory
-    auto xyz = (float3 *)data.data();
-    return xyz;
+    return (float3*)data.data();
 }
 
 std::tuple< uint8_t, uint8_t, uint8_t >
@@ -157,4 +157,4 @@ float2 * points::get_texture_coordinates()
     return ijs;
 }
 
-}  // namespace librealsense
+} // namespace librealsense

@@ -64,6 +64,7 @@ void init_c_files(py::module &m) {
     BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT, "") // No docsDtring in C++
     BIND_ENUM(m, rs2_calibration_type, RS2_CALIBRATION_TYPE_COUNT, "Calibration type for use in device_calibration")
     BIND_ENUM_CUSTOM(m, rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST, "Calibration callback status for use in device_calibration.trigger_device_calibration")
+    BIND_ENUM(m, rs2_d500_intercam_sync_mode, RS2_D500_INTERCAM_SYNC_COUNT, "For D500: intercamera synchronization mode")
 
     /** rs_types.h **/
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics", "Video stream intrinsics.");
