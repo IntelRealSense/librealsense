@@ -11,6 +11,7 @@ from rspy.timer import Timer
 
 TEST_SLEEP_DURATION = 3
 MAX_ALLOWED_TIMESTAMP_DELTA_MS = 1  # Maximum allowed timestamp difference in milliseconds
+MAX_ALLOWED_DELAY = 1  # Maximum allowed delay in milliseconds for frame synchronization
 
 # Test synchronization between color and depth streams across multiple configurations
 # This test verifies that both streams can successfully stream frames simultaneously
@@ -28,6 +29,7 @@ def test_stream_sync_configuration(device, config):
     timestamp_deltas = []
     frameset_id = 0
     duration = TEST_SLEEP_DURATION  # test sleep duration.
+    
     
     def callback(frame):
         nonlocal frame_collect, arrived_frames, latest_frames, timestamp_deltas, frameset_id
@@ -54,9 +56,20 @@ def test_stream_sync_configuration(device, config):
                         log.d(f"Bundle #{frameset_id}\t Internal Delta is: {delta_ms} ms")
                         frameset_id += 1
                         
-                        # Clear frames to wait for next pair
-                        latest_frames[rs.stream.depth] = None
-                        latest_frames[rs.stream.color] = None
+                        if delta < MAX_ALLOWED_DELAY:
+                            # Frames are synchronized, clear them for next pair
+                            latest_frames[rs.stream.depth] = None
+                            latest_frames[rs.stream.color] = None
+
+                         # Frames are not synchronized, clear the older one
+                        if delta > MAX_ALLOWED_DELAY and stream_type == rs.stream.depth:
+                            latest_frames[rs.stream.color] = None
+                            log.d(f"Discarding old color frame (arrival time diff: {arrival_time_diff:.3f}s, frame diff: {frame_number_diff})")
+
+                        if delta > MAX_ALLOWED_DELAY and stream_type == rs.stream.color:
+                            latest_frames[rs.stream.depth] = None
+                            log.d(f"Discarding old depth frame (arrival time diff: {arrival_time_diff:.3f}s, frame diff: {frame_number_diff})")
+
                     except Exception as e:
                         log.d(f"Error getting timestamp metadata: {e}")
                         # Clear frames on error
