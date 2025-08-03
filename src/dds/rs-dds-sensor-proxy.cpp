@@ -22,6 +22,7 @@
 #include <src/core/time-service.h>
 #include <src/stream.h>
 #include <src/context.h>
+#include <src/image.h>
 
 #include <src/proc/color-formats-converter.h>
 #include <src/proc/y16-10msb-to-y16.h>
@@ -272,7 +273,10 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
                                                    vsp->get_width(),
                                                    vsp->get_height() ) );
             if( video_profile )
+            {
                 realdds_profiles.push_back( video_profile );
+                calculate_bandwidth( vsp );
+            }
             else
                 LOG_ERROR( "no profile found in stream for rs2 profile " << vsp );
         }
@@ -305,6 +309,26 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
     {
         throw invalid_value_exception( e.what() );
     }
+}
+
+
+void dds_sensor_proxy::calculate_bandwidth( const std::shared_ptr< video_stream_profile > & vsp )
+{
+    size_t width = vsp->get_width();
+    size_t height = vsp->get_height();
+    size_t fps = vsp->get_framerate();
+    size_t bpp = get_image_bpp( vsp->get_format() );
+
+    auto stream_it = _streams.find( sid_index( vsp->get_unique_id(), vsp->get_stream_index() ) );
+    std::string stream_name = "";
+    if( stream_it != _streams.end() )
+        stream_name = stream_it->second->name();
+    else
+        LOG_ERROR( "Profile (" << vsp->get_unique_id() << "," << vsp->get_stream_index() << ") not found in streams!" );
+
+    size_t mbps = width * height * bpp * fps / ( 1000 * 1000 ); // Network bandwidth calculation use decimal megabits
+    LOG_INFO( rsutils::string::from() << stream_name << " bandwidth usage " << mbps << "Mbps. (width " << width
+                                      << " * height " << height << " * bpp " << bpp << " * fps " << fps << ")" );
 }
 
 
