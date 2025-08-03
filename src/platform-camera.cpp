@@ -84,7 +84,7 @@ void platform_camera::initialize()
                                                           RS2_OPTION_WHITE_BALANCE,
                                                           RS2_OPTION_ENABLE_AUTO_EXPOSURE,
                                                           RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE };
-                for (auto option : options)
+                for (const auto& option : options)
                 {
                     if (should_stop)
                         return;  // Stop initialization if requested
