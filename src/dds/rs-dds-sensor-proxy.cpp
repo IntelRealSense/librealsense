@@ -22,6 +22,7 @@
 #include <src/core/time-service.h>
 #include <src/stream.h>
 #include <src/context.h>
+#include <src/image.h>
 
 #include <src/proc/color-formats-converter.h>
 #include <src/proc/y16-10msb-to-y16.h>
@@ -316,21 +317,7 @@ void dds_sensor_proxy::calculate_bandwidth( const std::shared_ptr< video_stream_
     size_t width = vsp->get_width();
     size_t height = vsp->get_height();
     size_t fps = vsp->get_framerate();
-    size_t bpp = 0;
-    switch( vsp->get_format() ) // Expected raw formats from the sensor
-    {
-    case RS2_FORMAT_Z16: bpp = 16; break;
-    case RS2_FORMAT_YUYV: bpp = 16; break;
-    case RS2_FORMAT_M420: bpp = 12; break;  // 16 pixels are represented with 24 bytes (16 of Y and 8 of Cr, Cb) - 24 / 16 * 8 = 12
-    case RS2_FORMAT_Y8: bpp = 8; break;
-    case RS2_FORMAT_Y16: bpp = 16; break;
-    case RS2_FORMAT_RAW16: bpp = 16; break;
-    case RS2_FORMAT_RAW8: bpp = 8; break;
-    case RS2_FORMAT_MJPEG: bpp = 8; break;  // Assumes compression ratio of 0.5 from raw YUYV profile. Based on system tests.
-    default:
-        LOG_ERROR( rsutils::string::from() << "Unexpected format " << get_string( vsp->get_format() ) << " cannot evaluate expected bandwidth usage" );
-        return;
-    }
+    size_t bpp = get_image_bpp( vsp->get_format() );
 
     auto stream_it = _streams.find( sid_index( vsp->get_unique_id(), vsp->get_stream_index() ) );
     std::string stream_name = "";
