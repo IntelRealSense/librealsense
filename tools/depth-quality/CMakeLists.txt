@@ -41,7 +41,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         ../../third-party/tinyfiledialogs/tinyfiledialogs.c
         ../../third-party/tinyfiledialogs/tinyfiledialogs.h
         ../../third-party/rsutils/include/rsutils/type/eth-config.h
-        ../../third-party/rsutils/include/rsutils/type/eth-config.cpp
         ../../common/graph-model.h
         ../../common/graph-model.cpp
         ../../third-party/implot/implot.cpp

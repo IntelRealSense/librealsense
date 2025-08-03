@@ -17,6 +17,8 @@
 using namespace rs2;
 using rsutils::json;
 using rsutils::type::ip_address;
+using rsutils::type::eth_config;
+using rsutils::type::link_priority;
 
 namespace rs2 {
 

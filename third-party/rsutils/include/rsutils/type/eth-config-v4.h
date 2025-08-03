@@ -5,6 +5,10 @@
 #include "eth-config-header.h"
 
 
+namespace rsutils {
+namespace type {
+
+
 #pragma pack( push, 1 )
 
 // The structure data for eth config info, version 4
@@ -36,3 +40,5 @@ struct eth_config_v4
 
 static_assert( sizeof( eth_config_v4 ) % 4 == 0, "eth config v4 struct size must be divisible by 4" );
 
+}  // namespace type
+}  // namespace rsutils

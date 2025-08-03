@@ -22,9 +22,9 @@ namespace rs2
 
         void close_window() { ImGui::CloseCurrentPopup(); }
 
-        eth_config get_eth_config(int curr_or_default);
+        rsutils::type::eth_config get_eth_config(int curr_or_default);
 
-        void set_eth_config(eth_config &new_config , std::string& error_message);
+        void set_eth_config(rsutils::type::eth_config &new_config , std::string& error_message);
 
         bool supports_DDS();
 
@@ -39,16 +39,16 @@ namespace rs2
 
         rs2::device _device;
 
-        eth_config _default_config;
-        eth_config _current_config;
-        eth_config _changed_config;
+        rsutils::type::eth_config _default_config;
+        rsutils::type::eth_config _current_config;
+        rsutils::type::eth_config _changed_config;
 
         bool _window_open;
         bool _no_reset;
         bool _dds_supported;
 
         void ipInputText(std::string label, rsutils::type::ip_address &ip);
-        priority classifyPriority(link_priority &pr);
+        priority classifyPriority(rsutils::type::link_priority &pr);
         bool check_DDS_support();
     };
 }

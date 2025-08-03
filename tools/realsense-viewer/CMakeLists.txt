@@ -52,7 +52,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     ../../common/graph-model.h
     ../../common/graph-model.cpp
     ../../third-party/rsutils/include/rsutils/type/eth-config.h
-    ../../third-party/rsutils/include/rsutils/type/eth-config.cpp
     ../../third-party/implot/implot.cpp
     ../../third-party/implot/implot.h
     ../../third-party/implot/implot_internal.h
