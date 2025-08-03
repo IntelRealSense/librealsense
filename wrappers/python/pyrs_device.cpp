@@ -172,16 +172,16 @@ void init_device(py::module &m) {
             int py_px_only)
         {
             constexpr int health_check_params = 4; // px, py, fx, fy for the calibration
-            float health{};
-            return std::make_tuple(self.run_uv_map_calibration(left, color, depth, py_px_only, &health, health_check_params), health);
+            float health[health_check_params];
+            return std::make_tuple(self.run_uv_map_calibration(left, color, depth, py_px_only, health, health_check_params), health);
         }, "Run target-based Depth-RGB UV-map calibraion. This call is executed on the caller's thread.",
             "left"_a, "color"_a, "depth"_a, "py_px_only"_a)
         .def("run_uv_map_calibration", [](const rs2::auto_calibrated_device& self, rs2::frame_queue left, rs2::frame_queue color, rs2::frame_queue depth,
                 int py_px_only, std::function<void(float)> callback)
             {
                 constexpr int health_check_params = 4; // px, py, fx, fy for the calibration
-                float health{};
-                return std::make_tuple(self.run_uv_map_calibration(left, color, depth, py_px_only, &health, health_check_params, callback), health);
+                float health[health_check_params];
+                return std::make_tuple(self.run_uv_map_calibration(left, color, depth, py_px_only, health, health_check_params, callback), health);
             }, "Run target-based Depth-RGB UV-map calibraion. This call is executed on the caller's thread and provides progress notifications via the callback.",
             "left"_a, "color"_a, "depth"_a, "py_px_only"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
         .def("calculate_target_z", [](const rs2::auto_calibrated_device& self, rs2::frame_queue queue1, rs2::frame_queue queue2, rs2::frame_queue queue3,
