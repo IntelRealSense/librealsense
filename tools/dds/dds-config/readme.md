@@ -7,6 +7,8 @@ This tool is used to configure Ethernet based devices.
 The dds-config tool offers connection configuration information for connected devices and allows users to manage connection priorities. 
 It enables the selection of the preferred connection method, whether Ethernet or USB, when both options are available, and provides the ability to set network parameters.
 
+- For a guide how to set host MTU see [this](../../../doc/stepbystep/setting_mtu_on_host.md)
+
 ## Command Line Parameters
 | Flag | Description |
 |---|---|
