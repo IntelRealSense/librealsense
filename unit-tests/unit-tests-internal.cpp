@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The specific tests are configured to run only when the library is staticly-linked to test implementation

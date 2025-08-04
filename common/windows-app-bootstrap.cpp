@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 // This file converts the call to WinMain to a call to cross-platform main
 // We need WinMain on Windows to offer proper Windows application and not console application

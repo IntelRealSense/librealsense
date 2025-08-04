@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017-2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017-2024 RealSense, Inc. All Rights Reserved.
 
 #ifndef LIBREALSENSE_RS2_DEVICE_HPP
 #define LIBREALSENSE_RS2_DEVICE_HPP
