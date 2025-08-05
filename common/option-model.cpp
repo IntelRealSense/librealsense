@@ -133,7 +133,8 @@ bool option_model::draw( std::string & error_message,
         }
 
         auto advanced = dev->dev.as< rs400::advanced_mode >();
-        if( opt == RS2_OPTION_HDR_ENABLED && advanced && advanced.is_enabled() )
+        auto supports_auto_hdr = std::string(dev->dev.get_info(RS2_CAMERA_INFO_NAME)).find("D45") != std::string::npos; // auto HDR is only supported on D45*
+        if( opt == RS2_OPTION_HDR_ENABLED && advanced && advanced.is_enabled() && supports_auto_hdr)
         {
             ImGui::SameLine( 0, 10 );
 
