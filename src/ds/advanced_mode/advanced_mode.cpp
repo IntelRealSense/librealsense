@@ -878,10 +878,11 @@ namespace librealsense
 
     void ds_advanced_mode_base::set_hdr_preset(const preset& p)
     {
-        auto camera_name = _depth_sensor.get_device().get_info( RS2_CAMERA_INFO_NAME );
-        if (camera_name.find("D45") == std::string::npos)
+        auto& dev = _depth_sensor.get_device();
+        if (!dev.supports_info(RS2_CAMERA_INFO_NAME) || 
+            dev.get_info(RS2_CAMERA_INFO_NAME).find("D45") == std::string::npos)
         {
-            throw std::runtime_error("Cannot set HDR preset for current camera!"); // feature only works for D45* cameras
+            throw std::runtime_error("HDR preset is not supported on the connected device"); // feature only works for D45* cameras
         }
         // if auto exposure is not enabled, enable it if needed - temporary W/A until FW enable it
         auto& auto_exp = _depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
