@@ -41,7 +41,7 @@ with test.closure("Check depth-IMU extrinsics"):
         # Using default (CAD) values. Currently no specific IMU extrinsic calibration
         expected_rotation = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
         expected_translation = [0, 0, 0]
-        if device_name.find( "D435I" ) != -1:
+        if device_name.find( "D435I" ) != -1 or device_name.find( "D436" ) != -1:
             expected_translation = [-0.005520000122487545, 0.005100000184029341, 0.011739999987185001]
         if device_name.find( "D455" ) != -1:
             expected_translation = [-0.030220000073313713, 0.007400000002235174, 0.016019999980926514]
