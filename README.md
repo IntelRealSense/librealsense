@@ -4,5 +4,6 @@
 
 **Sphinx (python docs) is available [here](https://intelrealsense.github.io/librealsense/python_docs/_generated/pyrealsense2.html)**
 
+**Build Customization Flags are available [here](https://intelrealsense.github.io/librealsense/build-flags-docs/build-flags.html)**
 
 On each release the API documentation will be updated and pushed to this branch
