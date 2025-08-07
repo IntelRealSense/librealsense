@@ -66,7 +66,7 @@ function(get_fastdds)
 
     add_definitions(-DBUILD_WITH_DDS)
 
-    install(TARGETS dds EXPORT realsense2Targets)
+    install(TARGETS dds fastrtps eProsima_atomic EXPORT realsense2Targets)
     message(CHECK_PASS "Done")
 endfunction()
 
