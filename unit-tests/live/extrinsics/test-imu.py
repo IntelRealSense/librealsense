@@ -41,15 +41,21 @@ with test.closure("Check depth-IMU extrinsics"):
         # Using default (CAD) values. Currently no specific IMU extrinsic calibration
         expected_rotation = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
         expected_translation = [0, 0, 0]
-        if device_name.find( "D435I" ) != -1:
+        
+        compatible_devices = ["D435I", "D436"]
+        if any(device in device_name for device in compatible_devices):
             expected_translation = [-0.005520000122487545, 0.005100000184029341, 0.011739999987185001]
-        if device_name.find( "D455" ) != -1:
+        compatible_devices = ["D455"]
+        if any(device in device_name for device in compatible_devices):
             expected_translation = [-0.030220000073313713, 0.007400000002235174, 0.016019999980926514]
-        if device_name.find( "D457" ) != -1:
+        compatible_devices = ["D457"]
+        if any(device in device_name for device in compatible_devices):
             expected_translation = [-0.09529999643564224, -0.000560000014957041, 0.017400000244379044]
-        if device_name.find( "D555" ) != -1:
+        compatible_devices = ["D555"]
+        if any(device in device_name for device in compatible_devices):
             expected_translation = [-0.03739999979734421, 0.007189999800175428, 0.022299999371170998]
-        if device_name.find( "D585" ) != -1:
+        compatible_devices = ["D585"]
+        if any(device in device_name for device in compatible_devices):
             expected_translation = [-0.01950000040233135, 0, -0.011400000192224979]
         test.check_float_lists( actual_extrinsics.rotation, expected_rotation )
         test.check_float_lists( actual_extrinsics.translation, expected_translation )
