@@ -56,9 +56,10 @@ with test.closure("OCC calibration test"):
     try:
         host_assistance = False
         occ_json = on_chip_calibration_json(None, host_assistance)
-        health_factor = calibration_main(host_assistance, True, occ_json, None)
-        test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)        
-        log.i("OCC calibration test completed successfully")
+        status, health_factor = calibration_main(host_assistance, True, occ_json, None)
+        if (status):
+            test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)
+            log.i("OCC calibration test completed")
     except Exception as e:
         log.e("OCC calibration test failed: ", str(e))
         test.fail()
@@ -68,9 +69,13 @@ with test.closure("OCC calibration test with host assistance"):
     try:
         host_assistance = True
         occ_json = on_chip_calibration_json(None, host_assistance)
-        health_factor = calibration_main(host_assistance, True, occ_json, None)
-        test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)     
-        log.i("OCC calibration test with host assistance completed successfully")
+        status, health_factor = calibration_main(host_assistance, True, occ_json, None)
+        if (status):
+            test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)     
+            log.i("OCC calibration test with host assistance completed")
+        else:
+            log.e("Unexpected skip")
+            test.fail()
     except Exception as e:
         log.e("OCC calibration test with host assistance failed: ", str(e))
         test.fail()

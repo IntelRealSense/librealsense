@@ -99,9 +99,13 @@ with test.closure("Tare calibration test with host assistance"):
         target_z = calculate_target_z()
         test.check(target_z > TARGET_Z_MIN and target_z < TARGET_Z_MAX)   
         tare_json = tare_calibration_json(None, host_assistance)
-        health_factor = calibration_main(host_assistance, False, tare_json, target_z)
-        test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)     
-        log.i("Tare calibration test with host assistance completed successfully")
+        status, health_factor = calibration_main(host_assistance, False, tare_json, target_z)
+        if (status):
+            test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)
+            log.i("Tare calibration test with host assistance completed")
+        else:
+            log.e("Unexpected skip")
+            test.fail()
     except Exception as e:
         log.e("Tare calibration test with host assistance failed: ", str(e))
         test.fail()
@@ -113,9 +117,10 @@ with test.closure("Tare calibration test"):
         target_z = calculate_target_z()
         test.check(target_z > TARGET_Z_MIN and target_z < TARGET_Z_MAX)     
         tare_json = tare_calibration_json(None, host_assistance)
-        health_factor = calibration_main(host_assistance, False, tare_json, target_z)
-        test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)        
-        log.i("Tare calibration test completed successfully")
+        status, health_factor = calibration_main(host_assistance, False, tare_json, target_z)
+        if (status):
+            test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)
+            log.i("Tare calibration test completed")
     except Exception as e:
         log.e("Tare calibration test failed: ", str(e))
         test.fail()

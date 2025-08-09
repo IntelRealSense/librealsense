@@ -25,9 +25,9 @@ HARDWARE_RESET_DELAY_SECONDS = 3
 def on_calib_cb(progress):
     """Callback function for calibration progress reporting."""
     pp = int(progress)
-    log.d('\r' + '*' * pp + ' ' * (99 - pp) + '*')
+    log.i('\r' + '*' * pp + ' ' * (99 - pp) + '*')
     if pp == 100:
-        log.d("progress - ", pp)
+        log.i("progress - ", pp)
 
 def calibration_main(host_assistance, occ_calib, json_config, ground_truth):
     """
@@ -40,6 +40,7 @@ def calibration_main(host_assistance, occ_calib, json_config, ground_truth):
         ground_truth (float): Ground truth value for Tare calibration (None for OCC)
     
     Returns:
+        bool: True if calibration was not skipped, False if was skipped
         float: Health factor from calibration
     """
     config = rs.config()
@@ -50,6 +51,7 @@ def calibration_main(host_assistance, occ_calib, json_config, ground_truth):
     if not auto_calibrated_device:
         log.e("Failed to open device for calibration")
         test.fail()
+        return True, 0
     
     ctx = rs.context()
     try:
@@ -57,12 +59,16 @@ def calibration_main(host_assistance, occ_calib, json_config, ground_truth):
     except IndexError:
         log.e("Failed to connect device for calibration")
         test.fail()
+        return True, 0
+    
+    # Skip test for MIPI devices and are not in host assistance mode
+    if not device.supports(rs.camera_info.usb_type_descriptor) and not host_assistance:
+        log.i("MIPI device - skip the test")
+        return False, 0
     
     # Bring device in start phase
     device.hardware_reset()
     time.sleep(HARDWARE_RESET_DELAY_SECONDS)
-
-    interactive_mode = False
 
     stream_config = rs.config()
     if host_assistance:
@@ -74,16 +80,10 @@ def calibration_main(host_assistance, occ_calib, json_config, ground_truth):
     pipeline.wait_for_frames()  # Verify streaming started before calling calibration methods
     calib_dev = rs.auto_calibrated_device(conf.get_device())
 
-    # Prepare device - save current settings and configure for calibration
-    original_thermal_compensation = 0
-    original_emitter_state = 0
-
     depth_sensor = conf.get_device().first_depth_sensor()
     if depth_sensor.supports(rs.option.emitter_enabled):
-        original_emitter_state = depth_sensor.get_option(rs.option.emitter_enabled)
         depth_sensor.set_option(rs.option.emitter_enabled, 1)
     if depth_sensor.supports(rs.option.thermal_compensation):
-        original_thermal_compensation = depth_sensor.get_option(rs.option.thermal_compensation)
         depth_sensor.set_option(rs.option.thermal_compensation, 0)
 
     # Execute calibration based on type
@@ -119,5 +119,5 @@ def calibration_main(host_assistance, occ_calib, json_config, ground_truth):
         except Exception as stop_error:
             log.e("Failed to stop pipeline: ", str(stop_error))
 
-    return health[0]
+    return True, health[0]
 
