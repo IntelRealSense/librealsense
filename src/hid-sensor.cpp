@@ -1,6 +1,6 @@
 // Copyright(c) 2025 RealSense, Inc. All Rights Reserved.
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 RealSense, Inc. All Rights Reserved.
 
 #include "hid-sensor.h"
 #include "device.h"
@@ -378,8 +378,8 @@ double hid_sensor::get_imu_sensitivity_values( rs2_stream stream )
         return gyro_sensitivity_convert.at( _imu_sensitivity_per_rs2_stream[stream] );
     }
     else
-        //FW recieve 0.1 and adjusts the gyro's sensitivity to its default setting of ±1000.
-        //FW recieve 0.001 and adjusts the accel's sensitivity to its default setting of ±4g.
+        //FW recieve 0.1 and adjusts the gyro's sensitivity to its default setting of 1000.
+        //FW recieve 0.001 and adjusts the accel's sensitivity to its default setting of 4g.
         return stream == RS2_STREAM_GYRO ? 0.1f : 0.001f;
 }
 

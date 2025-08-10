@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022-2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-2024 RealSense, Inc. All Rights Reserved.
 
 #include "d500-safety.h"
 #include "d500-types/safety-preset.h"
