@@ -193,6 +193,9 @@ typedef enum rs2_extension
     RS2_EXTENSION_DEBUG_STREAM_SENSOR,
     RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE,
     RS2_EXTENSION_ROTATION_FILTER,
+    RS2_EXTENSION_SAFETY_SENSOR,
+    RS2_EXTENSION_DEPTH_MAPPING_SENSOR,
+    RS2_EXTENSION_LABELED_POINTS,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
@@ -224,6 +227,36 @@ typedef enum rs2_matchers
    RS2_MATCHER_COUNT
 } rs2_matchers;
 const char* rs2_matchers_to_string(rs2_matchers stream);
+
+typedef enum rs2_point_cloud_label
+{
+    RS2_POINT_CLOUD_LABEL_UNKNOWN,                  // No valid classification can be made for this point
+    RS2_POINT_CLOUD_LABEL_UNDEFINED,                // NAN pixel
+    RS2_POINT_CLOUD_LABEL_INVALID,                  // This point is discarded, i.e. outside of vertical FOV or too close
+    RS2_POINT_CLOUD_LABEL_GROUND,                   // This point belongs to ground plane
+    RS2_POINT_CLOUD_LABEL_NEAR_GROUND,              // This point is not on ground plane, but yet not part of a true obstacle
+    RS2_POINT_CLOUD_LABEL_OVERHEAD,                 // This point belongs to something above robot's height, but below the ceiling height, 
+                                                    // and not part of a true obstacle
+    RS2_POINT_CLOUD_LABEL_ABOVE_CEILING_HEIGHT,     // This point belongs to something above the ceiling height
+    RS2_POINT_CLOUD_LABEL_GAP,                      // This point belongs to a Gap Region
+    RS2_POINT_CLOUD_LABEL_MASKED,                   // This point belongs to a Masked Region
+    RS2_POINT_CLOUD_LABEL_CLIFF,                    // This point is part of a possible cliff
+    RS2_POINT_CLOUD_LABEL_OBSTACLE,                 // This point is a potential obstacle
+    RS2_POINT_CLOUD_LABEL_OBSTACLE_DANGER,          // This point is an actual obstacle inside the danger zone
+    RS2_POINT_CLOUD_LABEL_OBSTACLE_WARNING,         // This point is an actual obstacle inside the warning zone
+    RS2_POINT_CLOUD_LABEL_COUNT
+} rs2_point_cloud_label;
+const char* rs2_point_cloud_label_to_string(rs2_point_cloud_label label);
+
+typedef enum rs2_calib_location
+{
+    RS2_CALIB_LOCATION_FIRST,
+    RS2_CALIB_LOCATION_EEPROM = RS2_CALIB_LOCATION_FIRST,
+    RS2_CALIB_LOCATION_FLASH,
+    RS2_CALIB_LOCATION_RAM,
+    RS2_CALIB_LOCATION_COUNT
+} rs2_calib_location;
+const char* rs2_calib_location_to_string(rs2_calib_location calib_location);
 
 
 typedef struct rs2_device_info rs2_device_info;

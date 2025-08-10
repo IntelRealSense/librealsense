@@ -201,13 +201,13 @@ Some auxillary functionalities might be affected. Please report this message if 
 
         if (filters_split.size() >= 1)
         {
-            filters_count = int( filters_split.size() - 1 );
+            filters_count = static_cast<int>( filters_split.size() - 1 );
 
             // set description
             aSingleFilterDescription = filters_split[0].c_str();
 
             // fill filter pattern with extensions
-            for (int i = 1; i < filters_split.size(); ++i)
+            for(int i=1; i < filters_split.size(); ++i)
             {
                 filter.push_back(filters_split[i].c_str());
             }

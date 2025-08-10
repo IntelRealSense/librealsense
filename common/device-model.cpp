@@ -1041,6 +1041,7 @@ namespace rs2
             error_message = e.what();
         }
     }
+
     void device_model::check_for_device_updates(viewer_model& viewer, bool activated_by_user )
     {
         std::weak_ptr< updates_model > updates_model_protected( viewer.updates );
@@ -1384,7 +1385,6 @@ namespace rs2
                                            << ( is_streaming ? " (Disabled while streaming)" : "" );
                         RsImGui::CustomTooltip("%s", tooltip.c_str());
                     }
-
 
                     if( dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE )
                         && ( dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) ) )
@@ -1839,33 +1839,24 @@ namespace rs2
 
                     //Find Resolution
                     std::pair<int, int> requested_res{ kvp.second.width,kvp.second.height };
-                    size_t res_id = 0;
-                    for (; res_id < sub->res_values.size(); res_id++)
-                    {
-                        if (sub->res_values[res_id] == requested_res)
-                            break;
-                    }
-                    if (res_id == sub->res_values.size())
-                    {
-                        throw std::runtime_error( rsutils::string::from()
-                                                  << "No match found for requested resolution: " << requested_res.first
-                                                  << "x" << requested_res.second );
-                    }
                     if (!sub->ui.is_multiple_resolutions)
-                        sub->ui.selected_res_id = static_cast<int>(res_id);
-                    else
                     {
-                        int depth_res_id, ir1_res_id, ir2_res_id;
-                        sub->get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
-
-                        if (kvp.first.first == RS2_STREAM_DEPTH)
-                        sub->ui.selected_res_id_map[depth_res_id] = static_cast<int>(res_id);
-                        else
+                        size_t res_id = 0;
+                        for (; res_id < sub->res_values.size(); res_id++)
                         {
-                            sub->ui.selected_res_id_map[ir1_res_id] = static_cast<int>(res_id);
-                            sub->ui.selected_res_id_map[ir2_res_id] = static_cast<int>(res_id);
+                            if (sub->res_values[res_id] == requested_res)
+                                break;
                         }
+                        if (res_id == sub->res_values.size())
+                        {
+                            throw std::runtime_error(rsutils::string::from()
+                                << "No match found for requested resolution: " << requested_res.first
+                                << "x" << requested_res.second);
+                        }
+                        sub->ui.selected_res_id = static_cast<int>(res_id);
                     }
+                    else
+                        sub->ui.selected_stream_to_res[kvp.first.first] = requested_res;
                 }
             }
         }
@@ -2129,7 +2120,7 @@ namespace rs2
                             sub->_options_invalidated = true;
                         }
                     }
-                    auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON | PRESET)\0*.json;*.preset\0", NULL, NULL);
+                    auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON | PRESET)\0*.json\0*.preset\0", NULL, NULL);
                     if (ret)
                     {
                         error_message = safe_call([&]() { load_json(ret); });
@@ -2985,11 +2976,13 @@ namespace rs2
 
     bool device_model::disable_record_button_logic(bool is_streaming, bool is_playback_device)
     {
-        return (!is_streaming || is_playback_device);
+        bool depth_mapping_camera_streaming_alone = is_depth_mapping_camera_streaming_alone();
+        return (!is_streaming || is_playback_device || depth_mapping_camera_streaming_alone);
     }
 
     std::string device_model::get_record_button_hover_text(bool is_streaming)
     {
+        bool depth_mapping_camera_streaming_alone = is_depth_mapping_camera_streaming_alone();
         std::string record_button_hover_text;
         if (!is_streaming)
         {
@@ -2997,10 +2990,45 @@ namespace rs2
         }
         else
         {
-            record_button_hover_text = is_recording ? "Stop Recording" : "Start Recording";
+            if (depth_mapping_camera_streaming_alone)
+            {
+                record_button_hover_text = "To record Depth Mapping Camera also stream Stereo Module";
+            }
+            else
+            { 
+                record_button_hover_text = is_recording ? "Stop Recording" : "Start Recording";
+            }
         }
         return record_button_hover_text;
     }
+
+    //In order to record LPC and enable 3D we need to also record depth stereo sensor
+    bool device_model::is_depth_mapping_camera_streaming_alone()
+    {
+        std::string pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        if (pid == "0B6B")
+        {
+            bool depth_mapping_sensor_streaming = false;
+            bool depth_stereo_sensor_streaming = false;
+            for (auto&& sub : subdevices)
+            {
+                if (sub->s->is<rs2::depth_mapping_sensor>() && sub->streaming)
+                {
+                    depth_mapping_sensor_streaming = true;
+                }
+                if (sub->s->is<rs2::depth_stereo_sensor>() && sub->streaming)
+                {
+                    depth_stereo_sensor_streaming = true;
+                }
+            }
+            if (depth_mapping_sensor_streaming && !depth_stereo_sensor_streaming)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
 
     std::vector<std::pair<std::string, std::string>> get_devices_names(const device_list& list)
     {
@@ -3434,7 +3462,7 @@ namespace rs2
                         }
                         else
                         {
-                            manager = std::make_shared< d500_on_chip_calib_manager >( viewer, sub, *this, dev );
+                            manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev );
                             n = std::make_shared< d500_autocalib_notification_model >( "", manager, false );
                         }
                         viewer.not_model->add_notification( n );

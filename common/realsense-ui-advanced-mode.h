@@ -258,6 +258,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.depth_controls.vals[0] = advanced.get_depth_control( 0 );
                 ImGui::TreePop();
                 throw;
             }
@@ -288,6 +289,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.rsm.vals[0] = advanced.get_rsm( 0 );
                 ImGui::TreePop();
                 throw;
             }
@@ -323,6 +325,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.rsvc.vals[0] = advanced.get_rau_support_vector_control( 0 );
                 ImGui::TreePop();
                 throw;
             }
@@ -354,6 +357,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.color_control.vals[0] = advanced.get_color_control( 0 );
                 ImGui::TreePop();
                 throw;
             }
@@ -383,6 +387,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.rctc.vals[0] = advanced.get_rau_thresholds_control( 0 );
                 ImGui::TreePop();
                 throw;
             }
@@ -412,6 +417,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.sctc.vals[0] = advanced.get_slo_color_thresholds_control( 0 );
                 ImGui::TreePop();
                 throw;
             }
@@ -444,6 +450,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.spc.vals[0] = advanced.get_slo_penalty_control( 0 );
                 ImGui::TreePop();
                 throw;
             }
@@ -475,6 +482,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.hdad.vals[0] = advanced.get_hdad();
                 ImGui::TreePop();
                 throw;
             }
@@ -513,6 +521,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.cc.vals[0] = advanced.get_color_correction( 0 );
                 ImGui::TreePop();
                 throw;
             }
@@ -544,6 +553,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.depth_table.vals[0] = advanced.get_depth_table( 0 );
                 ImGui::TreePop();
                 throw;
             }
@@ -572,6 +582,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.ae.vals[0] = advanced.get_ae_control();
                 ImGui::TreePop();
                 throw;
             }
@@ -600,6 +611,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.census.vals[0] = advanced.get_census( 0 );
                 ImGui::TreePop();
                 throw;
             }
@@ -627,6 +639,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             }
             catch (...)
             {
+                amc.amp_factor.vals[0] = advanced.get_amp_factor( 0 );
                 ImGui::TreePop();
                 throw;
             }
