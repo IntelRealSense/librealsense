@@ -2,7 +2,8 @@
 # Copyright(c) 2021 RealSense, Inc. All Rights Reserved.
 
 #test:timeout 20
-#test:device each(D400*) !D455
+# test:device each(D400*)
+# test:device each(D500*)
 
 import os
 import pyrealsense2 as rs2
