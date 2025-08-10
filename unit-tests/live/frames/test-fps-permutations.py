@@ -50,7 +50,7 @@ def get_sensors_and_profiles(device):
                 sensor.set_option(rs.option.enable_auto_exposure, 1)
             if sensor.supports(rs.option.auto_exposure_priority):
                 sensor.set_option(rs.option.auto_exposure_priority, 0)  # AE priority should be 0 for constant FPS
-            profile = fps_helper.get_profile(sensor, rs.stream.color)
+            profile = fps_helper.get_profile(sensor, rs.stream.color, HD_RESOLUTION)
         elif sensor.is_motion_sensor():
             sensor_profiles_arr.append((sensor, fps_helper.get_profile(sensor, rs.stream.accel)))
             sensor_profiles_arr.append((sensor, fps_helper.get_profile(sensor, rs.stream.gyro)))

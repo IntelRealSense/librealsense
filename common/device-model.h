@@ -12,6 +12,7 @@
 #include "calibration-model.h"
 #include "objects-in-frame.h"
 #include "dds-model.h"
+#include "hdr-model.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -73,6 +74,29 @@ namespace rs2
     typedef std::vector<std::unique_ptr<device_model>> device_models_list;
 
     void open_issue(const device_models_list& devices);
+
+    template <typename T>
+    std::string safe_call(T t)
+    {
+        try
+        {
+            t();
+            return "";
+        }
+        catch (const error& e)
+        {
+            return error_to_string(e);
+        }
+        catch (const std::exception& e)
+        {
+            return e.what();
+        }
+        catch (...)
+        {
+            return "Unknown error occurred";
+        }
+    }
+
 
     struct textual_icon
     {
@@ -388,6 +412,7 @@ namespace rs2
         std::string get_record_button_hover_text(bool is_streaming);
         bool is_depth_mapping_camera_streaming_alone();
 
+        void open_hdr_config_tool_window();
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
 
@@ -420,7 +445,7 @@ namespace rs2
         // This class is in charge of camera accuracy health window parameters,
         // Needed as a member for reseting the window memory on device disconnection.
 
-
+        bool show_advanced_mode_popup = false;
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
         int draw_playback_controls(ux_window& window, ImFont* font, viewer_model& view);
@@ -461,6 +486,9 @@ namespace rs2
         bool draw_device_panel_auto_calib_d400(viewer_model& viewer, bool& something_to_show, std::string& error_message);
         bool draw_device_panel_auto_calib_d500(viewer_model& viewer, bool& something_to_show, std::string& error_message);
 
+        std::thread check_for_device_updates_thread;
+        std::mutex dev_mutex;
+        std::atomic<bool> stopping;
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
         rsutils::time::periodic_timer      _update_readonly_options_timer;
@@ -470,6 +498,7 @@ namespace rs2
         std::shared_ptr<sw_update::dev_updates_profile::update_profile >_updates_profile;
         calibration_model _calib_model;
         dds_model _dds_model;
+        hdr_model _hdr_model;
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);

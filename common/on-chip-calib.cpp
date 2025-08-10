@@ -283,11 +283,18 @@ namespace rs2
             _sub->ui.selected_format_id.clear();
             _sub->ui.selected_format_id[_uid] = 0;
 
-            _sub->ui.selected_shared_fps_id = 0; // For Ground Truth default is the lowest common FPS for USB2/# compatibility
             // Select FPS value
+            auto fps = 30;
+            if (_sub->dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+            {
+                std::string desc = _sub->dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+                if (!starts_with(desc, "3."))
+                    fps = 6; //USB2 bandwidth limitation for 720P
+            }
+            _sub->ui.selected_shared_fps_id = 0; // If requested FPS is not found use lowest common FPS for USB2 compatibility (sorted lowest first)
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
             {
-                if (_sub->shared_fps_values[i] == 0)
+                if (_sub->shared_fps_values[i] == fps)
                     _sub->ui.selected_shared_fps_id = i;
             }
 
@@ -940,12 +947,14 @@ namespace rs2
 
     void on_chip_calib_manager::calibrate()
     {
-        auto exposure = _sub->s->get_option( RS2_OPTION_EXPOSURE );
-        if( exposure > 15500 )
+        // High exposure values might limit high FPS calibrations, issue warning to the user
+        auto auto_exposure = _sub->s->supports( RS2_OPTION_ENABLE_AUTO_EXPOSURE ) && _sub->s->get_option( RS2_OPTION_ENABLE_AUTO_EXPOSURE );
+        auto exposure = _sub->s->get_option( RS2_OPTION_EXPOSURE ); // Currently all camera models support exposure option (D400 and D500)
+        if( !auto_exposure && exposure > 15500 )
         {
             throw std::runtime_error( "Exposure value is limiting the fps,\n"
-                                        "for the algorithm to be able to converge,\n"
-                                        "please reduce exposure value."  ); 
+                                      "for the algorithm to be able to converge,\n"
+                                      "please reduce exposure value." ); 
         }
 
         int occ_timeout_ms = 9000;

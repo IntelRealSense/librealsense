@@ -19,6 +19,7 @@
 #include "d400-color.h"
 #include "d400-nonmonochrome.h"
 #include <src/platform/platform-utils.h>
+#include "context.h"
 
 #include <src/ds/features/amplitude-factor-feature.h>
 #include <src/ds/features/emitter-frequency-feature.h>
@@ -46,8 +47,6 @@ using rsutils::type::fourcc;
 
 #include <src/ds/features/auto-exposure-limit-feature.h>
 #include <src/ds/features/gain-limit-feature.h>
-
-#include <src/context.h> // D436 - remove when removing avoidance of updating FW via viewer
 
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
@@ -113,9 +112,6 @@ namespace librealsense
 
     void d400_device::enter_update_state() const
     {
-        if (_pid == ds::RS436_PID && !get_context()->get_settings().nested("enable-d436-fw-update").default_value(false))
-            throw std::runtime_error("D436 FW cannot be updated at this stage.");
-
         // preparing HWM command
         command cmd(ds::DFU);
         cmd.param1 = 1;
@@ -153,7 +149,7 @@ namespace librealsense
         }
         bool result = ( firmware_version( fw_version ) >= firmware_version( it->second ) );
         if( ! result )
-            LOG_ERROR( "Firmware version isn't compatible" << fw_version );
+            LOG_ERROR( "Firmware version isn't compatible " << fw_version );
 
         return result;
     }
@@ -1039,6 +1035,36 @@ namespace librealsense
                 std::make_shared< auto_exposure_limit_feature >( get_depth_sensor(), d400_device::_hw_monitor ) );
             register_feature( std::make_shared< gain_limit_feature >( get_depth_sensor(), d400_device::_hw_monitor ) );
         }
+    }
+
+    void d400_device::simulate_device_reconnect(std::shared_ptr<const device_info> dev_info)
+    {
+        //limitation: the user must hold the context from which the device was created
+        //creating fake notification to trigger invoke_devices_changed_callbacks, causing disconnection and connection
+        auto non_const_device_info = std::const_pointer_cast<librealsense::device_info>(dev_info);
+        std::vector< std::shared_ptr< device_info > > devices{ non_const_device_info };
+        auto ctx = std::weak_ptr< context >(dev_info->get_context());
+        std::thread fake_notification(
+            [ctx, devs = std::move(devices)]()
+            {
+                try
+                {
+                    if (auto strong = ctx.lock())
+                    {
+                        strong->invoke_devices_changed_callbacks(devs, {});
+                        // MIPI devices do not re-enumerate so we need to give them some time to restart
+                        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+                    }
+                    if (auto strong = ctx.lock())
+                        strong->invoke_devices_changed_callbacks({}, devs);
+                }
+                catch (const std::exception& e)
+                {
+                    LOG_ERROR(e.what());
+                    return;
+                }
+            });
+        fake_notification.detach();
     }
 
     void d400_device::register_metadata(const synthetic_sensor &depth_sensor, const firmware_version& hdr_firmware_version) const

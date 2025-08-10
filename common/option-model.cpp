@@ -8,6 +8,7 @@
 #include <imgui_internal.h>
 #include "device-model.h"
 #include "subdevice-model.h"
+#include <os.h>
 
 namespace rs2
 {
@@ -130,6 +131,32 @@ bool option_model::draw( std::string & error_message,
                 RsImGui::CustomTooltip( "Select custom region of interest for the auto-exposure "
                                    "algorithm\nClick the button, then draw a rect on the frame" );
         }
+
+        auto advanced = dev->dev.as< rs400::advanced_mode >();
+        if( opt == RS2_OPTION_HDR_ENABLED && advanced && advanced.is_enabled() )
+        {
+            ImGui::SameLine( 0, 10 );
+
+            std::string button_label = "HDR Config";
+            std::string caption = rsutils::string::from() << "HDR Config##" << button_label;
+
+            RsImGui::RsImButton(
+                [&]()
+                {
+                    if( ImGui::Button( caption.c_str(), { 85, 0 } ) )
+                    {
+                        try
+                        {
+                            dev->dev_model->open_hdr_config_tool_window();
+                        }
+                        catch( const std::exception & e )
+                        {
+                            error_message = rsutils::string::from() << "Failed to open HDR configuration: " << e.what();
+                        }
+                    }
+                });
+        }
+    
     }
 
     return res;

@@ -203,6 +203,8 @@ class Acroname(device_hub.device_hub):
         """
         result = True
         changed = False
+        log.d(f"Enabling ports {ports if ports is not None else 'all'} on Acroname"
+              f"{', disabling other ports' if disable_other_ports else ''}")
         for port in self.all_ports():
             #
             if ports is None or port in ports:
@@ -238,6 +240,7 @@ class Acroname(device_hub.device_hub):
         """
         result = True
         changed = False
+        log.d(f"Disabling ports {ports if ports is not None else 'all'} on Acroname")
         for port in self.all_ports():
             if ports is None or port in ports:
                 # log.d("disabling port", port)

@@ -92,6 +92,8 @@ namespace librealsense
         void init(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
         void register_features();
 
+        static void simulate_device_reconnect(std::shared_ptr<const device_info> dev_info);
+
         friend class d400_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;

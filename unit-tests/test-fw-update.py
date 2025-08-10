@@ -183,14 +183,18 @@ recovered = False
 if device.is_update_device():
     log.d( "recovering device ..." )
     try:
-        image_file = find_image_or_exit(product_name) if not custom_fw_d400_path else custom_fw_d400_path
+        # always flash signed fw when device on recovery befre flashing anything else
+        image_file = find_image_or_exit(product_name)
         cmd = [fw_updater_exe, '-r', '-f', image_file]
-        if custom_fw_d400_path:
-            # unsiged fw
-            cmd.insert(1, '-u')
         log.d( 'running:', cmd )
         subprocess.run( cmd )
         recovered = True
+
+        if 'jetson' in test.context:
+            # Reload d4xx mipi driver on Jetson
+            log.d("Reloading d4xx driver on Jetson...")
+            subprocess.run(['sudo', 'modprobe', '-r', 'd4xx'], check=True) # force remove
+            subprocess.run(['sudo', 'modprobe', 'd4xx'], check=True) # load
     except Exception as e:
         test.unexpected_exception()
         log.f( "Unexpected error while trying to recover device:", e )
@@ -232,8 +236,9 @@ image_file = find_image_or_exit(product_name, fw_version_regex) if not custom_fw
 
 cmd = [fw_updater_exe, '-f', image_file]
 if custom_fw_d400_path:
-    # unsigned fw
-    cmd.insert(1, '-u')
+    # Add '-u' only if the path doesn't include 'signed'
+    if 'signed' not in custom_fw_d400_path.lower():
+        cmd.insert(1, '-u')
 log.d( 'running:', cmd )
 sys.stdout.flush()
 subprocess.run( cmd )   # may throw
