@@ -1,20 +1,11 @@
-# Copyright (2017-2025), RealSense, Inc.
-# Certain Intel® RealSense™ products are sold by RealSense, Inc. under license from Intel Corporation),
-# This "Software" is furnished under license and may only be used or copied in accordance with the terms of that license.
-# No license, express or implied, by estoppel or otherwise, to any intellectual property rights is granted by this document.
-# The Software is subject to change without notice and should not be construed as a commitment by RealSense, Inc. or Intel Corporation to market, license, sell or support any product or technology.
-# Unless otherwise provided for in the license under which this Software is provided, the Software is provided AS IS, with no warranties of any kind, express or implied.
-# Except as expressly permitted by the Software license, neither RealSense, Inc. nor Intel Corporation, or any of their suppliers, assumes any responsibility or liability for any errors or inaccuracies that may appear herein.
-# Except as expressly permitted by the Software license, no part of the Software may be reproduced, stored in a retrieval system, transmitted in any form, or distributed by any means without the express written consent of RealSense, Inc.
-
-#########################################################################################################################################
-##                   tests for OCC and Tare calib flows                                                                ##
-#########################################################################################################################################
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
+                                                          ##
 import sys
 import time
 import pyrealsense2 as rs
 from rspy import test, log
-from test_calibrations_common import calibration_main
+from test_calibrations_common import calibration_main, is_mipi_device
 
 #disabled until we stabilize lab
 #test:donotrun
@@ -89,41 +80,70 @@ def calculate_target_z():
 
 # Constants for validation
 HEALTH_FACTOR_THRESHOLD = 0.25
-TARGET_Z_MIN = 0
+TARGET_Z_MIN = 600
 TARGET_Z_MAX = 1500
+_target_z = None
 
 with test.closure("Tare calibration test with host assistance"):
     try:
         host_assistance = True
-
-        target_z = calculate_target_z()
-        test.check(target_z > TARGET_Z_MIN and target_z < TARGET_Z_MAX)   
+        if (_target_z is None):
+            _target_z = calculate_target_z()
+            test.check(_target_z > TARGET_Z_MIN and _target_z < TARGET_Z_MAX)
+        
         tare_json = tare_calibration_json(None, host_assistance)
-        status, health_factor = calibration_main(host_assistance, False, tare_json, target_z)
-        if (status):
-            test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)
-            log.i("Tare calibration test with host assistance completed")
-        else:
-            log.e("Unexpected skip")
-            test.fail()
+        health_factor = calibration_main(host_assistance, False, tare_json, _target_z)
+
+        test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)
     except Exception as e:
         log.e("Tare calibration test with host assistance failed: ", str(e))
         test.fail()
-    log.i("Done\n")
 
 with test.closure("Tare calibration test"):
     try:
         host_assistance = False
-        target_z = calculate_target_z()
-        test.check(target_z > TARGET_Z_MIN and target_z < TARGET_Z_MAX)     
+        if is_mipi_device():
+            log.i("MIPI device - skip the test w/o host assistance")
+            test.skip()
+
+        if _target_z is None:
+            _target_z = calculate_target_z()
+            test.check(_target_z > TARGET_Z_MIN and _target_z < TARGET_Z_MAX)
+
         tare_json = tare_calibration_json(None, host_assistance)
-        status, health_factor = calibration_main(host_assistance, False, tare_json, target_z)
-        if (status):
-            test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)
-            log.i("Tare calibration test completed")
+        health_factor = calibration_main(host_assistance, False, tare_json, _target_z)
+        
+        test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)
     except Exception as e:
         log.e("Tare calibration test failed: ", str(e))
+        test.fail()
+
+# for step 2 -  not in use for now
+"""
+# This test performs Tare calibration with calibration table backup and modification.
+# It demonstrates backing up the calibration table, running the calibration, and restoring the table if needed.
+# The test checks that the health factor after calibration is within the allowed threshold.
+with test.closure("Tare calibration with table backup and modification"):
+    try:
+        host_assistance = False
+        target_z = calculate_target_z()
+        test.check(target_z > TARGET_Z_MIN and target_z < TARGET_Z_MAX)
+        tare_json = tare_calibration_json(None, host_assistance)
+        
+        log.i("Starting Tare calibration with calibration table backup/restore demonstration")
+        health_factor = perform_calibration_with_table_backup(host_assistance, False, tare_json, target_z)
+        
+        if health_factor is not None:
+            test.check(abs(health_factor) < HEALTH_FACTOR_THRESHOLD)
+            log.i("Tare calibration with table manipulation completed successfully")
+        else:
+            log.e("Tare calibration with table backup failed")
+            test.fail()
+            
+    except Exception as e:
+        log.e("Tare calibration with table backup failed: ", str(e))
         test.fail()
     log.i("Done\n")
 
 test.print_results_and_exit()
+"""

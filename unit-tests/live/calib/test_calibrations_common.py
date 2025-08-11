@@ -1,17 +1,9 @@
-# Copyright (2017-2025), RealSense, Inc.
-# Certain Intel® RealSense™ products are sold by RealSense, Inc. under license from Intel Corporation),
-# This "Software" is furnished under license and may only be used or copied in accordance with the terms of that license.
-# No license, express or implied, by estoppel or otherwise, to any intellectual property rights is granted by this document.
-# The Software is subject to change without notice and should not be construed as a commitment by RealSense, Inc. or Intel Corporation to market, license, sell or support any product or technology.
-# Unless otherwise provided for in the license under which this Software is provided, the Software is provided AS IS, with no warranties of any kind, express or implied.
-# Except as expressly permitted by the Software license, neither RealSense, Inc. nor Intel Corporation, or any of their suppliers, assumes any responsibility or liability for any errors or inaccuracies that may appear herein.
-# Except as expressly permitted by the Software license, no part of the Software may be reproduced, stored in a retrieval system, transmitted in any form, or distributed by any means without the express written consent of RealSense, Inc.
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
-#########################################################################################################################################
-##                   tests for OCC and Tare calib flows                                                                ##
-#########################################################################################################################################
 import sys
 import time
+import copy
 import pyrealsense2 as rs
 from rspy import test, log
 
@@ -25,9 +17,8 @@ HARDWARE_RESET_DELAY_SECONDS = 3
 def on_calib_cb(progress):
     """Callback function for calibration progress reporting."""
     pp = int(progress)
-    log.i('\r' + '*' * pp + ' ' * (99 - pp) + '*')
-    if pp == 100:
-        log.i("progress - ", pp)
+    log.d( f"Calibration at {progress}%" )
+
 
 def calibration_main(host_assistance, occ_calib, json_config, ground_truth):
     """
@@ -40,43 +31,21 @@ def calibration_main(host_assistance, occ_calib, json_config, ground_truth):
         ground_truth (float): Ground truth value for Tare calibration (None for OCC)
     
     Returns:
-        bool: True if calibration was not skipped, False if was skipped
         float: Health factor from calibration
     """
     config = rs.config()
     pipeline = rs.pipeline()
     pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+    if host_assistance:
+        config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)            
+    else:    
+        config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
     pipeline_profile = config.resolve(pipeline_wrapper)
     auto_calibrated_device = rs.auto_calibrated_device(pipeline_profile.get_device())
     if not auto_calibrated_device:
-        log.e("Failed to open device for calibration")
-        test.fail()
-        return True, 0
-    
-    ctx = rs.context()
-    try:
-        device = ctx.query_devices()[0]
-    except IndexError:
-        log.e("Failed to connect device for calibration")
-        test.fail()
-        return True, 0
-    
-    # Skip test for MIPI devices and are not in host assistance mode
-    if not device.supports(rs.camera_info.usb_type_descriptor) and not host_assistance:
-        log.i("MIPI device - skip the test")
-        return False, 0
-    
-    # Bring device in start phase
-    device.hardware_reset()
-    time.sleep(HARDWARE_RESET_DELAY_SECONDS)
+        raise RuntimeError("Failed to open auto_calibrated_device for calibration")
 
-    stream_config = rs.config()
-    if host_assistance:
-        stream_config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)            
-    else:    
-        stream_config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
-
-    conf = pipeline.start(stream_config)
+    conf = pipeline.start(config)
     pipeline.wait_for_frames()  # Verify streaming started before calling calibration methods
     calib_dev = rs.auto_calibrated_device(conf.get_device())
 
@@ -114,10 +83,135 @@ def calibration_main(host_assistance, occ_calib, json_config, ground_truth):
         raise
     finally:
         # Stop pipeline
-        try:
-            pipeline.stop()
-        except Exception as stop_error:
-            log.e("Failed to stop pipeline: ", str(stop_error))
+        pipeline.stop()
 
-    return True, health[0]
+    return health[0]
 
+
+def is_mipi_device():
+    ctx = rs.context()
+    device = ctx.query_devices()[0]
+    return device.supports(rs.camera_info.connection_type) and device.get_info(rs.camera_info.connection_type) == "GMSL"
+
+# for step 2 -  not in use for now
+"""
+def read_and_modify_calibration_table(device):
+    Demonstrates how to read, modify, and write calibration table.
+    Returns original and modified calibration tables.
+    try:
+        # Get the auto calibrated device interface
+        auto_calib_device = rs.auto_calibrated_device(device)
+        if not auto_calib_device:
+            log.e("Device does not support auto calibration")
+            return None, None
+        
+        # Read current calibration table
+        log.i("Reading current calibration table...")
+        original_calib_table = auto_calib_device.get_calibration_table()
+        log.i(f"Original calibration table size: {len(original_calib_table)} bytes")
+        
+        # Make a copy for modification
+        modified_calib_table = copy.deepcopy(original_calib_table)
+        
+        # Example modification: demonstrate table manipulation
+        # Note: This is just for demonstration - in real scenarios you would
+        # modify specific calibration parameters based on your needs
+        if len(modified_calib_table) > 10:
+            # Create a backup flag to indicate this table was modified
+            # This doesn't change actual calibration parameters, just marks the table
+            log.i("Marking calibration table as modified (demo purposes)")
+            # In a real scenario, you would modify actual calibration parameters
+            # based on the specific calibration table structure
+        
+        # Set the modified calibration table (temporarily)
+        log.i("Setting modified calibration table...")
+        auto_calib_device.set_calibration_table(modified_calib_table)
+        
+        # Verify the table was set by reading it back
+        readback_table = auto_calib_device.get_calibration_table()
+        log.i(f"Readback calibration table size: {len(readback_table)} bytes")
+        
+        # Restore original calibration table
+        log.i("Restoring original calibration table...")
+        auto_calib_device.set_calibration_table(original_calib_table)
+        
+        return original_calib_table, modified_calib_table
+        
+    except Exception as e:
+        log.e(f"Error in calibration table manipulation: {e}")
+        return None, None
+"""
+# for step 2 -  not in use for now
+"""
+def perform_calibration_with_table_backup(host_assistance, occ_calib, json_config, ground_truth):    
+    Perform calibration while backing up and restoring calibration table.
+    Can be used for both OCC and Tare calibrations.
+    
+    Args:
+        host_assistance (bool): Whether to use host assistance mode
+        occ_calib (bool): True for OCC calibration, False for Tare calibration
+        json_config (str): JSON configuration string
+        ground_truth (float): Ground truth value for Tare calibration (None for OCC)
+    
+    Returns:
+        float: Health factor from calibration, or None if failed
+
+    try:
+        # Get device
+        ctx = rs.context()
+        devices = ctx.query_devices()
+        if len(devices) == 0:
+            log.e("No devices found")
+            return None
+        
+        device = devices[0]
+        auto_calib_device = rs.auto_calibrated_device(device)
+        if not auto_calib_device:
+            log.e("Device does not support auto calibration")
+            return None
+        
+        # Step 1: Read and backup original calibration table
+        log.i("=== Step 1: Backup original calibration ===")
+        original_table = auto_calib_device.get_calibration_table()
+        log.i(f"Backed up calibration table ({len(original_table)} bytes)")
+        
+        # Step 2: Perform calibration using calibration_main
+        calib_type = "OCC" if occ_calib else "Tare"
+        log.i(f"=== Step 2: Perform {calib_type} calibration ===")
+        status, health_factor = calibration_main(host_assistance, occ_calib, json_config, ground_truth)
+        
+        if not status:
+            log.w("Calibration was skipped")
+            return None
+            
+        log.i(f"Calibration health factor: {health_factor}")
+        
+        # Step 3: Read new calibration table after calibration
+        log.i("=== Step 3: Read new calibration after calibration ===")
+        new_table = auto_calib_device.get_calibration_table()
+        log.i(f"New calibration table size: {len(new_table)} bytes")
+        
+        # Step 4: Compare tables
+        tables_different = (original_table != new_table)
+        log.i(f"Calibration table changed: {tables_different}")
+        
+        # Step 5: Demonstrate table manipulation
+        log.i("=== Step 4: Demonstrate table read/write ===")
+        orig_table, mod_table = read_and_modify_calibration_table(device)
+        
+        # Step 6: Write new calibration to flash (if calibration was successful)
+        if abs(health_factor) < 0.25:  # Good calibration
+            log.i("=== Step 5: Writing good calibration to flash ===")
+            auto_calib_device.write_calibration()
+            log.i("New calibration written to flash")
+        else:
+            log.w("Calibration health not good enough, restoring original")
+            auto_calib_device.set_calibration_table(original_table)
+            auto_calib_device.write_calibration()
+        
+        return health_factor
+        
+    except Exception as e:
+        log.e(f"Error in calibration with table backup: {e}")
+        return None
+"""
