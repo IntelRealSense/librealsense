@@ -218,7 +218,19 @@ namespace librealsense
                 cmdFWB.param1 = (int)index;
                 cmdFWB.param2 = packet_size;
                 cmdFWB.data.assign(image.data() + index, image.data() + index + packet_size);
-                res = hwm->send(cmdFWB);
+                int retries = 0;
+                try
+                {
+                    res = hwm->send(cmdFWB);
+                }
+                catch (const std::exception& e)
+                {
+                    retries++;
+                    if (retries > 3)
+                        throw ;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
+
                 i += packet_size;
             }
 
