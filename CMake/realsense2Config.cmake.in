@@ -1,9 +1,7 @@
 @PACKAGE_INIT@
 include(CMakeFindDependencyMacro)
 
-# Ask CMake to find the packages that provide the targets referenced by realsense2Targets.cmake
-find_dependency(fastcdr CONFIG REQUIRED)
-find_dependency(foonathan_memory CONFIG REQUIRED)
+@REALSENSE2_DDS_DEPENDENCIES@
 
 set(realsense2_VERSION_MAJOR "@REALSENSE_VERSION_MAJOR@")
 set(realsense2_VERSION_MINOR "@REALSENSE_VERSION_MINOR@")

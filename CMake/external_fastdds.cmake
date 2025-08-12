@@ -80,4 +80,13 @@ pop_security_flags()
 # Trigger the FastDDS build
 get_fastdds()
 
+if(BUILD_WITH_DDS)
+   set(REALSENSE2_DDS_DEPENDENCIES
+   	 "find_dependency(fastcdr CONFIG REQUIRED)\n
+	  find_dependency(foonathan_memory CONFIG REQUIRED)\n"
+	  )
+else()
+  set(REALSENSE2_DDS_DEPENDENCIES "")
+endif()
+
 push_security_flags()
