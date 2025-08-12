@@ -32,7 +32,7 @@ namespace librealsense
 
     double d500_motion::get_gyro_default_scale() const
     {
-        // D500 outputs raw 16 bit register value, dynamic range +/-125 [deg/sec] --> 250/65536=0.003814697265625 [deg/sec/LSB]
+        // D585S outputs raw 16 bit register value, dynamic range +/-125 [deg/sec] --> 250/65536=0.003814697265625 [deg/sec/LSB]
         return 0.003814697265625;
     }
 

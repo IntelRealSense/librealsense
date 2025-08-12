@@ -1,6 +1,5 @@
 // Copyright(c) 2025 RealSense, Inc. All Rights Reserved.
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-participant.h>
 #include <realdds/dds-utilities.h>
@@ -467,7 +466,7 @@ dds_guid dds_participant::create_guid()
     //      Group, Writer Group) and whether the Entity is a built-in Entity (fully pre-defined by the
     //      Protocol, automatically instantiated), a user-defined Entity (defined by the Protocol, but
     //      instantiated by the user only as needed by the application) or a vendor-specific Entity (defined by a
-    //      vendor-specific extension to the Protocol, can therefore be ignored by another vendor’s
+    //      vendor-specific extension to the Protocol, can therefore be ignored by another vendors
     //      implementation)
     // 
     //      ...

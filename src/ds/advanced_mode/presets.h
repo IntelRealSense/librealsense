@@ -213,6 +213,7 @@ namespace librealsense
     void default_436( preset & p );
     void default_450_high_res( preset & p );
     void default_450_mid_low_res( preset & p );
+    void default_585S( preset & p );
     void high_accuracy( preset & p );
     void high_density( preset & p );
     void mid_density( preset & p );

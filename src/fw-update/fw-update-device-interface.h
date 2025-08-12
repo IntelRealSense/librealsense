@@ -23,7 +23,6 @@ namespace librealsense
         // Places the device in DFU (recovery) mode, where the DFU process can continue with update_device_interface.
         // Restarts the device!
         virtual void enter_update_state() const = 0;
-
         // Returns a backup of the current flash image. Optional: return an empty buffer if unsupported
         virtual std::vector< uint8_t > backup_flash( rs2_update_progress_callback_sptr callback ) = 0;
 

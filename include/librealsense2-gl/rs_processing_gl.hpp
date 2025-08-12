@@ -139,6 +139,31 @@ namespace rs2
         };
 
         /**
+        * m420_decoder can be used for M420->RGB conversion
+        * Similar in functionality to rs2::m420_decoder but performed on the GPU
+        */
+        class m420_decoder : public rs2::m420_decoder
+        {
+        public:
+            m420_decoder() : rs2::m420_decoder(init()) { }
+
+        private:
+            std::shared_ptr<rs2_processing_block> init()
+            {
+                rs2_error* e = nullptr;
+                auto block = std::shared_ptr<rs2_processing_block>(
+                    rs2_gl_create_m420_decoder(RS2_API_VERSION, &e),
+                    rs2_delete_processing_block);
+                error::handle(e);
+
+                // Redirect options API to the processing block
+                //options::operator=(pb);
+
+                return block;
+            }
+        };
+
+        /**
          * Similar in functionality (Y411->RGB8 conversion) to rs2::y411_decoder but performed on the GPU.
          */
         class y411_decoder : public rs2::y411_decoder

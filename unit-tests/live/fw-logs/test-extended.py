@@ -31,6 +31,7 @@ with test.closure( 'Create xml files', on_fail=test.ABORT ):
                        <Event id="50" numberOfArguments="0" format="Event50" />
                        <Event id="52" numberOfArguments="3" format="Event52 Arg1:{0}, Arg2:{1}, Arg3:{2}" />
                        <Event id="59" numberOfArguments="1" format="Event59 Arg1:{0}" />
+                       <Event id="2549" numberOfArguments="0" format="Event2549" />
                        <File id="5" Name="File5" />
                        <Module id="2" Name="Module2" />
                      </Format>""" )
@@ -73,6 +74,24 @@ with test.closure( 'Create xml files', on_fail=test.ABORT ):
     definitions[2][0].set( "Path", events_dummy_path )
     definitions_path = os.path.join( path, 'definitions.xml' )
     ET.ElementTree( definitions ).write( definitions_path )
+
+with test.closure( 'Handle D585S file versions' ):
+    import xml.etree.ElementTree as ET
+    device_name = dev.get_info( rs.camera_info.name )
+    if device_name.find( "D585S" ) != -1:
+        fw_version = dev.get_info( rs.camera_info.firmware_version )
+        tree = ET.parse( events_real_path )
+        root = tree.getroot()
+        test.check( root.tag, 'Format' )
+        root.set( 'version', fw_version )
+        tree.write( events_real_path )
+        
+        smcu_version = dev.get_info( rs.camera_info.smcu_fw_version )
+        tree = ET.parse( events_dummy_path )
+        root = tree.getroot()
+        test.check( root.tag, 'Format' )
+        root.set( 'version', smcu_version )
+        tree.write( events_dummy_path )
 
 with test.closure( 'Load unsupported definitions file' ):
     with open( events_real_path , 'r') as f:

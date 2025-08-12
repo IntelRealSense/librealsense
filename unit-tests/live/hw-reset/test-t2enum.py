@@ -38,7 +38,7 @@ def get_max_enum_time_by_device( dev ):
             print(18)
             return MAX_ENUM_TIME_D500 + 3  # some extra time for discovery and initialization for DDS
         return MAX_ENUM_TIME_D500
-    return 0;
+    return 0
 
 ################################################################################################
 test.start( "HW reset to enumeration time" )
