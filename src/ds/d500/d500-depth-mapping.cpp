@@ -5,7 +5,7 @@
 
 #include "d500-safety.h"
 #include "d500-info.h"
-#include "d500-md.h"
+#include "d585s-md.h"
 #include "d500-types/safety-interface-config.h"
 
 #include <vector>

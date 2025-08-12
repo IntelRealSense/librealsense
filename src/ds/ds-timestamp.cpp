@@ -14,7 +14,7 @@
 #include "device.h"
 #include "image.h"
 #include "metadata.h"
-#include "d500/d500-md.h"
+#include "d500/d585s-md.h"
 
 namespace librealsense
 {

@@ -1,4 +1,3 @@
-/* Copyright(c) 2025 RealSense, Inc. All Rights Reserved. */
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022-4 RealSense, Inc. All Rights Reserved.
 #pragma once
@@ -31,7 +30,7 @@ class dds_publisher;
 // The 'writer' is used to write data to a topic, bound at creation time (and therefore bound to a specific type).
 // 
 // You may choose to create one via a 'publisher' that manages the activities of several writers and determines when the
-// data is actually sent. By default, data is sent as soon as the writers write() function is called.
+// data is actually sent. By default, data is sent as soon as the writer's write() function is called.
 //
 class dds_topic_writer : protected eprosima::fastdds::dds::DataWriterListener
 {

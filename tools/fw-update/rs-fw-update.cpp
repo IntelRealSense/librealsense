@@ -175,8 +175,7 @@ void waiting_for_device_to_reconnect(rs2::context& ctx, rs2::cli::value<std::str
 
 }
 
-int write_fw_to_mipi_device(rs2::context& ctx, rs2::cli::value<std::string>& serial_number_arg,
-    const rs2::device& dev, const std::vector< uint8_t >& fw_image)
+int write_fw_to_mipi_device(rs2::context& ctx, rs2::cli::value<std::string>& serial_number_arg, const rs2::device& dev, const std::vector< uint8_t >& fw_image)
 {
     // Write firmware to appropriate file descriptor
     std::cout << std::endl << "Update can take up to 2 minutes" << std::endl;

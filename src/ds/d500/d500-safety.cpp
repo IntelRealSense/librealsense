@@ -14,7 +14,7 @@
 #include "ds/ds-options.h"
 #include "d500-options.h"
 #include "d500-info.h"
-#include "d500-md.h"
+#include "d585s-md.h"
 #include "stream.h"
 #include "backend.h"
 #include "platform/platform-utils.h"
