@@ -711,9 +711,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_NAME, device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, gvd_parsed_fields.optical_module_sn);
         register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, gvd_parsed_fields.optical_module_sn);
-        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, gvd_parsed_fields.fw_version);
-        register_info(RS2_CAMERA_INFO_SMCU_FW_VERSION, gvd_parsed_fields.safety_sw_suite_version);
-        
+        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, gvd_parsed_fields.fw_version);        
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GET_FW_LOGS)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
@@ -722,6 +720,11 @@ namespace librealsense
         // Uncomment once D500 recommended FW exist
         //register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
+
+        if (_pid == D585S_PID)
+        {
+            register_info(RS2_CAMERA_INFO_SMCU_FW_VERSION, gvd_parsed_fields.safety_sw_suite_version);
+        }
 
         if (usb_modality)
         {
