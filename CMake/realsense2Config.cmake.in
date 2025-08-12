@@ -1,5 +1,4 @@
 @PACKAGE_INIT@
-include(CMakeFindDependencyMacro)
 
 @REALSENSE2_DDS_DEPENDENCIES@
 

@@ -68,6 +68,7 @@ function(get_fastdds)
 
     install(TARGETS dds fastrtps eProsima_atomic EXPORT realsense2Targets)
     
+    # fastcdr is installed separately because it cannot be exported to realsense2Targets - it is already exported in fastdds
     # install in order to set ARCHIVE DESTINATION - to put libfastcdr.a into the x86_64 folder
     install(TARGETS fastcdr 
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -82,7 +83,8 @@ get_fastdds()
 
 if(BUILD_WITH_DDS)
    set(REALSENSE2_DDS_DEPENDENCIES
-   	 "find_dependency(fastcdr CONFIG REQUIRED)\n
+   	 "include(CMakeFindDependencyMacro)\n
+	  find_dependency(fastcdr CONFIG REQUIRED)\n
 	  find_dependency(foonathan_memory CONFIG REQUIRED)\n"
 	  )
 else()
