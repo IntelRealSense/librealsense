@@ -67,6 +67,10 @@ function(get_fastdds)
     add_definitions(-DBUILD_WITH_DDS)
 
     install(TARGETS dds fastrtps eProsima_atomic EXPORT realsense2Targets)
+    
+    # install in order to set ARCHIVE DESTINATION - to put libfastcdr.a into the x86_64 folder
+    install(TARGETS fastcdr 
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
     message(CHECK_PASS "Done")
 endfunction()
 
