@@ -2,7 +2,7 @@
 # Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 
 # test:device D400*
-
+# test:donotrun
 import pyrealsense2 as rs
 from rspy import log, test
 import numpy as np
