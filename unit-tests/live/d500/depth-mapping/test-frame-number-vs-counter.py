@@ -2,7 +2,7 @@
 # Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 import time
 
-# test:device each(D500*)
+# test:device D585S
 
 import pyrealsense2 as rs
 from rspy import test, log

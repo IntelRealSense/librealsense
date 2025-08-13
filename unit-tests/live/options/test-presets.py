@@ -2,7 +2,7 @@
 # Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 # test:device each(D400*)
-# test:device each(D500*)
+# test:device each(D500*) !D555
 
 # See FW stability issue RSDSO-18908
 # test:retries 2

@@ -93,3 +93,4 @@ librealsense-log.txt
 *.cxx
 
 .vscode/*
+/unit-tests/.idea
