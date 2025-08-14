@@ -1,7 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
-# test:device D400*
+# Known issue in GMSL devices
+# test:device D400* !D457 !GMSL
 # test:device each(D555)
 # This test checks streaming y16 profile
 
