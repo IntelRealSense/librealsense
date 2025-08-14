@@ -219,19 +219,27 @@ namespace librealsense
                 cmdFWB.param2 = packet_size;
                 cmdFWB.data.assign(image.data() + index, image.data() + index + packet_size);
                 int retries = 0;
-                try
+                while (retries < 3)
                 {
-                    res = hwm->send(cmdFWB);
-                }
-                catch (const std::exception& e)
-                {
-                    retries++;
-                    if (retries > 3)
-                        throw ;
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    try
+                    {
+                        res = hwm->send(cmdFWB);
+                        i += packet_size;
+                    }
+                    catch (const std::exception& e)
+                    {
+                        LOG_DEBUG("FWB command failed during section flash retry, retry number: " << retries);
+                        retries++;
+                        if (retries == 3)
+                        {
+                            LOG_ERROR("FWB command failed 3 times during section flash!");
+                            throw;
+                        }
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    }
                 }
 
-                i += packet_size;
+
             }
 
             if (callback)
