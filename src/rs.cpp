@@ -66,6 +66,7 @@
 
 #include <src/core/time-service.h>
 #include <rsutils/string/from.h>
+#include <rsutils/type/eth-config.h>
 
 ////////////////////////
 // API implementation //
@@ -1903,29 +1904,29 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
     VALIDATE_ENUM(extension);
     switch (extension)
     {
-        case RS2_EXTENSION_DEBUG                 : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::debug_interface)             != nullptr;
-        case RS2_EXTENSION_INFO                  : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::info_interface)              != nullptr;
-        case RS2_EXTENSION_OPTIONS               : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::options_interface)           != nullptr;
-        case RS2_EXTENSION_VIDEO                 : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::video_sensor_interface)      != nullptr;
-        case RS2_EXTENSION_ROI                   : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface)        != nullptr;
-        case RS2_EXTENSION_DEPTH_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_sensor)                != nullptr;
-        case RS2_EXTENSION_DEPTH_STEREO_SENSOR   : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_stereo_sensor)         != nullptr;
-        case RS2_EXTENSION_COLOR_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::color_sensor) != nullptr;
-        case RS2_EXTENSION_MOTION_SENSOR         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::motion_sensor) != nullptr;
-        case RS2_EXTENSION_FISHEYE_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::fisheye_sensor) != nullptr;
-        case RS2_EXTENSION_SAFETY_SENSOR         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::safety_sensor) != nullptr;
-        case RS2_EXTENSION_ADVANCED_MODE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::ds_advanced_mode_interface) != nullptr;
-        case RS2_EXTENSION_DEPTH_MAPPING_SENSOR  : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_mapping_sensor) != nullptr;
-        case RS2_EXTENSION_RECORD                : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::record_device)               != nullptr;
-        case RS2_EXTENSION_PLAYBACK              : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::playback_device)             != nullptr;
+        case RS2_EXTENSION_DEBUG                 : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::debug_interface)               != nullptr;
+        case RS2_EXTENSION_INFO                  : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::info_interface)                != nullptr;
+        case RS2_EXTENSION_OPTIONS               : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::options_interface)             != nullptr;
+        case RS2_EXTENSION_VIDEO                 : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::video_sensor_interface)        != nullptr;
+        case RS2_EXTENSION_ROI                   : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface)          != nullptr;
+        case RS2_EXTENSION_DEPTH_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_sensor)                  != nullptr;
+        case RS2_EXTENSION_DEPTH_STEREO_SENSOR   : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_stereo_sensor)           != nullptr;
+        case RS2_EXTENSION_COLOR_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::color_sensor)                  != nullptr;
+        case RS2_EXTENSION_MOTION_SENSOR         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::motion_sensor)                 != nullptr;
+        case RS2_EXTENSION_FISHEYE_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::fisheye_sensor)                != nullptr;
+        case RS2_EXTENSION_SAFETY_SENSOR         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::safety_sensor)                 != nullptr;
+        case RS2_EXTENSION_ADVANCED_MODE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::ds_advanced_mode_interface)    != nullptr;
+        case RS2_EXTENSION_DEPTH_MAPPING_SENSOR  : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_mapping_sensor)          != nullptr;
+        case RS2_EXTENSION_RECORD                : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::record_device)                 != nullptr;
+        case RS2_EXTENSION_PLAYBACK              : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::playback_device)               != nullptr;
         case RS2_EXTENSION_TM2                   : return false;
-        case RS2_EXTENSION_UPDATABLE             : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::updatable)                   != nullptr;
-        case RS2_EXTENSION_UPDATE_DEVICE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::update_device_interface)     != nullptr;
-        case RS2_EXTENSION_GLOBAL_TIMER          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::global_time_interface)       != nullptr;
-        case RS2_EXTENSION_AUTO_CALIBRATED_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::auto_calibrated_interface)   != nullptr;
-        case RS2_EXTENSION_DEVICE_CALIBRATION    : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::device_calibration)          != nullptr;
-        case RS2_EXTENSION_SERIALIZABLE          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::serializable_interface)      != nullptr;
-        case RS2_EXTENSION_FW_LOGGER             : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::firmware_logger_extensions)  != nullptr;
+        case RS2_EXTENSION_UPDATABLE             : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::updatable)                     != nullptr;
+        case RS2_EXTENSION_UPDATE_DEVICE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::update_device_interface)       != nullptr;
+        case RS2_EXTENSION_GLOBAL_TIMER          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::global_time_interface)         != nullptr;
+        case RS2_EXTENSION_AUTO_CALIBRATED_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::auto_calibrated_interface)     != nullptr;
+        case RS2_EXTENSION_DEVICE_CALIBRATION    : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::device_calibration)            != nullptr;
+        case RS2_EXTENSION_SERIALIZABLE          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::serializable_interface)        != nullptr;
+        case RS2_EXTENSION_FW_LOGGER             : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::firmware_logger_extensions)    != nullptr;
         case RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::calibration_change_device)  != nullptr;
 
         default:
@@ -4634,3 +4635,173 @@ void rs2_hw_monitor_get_opcode_string(int opcode, char* buffer, size_t buffer_si
     strncpy(buffer, device_interface->get_opcode_string(opcode).c_str(), buffer_size);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+constexpr static const uint32_t GET_ETH_CONFIG = 0xBB;
+constexpr static const uint32_t SET_ETH_CONFIG = 0xBA;
+constexpr static const uint32_t ETH_CONFIG_DEFAULT = 0;
+constexpr static const uint32_t ETH_CONFIG_CURRENT = 1;
+
+rsutils::type::eth_config get_eth_config( const rs2_device * device )
+{
+    VALIDATE_NOT_NULL( device );
+    auto debug_interface = VALIDATE_INTERFACE( device->device, librealsense::debug_interface ); // Etherne configurastion uses HWM commands
+
+    std::string dev_name = device->device->supports_info( RS2_CAMERA_INFO_NAME ) ? device->device->get_info( RS2_CAMERA_INFO_NAME ) : "";
+    if( dev_name.find( "D555" ) == std::string::npos )
+        throw std::runtime_error( "Currently only D555 devices support eth_config" );
+
+    auto buffer_to_send = debug_interface->build_command( GET_ETH_CONFIG, ETH_CONFIG_CURRENT );
+    auto ret_data = debug_interface->send_receive_raw_data( buffer_to_send );
+    int32_t const & code = *reinterpret_cast< int32_t const * >( ret_data.data() );
+    if( code == GET_ETH_CONFIG )  // On success opcode is reflected in the return code
+    {
+        ret_data.erase( ret_data.begin(), ret_data.begin() + sizeof( code ) );
+        return rsutils::type::eth_config( ret_data );
+    }
+
+    throw std::runtime_error( "Cannot retreive current Ethernet configuration" );
+}
+
+bool set_eth_config( const rs2_device * device, const rsutils::type::eth_config & config )
+{
+    VALIDATE_NOT_NULL( device );
+    auto debug_interface = VALIDATE_INTERFACE( device->device, librealsense::debug_interface );
+
+    auto config_buffer = config.build_command();
+    auto buffer_to_send = debug_interface->build_command( SET_ETH_CONFIG, ETH_CONFIG_CURRENT, 0, 0, 0, config_buffer.data(), config_buffer.size() );
+    auto ret_data = debug_interface->send_receive_raw_data( buffer_to_send );
+    int32_t const & code = *reinterpret_cast< int32_t const * >( ret_data.data() );
+    return code == SET_ETH_CONFIG;  // On success opcode is reflected in the return code
+}
+
+int rs2_supports_eth_config( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
+{
+    try
+    {
+        auto config = get_eth_config( device ); // Will throw if not supported
+        return true;
+    }
+    catch( std::runtime_error e )
+    {
+    }
+
+    return false;
+}
+HANDLE_EXCEPTIONS_AND_RETURN( false, device )
+
+int rs2_get_link_speed( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    return config.link.speed;
+}
+HANDLE_EXCEPTIONS_AND_RETURN( 0, device )
+
+rs2_eth_link_priority rs2_get_link_priority( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    return static_cast< rs2_eth_link_priority >( config.link.priority );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( RS2_LINK_PRIORITY_COUNT, device )
+
+void rs2_set_link_priority( const rs2_device * device, rs2_eth_link_priority priority, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    config.link.priority = static_cast< rsutils::type::link_priority >( priority );
+    set_eth_config( device, config );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , device )
+
+void rs2_get_ip_address( const rs2_device * device, rs2_ip_address configured, rs2_ip_address actual, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    config.configured.ip.get_components( configured );
+    config.actual.ip.get_components( actual );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , device )
+
+void rs2_set_ip_address( const rs2_device * device, const rs2_ip_address ip, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    config.actual.ip = ip;
+    set_eth_config( device, config );
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device )
+
+void rs2_get_netmask( const rs2_device * device, rs2_ip_address configured, rs2_ip_address actual, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    config.configured.netmask.get_components( configured );
+    config.actual.netmask.get_components( actual );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , device )
+
+void rs2_set_netmask( const rs2_device * device, const rs2_ip_address netmask, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    config.actual.netmask = netmask;
+    set_eth_config( device, config );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , device )
+
+void rs2_get_gateway( const rs2_device * device, rs2_ip_address configured, rs2_ip_address actual, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    config.configured.gateway.get_components( configured );
+    config.actual.gateway.get_components( actual );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , device )
+
+void rs2_set_gateway( const rs2_device * device, const rs2_ip_address gateway, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    config.actual.gateway = gateway;
+    set_eth_config( device, config );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , device )
+
+void rs2_get_dhcp_config( const rs2_device * device, int * enabled, unsigned int * timeout, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    *enabled = config.dhcp.on ? 1 : 0;
+    *timeout = config.dhcp.timeout;
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , device )
+
+void rs2_set_dhcp_config( const rs2_device * device, int enabled, unsigned int timeout, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    config.dhcp.on = enabled != 0;
+    config.dhcp.timeout = timeout;
+    set_eth_config( device, config );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , device )
+
+unsigned int rs2_get_mtu( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    return config.link.mtu;
+}
+HANDLE_EXCEPTIONS_AND_RETURN( 9000, device )
+
+void rs2_set_mtu( const rs2_device * device, unsigned int mtu, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    config.link.mtu = mtu;
+    set_eth_config( device, config );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , device )
+
+unsigned int rs2_get_transmission_delay( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    return config.transmission_delay;
+}
+HANDLE_EXCEPTIONS_AND_RETURN( 0, device )
+
+void rs2_set_transmission_delay( const rs2_device * device, unsigned int delay, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    config.transmission_delay = delay;
+    set_eth_config( device, config );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , device )

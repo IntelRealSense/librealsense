@@ -555,6 +555,24 @@ std::string const & get_string_( rs2_option value )
     return unknown_value_str;
 }
 
+const char * get_string( rs2_eth_link_priority value )
+{
+#define CASE( X ) STRCASE( LINK_PRIORITY, X )
+    switch( value )
+    {
+        CASE( USB_ONLY )
+        CASE( ETH_ONLY )
+        CASE( ETH_FIRST )
+        CASE( USB_FIRST )
+        CASE( DYNAMIC_ETH_FIRST )
+        CASE( DYNAMIC_USB_FIRST )
+    default:
+        assert( ! is_valid( value ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
 std::string const & get_string( rs2_option const option )
 {
     if( options_registry::is_option_registered( option ) )
@@ -984,5 +1002,5 @@ const char * rs2_safety_mode_to_string( rs2_safety_mode mode ) { return libreals
 const char * rs2_d500_intercam_sync_mode_to_string( rs2_d500_intercam_sync_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_point_cloud_label_to_string(rs2_point_cloud_label label) { return librealsense::get_string(label); }
 const char * rs2_calib_location_to_string(rs2_calib_location calib_location) { return librealsense::get_string(calib_location); }
-
 const char * rs2_gyro_sensitivity_to_string( rs2_gyro_sensitivity mode ){return librealsense::get_string( mode );}
+const char * rs2_eth_link_priority_to_string( rs2_eth_link_priority priority ){return librealsense::get_string( priority );}
