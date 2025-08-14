@@ -12,21 +12,23 @@ dev, _ = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 dp_device = dev.as_debug_protocol()
 
-
+is_projector_option_supported = True
 ########################################  HELPERS  ##########################################
 
 def get_temperatures_from_xu():
+    global is_projector_option_supported
     pvt_temp = -10
     ohm_temp = -10
     proj_temp = -10
 
     test.check(depth_sensor.supports(rs.option.soc_pvt_temperature))
     test.check(depth_sensor.supports(rs.option.ohm_temperature))
-    test.check(depth_sensor.supports(rs.option.projector_temperature))
+    is_projector_option_supported = depth_sensor.supports(rs.option.projector_temperature)
 
     pvt_temp = depth_sensor.get_option(rs.option.soc_pvt_temperature)
     ohm_temp = depth_sensor.get_option(rs.option.ohm_temperature)
-    proj_temp = depth_sensor.get_option(rs.option.projector_temperature)
+    if is_projector_option_supported:
+        proj_temp = depth_sensor.get_option(rs.option.projector_temperature)
 
     return pvt_temp, ohm_temp, proj_temp
 
@@ -79,8 +81,10 @@ def get_temperatures_from_hwm():
     ohm_temp = all_temp_list[ohm_temp_index - 1]
 
     # get projector temperature
-    proj_temp_index = 1
-    proj_temp = all_temp_list[proj_temp_index - 1]
+    proj_temp = -10
+    if is_projector_option_supported:
+        proj_temp_index = 1
+        proj_temp = all_temp_list[proj_temp_index - 1]
 
     return pvt_temp, ohm_temp, proj_temp
 
@@ -97,7 +101,8 @@ pvt_temp_hwm, ohm_temp_hwm, projector_temp_hwm = get_temperatures_from_hwm()
 tolerance = 3.0
 test.check_approx_abs(pvt_temp_xu, pvt_temp_hwm, tolerance)
 test.check_approx_abs(ohm_temp_xu, ohm_temp_hwm, tolerance)
-test.check_approx_abs(projector_temp_xu, projector_temp_xu, tolerance)
+if is_projector_option_supported:
+    test.check_approx_abs(projector_temp_xu, projector_temp_xu, tolerance)
 
 test.finish()
 #############################################################################################
