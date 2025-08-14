@@ -924,10 +924,11 @@ std::string const & get_string( rs2_option_type value )
     {
         std::vector< std::string > arr( RS2_OPTION_TYPE_COUNT );
 #define CASE( X ) STRARR( arr, OPTION_TYPE, X );
+        CASE( INTEGER )
         CASE( FLOAT )
         CASE( STRING )
-        CASE( INTEGER )
         CASE( BOOLEAN )
+        CASE( RECT )
 #undef CASE
             return arr;
     }();
