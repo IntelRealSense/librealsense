@@ -1,7 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2025 Intel Corporation. All Rights Reserved.
 
-# test:device D400*
+#test:device:jetson D457
+#test:device:!jetson D455
 # test:donotrun:!nightly
 
 import pyrealsense2 as rs
