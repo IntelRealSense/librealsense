@@ -12,7 +12,7 @@
 [![Release](https://img.shields.io/github/v/release/IntelRealSense/librealsense?sort=semver)](https://github.com/IntelRealSense/librealsense/releases/latest)
 [![Commits](https://img.shields.io/github/commits-since/IntelRealSense/librealsense/master/development?label=commits%20since)](https://github.com/IntelRealSense/librealsense/compare/master...development)
 [![Issues](https://img.shields.io/github/issues/IntelRealSense/librealsense.svg)](https://github.com/IntelRealSense/librealsense/issues)
-[![GitHub CI](../../actions/workflows/buildsCI.yaml/badge.svg?branch=development)](../../actions/workflows/buildsCI.yaml)
+[![GitHub CI](https://github.com/IntelRealSense/librealsense/actions/workflows/buildsCI.yaml/badge.svg?branch=development)](https://github.com/IntelRealSense/librealsense/actions/workflows/buildsCI.yaml/badge.svg)
 [![Forks](https://img.shields.io/github/forks/IntelRealSense/librealsense.svg)](https://github.com/IntelRealSense/librealsense/network/members)
 
 
