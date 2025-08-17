@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 
 set(HEADER_FILES_ROSLZ4
         ${CMAKE_CURRENT_LIST_DIR}/include/roslz4/lz4s.h

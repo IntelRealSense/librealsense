@@ -1,6 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2019-2024 RealSense, Inc. All Rights Reserved.
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 
 project(RealsenseExamplesCapture)
 
