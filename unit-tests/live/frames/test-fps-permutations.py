@@ -3,6 +3,7 @@
 
 # test:device D400* !D457
 # Currently, we exclude D457 as it's failing
+# test:device D555
 # test:donotrun:!nightly
 # test:timeout 300
 # timeout - on the worst case we have 8 streams, so:
@@ -52,8 +53,14 @@ def get_sensors_and_profiles(device):
                 sensor.set_option(rs.option.auto_exposure_priority, 0)  # AE priority should be 0 for constant FPS
             profile = fps_helper.get_profile(sensor, rs.stream.color, HD_RESOLUTION)
         elif sensor.is_motion_sensor():
-            sensor_profiles_arr.append((sensor, fps_helper.get_profile(sensor, rs.stream.accel)))
-            sensor_profiles_arr.append((sensor, fps_helper.get_profile(sensor, rs.stream.gyro)))
+            connection_type = "USB"
+            if dev.supports(rs.camera_info.connection_type):
+                connection_type = dev.get_info(rs.camera_info.connection_type)
+            if connection_type == "DDS":
+                sensor_profiles_arr.append((sensor, fps_helper.get_profile(sensor, rs.stream.motion)))
+            else:
+                sensor_profiles_arr.append((sensor, fps_helper.get_profile(sensor, rs.stream.accel)))
+                sensor_profiles_arr.append((sensor, fps_helper.get_profile(sensor, rs.stream.gyro)))
 
         if profile is not None:
             sensor_profiles_arr.append((sensor, profile))
