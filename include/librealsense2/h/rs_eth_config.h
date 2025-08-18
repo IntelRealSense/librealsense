@@ -70,6 +70,22 @@ rs2_eth_link_priority rs2_get_link_priority( const rs2_device * device, rs2_erro
 void rs2_set_link_priority( const rs2_device * device, rs2_eth_link_priority priority, rs2_error ** error );
 
 /**
+ * Get link priority
+ * \param[in] device    RealSense device
+ * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return              Current link timeout in milliseconds
+ */
+unsigned int rs2_get_link_timeout( const rs2_device * device, rs2_error ** error );
+
+/**
+ * Set link priority
+ * \param[in] device    RealSense device
+ * \param[in] timeout   Link timeout to set in milliseconds
+ * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_set_link_timeout( const rs2_device * device, unsigned int timeout, rs2_error ** error );
+
+/**
     * Get IP address
     * \param[in] device    RealSense device
     * \param[out] configured_ip  Configured IP address to populate

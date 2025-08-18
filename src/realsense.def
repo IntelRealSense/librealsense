@@ -464,6 +464,8 @@ EXPORTS
     rs2_get_link_speed
     rs2_get_link_priority
     rs2_set_link_priority
+    rs2_get_link_timeout
+    rs2_set_link_timeout
     rs2_get_ip_address
     rs2_set_ip_address
     rs2_get_netmask

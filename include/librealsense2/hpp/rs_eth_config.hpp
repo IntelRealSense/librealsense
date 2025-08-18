@@ -75,6 +75,27 @@ namespace rs2
         }
 
         /**
+         * Get current link timeout setting in milliseconds
+         */
+        uint32_t get_link_timeout() const
+        {
+            rs2_error * e = nullptr;
+            auto result = rs2_get_link_timeout( _dev.get(), &e );
+            error::handle( e );
+            return result;
+        }
+
+        /**
+         * Set link timeout in milliseconds
+         */
+        void set_link_timeout( uint32_t timeout ) const
+        {
+            rs2_error * e = nullptr;
+            rs2_set_link_timeout( _dev.get(), timeout, &e );
+            error::handle( e );
+        }
+
+        /**
          * Get current IP address
          */
         void get_ip_address( rs2_ip_address & configured_ip, rs2_ip_address & actual_ip) const

@@ -4711,6 +4711,21 @@ void rs2_set_link_priority( const rs2_device * device, rs2_eth_link_priority pri
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
 
+unsigned int rs2_get_link_timeout( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    return static_cast< rs2_eth_link_priority >( config.link.timeout );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( RS2_LINK_PRIORITY_COUNT, device )
+
+void rs2_set_link_timeout( const rs2_device * device, unsigned int timeout, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    config.link.timeout = timeout;
+    set_eth_config( device, config );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , device )
+
 void rs2_get_ip_address( const rs2_device * device, rs2_ip_address configured, rs2_ip_address actual, rs2_error ** error ) BEGIN_API_CALL
 {
     auto config = get_eth_config( device );

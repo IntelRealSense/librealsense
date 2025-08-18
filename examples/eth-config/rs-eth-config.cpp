@@ -58,6 +58,10 @@ void print_ethernet_config( const rs2::eth_config_device & eth_device )
         auto priority = eth_device.get_link_priority();
         std::cout << "Link Priority: " << link_priority_to_string( priority ) << std::endl;
 
+        // Get link timeout
+        auto timeout = eth_device.get_link_timeout();
+        std::cout << "Link Timeout:  " << timeout << " milliseconds" << std::endl;
+
         // Get IP configuration - now using the new API with both configured and actual values
         rs2_ip_address configured_ip, actual_ip;
         rs2_ip_address configured_netmask, actual_netmask;
