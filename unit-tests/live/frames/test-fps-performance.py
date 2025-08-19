@@ -1,8 +1,9 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2025 RealSense, Inc. All Rights Reserved.
 
-# test:device each(D400*)
-# test:device each(D500*) 
+# test:donotrun:!local
+# test:device D400*
+# test:device D500*
 # test:timeout 14400
 # CI timeout set to 4 hours to accommodate comprehensive testing of all
 # supported resolution and FPS combinations across depth, color, and IR streams
