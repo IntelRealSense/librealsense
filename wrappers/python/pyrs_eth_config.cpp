@@ -10,8 +10,6 @@ void init_eth_config(py::module &m) {
 
     // Found also in pyrsutils. Here to avoid dependency (need to import pyrsutils whenever importing pyrealsense2)
     // Using pyrsutils ip_address, not rs2_ip_address, because python must work on objects, not native type array.
-    // 
-    // TODO - try importing both pyrsutils and pyrealsense2 and create an ip_address object. Verify it works
     using rsutils::type::ip_address;
     py::class_< ip_address >( m, "ip_address" )
         .def( py::init<>() )
@@ -21,13 +19,20 @@ void init_eth_config(py::module &m) {
         .def( "empty", &ip_address::empty )
         .def( "clear", &ip_address::clear )
         .def( "__str__", &ip_address::to_string )
+        .def( "__eq__", &ip_address::operator== )
+        .def( "__ne__", &ip_address::operator!= )
         .def( "get_components", []( const ip_address & self, uint8_t & b0, uint8_t & b1, uint8_t & b2, uint8_t & b3 ) { self.get_components( b0, b1, b2, b3 ); }, "Get IP address components" )
         .def( "get_components", []( const ip_address & self, uint8_t b[4] ) { self.get_components( b ); }, "Get IP address components" );
 
     /** rs_eth_config.hpp **/
     
-    // Bind the enum
-    BIND_ENUM( m, rs2_eth_link_priority, RS2_LINK_PRIORITY_COUNT, "Ethernet link priority options" );
+    py::enum_< rs2_eth_link_priority >( m, "link_priority" )
+        .value( "usb_only", RS2_LINK_PRIORITY_USB_ONLY )
+        .value( "eth_only", RS2_LINK_PRIORITY_ETH_ONLY )
+        .value( "eth_first", RS2_LINK_PRIORITY_ETH_FIRST )
+        .value( "usb_first", RS2_LINK_PRIORITY_USB_FIRST )
+        .value( "dynamic_eth_first", RS2_LINK_PRIORITY_DYNAMIC_ETH_FIRST )
+        .value( "dynamic_usb_first", RS2_LINK_PRIORITY_DYNAMIC_USB_FIRST );
 
     // Bind the eth_config_device class
     py::class_< rs2::eth_config_device, rs2::device > eth_config_device( m, "eth_config_device",
@@ -37,6 +42,8 @@ void init_eth_config(py::module &m) {
         .def( "get_link_speed", &rs2::eth_config_device::get_link_speed, "Get Ethernet link speed, 0 if not linked" )
         .def( "get_link_priority", &rs2::eth_config_device::get_link_priority, "Get current link priority setting" )
         .def( "set_link_priority", &rs2::eth_config_device::set_link_priority, "Set link priority", "priority"_a )
+        .def( "get_link_timeout", &rs2::eth_config_device::get_link_timeout, "Get current link timeout in milliseconds" )
+        .def( "set_link_timeout", &rs2::eth_config_device::set_link_timeout, "Set link timeout in milliseconds", "timeout"_a )
         .def( "get_ip_address", []( const rs2::eth_config_device & self )
         {
             rs2_ip_address configured_ip, actual_ip;

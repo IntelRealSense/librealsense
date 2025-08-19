@@ -15,6 +15,7 @@ The example shows how to:
 ### Configuration Parameters
 - **Link Speed**: Current Ethernet link speed in Mbps (read-only, 0 if no link established)
 - **Link Priority**: Controls whether the device prefers USB or Ethernet connection
+- **Link Timeout**: Controls when to fallback from prefered link type to the other (milliseconds)
 - **IP Address**: Shows both configured and actual IP address values
 - **Network Mask**: Shows both configured and actual subnet mask values  
 - **Gateway**: Shows both configured and actual gateway values
@@ -41,16 +42,17 @@ RealSense Ethernet Configuration Example
 
 Found Ethernet-capable device:
   Name: Intel RealSense D555
-  Serial: 123456789
-  FW Version: 5.15.0.2
+  Serial: 333422302656
+  FW Version: 7.56.19918.835
 
 === Current Ethernet Configuration ===
 Link Speed:    1000 Mbps
-Link Priority: usb-first
-IP Address:    192.168.1.100 (actual: 192.168.1.101)
+Link Priority: Dynamic Eth First
+Link Timeout:  4000 milliseconds
+IP Address:    192.168.11.55 (actual: 192.168.11.55)
 Network Mask:  255.255.255.0 (actual: 255.255.255.0)
-Gateway:       192.168.1.1 (actual: 192.168.1.1)
-DHCP Enabled:  Yes
+Gateway:       192.168.11.1 (actual: 192.168.11.1)
+DHCP Enabled:  No
 DHCP Timeout:  30 seconds
 MTU:           9000 bytes
 TX Delay:      0 microseconds
@@ -58,8 +60,8 @@ TX Delay:      0 microseconds
 === Demonstrating Configuration Changes ===
 
 Demonstrating link priority change...
-Setting link priority to Ethernet First
-Link priority changed from usb-first to eth-first
+Setting link priority to Eth First
+Link priority changed from Dynamic Eth First to Eth First
 
 Demonstrating DHCP timeout change...
 Setting DHCP timeout to 60 seconds
@@ -92,9 +94,9 @@ Configuration restored to original values
 
 ### Main Functions
 - `print_ethernet_config()`: Displays current configuration including link speed and configured vs actual IP values
-- `demonstrate_config_changes()`: Shows how to modify non-critical settings safely
-- `print_link_speed()`: Reads and displays current link speed using direct C API
+- `demonstrate_config_changes()`: Shows how to modify selected settings safely
 
 ### Helper Functions
 - `link_priority_to_string()`: Converts enum to readable string
 - `format_ip_address()`: Formats IP addresses for display, handles invalid addresses
+- `print_link_speed()`: Reads and displays current link speed

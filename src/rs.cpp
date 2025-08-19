@@ -4737,7 +4737,7 @@ HANDLE_EXCEPTIONS_AND_RETURN( , device )
 void rs2_set_ip_address( const rs2_device * device, const rs2_ip_address ip, rs2_error ** error ) BEGIN_API_CALL
 {
     auto config = get_eth_config( device );
-    config.actual.ip = ip;
+    config.configured.ip = ip;
     set_eth_config( device, config );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device )
@@ -4753,7 +4753,7 @@ HANDLE_EXCEPTIONS_AND_RETURN( , device )
 void rs2_set_netmask( const rs2_device * device, const rs2_ip_address netmask, rs2_error ** error ) BEGIN_API_CALL
 {
     auto config = get_eth_config( device );
-    config.actual.netmask = netmask;
+    config.configured.netmask = netmask;
     set_eth_config( device, config );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
@@ -4769,7 +4769,7 @@ HANDLE_EXCEPTIONS_AND_RETURN( , device )
 void rs2_set_gateway( const rs2_device * device, const rs2_ip_address gateway, rs2_error ** error ) BEGIN_API_CALL
 {
     auto config = get_eth_config( device );
-    config.actual.gateway = gateway;
+    config.configured.gateway = gateway;
     set_eth_config( device, config );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
