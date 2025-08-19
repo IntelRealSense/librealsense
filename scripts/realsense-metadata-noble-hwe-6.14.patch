@@ -1,17 +1,17 @@
-From c98771def2b4ada88a51d165f8b61c63ac4de256 Mon Sep 17 00:00:00 2001
+From fe38e55ca6e48dbc0c10ff917ebafd85e82821d4 Mon Sep 17 00:00:00 2001
 From: Remi Bettan <remibettan@gmail.com>
-Date: Tue, 19 Aug 2025 17:04:32 +0300
-Subject: [PATCH] add_rs_skus
+Date: Tue, 19 Aug 2025 22:45:16 +0300
+Subject: [PATCH] 123
 
 ---
- drivers/media/usb/uvc/uvc_driver.c | 35 ++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ drivers/media/usb/uvc/uvc_driver.c | 37 ++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 11b04f6f6..fe6b1dcf4 100644
+index 11b04f6f6..d3f45f333 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -3197,6 +3197,41 @@ static const struct usb_device_id uvc_ids[] = {
+@@ -3197,6 +3197,43 @@ static const struct usb_device_id uvc_ids[] = {
  	  .bInterfaceSubClass	= 1,
  	  .bInterfaceProtocol	= 0,
  	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
@@ -32,7 +32,8 @@ index 11b04f6f6..fe6b1dcf4 100644
 +	  .bInterfaceClass	= USB_CLASS_VIDEO,
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
-+	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },+	/* Intel D585 Depth Camera */
++	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++	/* Intel D585 Depth Camera */
 +	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
 +	  .idVendor		= 0x8086,
@@ -50,6 +51,7 @@ index 11b04f6f6..fe6b1dcf4 100644
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++
  	/* Generic USB Video Class */
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_UNDEFINED) },
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_15) },
