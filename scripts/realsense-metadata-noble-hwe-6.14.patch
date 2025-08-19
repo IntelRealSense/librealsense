@@ -1,0 +1,58 @@
+From c98771def2b4ada88a51d165f8b61c63ac4de256 Mon Sep 17 00:00:00 2001
+From: Remi Bettan <remibettan@gmail.com>
+Date: Tue, 19 Aug 2025 17:04:32 +0300
+Subject: [PATCH] add_rs_skus
+
+---
+ drivers/media/usb/uvc/uvc_driver.c | 35 ++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
+index 11b04f6f6..fe6b1dcf4 100644
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -3197,6 +3197,41 @@ static const struct usb_device_id uvc_ids[] = {
+ 	  .bInterfaceSubClass	= 1,
+ 	  .bInterfaceProtocol	= 0,
+ 	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++	/* Intel D436 Depth Camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x8086,
++	  .idProduct		= 0x1156,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
++	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++	/* Intel D555 Depth Camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x8086,
++	  .idProduct		= 0x0b56,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
++	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },+	/* Intel D585 Depth Camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x8086,
++	  .idProduct		= 0x0b6a,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
++	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++	/* Intel 585 Camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x8086,
++	  .idProduct		= 0x0b6b,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
++	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
+ 	/* Generic USB Video Class */
+ 	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_UNDEFINED) },
+ 	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_15) },
+-- 
+2.43.0
+
