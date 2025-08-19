@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include "sid_index.h"
@@ -30,7 +30,7 @@ class imu_msg;
 
 namespace librealsense {
 
-
+class video_stream_profile;
 class dds_device_proxy;
 class roi_sensor_interface;
 
@@ -96,6 +96,7 @@ public:
 protected:
     void register_converters();
     stream_profiles init_stream_profiles() override;
+    void calculate_bandwidth( const std::shared_ptr< librealsense::video_stream_profile > & vsp );
 
     std::shared_ptr< realdds::dds_video_stream_profile >
     find_profile( sid_index sidx, realdds::dds_video_stream_profile const & profile ) const;

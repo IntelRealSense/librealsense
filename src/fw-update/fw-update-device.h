@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <src/core/device-interface.h>
@@ -21,7 +21,7 @@ namespace librealsense
         RS2_DFU_STATUS_VERIFY = 0x07,       // Programmed memory failed verification.
         RS2_DFU_STATUS_ADDRESS = 0x08,      // Cannot program memory due to received address that is out of range.
         RS2_DFU_STATUS_NOTDONE = 0x09,      // Received DFU_DNLOAD with wLength = 0, but device does    not think it has all of the data yet.
-        RS2_DFU_STATUS_FIRMWARE = 0x0A,     // Device�s firmware is corrupt.It cannot return to run - time    (non - DFU) operations.
+        RS2_DFU_STATUS_FIRMWARE = 0x0A,     // Device's firmware is corrupt.It cannot return to run - time    (non - DFU) operations.
         RS2_DFU_STATUS_VENDOR = 0x0B,       // iString indicates a vendor - specific RS2_DFU_STATUS_or.
         RS2_DFU_STATUS_USBR = 0x0C,         // Device detected unexpected USB reset signaling.
         RS2_DFU_STATUS_POR = 0x0D,          // Device detected unexpected power on reset.

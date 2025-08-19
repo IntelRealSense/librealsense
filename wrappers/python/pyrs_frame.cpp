@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 #include "pyrealsense2.h"
 #include <librealsense2/rs.hpp>
@@ -150,6 +150,7 @@ void init_frame(py::module &m) {
         .def("keep", &rs2::frame::keep, "Keep the frame, otherwise if no refernce to the frame, the frame will be released.")
         .def(BIND_DOWNCAST(frame, frame))
         .def(BIND_DOWNCAST(frame, points))
+        .def(BIND_DOWNCAST(frame, labeled_points))
         .def(BIND_DOWNCAST(frame, frameset))
         .def(BIND_DOWNCAST(frame, video_frame))
         .def(BIND_DOWNCAST(frame, depth_frame))
@@ -294,6 +295,22 @@ void init_frame(py::module &m) {
         .def("get_pose_data", &rs2::pose_frame::get_pose_data, "Retrieve the pose data from T2xx position tracking sensor.")
         .def_property_readonly("pose_data", &rs2::pose_frame::get_pose_data, "Pose data from T2xx position tracking sensor. Identical to calling get_pose_data.");
 
+    py::class_<rs2::labeled_points, rs2::frame> labeled_points(m, "labeled_points", "Extends the frame class with additional labeled points related attributes and functions.");
+    labeled_points.def(py::init<rs2::frame>())
+        .def("get_vertices", [](rs2::labeled_points& self) {
+        auto verts = const_cast<rs2::vertex*>(self.get_vertices());
+        return BufData(verts, sizeof(rs2::vertex), "@fff", self.size());
+            }, "Retrieve the vertices of the labeled point cloud", py::keep_alive<0, 1>())
+        .def("get_labels", [](rs2::labeled_points& self) {
+        auto labels = const_cast<uint8_t*>(self.get_labels());
+        return BufData(labels, sizeof(uint8_t), "@B", self.size());
+            }, "Retrieve the labels of the labeled point cloud", py::keep_alive<0, 1>() )
+                .def( "get_width", &rs2::labeled_points::get_width, "Returns labeled point cloud width in pixels." )
+                .def_property_readonly( "width", &rs2::labeled_points::get_width, "labeled point cloud width in pixels. Identical to calling get_width." )
+                .def( "get_height", &rs2::labeled_points::get_height, "Returns labeled point cloud height in pixels." )
+                .def_property_readonly( "height", &rs2::labeled_points::get_height, "labeled point cloud height in pixels. Identical to calling get_height." )
+                .def( "get_bpp", &rs2::labeled_points::get_bits_per_pixel, "Returns labeled point cloud bpp (bits per pixel)." );
+
     // TODO: Deprecate composite_frame, replace with frameset
     py::class_<rs2::frameset, rs2::frame> frameset(m, "composite_frame", "Extends the frame class with additional frameset related attributes and functions");
     frameset.def(py::init<rs2::frame>())
@@ -314,6 +331,7 @@ void init_frame(py::module &m) {
              "found, return an empty frame instance.", "index"_a = 0)
         .def("get_fisheye_frame", &rs2::frameset::get_fisheye_frame, "Retrieve the fisheye monochrome video frame", "index"_a = 0)
         .def("get_pose_frame", &rs2::frameset::get_pose_frame, "Retrieve the pose frame", "index"_a = 0)
+        .def("get_labeled_point_cloud_frame", &rs2::frameset::get_labeled_point_cloud_frame, "Retrieve the labeled point cloud frame, if no frame is found, return an empty frame instance.")
         .def("__iter__", [](rs2::frameset& self) {
             return py::make_iterator(self.begin(), self.end());
         }, py::keep_alive<0, 1>())

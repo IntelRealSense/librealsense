@@ -1,11 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #include "record_sensor.h"
 #include "api.h"
 #include "stream.h"
 #include <src/depth-sensor.h>
 #include <src/color-sensor.h>
+#include <src/safety-sensor.h>
+#include <src/depth-mapping-sensor.h>
 #include <src/core/frame-callback.h>
 
 #include <rsutils/string/from.h>
@@ -168,6 +170,12 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
         return *ext;
     case RS2_EXTENSION_POSE_SENSOR:
         *ext = As< typename ExtensionToType< RS2_EXTENSION_POSE_SENSOR >::type >( &m_sensor );
+        return *ext;
+    case RS2_EXTENSION_SAFETY_SENSOR:
+        *ext = As< typename ExtensionToType< RS2_EXTENSION_SAFETY_SENSOR >::type >( &m_sensor );
+        return *ext;
+    case RS2_EXTENSION_DEPTH_MAPPING_SENSOR:
+        *ext = As< typename ExtensionToType< RS2_EXTENSION_DEPTH_MAPPING_SENSOR >::type >( &m_sensor );
         return *ext;
 
     //Other extensions are not expected to be extensions of a sensor

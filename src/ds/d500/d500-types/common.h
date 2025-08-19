@@ -1,9 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
 #include <rsutils/json.h>
+#include <rsutils/json-validator.h>
 #include <stdint.h>
 #include <sstream>
 #include <stdexcept>
@@ -11,6 +12,7 @@
 namespace librealsense
 {
     using rsutils::json;
+    using rsutils::json_validator::validate_json_field;
 
 #pragma pack(push, 1)
 
@@ -37,7 +39,7 @@ namespace librealsense
     /*
     vertex class
     handles JSON representing 2D Vertex (x,y)
-    JSON schema: [ float, float ]
+    JSON schema: [ uint16_t, uint16_t ]
     */
     class vertex
     {
@@ -61,11 +63,11 @@ namespace librealsense
         {
             if (!j.is_array() || j.size() != 2)
             {
-                throw std::invalid_argument("Invalid Vertex format: each vertex should be an array of size=2");
+                throw librealsense::invalid_value_exception("Invalid Vertex format: each vertex should be an array of size=2");
             }
             if (!j[0].is_number_unsigned() || !j[1].is_number_unsigned())
             {
-                throw std::invalid_argument("Invalid Vertex type: Each vertex must include only unsigned integers");
+                throw librealsense::invalid_value_exception("Invalid Vertex type: Each vertex must include only unsigned integers");
             }
         }
 
@@ -113,13 +115,13 @@ namespace librealsense
         {
             if (!j.is_object())
             {
-                throw std::invalid_argument("Invalid ROI format");
+                throw librealsense::invalid_value_exception("Invalid ROI format");
             }
             for (const auto &field : {"vertex_0", "vertex_1", "vertex_2", "vertex_3"})
             {
                 if (!j.contains(field))
                 {
-                    throw std::invalid_argument(std::string("Invalid ROI format: missing field: ") + field);
+                    throw librealsense::invalid_value_exception(std::string("Invalid ROI format: missing field: ") + field);
                 }
             }
         }
@@ -184,40 +186,50 @@ namespace librealsense
             return j;
         }
 
+        std::array<std::array<float, 3>, 3> get_rotation() const
+        {
+            return m_rotation;
+        }
+
+        std::array<float, 3> get_translation() const
+        {
+            return m_translation;
+        }
+
     private:
         void validate_json(const json &j) const
         {
             if (!j.is_object() || j.size() != 2 || !j.contains("rotation") || !j.contains("translation"))
             {
-                throw std::invalid_argument("Invalid camera_position format: camera_position must include rotation and translation fields");
+                throw librealsense::invalid_value_exception("Invalid camera_position format: camera_position must include rotation and translation fields");
             }
             if (!j.at("rotation").is_array() || j.at("rotation").size() != 3)
             {
-                throw std::invalid_argument("Invalid rotation format: rotation must be a 3x3 matrix");
+                throw librealsense::invalid_value_exception("Invalid rotation format: rotation must be a 3x3 matrix");
             }
             for (size_t i = 0; i < 3; ++i)
             {
                 if (!j.at("rotation")[i].is_array() || j.at("rotation")[i].size() != 3)
                 {
-                    throw std::invalid_argument("Invalid rotation row format: rotation must be a 3x3 matrix");
+                    throw librealsense::invalid_value_exception("Invalid rotation row format: rotation must be a 3x3 matrix");
                 }
                 for (size_t k = 0; k < 3; ++k)
                 {
                     if (!j.at("rotation")[i][k].is_number_float())
                     {
-                        throw std::invalid_argument("Invalid rotation type: all rotation values must be floats.");
+                        throw librealsense::invalid_value_exception("Invalid rotation type: all rotation values must be floats.");
                     }
                 }
             }
             if (!j.at("translation").is_array() || j.at("translation").size() != 3)
             {
-                throw std::invalid_argument("Invalid translation format: translation vector should be an array of size=3");
+                throw librealsense::invalid_value_exception("Invalid translation format: translation vector should be an array of size=3");
             }
             for (size_t i = 0; i < 3; ++i)
             {
                 if (!j.at("translation")[i].is_number_float())
                 {
-                    throw std::invalid_argument("Invalid translation type: translation vector values should be floats");
+                    throw librealsense::invalid_value_exception("Invalid translation type: translation vector values should be floats");
                 }
             }
         }

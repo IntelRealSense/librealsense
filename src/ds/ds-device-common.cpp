@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #include "ds-device-common.h"
 
@@ -61,7 +61,7 @@ namespace librealsense
         return roi;
     }
 
-    void ds_device_common::enter_update_state() const
+    void ds_device_common::enter_update_state(const command& cmd) const
     {
         // Stop all data streaming/exchange pipes with HW
         _owner->stop_activity();
@@ -72,9 +72,6 @@ namespace librealsense
         try
         {
             LOG_INFO("entering to update state, device disconnect is expected");
-            command cmd(ds::DFU);
-            cmd.param1 = 1;
-            cmd.require_response = false;
             _hw_monitor->send(cmd);
 
             // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.

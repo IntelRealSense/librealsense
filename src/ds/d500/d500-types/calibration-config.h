@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -100,35 +100,35 @@ namespace librealsense
         {
             if (!j.is_object() || j.size() != 7)
             {
-                throw std::invalid_argument(
+                throw librealsense::invalid_value_exception(
                     "Invalid calibration_config format: calibration_config must include 'roi_num_of_segments', "
                     "'roi_0', 'roi_1', 'roi_2', 'roi_3', 'camera_position', and 'crypto_signature'");
             }
             if (!j.at("roi_num_of_segments").is_number_unsigned())
             {
-                throw std::invalid_argument("Invalid roi_num_of_segments type: roi_num_of_segments must be unsigned integer");
+                throw librealsense::invalid_value_exception("Invalid roi_num_of_segments type: roi_num_of_segments must be unsigned integer");
             }
             for (size_t i = 0; i < 4; ++i)
             {
                 std::string roi_field = "roi_" + std::to_string(i);
                 if (!j.at(roi_field).is_object())
                 {
-                    throw std::invalid_argument("Invalid " + roi_field + " format");
+                    throw librealsense::invalid_value_exception("Invalid " + roi_field + " format");
                 }
             }
             if (!j.at("camera_position").is_object())
             {
-                throw std::invalid_argument("Invalid camera_position format");
+                throw librealsense::invalid_value_exception("Invalid camera_position format");
             }
             if (!j.at("crypto_signature").is_array() || j.at("crypto_signature").size() != 32)
             {
-                throw std::invalid_argument("Invalid crypto_signature format: crypto_signature must be an array of size=32");
+                throw librealsense::invalid_value_exception("Invalid crypto_signature format: crypto_signature must be an array of size=32");
             }
             for (size_t i = 0; i < 32; ++i)
             {
                 if (!j.at("crypto_signature")[i].is_number_unsigned())
                 {
-                    throw std::invalid_argument("Invalid crypto_signature type: all elements in crypto_signature array must be unsigned integers");
+                    throw librealsense::invalid_value_exception("Invalid crypto_signature type: all elements in crypto_signature array must be unsigned integers");
                 }
             }
         }

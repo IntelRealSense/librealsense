@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 #include "rosbag/bag.h"
@@ -33,6 +33,7 @@ namespace librealsense
         void write_additional_frame_messages(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_interface* frame);
         void write_video_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame);
         void write_motion_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame);
+        void write_labeled_points_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame);
         inline geometry_msgs::Vector3 to_vector3(const float3& f);
         inline geometry_msgs::Quaternion to_quaternion(const float4& f);
         void write_pose_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame);

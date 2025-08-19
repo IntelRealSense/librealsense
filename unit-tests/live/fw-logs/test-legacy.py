@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2025 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2025 RealSense, Inc. All Rights Reserved.
 
 # DDS devices have not implemented firmware_logger interface yet
 ##test:donotrun:!dds

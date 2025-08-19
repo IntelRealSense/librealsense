@@ -1,10 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
 #include <src/platform/uvc-option.h>
 #include "ds/ds-private.h"
+#include "ds/ds-options.h"
 #include "core/options-container.h"
 #include "option.h"
 
@@ -93,6 +94,39 @@ namespace librealsense
         { uvc_xu_option<int16_t>::enable_recording(record_action); }
     };
 
+    class d500_external_sync_mode : public option
+    {
+    public:
+        d500_external_sync_mode( hw_monitor & hwm,
+                                 const std::weak_ptr< sensor_base > & ep,
+                                 const std::map< float, std::string > & description_per_value );
+
+        virtual ~d500_external_sync_mode() = default;
+        virtual void set( float value ) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override { return _range; }
+        virtual bool is_enabled() const override { return true; }
+        virtual bool is_read_only() const override;
+        const char * get_description() const override
+        {
+            return "Inter-camera synchronization mode: 0:No sync, 1:RGB Master, 2:PWM Master, 3:External Master";
+        }
+        const char * get_value_description( float val ) const override;
+
+        void enable_recording( std::function< void( const option & ) > record_action ) override
+        {
+            _record_action = record_action;
+        }
+
+    private:
+        std::function< void( const option & ) > _record_action = []( const option & ) {
+        };
+        option_range _range;
+        const std::map< float, std::string > _description_per_value;
+        hw_monitor & _hwm;
+        std::weak_ptr< sensor_base > _sensor;
+    };
+    
     class d500_thermal_compensation_option : public bool_option
     {
     public:
@@ -104,7 +138,7 @@ namespace librealsense
     private:
         std::weak_ptr< hw_monitor > _hwm;
     };
-
+    
     class power_line_freq_option : public uvc_pu_option
     {
     public:
@@ -120,4 +154,5 @@ namespace librealsense
             return range;
         }
     };
-}
+
+} // namespace librealsense

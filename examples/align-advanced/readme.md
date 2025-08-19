@@ -30,7 +30,7 @@ The window should have the following elements:
 
 ## Code Overview
 
-As with any SDK application we include the Intel RealSense Cross Platform API:
+As with any SDK application we include the RealSense Cross Platform API:
 
 ```cpp
 #include <librealsense2/rs.hpp>

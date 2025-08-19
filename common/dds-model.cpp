@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
 #include "dds-model.h"
 #include "device-model.h"
@@ -17,6 +17,8 @@
 using namespace rs2;
 using rsutils::json;
 using rsutils::type::ip_address;
+using rsutils::type::eth_config;
+using rsutils::type::link_priority;
 
 namespace rs2 {
 
@@ -104,6 +106,11 @@ rs2::dds_model::priority rs2::dds_model::classifyPriority( link_priority & pr )
 
 bool dds_model::check_DDS_support()
 {
+    std::string dev_name = _device.supports(RS2_CAMERA_INFO_NAME) ? _device.get_info(RS2_CAMERA_INFO_NAME) : "";
+
+    if (dev_name.find("D555") == std::string::npos)
+        return false;
+
     if( _device.is< rs2::debug_protocol >() )
     {
         if( _device.supports( RS2_CAMERA_INFO_NAME ) )

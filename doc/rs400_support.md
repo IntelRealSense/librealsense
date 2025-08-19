@@ -1,10 +1,10 @@
-# Software Support Model - Intel® RealSense™ SDK 2.0
+# Software Support Model - RealSense™ SDK 2.0
 
 ## Overview
 
-With the release of the D400 series of Intel® RealSense™ devices, Intel RealSense Group is introducing a number of changes to the **librealsense** support.
+With the release of the D400 series of RealSense™ devices, RealSense Group is introducing a number of changes to the **librealsense** support.
 
-Software support for Intel® RealSense™ technology will be split into two coexisting release lineups: **librealsense 1.x** and **librealsense 2+**.
+Software support for RealSense™ technology will be split into two coexisting release lineups: **librealsense 1.x** and **librealsense 2+**.
 
  * **librealsense 1.x** will continue to provide support for RealSense™ devices: F200, R200 and ZR300.
 
@@ -87,7 +87,7 @@ stream.start([](rs2::frame) {});
 ## Transition to CMake
 **librealsense2** does not provide hand-written Visual Studio, QT-Creator and XCode project files as you can build **librealsense** with the IDE of your choice using portable CMake scripts.  
 
-## Intel® RealSense™ RS400 and the Linux Kernel
+## RealSense™ RS400 and the Linux Kernel
 
-* The Intel® RealSense™ RS400 series (starting with kernel 4.4.0.59) does not require any kernel patches for streaming 
+* The RealSense™ RS400 series (starting with kernel 4.4.0.59) does not require any kernel patches for streaming 
 * Advanced camera features may still require kernel patches. Currently, getting **hardware timestamps** is dependent on a patch that has not yet been up-streamed. Without the patch applied you can still use the camera but you will receive a system-time instead of an optical timestamp.

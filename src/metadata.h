@@ -1,5 +1,5 @@
-// License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include "float3.h"
@@ -7,9 +7,13 @@
 #include "platform/uvc-device.h"
 
 
-// Metadata attributes provided by RS4xx Depth Cameras
+// Metadata attributes provided by RS Depth Cameras
 
 
+// md_type_trait<S>::type returns for each metadata info (md_X_info) S its fitting md_type (an enum) value,
+// ex:  md_type_trait< md_depth_control >::type == md_type::META_DATA_INTEL_DEPTH_CONTROL_ID
+// the macro below bind them into the struct md_type_trait
+// in short, md_type_trait<S>::type returns the value A specified if the line REGISTER_MD_TYPE(S,A) was done
 #define REGISTER_MD_TYPE(A,B)\
     template<>\
     struct md_type_trait<A>\
@@ -51,7 +55,10 @@ namespace librealsense
         META_DATA_INTEL_L500_DEPTH_CONTROL_ID   = 0x80000012,
         META_DATA_CAMERA_DEBUG_ID               = 0x800000FF,
         META_DATA_HID_IMU_REPORT_ID             = 0x80001001,
-        META_DATA_HID_CUSTOM_TEMP_REPORT_ID     = 0x80001002,
+        META_DATA_HID_CUSTOM_TEMP_REPORT_ID     = 0x80001002, 
+        META_DATA_INTEL_SAFETY_ID               = 0x80000014,
+        META_DATA_INTEL_OCCUPANCY_ID            = 0x80000016,
+        META_DATA_INTEL_POINT_CLOUD_ID          = 0x80000017,
         META_DATA_MIPI_INTEL_DEPTH_ID           = 0x80010000,
         //META_DATA_MIPI_INTEL_RGB_ID             = 0x80010001, // D457 - to be restored after the FW bug is resolved
     };
@@ -75,6 +82,9 @@ namespace librealsense
         { md_type::META_DATA_HID_CUSTOM_TEMP_REPORT_ID,     "HID Custom Temperature Report"},
         { md_type::META_DATA_MIPI_INTEL_DEPTH_ID,           "Intel Mipi Depth Control"},
         { md_type::META_DATA_MIPI_INTEL_RGB_ID,             "Intel Mipi RGB Control"},
+        { md_type::META_DATA_INTEL_SAFETY_ID,               "Intel Safety Info"},
+        { md_type::META_DATA_INTEL_OCCUPANCY_ID,            "Intel Occupancy"},
+        { md_type::META_DATA_INTEL_POINT_CLOUD_ID,          "Intel Point Cloud"}
     };
 
     /**\brief md_capture_timing_attributes - enumerate the bit offset to check
@@ -200,7 +210,7 @@ namespace librealsense
         gamma_attribute                 = (1u << 8),
         hue_attribute                   = (1u << 9),
         manual_exp_attribute            = (1u << 10),
-        manual_wb_attribute             = (1u << 11),
+        manual_wb_attribute             = (1u << 11), // Manual WB value on D400 models, current WB value on D585S
         power_line_frequency_attribute  = (1u << 12),
         low_light_comp_attribute        = (1u << 13),
     };

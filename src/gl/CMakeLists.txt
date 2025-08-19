@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2019-2024 RealSense, Inc. All Rights Reserved.
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 
 project(realsense2-gl)
 
@@ -10,6 +10,8 @@ set(REALSENSE_GL_CPP
     synthetic-stream-gl.cpp
     yuy2rgb-gl.h
     yuy2rgb-gl.cpp
+    m420-to-rgb-gl.h
+    m420-to-rgb-gl.cpp
     y4112rgb-gl.h
     y4112rgb-gl.cpp
     pointcloud-gl.h

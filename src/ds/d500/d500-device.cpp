@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 RealSense, Inc. All Rights Reserved.
 
 #include "metadata-parser.h"
 #include "metadata.h"
@@ -101,7 +101,12 @@ namespace librealsense
 
     void d500_device::enter_update_state() const
     {
-        _ds_device_common->enter_update_state();
+        // preparing HWM command
+        command cmd(ds::DFU);
+        cmd.param1 = (_pid == ds::D585S_PID || _pid == ds::D585_PID) ? 0 : 1;
+        cmd.require_response = false;
+
+        _ds_device_common->enter_update_state(cmd);
     }
 
     std::vector<uint8_t> d500_device::backup_flash( rs2_update_progress_callback_sptr callback )
@@ -549,7 +554,14 @@ namespace librealsense
 
             if ((_device_capabilities & ds_caps::CAP_INTERCAM_HW_SYNC) == ds_caps::CAP_INTERCAM_HW_SYNC)
             {
-                // Register RS2_OPTION_INTER_CAM_SYNC_MODE here if needed
+                std::map< float, std::string > description_per_value = { { 0.f, "No Sync" },
+                                                                         { 1.f, "RGB master" },
+                                                                         { 2.f, "PWM master" },
+                                                                         { 3.f, "External master" } };
+                depth_sensor.register_option( RS2_OPTION_INTER_CAM_SYNC_MODE,
+                                              std::make_shared< d500_external_sync_mode >( *_hw_monitor,
+                                                                                           raw_depth_sensor,
+                                                                                           description_per_value ) );
             }
 
             depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
@@ -589,6 +601,15 @@ namespace librealsense
             // registering the temperature options
             depth_sensor.register_option(RS2_OPTION_SOC_PVT_TEMPERATURE, pvt_temperature);
             depth_sensor.register_option(RS2_OPTION_OHM_TEMPERATURE, ohm_temperature);
+
+            if (_pid == D585S_PID)
+            {
+                auto proj_temperature = std::make_shared< temperature_xu_option >(raw_depth_sensor,
+                    depth_xu,
+                    DS5_HKR_PROJECTOR_TEMPERATURE,
+                    "Projector Temperature");
+                depth_sensor.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE, proj_temperature);
+            }
 
             auto error_control = std::make_shared< uvc_xu_option< uint8_t > >( raw_depth_sensor,
                                                                                depth_xu,
@@ -690,7 +711,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_NAME, device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, gvd_parsed_fields.optical_module_sn);
         register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, gvd_parsed_fields.optical_module_sn);
-        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, gvd_parsed_fields.fw_version);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, gvd_parsed_fields.fw_version);        
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GET_FW_LOGS)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
@@ -699,6 +720,11 @@ namespace librealsense
         // Uncomment once D500 recommended FW exist
         //register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
+
+        if (_pid == D585S_PID)
+        {
+            register_info(RS2_CAMERA_INFO_SMCU_FW_VERSION, gvd_parsed_fields.safety_sw_suite_version);
+        }
 
         if (usb_modality)
         {
@@ -804,6 +830,10 @@ namespace librealsense
         parsed_fields->optical_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, ds::d500_gvd_offsets::optical_module_serial_offset);
         parsed_fields->mb_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, ds::d500_gvd_offsets::mb_module_serial_offset);
         parsed_fields->fw_version = _hw_monitor->get_firmware_version_string<uint16_t>(gvd_buff, ds::d500_gvd_offsets::fw_version_offset, 4, false);
+        if (_pid == ds::D585S_PID)
+        {
+            parsed_fields->safety_sw_suite_version = _hw_monitor->get_firmware_version_string<uint8_t>(gvd_buff, ds::d500_gvd_offsets::safety_sw_suite_version_offset, 4, false);
+        }
 
         constexpr size_t gvd_header_size = 8;
         auto gvd_payload_data = gvd_buff.data() + gvd_header_size;

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #ifdef _MSC_VER
 #ifndef NOMINMAX
@@ -1186,9 +1186,9 @@ namespace rs2
         ImGui::PopStyleColor();
 
         ImGui::SetCursorScreenPos({ float(x + 10), float(y + 47) });
-        hyperlink(win, "1. Self-Calibration Whitepaper", "https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras");
+        hyperlink(win, "1. Self-Calibration Whitepaper", "https://dev.realsenseai.com/docs/self-calibration-for-depth-cameras");
         ImGui::SetCursorScreenPos({ float(x + 10), float(y + 67) });
-        hyperlink(win, "2. Firmware Releases / Errata", "https://dev.intelrealsense.com/docs/firmware-releases");
+        hyperlink(win, "2. Firmware Releases / Errata", "https://dev.realsenseai.com/docs/firmware-updates");
 
     }
 

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 RealSense, Inc. All Rights Reserved.
 
 #include "d500-fw-update-device.h"
 #include "d500-private.h"
@@ -41,9 +41,14 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
 
         if (!_is_dfu_monitoring_enabled)
         {
+            // This is a temporary logic, on a later stage SMCU DFU will become part of the same HW DFU and all logic will pass to the FW side.
+            // For now, we will distinguish by size - To be change!
+            bool is_smcu_dfu = fw_image_size < 5000000;
             LOG_INFO( "Applying FW image ..." );
             static constexpr int D500_FW_DFU_TIME = 120; // [sec]
-            report_progress_and_wait_for_fw_burn(update_progress_callback, D500_FW_DFU_TIME);
+            static constexpr int D500_SMCU_DFU_TIME = 20; // [sec]
+            int runtime = is_smcu_dfu ? D500_SMCU_DFU_TIME : D500_FW_DFU_TIME;
+            report_progress_and_wait_for_fw_burn(update_progress_callback, runtime);
         }
     }
 

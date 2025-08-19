@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2019 RealSense, Inc. All Rights Reserved.
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _rel_path ${CMAKE_CURRENT_LIST_DIR})
 include(${_rel_path}/core/CMakeLists.txt)
 include(${_rel_path}/ds/CMakeLists.txt)
@@ -102,6 +102,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/serialized-utilities.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/frame.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/points.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/labeled-points.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/to-string.cpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/algo.h"
@@ -129,6 +130,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/platform/uvc-option.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/platform/uvc-option.h"
         "${CMAKE_CURRENT_LIST_DIR}/context.h"
+        "${CMAKE_CURRENT_LIST_DIR}/depth-mapping-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/device.h"
         "${CMAKE_CURRENT_LIST_DIR}/device-info.h"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.h"
@@ -149,6 +151,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/option.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform-camera.h"
         "${CMAKE_CURRENT_LIST_DIR}/pose.h"
+        "${CMAKE_CURRENT_LIST_DIR}/safety-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/hid-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/uvc-sensor.h"
@@ -173,6 +176,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/composite-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/points.h"
+        "${CMAKE_CURRENT_LIST_DIR}/labeled-points.h"
         "${CMAKE_CURRENT_LIST_DIR}/depth-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/color-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/callback-invocation.h"

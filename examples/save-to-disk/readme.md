@@ -39,7 +39,7 @@ We prefer not to save the absolute first frame that arrives from the device, but
 for (auto i = 0; i < 30; ++i) pipe.wait_for_frames();
 ```
 
-Intel® RealSense™ devices are not limited to just video streaming, some can offer motion tracking and 6-DOF positioning. For this example we are only interested in video frames, however: 
+RealSense™ devices are not limited to just video streaming, some can offer motion tracking and 6-DOF positioning. For this example we are only interested in video frames, however: 
 ```cpp
 // We can only save video frames as pngs, so we skip the rest
 if (auto vf = frame.as<rs2::video_frame>())

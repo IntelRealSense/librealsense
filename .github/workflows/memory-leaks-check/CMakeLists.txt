@@ -1,6 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2025 Intel Corporation. All Rights Reserved.
-cmake_minimum_required(VERSION 3.8)
+# Copyright(c) 2025 RealSense, Inc. All Rights Reserved.
+cmake_minimum_required(VERSION 3.10)
 
 project(mem-leak-test)
 

@@ -281,7 +281,8 @@ pipe.Start();
 
 using (var frames = pipe.WaitForFrames())
 using (var depth = frames.DepthFrame)
-using (var points = pc.Process(depth).As<Points>())
+using (var pc_frame = pc.Process(depth))
+using (var points = pc_frame.As<Points>())
 {
     // CopyVertices is extensible, any of these will do:
     var vertices = new float[points.Count * 3];

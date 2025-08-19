@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019 RealSense, Inc. All Rights Reserved.
 
 
 #include <src/archive.h>
@@ -10,6 +10,7 @@
 #include <src/core/disparity-frame.h>
 #include <src/composite-frame.h>
 #include <src/points.h>
+#include <src/labeled-points.h>
 
 
 namespace librealsense
@@ -41,6 +42,9 @@ namespace librealsense
 
         case RS2_EXTENSION_DISPARITY_FRAME:
             return std::make_shared<frame_archive<disparity_frame>>(in_max_frame_queue_size, parsers);
+
+        case RS2_EXTENSION_LABELED_POINTS:
+            return std::make_shared<frame_archive<labeled_points>>(in_max_frame_queue_size, parsers);
 
         default:
             throw std::runtime_error("Requested frame type is not supported!");

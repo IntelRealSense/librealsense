@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2024-5 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2024-5 RealSense, Inc. All Rights Reserved.
 
 from argparse import ArgumentParser
 from argparse import ArgumentTypeError as ArgumentError  # NOTE: only ArgumentTypeError passes along the original error string

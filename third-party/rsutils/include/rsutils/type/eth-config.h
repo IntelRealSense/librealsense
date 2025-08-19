@@ -1,10 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include "eth-config-header.h"
 
 #include <rsutils/type/ip-address.h>
+
+namespace rsutils {
+namespace type {
 
 
 enum class link_priority : uint8_t
@@ -45,18 +48,18 @@ struct eth_config
     std::string mac_address;
     ip_3 configured;
     ip_3 actual;
-    struct
+    struct dds_t
     {
         int domain_id;  // dds domain id
     } dds;
-    struct
+    struct link_t
     {
         unsigned mtu;      // bytes per packet
         unsigned speed;    // Mbps read-only; 0 if link is off
         unsigned timeout;  // The threshold to wait eth link [ms]
         link_priority priority;
     } link;
-    struct
+    struct dhcp_t
     {
         bool on;
         int timeout;  // The threshold to wait valid ip when DHCP is on [s]
@@ -74,3 +77,6 @@ struct eth_config
     std::vector< uint8_t > build_command() const;
     void validate() const; // Check field integrity, throws if not valid
 };
+
+}  // namespace type
+}  // namespace rsutils

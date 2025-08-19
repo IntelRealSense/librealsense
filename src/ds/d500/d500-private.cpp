@@ -1,5 +1,5 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
-//// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+//// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #include "d500-private.h"
 #include <src/platform/uvc-device-info.h>
@@ -22,6 +22,8 @@ namespace librealsense
                     switch (info.pid)
                     {
                     case D555_PID:
+                    case D585_PID:
+                    case D585S_PID:
                         found = (result.mi == 6);
                         break;
                     default:

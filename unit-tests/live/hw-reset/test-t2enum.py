@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 # test:device each(D400*) !D457  # D457 device is known for HW reset issues..
 # test:device each(D500*)
@@ -38,7 +38,7 @@ def get_max_enum_time_by_device( dev ):
             print(18)
             return MAX_ENUM_TIME_D500 + 3  # some extra time for discovery and initialization for DDS
         return MAX_ENUM_TIME_D500
-    return 0;
+    return 0
 
 ################################################################################################
 test.start( "HW reset to enumeration time" )

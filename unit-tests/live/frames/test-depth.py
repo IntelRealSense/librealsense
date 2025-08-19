@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 # test:device D400*
 # test:device each(D500*) 
@@ -20,23 +20,25 @@ import time
 DEBUG_MODE = False
 
 # Defines how far in cm do pixels have to be, to be considered in a different distance
-# for example, 10 for 10cm, will define the range 100-109 cm as one (as 100)
-DETAIL_LEVEL = 10
-FRAMES_TO_CHECK = 30
+# for example, 5 for 5cm, will define the range 100-104 cm as one (as 100)
+DETAIL_LEVEL = 5 
+BLACK_PIXEL_THRESHOLD = 0.8 # Fail if more than 80% pixels are zero
+DEPTH_PERCENTAGE = 0.5  # Percentage of pixels that need to have different values to be considered meaningful
+FRAMES_TO_CHECK = 30 # Number of frames to check for meaningful depth
 
 dev, ctx = test.find_first_device_or_exit()
-tw.start_wrapper( dev )
+tw.start_wrapper(dev)
 
 cfg = rs.config()
 cfg.enable_stream(rs.stream.depth, rs.format.z16, 30)
 if DEBUG_MODE:
     cfg.enable_stream(rs.stream.color, rs.format.bgr8, 30)
 
-
 pipeline = rs.pipeline(ctx)
 pipeline_profile = pipeline.start(cfg)
 pipeline.wait_for_frames()
 time.sleep(2)
+
 
 def frames_to_image(depth, color, save, display):
     """
@@ -100,7 +102,7 @@ def get_distances(depth_frame):
     rounded_depths = (np.floor(valid_depths * 100.0 / DETAIL_LEVEL) * DETAIL_LEVEL).astype(np.int32)
 
     unique_vals, counts = np.unique(rounded_depths, return_counts=True)
-    
+
     dists = dict(zip(unique_vals.tolist(), counts.tolist()))
     total = valid_depths.size
 
@@ -125,14 +127,23 @@ def is_depth_meaningful(save_image=False, show_image=False):
         log.e("Error getting color frame")
 
     dists, total = get_distances(depth)
-
-    # save or display image (only possible through manual debugging)
+    num_blank_pixels = dists.get(0, 0)
+    # Check for mostly black image
+    if num_blank_pixels > total * BLACK_PIXEL_THRESHOLD:
+        percent_blank = 100.0 * num_blank_pixels / total if total > 0 else 0
+        log.f(f"Too many blank pixels: {num_blank_pixels}/{total} ({percent_blank:.1f}%)")
+        return False, num_blank_pixels
+    # Remove zero values from dists for meaningful depth check
+    dists_no_zero = {k: v for k, v in dists.items() if k != 0}
     if save_image or show_image:
         frames_to_image(depth, color, save_image, show_image)
-
-    # If any distance is the same on more than 90% of the pixels, there is no meaningful depth
-    meaningful_depth = not any(v > total * 0.9 for v in dists.values())
-    num_blank_pixels = dists[0]
+    # If any distance is the same on more than DEPTH_PERCENTAGE of the pixels, there is no meaningful depth
+    # Find the largest non-zero depth bin
+    max_nonzero_count = max(dists_no_zero.values()) if dists_no_zero else 0
+    max_nonzero_percent = 100.0 * max_nonzero_count / total if total > 0 else 0
+    meaningful_depth = not (max_nonzero_count > total * DEPTH_PERCENTAGE)
+    fill_rate = 100.0 * (total - num_blank_pixels) / total if total > 0 else 0
+    log.i(f"Depth fill rate: {fill_rate:.1f}% (blank pixels: {num_blank_pixels}/{total}), meaningful depth: {meaningful_depth} (largest bin: {max_nonzero_percent:.1f}% - max allowed {DEPTH_PERCENTAGE * 100:.1f}%)")
     return meaningful_depth, num_blank_pixels
 
 
@@ -157,5 +168,5 @@ test.check(has_depth is True)
 test.finish()
 
 pipeline.stop()
-tw.stop_wrapper( dev )
+tw.stop_wrapper(dev)
 test.print_results_and_exit()

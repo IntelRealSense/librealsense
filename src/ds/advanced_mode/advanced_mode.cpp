@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #include "core/advanced_mode.h"
 #include "json_loader.hpp"
@@ -124,6 +124,7 @@ namespace librealsense
             case ds::RS455_PID:
             case ds::RS457_PID:
             case ds::D555_PID:
+            case ds::D585_PID:
                 default_450_mid_low_res(p);
                 switch (res)
                 {
@@ -141,6 +142,9 @@ namespace librealsense
                         << rsutils::string::hexdump( device_pid ) << ")" );
                     break;
                 }
+                break;
+            case ds::D585S_PID:
+                default_585S( p );
                 break;
             case ds::RS405U_PID:
                 default_405u(p);
@@ -878,6 +882,29 @@ namespace librealsense
 
     void ds_advanced_mode_base::set_hdr_preset(const preset& p)
     {
+        auto& dev = _depth_sensor.get_device();
+        if (!dev.supports_info(RS2_CAMERA_INFO_NAME) || 
+            dev.get_info(RS2_CAMERA_INFO_NAME).find("D45") == std::string::npos)
+        {
+            throw std::runtime_error("HDR preset is not supported on the connected device"); // feature only works for D45* cameras
+        }
+        // if auto exposure is not enabled, enable it if needed - temporary W/A until FW enable it
+        auto& auto_exp = _depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+        if (auto_exp.get_value() == 0 && p.auto_hdr.is_auto)
+        {
+            auto_exp.set(1);
+        }
+        
+        // some devices support multiple modes of auto exposure, for this feature to work correctly we need to set the correct mode
+        if (_depth_sensor.supports_option(RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE) && p.auto_hdr.is_auto)
+        {
+            auto& auto_exp_mode = _depth_sensor.get_option(RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE);
+            if (auto_exp_mode.get_value() != RS2_DEPTH_AUTO_EXPOSURE_ACCELERATED)
+            {
+                auto_exp_mode.set( RS2_DEPTH_AUTO_EXPOSURE_ACCELERATED );
+            }
+        }
+
         // serialize the hdr_preset and send it
         auto buffer = serialize_hdr_preset(p.auto_hdr.header, p.auto_hdr.items);
         command cmd(ds::SETSUBPRESET, static_cast<int>(buffer.size()));

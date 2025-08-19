@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2019 RealSense, Inc. All Rights Reserved.
 
 set(COMMON_SRC
     "${CMAKE_CURRENT_LIST_DIR}/animated.h"
@@ -57,6 +57,8 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_LIST_DIR}/stream-model.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/post-processing-filters.h"
     "${CMAKE_CURRENT_LIST_DIR}/post-processing-filters.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/labeled-point-cloud-utilities.h"
+    "${CMAKE_CURRENT_LIST_DIR}/labeled-point-cloud-utilities.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/dds-model.h"
     "${CMAKE_CURRENT_LIST_DIR}/dds-model.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/hdr-model.h"

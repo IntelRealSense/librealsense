@@ -1,8 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include "eth-config-header.h"
+
+
+namespace rsutils {
+namespace type {
 
 
 #pragma pack( push, 1 )
@@ -34,3 +38,5 @@ struct eth_config_v3
 
 static_assert( sizeof( eth_config_v3 ) % 4 == 0, "eth config v3 struct size must be divisible by 4" );
 
+}  // namespace type
+}  // namespace rsutils

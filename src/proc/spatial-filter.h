@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved
 //// In-place Domain Transform Edge-preserving filter based on
 // http://inf.ufrgs.br/~eslgastal/DomainTransform/Gastal_Oliveira_SIGGRAPH2011_Domain_Transform.pdf
 // The filter also allows to apply holes filling extention that due to implementation constrains can be applied horizontally only

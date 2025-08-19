@@ -1,14 +1,18 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
-#include "eth-config.h"
-#include "eth-config-v3.h"
-#include "eth-config-v4.h"
+#include <rsutils/type/eth-config.h>
+#include <rsutils/type/eth-config-v3.h>
+#include <rsutils/type/eth-config-v4.h>
 
 #include <rsutils/number/crc32.h>
 #include <rsutils/string/hexdump.h>
 #include <rsutils/string/from.h>
 
+
+
+namespace rsutils {
+namespace type {
 
 std::ostream & operator<<( std::ostream & os, link_priority p )
 {
@@ -188,7 +192,7 @@ void eth_config::validate() const
         throw std::invalid_argument( rsutils::string::from() << "Unrecognized Eth config table version " << header.version );
 
     if( dhcp.timeout < 0 )
-        throw std::invalid_argument( rsutils::string::from() << "DHCP timeout cannot be negative " << dhcp.timeout );
+        throw std::invalid_argument( rsutils::string::from() << "DHCP timeout cannot be negative. Current " << dhcp.timeout );
 
     if( dds.domain_id < 0 || dds.domain_id > 232 )
         throw std::invalid_argument( rsutils::string::from() << "Domain ID should be in 0-232 range. Current " << dds.domain_id );
@@ -207,3 +211,6 @@ void eth_config::validate() const
     if( header.version == 3 && transmission_delay != 0 )
         throw std::invalid_argument( "Camera FW does not support transmission delay." );
 }
+
+}  // namespace type
+}  // namespace rsutils

@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 #pragma once
 
@@ -202,7 +202,7 @@ public:
 /*PYBIND11_MAKE_OPAQUE(std::vector<rs2::stream_profile>)*/
 
 // Partial module definition functions
-void init_c_files(py::module &m);
+void init_c_files(py::module& m);
 void init_types(py::module &m);
 void init_frame(py::module &m);
 void init_options(py::module &m);

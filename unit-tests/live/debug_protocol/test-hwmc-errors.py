@@ -1,8 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
 # test:device each(D400*)
-# test:device each(D500*)
 
 # This UT tests the HWM error reporting mechanism.
 # When we send HWM command and it is successful we expect the command opcode to be reflected in the first bytes of the reply.

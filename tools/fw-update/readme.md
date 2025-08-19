@@ -10,11 +10,12 @@ The firmware is packed into zip file and contains a file with "bin" extension wi
 
 ## Usage
 After installing `librealsense` run ` rs-fw-update -l` to launch the tool and print a list of connected devices.
-An example for output for a D415 camera is:
+An example of output for D415 and D585S cameras is:
 
 ```
 Connected devices:
 1) [USB] Intel RealSense D435IF s/n 038322070306, update serial number: 039223050231, firmware version: 5.15.1
+2) [USB] Intel RealSense D585S s/n 353322320541, update serial number: 353322320541, firmware version: 0.5.8784.3406, SMCU firmware version: 0.0.2.0
 ```
 
 Then we will provid the serial number to identify the device together with the path to firmware file that we want to update ` rs-fw-update -s 038322070306 -f Signed_Image_UVC_5_15_1_0.bin`.
@@ -73,6 +74,7 @@ Recovery done
 |`--sw-only`|Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)|
 |`-b`|Create a backup to the camera flash and saved it to the given path|
 |`-s`|The serial number of the device to be update, this is mandetory if more than one device is connected|
+|`-m`|Path of the safety MCU image file |
 |`-f`|Path of the firmware image file|
 |`-u`|Update unsigned firmware, available only for unlocked cameras|
 |`-r`|Recover all connected devices which are in recovery mode|

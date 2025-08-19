@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 #if (_MSC_FULL_VER < 180031101)
 #error At least Visual Studio 2013 Update 4 is required to compile this backend
@@ -939,9 +939,18 @@ namespace librealsense
                     int currFps = frameRateMax.numerator / frameRateMax.denominator;
 
                     uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
+
+                    // On D585S, we need to distinguish the occupancy and the label point cloud streams.
+                    // The condition currently support 2 resolutions for LPC
+                    // This needs to be refactored!
+                    if (this->_info.pid == 0x0b6b && width == 2880 && (height == 1040 || height == 260)) 
+                    {
+                        device_fourcc = 0x50414C38; // PAL8 used instead of FGREY in order to distinguish  between occupancy and point cloud streams
+                    }
+
                     if (fourcc_map.count(device_fourcc))
                         device_fourcc = fourcc_map.at(device_fourcc);
-
+                    
                     stream_profile sp;
                     sp.width = width;
                     sp.height = height;

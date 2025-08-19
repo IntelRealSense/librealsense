@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+   Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 /** \file rs_processing.h
 * \brief
@@ -52,6 +52,19 @@ rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error);
+
+/**
+* Creates M420 decoder processing block.
+* This block accepts raw M420 frames and outputs frames of other formats.
+* M420 is a standard format,see:
+*     https://www.kernel.org/doc/html/v4.10/media/uapi/v4l/pixfmt-m420.html
+* Two lines (each of length equal to width of the current resolution) of luminance are followed by
+* One line (of length width) of chrome values.
+* The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
+* best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_m420_decoder(rs2_error** error);
 
 /**
 * Creates y411 decoder processing block. This block accepts raw y411 frames and outputs frames in RGB8.

@@ -7,6 +7,8 @@ This tool is used to configure Ethernet based devices.
 The dds-config tool offers connection configuration information for connected devices and allows users to manage connection priorities. 
 It enables the selection of the preferred connection method, whether Ethernet or USB, when both options are available, and provides the ability to set network parameters.
 
+- For a guide how to set host MTU see [this](../../../doc/stepbystep/setting_mtu_on_host.md)
+
 ## Command Line Parameters
 | Flag | Description |
 |---|---|
@@ -23,7 +25,9 @@ It enables the selection of the preferred connection method, whether Ethernet or
 |--mask <1.2.3.4>|Device static IP network mask to use when DHCP is off|
 |--gateway <1.2.3.4>|Gateway to use when DHCP is off|
 |--domain-id <0-232>|DDS Domain ID to use (default is 0), note:this is the device domain ID not librealsense domain ID|
-|--dhcp-timeout <seconds>|Seconds before DHCP times out and falls back to a static IP|
+|--dhcp-timeout|Seconds before DHCP times out and falls back to a static IP|
+|--mtu|Size per Ethernet packet. 500-9000 in 500 byte steps|
+|--transmission-delay|Wait time after each packet is sent before sending next one. 0-144 in 3 microsecond steps|
 |--no-reset|Do not hardware reset after changes are made|
 |--golden| Show R/O golden values vs. current; mutually exclusive with any changes|
 |--factory-reset|Reset settings back to the --golden values|
@@ -42,6 +46,8 @@ Prioritize Ethernet connection by using `rs-dds-config.exe --eth-first`:
          priority: usb-first --> eth-first
      DHCP: OFF
          timeout, sec: 30
+     transmission delay, us: 0
+
      Successfully changed
      Resetting device...
 ```
@@ -57,5 +63,6 @@ After running `rs-dds-config.exe` we can now see the device changed it's connect
          timeout, ms: 10000
          priority: eth-first
      DHCP: OFF
-         timeout, sec: 30
+         timeout, sec: 30		 
+     transmission delay, us: 0
 ```

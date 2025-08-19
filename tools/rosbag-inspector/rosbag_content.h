@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -107,7 +107,7 @@ namespace rosbag_inspector
         std::chrono::nanoseconds get_duration(const rosbag::Bag& bag)
         {
             rosbag::View only_frames(bag, [](rosbag::ConnectionInfo const* info) {
-                std::regex exp(R"RRR(/device_\d+/sensor_\d+/.*_\d+/(image|imu))RRR");
+                std::regex exp(R"RRR(/device_\d+/sensor_\d+/.*_\d+/(image|safety|imu))RRR");
                 return std::regex_search(info->topic, exp);
             });
             return std::chrono::nanoseconds((only_frames.getEndTime() - only_frames.getBeginTime()).toNSec());

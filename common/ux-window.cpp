@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -810,7 +810,7 @@ namespace rs2
         _first_frame = true;
         _app_ready = false;
         _splash_timer.reset();
-        _dev_stat_message = u8"\uf287 Please connect Intel RealSense device!";
+        _dev_stat_message = u8"\uf287 Please connect RealSense device!";
 
         {
             std::lock_guard<std::mutex> lock(_on_load_message_mtx);

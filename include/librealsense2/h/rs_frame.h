@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+   Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 /** \file rs_frame.h
 * \brief
@@ -55,7 +55,7 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION               , /**< Color backlight compensation. Zero corresponds to switched off. */
     RS2_FRAME_METADATA_HUE                                  , /**< Color image hue. */
     RS2_FRAME_METADATA_GAMMA                                , /**< Color image gamma. */
-    RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE                 , /**< Color image white balance. */
+    RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE                 , /**< Color image white balance. Manual WB value on D400, current WB value on D585S */
     RS2_FRAME_METADATA_POWER_LINE_FREQUENCY                 , /**< Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto. */
     RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION               , /**< Color lowlight compensation. Zero corresponds to switched off. */
     RS2_FRAME_METADATA_FRAME_EMITTER_MODE                   , /**< Emitter mode: 0 - all emitters disabled. 1 - laser enabled. 2 - auto laser enabled (opt). 3 - LED enabled (opt).*/
@@ -65,8 +65,6 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SEQUENCE_NAME                        , /**< sub-preset id */
     RS2_FRAME_METADATA_SEQUENCE_ID                          , /**< sub-preset sequence id */
     RS2_FRAME_METADATA_SEQUENCE_SIZE                        , /**< sub-preset sequence size */
-
-    //mipi metadata_values
     RS2_FRAME_METADATA_TRIGGER                              , /**< Frame trigger type */
     RS2_FRAME_METADATA_PRESET                               , /**< Preset id, used in MIPI SKU Metadata */
     RS2_FRAME_METADATA_INPUT_WIDTH                          , /**< Frame input width in pixels, used as safety attribute */
@@ -74,7 +72,93 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SUB_PRESET_INFO                      , /**< Sub-preset information */
     RS2_FRAME_METADATA_CALIB_INFO                           , /**< FW-controlled frame counter to be using in Calibration scenarios */
     RS2_FRAME_METADATA_CRC                                  , /**< CRC checksum of the Metadata */
-
+    RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_COUNTER           , /**< Counter of the depth frame upon which the stream was calculated*/
+    RS2_FRAME_METADATA_SAFETY_LEVEL1                        , /**< Designates the Yellow zone status: 0x1 - High, 0x0 - Low*/
+    RS2_FRAME_METADATA_SAFETY_LEVEL1_ORIGIN                 , /**< When l1 is low - equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to "High" state */
+    RS2_FRAME_METADATA_SAFETY_LEVEL2                        , /**< Designates the "Red" zone status: 0x1 - High, 0x0 - Low */
+    RS2_FRAME_METADATA_SAFETY_LEVEL2_ORIGIN                 , /**< When l2 is low - equals to frame_counter in safety_header - For l2=0x1 : hold the Frame id on last transition to "High" state */
+    RS2_FRAME_METADATA_SAFETY_LEVEL1_VERDICT                , /**< Current verdict for l1 Safety Signal - May differ from l1_signal due to additional logics applied */
+    RS2_FRAME_METADATA_SAFETY_LEVEL2_VERDICT                , /**< Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied */
+    RS2_FRAME_METADATA_SAFETY_OPERATIONAL_MODE              , /**< Reflects the SC operational mode (XU control) */
+    RS2_FRAME_METADATA_SAFETY_VISION_VERDICT                , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_HARA_EVENTS                   , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY              , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_PRESET_ID_SELECTED            , /**< Safety Preset index set via Adaptive Field selection GPIO */
+    RS2_FRAME_METADATA_SAFETY_PRESET_ID_USED                , /**< Safety Preset index used in the latest Vision Safety algo processing */
+    RS2_FRAME_METADATA_SAFETY_SIP_DEGRADATION_USED          , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_ACTIVATE  , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_STATE     , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_VALUE1    , /**< First value from byte array of up to 8 Generic Safety Algo continuous metrics indications */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_VALUE2    , /**< Second value from byte array of up to 8 Generic Safety Algo continuous metrics indications */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD1, /**< First value from byte array of up to 8 Generic Safety Algo continuous metrics thresholds */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD2, /**< Second value from byte array of up to 8 Generic Safety Algo continuous metrics thresholds */
+    RS2_FRAME_METADATA_SAFETY_ZERO_MONITORING_ENABLED       , /**< Enum - 0:Regular (default) all safety in nominal mode - 1: "Zero Safety" mode */
+    RS2_FRAME_METADATA_SAFETY_HARA_HISTORY_MODE             , /**< Enum - 0:Regular - 1: No history - 2: Local history */
+    RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS               , /**< Bitmask, enumerated - SOC critical notification: L2/L3 that requires handling/troubleshooting in S.MCU 32-bit value, as supplied by STL mechanism */
+    RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION               , /**< Bitmask, enumerated - Action taken. 0x1 << 0  - HKR Reset, 0x1 << 1  - HKR ShutDown */
+    RS2_FRAME_METADATA_SAFETY_SOC_L0_COUNTER                , /**< Total number of L0 notifications captured */
+    RS2_FRAME_METADATA_SAFETY_SOC_L0_RATE                   , /**< L_0 notifications per FDTI */
+    RS2_FRAME_METADATA_SAFETY_SOC_L1_COUNTER                , /**< Total number of L1 notifications captured */
+    RS2_FRAME_METADATA_SAFETY_SOC_L1_RATE                   , /**< L_1 notifications per FDTI */
+    RS2_FRAME_METADATA_SAFETY_SOC_GMT_STATUS                , /**< Result, enumerated: 0 - GMT Clock Ok, 1- GMT Clock is outside Safe threshold, 2 - GMT Clock is not available*/
+    RS2_FRAME_METADATA_SAFETY_SOC_HKR_CRITICAL_ERROR_GPIO   , /**< Critical-erro GPIO Status: 0 - off, 1 - on */
+    RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L2_ERROR_TYPE     , /**< Soc Monitor Escalation of L2 error to Arbiter */
+    RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L3_ERROR_TYPE     , /**< Soc Monitor Escalation of L3 error to Arbiter */
+    RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY       , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_TIMESTAMP,
+    RS2_FRAME_METADATA_SAFETY_SMCU_PROCESSING_TIMESTAMP,
+    RS2_FRAME_METADATA_SAFETY_PIPELINE_PROPAGATION_DELAY,
+    RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_STATUS_BITMASK     , /**< Bitmask: The values are state-specific and non-FuSa related. Shall be presented as HEX string */
+    RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_INTERNAL_STATE, /**< Enumerated: according to S.MCU FSM */
+    RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_BIST_STATUS   , /**< Bitmask. To be presented as HEX value */
+    RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_OUT             , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SMCU_HW_MONITOR_STATUS        , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SMCU_SW_MONITOR_STATUS        , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_IN              , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT                 , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION                , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_MB_STATUS                     , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SMCU_LIVELINESS               , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SMCU_STATE                    , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_PRESET_ID                     , /**< Designates the Safety Zone index in [0..63] range used in algo pipe */
+    RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL                    , /**< In millidegrees. Relative to X (forward) axis. Positive value is CCW */
+    RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH                   , /**< In millidegrees. Relative to Y (left) axis. Positive value is CCW */
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_MEDIAN_HEIGHT        , /**< In millimeters. Relative to the "leveled pointcloud" CS  */
+    RS2_FRAME_METADATA_FLOOR_DETECTION                      , /**< Percentage */
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_FILL_RATE            , /**< Percentage */
+    RS2_FRAME_METADATA_DEPTH_FILL_RATE                      , /**< Unsigned value in range of [0..100]. Use [x = 0xFF] if not applicable */
+    RS2_FRAME_METADATA_DEPTH_STDEV                          , /**< Spatial accuracy in millimetric units */
+    RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS                  , /**< Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile) */
+    RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS               , /**< Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile) */
+    RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE                  , /**< Edge size of each tile, measured in cm */
+    RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES                , /**< The max number of points is 640x360 */
+    RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_TYPE             , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_PARAM_1          , /**< Preset Error Param. Enumerated*/
+    RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_PARAM_2          , /**< Preset Error Param. Enumerated*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD           , /**< Danger Zone point #0, X coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_Y_CORD           , /**< Danger Zone point #0, Y coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_1_X_CORD           , /**< Danger Zone point #1, X coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_1_Y_CORD           , /**< Danger Zone point #1, Y coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_2_X_CORD           , /**< Danger Zone point #2, X coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_2_Y_CORD           , /**< Danger Zone point #2, Y coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_3_X_CORD           , /**< Danger Zone point #3, X coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_3_Y_CORD           , /**< Danger Zone point #3, Y coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD          , /**< Warning Zone point #0, X coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_Y_CORD          , /**< Warning Zone point #0, Y coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_1_X_CORD          , /**< Warning Zone point #1, X coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_1_Y_CORD          , /**< Warning Zone point #1, Y coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_2_X_CORD          , /**< Warning Zone point #2, X coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_2_Y_CORD          , /**< Warning Zone point #2, Y coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_3_X_CORD          , /**< Warning Zone point #3, X coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_3_Y_CORD          , /**< Warning Zone point #3, Y coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD       , /**< Diagnostic Zone point #0, X coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_Y_CORD       , /**< Diagnostic Zone point #0, Y coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_1_X_CORD       , /**< Diagnostic Zone point #1, X coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_1_Y_CORD       , /**< Diagnostic Zone point #1, Y coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_2_X_CORD       , /**< Diagnostic Zone point #2, X coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_2_Y_CORD       , /**< Diagnostic Zone point #2, Y coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_3_X_CORD       , /**< Diagnostic Zone point #3, X coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_3_Y_CORD       , /**< Diagnostic Zone point #3, Y coord in mm*/
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);
@@ -253,6 +337,55 @@ rs2_pixel* rs2_get_frame_texture_coordinates(const rs2_frame* frame, rs2_error**
 * \return                Number of vertices
 */
 int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error);
+
+/**
+* When called on Labeled Points frame type, this method returns a pointer to an array of 3D vertices of the model
+* The coordinate system is: X right, Y up, Z away from the camera. Units: Meters
+* \param[in] frame       Labeled Points frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Pointer to an array of vertices, lifetime is managed by the frame
+*/
+rs2_vertex* rs2_get_frame_labeled_vertices(const rs2_frame* frame, rs2_error** error);
+
+/**
+* When called on Labeled Points frame type, this method returns the number of vertices in the frame
+* \param[in] frame       Labeled Points frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Number of vertices
+*/
+int rs2_get_frame_labeled_points_count(const rs2_frame* frame, rs2_error** error);
+
+/**
+* When called on Labeled Points frame type, this method returns a pointer to an array of labels
+* \param[in] frame       Vertices frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Pointer to an array of attributes, lifetime is managed by the frame
+*/
+void* rs2_get_frame_labels(const rs2_frame* frame, rs2_error** error);
+
+/**
+* retrieve labeled point cloud width in pixels
+* \param[in] frame      handle returned from a callback
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               frame width in pixels
+*/
+unsigned int rs2_get_frame_labeled_points_width(const rs2_frame* frame, rs2_error** error);
+
+/**
+* retrieve labeled point cloud height in pixels
+* \param[in] frame      handle returned from a callback
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               frame height in pixels
+*/
+unsigned int rs2_get_frame_labeled_points_height(const rs2_frame* frame, rs2_error** error);
+
+/**
+* retrieve bits per pixels in the labeled point cloud frame
+* \param[in] frame      handle returned from a callback
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               bits per pixel
+*/
+unsigned int rs2_get_frame_labeled_points_bits_per_pixel(const rs2_frame* frame, rs2_error** error);
 
 /**
 * Returns the stream profile that was used to start the stream of this frame

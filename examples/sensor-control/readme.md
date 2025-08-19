@@ -10,7 +10,7 @@ Using a `rs2::sensor` one can control a camera's options, stream from it, and ge
 
 ## Expected Output
 
-Running this example with a connected Intel RealSense device, will output the connected device names, and requests the user to select a camera (or connect one).
+Running this example with a connected RealSense device, will output the connected device names, and requests the user to select a camera (or connect one).
 After selecting a camera, the user will be prompt to select one of the device's sensor, and select which action to perform using that sensor.
 This flow will repeat itself as long as the user desires.
 

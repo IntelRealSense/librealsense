@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -736,7 +736,7 @@ public:
         }
         else
         {
-            _main_win.put_text("Connect one or more Intel RealSense devices and rerun the example",
+            _main_win.put_text("Connect one or more RealSense devices and rerun the example",
                 0.4f, 0.5f, { 0.f,0.f, float(_width) , float(_height) });
         }
     }
@@ -771,7 +771,7 @@ public:
         }
         else
         {
-            _main_win.put_text("Connect one or more Intel RealSense devices and rerun the example",
+            _main_win.put_text("Connect one or more RealSense devices and rerun the example",
                 0.3f, 0.5f, { float(_canvas_left_top_x), float(_canvas_left_top_y), float(_canvas_width) , float(_canvas_height) });
         }
     }

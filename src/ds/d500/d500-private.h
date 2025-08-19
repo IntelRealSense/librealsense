@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -16,7 +16,10 @@ namespace librealsense
     {
         const uint16_t D555_PID = 0x0B56;
         const uint16_t D555_RECOVERY_PID = 0x0ADE;
-
+        const uint16_t D585S_RECOVERY_PID = 0x0ADD;
+        const uint16_t D585_PID = 0x0B6A; // D585, D for depth
+        const uint16_t D585S_PID = 0x0B6B; // D585S, S for safety
+        
         // DS500 depth XU identifiers
         const uint8_t DS5_HKR_PVT_TEMPERATURE = 0x15;
         const uint8_t DS5_HKR_PROJECTOR_TEMPERATURE = 0x16;
@@ -24,25 +27,43 @@ namespace librealsense
 
         // d500 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {
-            D555_PID
+            D555_PID,
+            D585_PID,
+            D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_multi_sensors_pid = {
-            D555_PID
+            D555_PID,
+            D585_PID,
+            D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_sensors_pid = {
-            D555_PID
+            D555_PID,
+            D585_PID,
+            D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_bmi_085_pid = {
-            D555_PID
+            D555_PID,
+            D585_PID,
+            D585S_PID
         };
 
         static const std::map< std::uint16_t, std::string > rs500_sku_names = {
-            { ds::D555_PID,          "Intel RealSense D555" },
-            { ds::D555_RECOVERY_PID, "Intel RealSense D555 Recovery" }
+            { D555_PID,          "Intel RealSense D555" },
+            { D555_RECOVERY_PID, "Intel RealSense D555 Recovery" },
+            { D585_PID,             "Intel RealSense D585" },
+            { D585S_PID,            "Intel RealSense D585S" },
+            { D585S_RECOVERY_PID,   "Intel RealSense D585S Recovery"}
         };
+
+        //TODO
+        //static std::map<uint16_t, std::string> d500_device_to_fw_min_version = {
+        //    {D585_PID, "0.0.0.0"},
+        //    {D585S_PID, "0.0.0.0"},
+        //    {D585S_RECOVERY_PID , "0.0.0.0"}
+        //};
 
         bool d500_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
@@ -55,6 +76,7 @@ namespace librealsense
             constexpr size_t optical_module_serial_offset = 0x54;
             constexpr size_t mb_module_serial_offset = 0x7a;
             constexpr size_t fw_version_offset = 0xba;
+            constexpr size_t safety_sw_suite_version_offset = 0x10F;
         }  // namespace d500_gvd_offsets
 
         struct d500_gvd_parsed_fields
@@ -65,6 +87,7 @@ namespace librealsense
             std::string optical_module_sn;
             std::string mb_module_sn;
             std::string fw_version;
+            std::string safety_sw_suite_version;
         };
 
         enum class d500_calibration_table_id
@@ -83,7 +106,11 @@ namespace librealsense
             rgb_lut_id = 0xba,
             imu_calibration_id = 0xbb,
             stream_pipe_config_id = 0xbe,
+            safety_presets_table_id = 0xc0da,
+            safety_preset_id = 0xc0db,
+            safety_interface_cfg_id = 0xc0dc,
             calib_cfg_id = 0xc0dd,
+            app_config_table_id = 0xc0de,
             max_id = -1
         };
 

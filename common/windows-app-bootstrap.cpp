@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 // This file converts the call to WinMain to a call to cross-platform main
 // We need WinMain on Windows to offer proper Windows application and not console application
@@ -100,7 +100,7 @@ void report_error(std::string error)
         ss << "|---|---|\n";
         ss << "|**librealsense**|" << rs2::api_version_to_string(rs2_get_api_version(&e)) << (rs2::is_debug() ? " DEBUG" : " RELEASE") << "|\n";
         ss << "|**OS**|" << rsutils::os::get_os_name() << "|\n\n";
-        ss << "Intel RealSense Viewer / Depth Quality Tool has crashed with the following error message:\n";
+        ss << "RealSense Viewer / Depth Quality Tool has crashed with the following error message:\n";
         ss << "```\n";
         ss << error;
         ss << "\n```";

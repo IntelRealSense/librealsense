@@ -1,6 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
-cmake_minimum_required(VERSION 3.8)
+# Copyright(c) 2019-2024 RealSense, Inc. All Rights Reserved.
+cmake_minimum_required(VERSION 3.10)
 
 project( rs-depth-quality )
 
@@ -41,7 +41,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         ../../third-party/tinyfiledialogs/tinyfiledialogs.c
         ../../third-party/tinyfiledialogs/tinyfiledialogs.h
         ../../third-party/rsutils/include/rsutils/type/eth-config.h
-        ../../third-party/rsutils/include/rsutils/type/eth-config.cpp
         ../../common/graph-model.h
         ../../common/graph-model.cpp
         ../../third-party/implot/implot.cpp

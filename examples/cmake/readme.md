@@ -15,7 +15,7 @@ Install the SDK or build it from source  ([Linux](https://github.com/IntelRealSe
 
 Set minimum required CMake version
 ```
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 ```
 
 Name the project, in this sample the project name will be also the executable name

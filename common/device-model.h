@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <set>
@@ -167,6 +167,10 @@ namespace rs2
             static const char* hwlogger_xml{ "viewer_model.hwlogger_xml" };
 
             static const char* last_ip{ "viewer_model.last_ip" };
+
+            static const char* lpc_point_size{ "viewer_model.lpc_point_size" };
+            static const char* show_safety_zones_3d{ "viewer_model.show_safety_zones_3d" };
+            static const char* show_safety_zones_2d{ "viewer_model.show_safety_zones_2d" };
         }
         namespace window
         {
@@ -260,6 +264,8 @@ namespace rs2
         static const textual_icon cube{ u8"\uf1b2" };
         static const textual_icon measure{ u8"\uf545" };
         static const textual_icon wifi{ u8"\uf1eb" };
+        static const textual_icon grid_6{ u8"\uf58d" };
+        static const textual_icon polygon{ u8"\uf5ee" };
     }
 
     class viewer_model;
@@ -400,6 +406,7 @@ namespace rs2
         void check_for_device_updates(viewer_model& viewer, bool activated_by_user = false);
         bool disable_record_button_logic(bool is_streaming, bool is_playback_device);
         std::string get_record_button_hover_text(bool is_streaming);
+        bool is_depth_mapping_camera_streaming_alone();
 
         void open_hdr_config_tool_window();
 

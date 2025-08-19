@@ -1,10 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #include <core/debug.h>
 #include <core/motion.h>
 #include <core/advanced_mode.h>
 #include "record_device.h"
+#include <src/safety-sensor.h>
+#include <src/depth-mapping-sensor.h>
 #include <src/platform/backend-device-group.h>
 
 using namespace librealsense;
@@ -254,6 +256,9 @@ device_serializer::snapshot_collection librealsense::record_device::get_extensio
             try_add_snapshot< T, ExtensionToType< RS2_EXTENSION_INFO >::type >( extendable, snapshots );
             break;
         case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots); break;
+        case RS2_EXTENSION_SAFETY_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_SAFETY_SENSOR   >::type>(extendable, snapshots); break;
+        case RS2_EXTENSION_DEPTH_MAPPING_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_MAPPING_SENSOR   >::type>(extendable, snapshots); break;
+
         case RS2_EXTENSION_RECOMMENDED_FILTERS: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_RECOMMENDED_FILTERS   >::type>(extendable, snapshots); break;
         }
     }
