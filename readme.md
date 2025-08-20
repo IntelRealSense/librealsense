@@ -170,13 +170,16 @@ For more information on the library, please follow our [examples](./examples), a
 
 > 🔎 Looking for legacy devices (F200, R200, LR200, ZR300)? Visit the [legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
 
-
+---
 <p align="center">
-  <a href="https://github.com/IntelRealSense/librealsense/tree/master" target="_blank" aria-label="GitHub"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/github_light.PNG?raw=true"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/github.png?raw=true" width="32" alt="GitHub"></picture></a>
+You can find us at
+</p>
+<p align="center">
+  <a href="https://github.com/realsenseai" target="_blank" aria-label="GitHub"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/github_light.PNG?raw=true"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/github.png?raw=true" width="32" alt="GitHub"></picture></a>
   &nbsp;&nbsp;&nbsp;
   <a href="https://x.com/RealSenseai" target="_blank" aria-label="X (Twitter)"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/twitter.png?raw=true" width="32" alt="X (Twitter)" /></a>
   &nbsp;&nbsp;&nbsp;
-  <a href="https://www.youtube.com/c/IntelRealSense" target="_blank" aria-label="YouTube"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/social.png?raw=true" width="32" alt="YouTube" /></a>
+  <a href="https://www.youtube.com/@RealSenseai" target="_blank" aria-label="YouTube"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/social.png?raw=true" width="32" alt="YouTube" /></a>
   &nbsp;&nbsp;&nbsp;
   <a href="https://www.linkedin.com/company/realsenseai?trk=similar-pages" target="_blank" aria-label="LinkedIn"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/linkedin.png?raw=true" width="32" alt="LinkedIn" /></a>
   &nbsp;&nbsp;&nbsp;
