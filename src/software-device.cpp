@@ -11,8 +11,8 @@
 
 namespace librealsense
 {
-    software_device::software_device( std::shared_ptr< const device_info > const & dev_info )
-        : device( dev_info, false )
+    software_device::software_device( std::shared_ptr< const device_info > const & dev_info, bool device_changed_notifications )
+        : device( dev_info, device_changed_notifications )
     {
     }
 
