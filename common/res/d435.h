@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
 // This file is auto-generated from d435.obj using rs-embed tool version: 0.0.0.2
 // Generation time: 03/14/2024 11:16:13.

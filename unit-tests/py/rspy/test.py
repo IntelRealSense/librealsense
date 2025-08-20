@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2021 RealSense, Inc. All Rights Reserved.
 
 """
 This module is for formatting and writing unit-tests in python. The general format is as follows
@@ -195,8 +195,8 @@ def _count_check():
 
 def check_passed():
     """
-    Function for when a check fails
-    :return: always False (so you can 'return check_failed()'
+    Function for when a check passes
+    :return: always True (so you can 'return check_passed()'
     """
     _count_check()
     print_info( error = False )
@@ -296,6 +296,58 @@ def check_equal( result, expected, on_fail=LOG ):
     return check_passed()
 
 check_equal_lists = check_equal
+
+# Recursive function to compare two JSON objects with epsilon for floats
+def check_equal_jsons(json1, json2, epsilon=1e-6, path="root"):
+    """
+    Compares two JSON-like objects with support for float tolerance and ignoring field order.
+    :param json1: The actual JSON object.
+    :param json2: The expected JSON object.
+    :param epsilon: The tolerance for float comparison.
+    :param path: The current path in the JSON structure for logging mismatches.
+    :return: True if JSONs are equal within tolerance, False otherwise.
+    """
+    def log_difference(path, j1, j2):
+        print(f"Mismatch at {path}:")
+        print(f"        left  : {j1}")
+        print(f"        right : {j2}")
+
+    # Normalize dictionaries by sorting their keys, so order doesn't matter
+    if isinstance(json1, dict) and isinstance(json2, dict):
+        if set(json1.keys()) != set(json2.keys()):
+            log_difference(path, json1, json2)
+            return False
+        # Recursively compare each key-value pair
+        for key in json1:
+            if not check_equal_jsons(json1[key], json2[key], epsilon, path=f"{path}.{key}"):
+                return False
+
+    # Compare lists by their length and then by recursively comparing each item
+    elif isinstance(json1, list) and isinstance(json2, list):
+        if len(json1) != len(json2):
+            log_difference(path, json1, json2)
+            return False
+        # Sort lists of dictionaries by a normalized key structure to ensure order-independence
+        sorted_json1 = sorted(json1, key=lambda x: str(x) if isinstance(x, (dict, list)) else x)
+        sorted_json2 = sorted(json2, key=lambda x: str(x) if isinstance(x, (dict, list)) else x)
+        for i, (item1, item2) in enumerate(zip(sorted_json1, sorted_json2)):
+            if not check_equal_jsons(item1, item2, epsilon, path=f"{path}[{i}]"):
+                return False
+
+    # Compare floats with epsilon tolerance
+    elif isinstance(json1, float) and isinstance(json2, float):
+        if abs(json1 - json2) > epsilon:
+            log_difference(path, json1, json2)
+            return False
+
+    # Direct comparison for other types
+    else:
+        if json1 != json2:
+            log_difference(path, json1, json2)
+            return False
+
+    return True
+
 
 
 def check_between( result, min, max, on_fail=LOG ):
@@ -595,8 +647,8 @@ class closure:
 
 def print_results():
     """
-    Used to print the results of the tests in the file. The format has to agree with the expected format in check_log()
-    in run-unit-tests and with the C++ format using Catch
+    Used to print the results of the tests in the file. The format has to agree with the expected format in
+    check_log_for_fails() in run-unit-tests and with the C++ format using Catch
     """
     print_separator()
     global n_assertions, n_tests, n_failed_assertions, n_failed_tests, failed_tests

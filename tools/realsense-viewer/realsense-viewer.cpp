@@ -1,15 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
-
+// Copyright(c) 2017-24 RealSense, Inc. All Rights Reserved.
 #include <librealsense2/rs.hpp>
 #include "viewer.h"
 #include "os.h"
 #include "ux-window.h"
 #include "fw-update-helper.h"
 
-#include <rsutils/os/ensure-console.h>
-#include <tclap/CmdLine.h>
+#include <common/cli.h>
 
 #include <cstdarg>
 #include <thread>
@@ -39,13 +36,6 @@ void update_viewer_configuration(viewer_model& viewer_model)
 {
     // Hide options from the Viewer application
     viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
-}
-
-bool add_remote_device(context& ctx, std::string address)
-{
-    // Return true if a network device exists at the given address; throw an error otherwise
-    // For now, this is unsupported!
-    return false;
 }
 
 void add_playback_device( context & ctx,
@@ -140,7 +130,7 @@ void add_playback_device( context & ctx,
 // This function is called every frame
 // If between the frames there was an asyncronous connect/disconnect event
 // the function will pick up on this and add the device to the viewer
-bool refresh_devices(std::mutex& m,
+void refresh_devices(std::mutex& m,
     context& ctx,
     device_changes& devices_connection_changes,
     std::vector<device>& current_connected_devices,
@@ -149,9 +139,10 @@ bool refresh_devices(std::mutex& m,
     viewer_model& viewer_model,
     std::string& error_message)
 {
+    
     event_information info({}, {});
     if (!devices_connection_changes.try_get_next_changes(info))
-        return false;
+        return ;
     try
     {
         //Remove disconnected
@@ -208,7 +199,21 @@ bool refresh_devices(std::mutex& m,
                 if (device_models.size() == 0 &&
                     dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera" && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)).find("IP Device") == std::string::npos)
                 {
-                    device_models.emplace_back(new device_model(dev, error_message, viewer_model));
+                    try
+                    {
+                        device_models.emplace_back(new device_model(dev, error_message, viewer_model));
+                    }
+                    catch (const std::exception& e)
+                    {
+                        log(RS2_LOG_SEVERITY_ERROR, "Exception raised on device_model creation");
+                        auto dev_name_itr = std::find(begin(device_names), end(device_names), get_device_name(dev));
+                        if (dev_name_itr != end(device_names))
+                        {
+                            device_names.erase(dev_name_itr);
+                        }
+                        throw e;
+                    }
+
                     viewer_model.not_model->add_log(
                         rsutils::string::from() << ( *device_models.rbegin() )->dev.get_info( RS2_CAMERA_INFO_NAME )
                                                 << " was selected as a default device" );
@@ -279,70 +284,19 @@ bool refresh_devices(std::mutex& m,
     {
         error_message = "Unknown error";
     }
-    return true;
+    return;
 }
 
 
 int main(int argc, const char** argv) try
 {
-    TCLAP::CmdLine cmd( "realsense-viewer", ' ', RS2_API_FULL_VERSION_STR );
-#ifdef BUILD_EASYLOGGINGPP
-    TCLAP::SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
-    cmd.add( debug_arg );
-#endif
-    TCLAP::SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)" );
-    cmd.add( only_sw_arg );
-    // There isn't always a console... so if we need to show an error/usage, we need to enable it:
-    class cmdline_output : public TCLAP::StdOutput
-    {
-        typedef TCLAP::StdOutput super;
-
-    public:
-        void usage( TCLAP::CmdLineInterface & c ) override
-        {
-            rsutils::os::ensure_console();
-            super::usage( c );
-        }
-
-        void version( TCLAP::CmdLineInterface & c ) override
-        {
-            rsutils::os::ensure_console();
-            super::version( c );
-        }
-
-        void failure( TCLAP::CmdLineInterface & c, TCLAP::ArgException & e ) override
-        {
-            rsutils::os::ensure_console();
-            super::failure( c, e );
-        }
-    } our_cmdline_output;
-    cmd.setOutput( &our_cmdline_output );
-    cmd.parse( argc, argv );
-
-#ifdef BUILD_EASYLOGGINGPP
-    if( debug_arg.getValue() )
-        rsutils::os::ensure_console();
-#if defined( WIN32 )
-    // In Windows, we have no console unless we start the viewer from one; without one, calling log_to_console will
-    // ensure a console, so we want to avoid it by default!
-    if( GetStdHandle( STD_OUTPUT_HANDLE ) )
-#endif
-        rs2::log_to_console( debug_arg.getValue() ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_INFO );
-#endif
+    rs2::cli cmd( "realsense-viewer" );
+    auto settings = cmd.process( argc, argv );
 
     std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
 
-    rsutils::json settings = rsutils::json::object();
-    if( only_sw_arg.getValue() )
-    {
-#if defined( BUILD_WITH_DDS )
-        settings["dds"]["enabled"];  // null: remove global dds:false or dds/enabled:false, if any
-#endif
-        settings["device-mask"] = RS2_PRODUCT_LINE_SW_ONLY | RS2_PRODUCT_LINE_ANY;
-    }
-
     context ctx( settings.dump() );
-    ux_window window("Intel RealSense Viewer", ctx);
+    ux_window window("RealSense Viewer", ctx);
 
     // Create RealSense Context
     device_changes devices_connection_changes(ctx);
@@ -352,11 +306,9 @@ int main(int argc, const char** argv) try
     std::string label;
 
     device_model* device_to_remove = nullptr;
-    bool is_ip_device_connected = false;
-    std::string ip_address;
 
 #ifdef BUILD_EASYLOGGINGPP
-    bool const disable_log_to_console = debug_arg.getValue();
+    bool const disable_log_to_console = cmd.debug_arg.getValue();
 #else
     bool const disable_log_to_console = false;
 #endif
@@ -418,22 +370,10 @@ int main(int argc, const char** argv) try
         return true;
     };
 
-    if (argc == 2)
-    {
-        try
-        {
-            is_ip_device_connected = add_remote_device(ctx, argv[1]);
-        }
-        catch (std::runtime_error e)
-        {
-            error_message = e.what();
-        }
-    }
-
     // Closing the window
     while (window)
     {
-        auto device_changed = refresh_devices(m, ctx, devices_connection_changes, connected_devs,
+        refresh_devices(m, ctx, devices_connection_changes, connected_devs,
             device_names, *device_models, viewer_model, error_message);
 
         auto output_height = viewer_model.get_output_height();
@@ -506,7 +446,7 @@ int main(int argc, const char** argv) try
 
         float line_h = ImGui::GetTextLineHeightWithSpacing() + 2;
         float separator_h = new_devices_count > 1 ? ImGui::GetStyle().ItemSpacing.y : 0;
-        float popup_select_h = line_h * ( new_devices_count + multiline_devices_names ) + separator_h + ( is_ip_device_connected ? 0 : line_h );
+        float popup_select_h = line_h * ( new_devices_count + multiline_devices_names ) + separator_h ;
         ImVec2 popup_select_size = { viewer_model.panel_width, popup_select_h };
         ImGui::SetNextWindowSize( popup_select_size );
 
@@ -523,16 +463,11 @@ int main(int argc, const char** argv) try
 
                 auto dev = connected_devs[i];
                 std::string dev_type;
-                if( dev.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
+                if (dev.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
                 {
-                    dev_type = "USB";
-                    dev_type += dev.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
-                }
-                else if( dev.supports( RS2_CAMERA_INFO_PRODUCT_ID ) )
-                {
-                    dev_type = dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID );
-                    if( dev_type == "ABCD" ) // Specific for D457
-                        dev_type = "GMSL";
+                    dev_type = dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
+                    if (dev_type == "USB" && dev.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ))
+                        dev_type += dev.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
                 }
 
                 std::string line = rsutils::string::from() << dev.get_info( RS2_CAMERA_INFO_NAME ) << " (" << dev_type
@@ -568,101 +503,9 @@ int main(int argc, const char** argv) try
             }
             ImGui::NextColumn();
 
-            bool close_ip_popup = false;
-
-            if (!is_ip_device_connected)
-            {
-                if (ImGui::Selectable("Add Network Device", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_DontClosePopups))
-                {
-                    error_message = "RealSense Network Devices are unsupported at this time";
-                }
-
-                float width = 300;
-                float height = 125;
-                float posx = window.width() * 0.5f - width * 0.5f;
-                float posy = window.height() * 0.5f - height * 0.5f;
-                ImGui::SetNextWindowPos({ posx, posy });
-                ImGui::SetNextWindowSize({ width, height });
-                ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-
-                if (ImGui::BeginPopupModal("Network Device", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))
-                {
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
-                    ImGui::SetCursorPosX(10);
-                    ImGui::Text("Connect to a Linux system running rs-server");
-
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-
-                    static char ip_input[255];
-                    std::copy(ip_address.begin(), ip_address.end(), ip_input);
-                    ip_input[ip_address.size()] = '\0';
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-                    ImGui::SetCursorPosX(10);
-                    ImGui::Text("Device IP: ");
-                    ImGui::SameLine();
-                    //ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 1);
-                    ImGui::PushItemWidth(width - ImGui::GetCursorPosX() - 10);
-                    if (ImGui::GetWindowIsFocused() && !ImGui::IsAnyItemActive())
-                    {
-                        ImGui::SetKeyboardFocusHere();
-                    }
-                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
-                    if (ImGui::InputText("##ip", ip_input, 255))
-                    {
-                        ip_address = ip_input;
-                    }
-                    ImGui::PopStyleColor();
-
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6);
-
-                    ImGui::PopItemWidth();
-                    ImGui::SetCursorPosX(width / 2 - 105);
-
-                    if (ImGui::ButtonEx("OK", { 100.f, 25.f }) || ImGui::IsKeyDown(GLFW_KEY_ENTER) || ImGui::IsKeyDown(GLFW_KEY_KP_ENTER))
-                    {
-                        try
-                        {
-                            is_ip_device_connected = add_remote_device(ctx, ip_address);
-                            refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
-                            auto dev = connected_devs[connected_devs.size() - 1];
-                            device_models->emplace_back(new device_model(dev, error_message, viewer_model));
-                            config_file::instance().set(configurations::viewer::last_ip, ip_address);
-                        }
-                        catch (std::runtime_error e)
-                        {
-                            error_message = e.what();
-                        }
-                        ip_address = "";
-                        close_ip_popup = true;
-                        ImGui::CloseCurrentPopup();
-                    }
-                    ImGui::SameLine();
-                    ImGui::SetCursorPosX(width / 2 + 5);
-                    if (ImGui::Button("Cancel", { 100.f, 25.f }) || ImGui::IsKeyDown(GLFW_KEY_ESCAPE))
-                    {
-                        ip_address = "";
-                        close_ip_popup = true;
-                        ImGui::CloseCurrentPopup();
-                    }
-                    ImGui::EndPopup();
-                }
-                ImGui::PopStyleColor(3);
-                ImGui::PopStyleVar(1);
-            }
-
-            if (close_ip_popup)
-            {
-                ImGui::CloseCurrentPopup();
-                close_ip_popup = false;
-            }
             ImGui::PopStyleColor();
             ImGui::EndPopup();
-            }
+        }
         ImGui::PopFont();
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
@@ -715,8 +558,6 @@ int main(int argc, const char** argv) try
                     viewer_model.ppf.stop();
                 }
             }
-
-            ImGui::SetContentRegionWidth(windows_width);
 
             auto pos = ImGui::GetCursorScreenPos();
             auto h = ImGui::GetWindowHeight();

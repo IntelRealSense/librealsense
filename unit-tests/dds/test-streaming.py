@@ -1,8 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 import pyrealdds as dds
 from rspy import log, test

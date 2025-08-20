@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #include "matcher-factory.h"
 #include "frame-holder.h"
@@ -38,27 +38,27 @@ std::shared_ptr< matcher > matcher_factory::create( rs2_matchers matcher,
 
 std::shared_ptr< matcher > matcher_factory::create_DLR_C_matcher( std::vector< stream_interface * > const & profiles )
 {
-    auto color = find_profile( RS2_STREAM_COLOR, 0, profiles );
-    if( ! color )
+    auto color = get_color_profiles( profiles );
+    if( color.empty() )
     {
         LOG_DEBUG( "Created default matcher" );
         return create_timestamp_matcher( profiles );
     }
 
-    return create_timestamp_composite_matcher( { create_DLR_matcher( profiles ), create_identity_matcher( color ) } );
+    return create_timestamp_composite_matcher( { create_DLR_matcher( profiles ), create_color_composite_matcher( color ) } );
 }
 
 
 std::shared_ptr< matcher > matcher_factory::create_DI_C_matcher( std::vector< stream_interface * > const & profiles )
 {
-    auto color = find_profile( RS2_STREAM_COLOR, 0, profiles );
-    if( ! color )
+    auto color = get_color_profiles( profiles );
+    if( color.empty() )
     {
         LOG_DEBUG( "Created default matcher" );
         return create_timestamp_matcher( profiles );
     }
 
-    return create_timestamp_composite_matcher( { create_DI_matcher( profiles ), create_identity_matcher( color ) } );
+    return create_timestamp_composite_matcher( { create_DI_matcher( profiles ), create_color_composite_matcher( color ) } );
 }
 
 
@@ -115,11 +115,11 @@ std::shared_ptr< matcher > matcher_factory::create_DIC_matcher( std::vector< str
 
 std::shared_ptr< matcher > matcher_factory::create_DIC_C_matcher( std::vector< stream_interface * > const & profiles )
 {
-    auto color = find_profile( RS2_STREAM_COLOR, 0, profiles );
-    if( ! color )
+    auto color = get_color_profiles( profiles );
+    if( color.empty() )
         throw std::runtime_error( "no color stream found for matcher" );
 
-    return create_timestamp_composite_matcher( { create_DIC_matcher( profiles ), create_identity_matcher( color ) } );
+    return create_timestamp_composite_matcher( { create_DIC_matcher( profiles ), create_color_composite_matcher( color ) } );
 }
 
 
@@ -161,6 +161,35 @@ std::shared_ptr< matcher >
 matcher_factory::create_timestamp_composite_matcher( std::vector< std::shared_ptr< matcher > > const & matchers )
 {
     return std::make_shared< timestamp_composite_matcher >( matchers );
+}
+
+
+std::vector< stream_interface * >
+matcher_factory::get_color_profiles( std::vector< stream_interface * > const & profiles )
+{
+    // We need one profile per stream - matcher use only UID and type
+    std::map< int, stream_interface * > color_profiles;
+    for( auto & profile : profiles )
+        if( profile->get_stream_type() == RS2_STREAM_COLOR )
+            color_profiles[profile->get_stream_index()] = profile;
+
+    std::vector< stream_interface * > ret;
+    for( auto & profile : color_profiles )
+        ret.push_back( profile.second );
+
+    return ret;
+}
+
+
+std::shared_ptr< matcher >
+matcher_factory::create_color_composite_matcher( std::vector< stream_interface * > const & profiles )
+{
+    std::vector< std::shared_ptr< matcher > > color_matchers;
+    for( auto & profile : profiles )
+        color_matchers.push_back( std::make_shared< identity_matcher >( profile->get_unique_id(),
+                                                                        profile->get_stream_type() ) );
+
+    return create_frame_number_composite_matcher( color_matchers );
 }
 
 

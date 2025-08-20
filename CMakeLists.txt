@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 
 set( LRS_TARGET realsense2 )
 project( ${LRS_TARGET} LANGUAGES CXX C )
@@ -29,6 +29,9 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
 
+# include security flags helper functions
+include(CMake/security_flags_helper_functions.cmake)
+
 # include librealsense general configuration
 include(CMake/global_config.cmake)
 
@@ -46,6 +49,15 @@ global_set_flags()
 
 # If no type is given explicitly the type is STATIC or SHARED based on whether the current value of the variable [BUILD_SHARED_LIBS](https://cmake.org/cmake/help/v3.10/variable/BUILD_SHARED_LIBS.html#variable:BUILD_SHARED_LIBS) is ON
 add_library(${LRS_TARGET})
+# Apply ASan flags if enabled
+if(BUILD_ASAN)
+  message(STATUS "AddressSanitizer is enabled")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+  target_compile_options(${LRS_TARGET} PRIVATE -fsanitize=address -g)
+endif()
 
 config_cxx_flags()
 
@@ -60,7 +72,7 @@ target_link_libraries( ${LRS_TARGET} PUBLIC rsutils )
 
 if(BUILD_WITH_DDS)
     if (CMAKE_SYSTEM MATCHES "Windows" OR CMAKE_SYSTEM MATCHES "Linux")
-
+        
         message(STATUS "Building with FastDDS")
         include(CMake/external_foonathan_memory.cmake)
         include(CMake/external_fastdds.cmake)

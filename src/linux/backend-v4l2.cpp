@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015-2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-2024 RealSense, Inc. All Rights Reserved.
 
 #include "backend-v4l2.h"
 #include <src/platform/command-transfer.h>
@@ -58,6 +58,8 @@
 
 #include <sys/signalfd.h>
 #include <signal.h>
+#include "rsutils/accelerators/gpu.h"
+
 #pragma GCC diagnostic ignored "-Woverflow"
 
 const size_t MAX_DEV_PARENT_DIR = 10;
@@ -157,30 +159,24 @@ namespace librealsense
 {
     namespace platform
     {
-        std::recursive_mutex named_mutex::_init_mutex;
-        std::map<std::string, std::recursive_mutex> named_mutex::_dev_mutex;
-        std::map<std::string, int> named_mutex::_dev_mutex_cnt;
-
         named_mutex::named_mutex(const std::string& device_path, unsigned timeout)
             : _device_path(device_path),
               _timeout(timeout), // TODO: try to lock with timeout
-              _fildes(-1),
-              _object_lock_counter(0)
+              _fildes( open( _device_path.c_str(), O_RDWR, 0 ) ),
+              _lock_counter(0)
         {
-            _init_mutex.lock();
-            _dev_mutex[_device_path];   // insert a mutex for _device_path
-            if (_dev_mutex_cnt.find(_device_path) == _dev_mutex_cnt.end())
-            {
-                _dev_mutex_cnt[_device_path] = 0;
-            }
-            _init_mutex.unlock();
+            if( _fildes < 0)
+                throw linux_backend_exception( rsutils::string::from() << __FUNCTION__ << ": Cannot open '" << _device_path << "'" );
         }
 
         named_mutex::~named_mutex()
         {
             try
             {
-                unlock();
+                // OFD lock will automatically release if locked only when file description closes (not file descriptor)
+                // If process was forked or cloned and unlock() was not properly called after a lock() then file will
+                // remain locked for the child process
+                close( _fildes );
             }
             catch(...)
             {
@@ -190,94 +186,65 @@ namespace librealsense
 
         void named_mutex::lock()
         {
-            std::lock_guard<std::mutex> lock(_mutex);
-            acquire();
+            if( _lock_counter.fetch_add( 1 ) == 0 )
+            {
+                // Using OFD locks to synchronize both interprocess and interthread.
+                // flock() is not good if we have multiple instances of the same device. i.e.
+                //     auto devs = context.query_devices();
+                //     auto dev1 = devs[0];
+                //     auto dev2 = devs[0];
+                // Closing file descriptor for one instance will unlock file for other instances.
+                // Note - OFD locks are linux standart not POSIX.
+                struct flock fl;
+                memset( &fl, 0, sizeof( fl ) );
+                fl.l_whence = SEEK_SET;
+                fl.l_start = 0;
+                fl.l_len = 0; // Lock the entire file
+                fl.l_type = F_WRLCK;
+                auto ret = fcntl( _fildes, F_OFD_SETLKW, &fl );
+                if( 0 != ret )
+                {
+                    _lock_counter.fetch_add( -1 );
+                    throw linux_backend_exception( rsutils::string::from() << __FUNCTION__ << ": locking failed" );
+                }
+            }
         }
 
         void named_mutex::unlock()
         {
-            std::lock_guard<std::mutex> lock(_mutex);
-            release();
+            if( _lock_counter.fetch_add( -1 ) == 1 )
+            {
+                struct flock fl;
+                memset( &fl, 0, sizeof( fl ) );
+                fl.l_whence = SEEK_SET;
+                fl.l_start = 0;
+                fl.l_len = 0;
+                fl.l_type = F_UNLCK;
+                auto ret = fcntl( _fildes, F_OFD_SETLKW, &fl );
+                if( 0 != ret )
+                    throw linux_backend_exception( rsutils::string::from() << __FUNCTION__ << ": unlocking failed" );
+            }
         }
 
         bool named_mutex::try_lock()
         {
-            std::lock_guard<std::mutex> lock(_mutex);
-            if (-1 == _fildes)
+            if( _lock_counter.fetch_add( 1 ) == 0 )
             {
-                _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
-                if(_fildes < 0)
+                struct flock fl;
+                memset( &fl, 0, sizeof( fl ) );
+                fl.l_whence = SEEK_SET;
+                fl.l_start = 0;
+                fl.l_len = 0; // Lock the entire file
+                fl.l_type = F_WRLCK;
+                auto ret = fcntl( _fildes, F_OFD_SETLK, &fl );
+                if( 0 != ret && errno == EAGAIN)
+                {
+                    _lock_counter.fetch_add( -1 );
                     return false;
+                }
             }
-
-            auto ret = lockf(_fildes, F_TLOCK, 0);
-            if (ret != 0)
-                return false;
 
             return true;
-        }
-
-        void named_mutex::acquire()
-        {
-            _dev_mutex[_device_path].lock();
-            _dev_mutex_cnt[_device_path] += 1;  //Advance counters even if throws because catch calls release()
-            _object_lock_counter += 1;
-            if (_dev_mutex_cnt[_device_path] == 1)
-            {
-                if (-1 == _fildes)
-                {
-                    _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
-                    if(0 > _fildes)
-                    {
-                        release();
-                        throw linux_backend_exception(rsutils::string::from() << __FUNCTION__ << ": Cannot open '" << _device_path);
-                    }
-                }
-
-                auto ret = lockf(_fildes, F_LOCK, 0);
-                if (0 != ret)
-                {
-                    release();
-                    throw linux_backend_exception(rsutils::string::from() <<  __FUNCTION__ << ": Acquire failed");
-                }
-            }
-        }
-
-        void named_mutex::release()
-        {
-            _object_lock_counter -= 1;
-            if (_object_lock_counter < 0)
-            {
-                _object_lock_counter = 0;
-                return;
-            }
-            _dev_mutex_cnt[_device_path] -= 1;
-            std::string err_msg;
-            if (_dev_mutex_cnt[_device_path] < 0)
-            {
-                _dev_mutex_cnt[_device_path] = 0;
-                throw linux_backend_exception(rsutils::string::from() << "Error: _dev_mutex_cnt[" << _device_path << "] < 0");
-            }
-
-            if ((_dev_mutex_cnt[_device_path] == 0) && (-1 != _fildes))
-            {
-                auto ret = lockf(_fildes, F_ULOCK, 0);
-                if (0 != ret)
-                    err_msg = "lockf(...) failed";
-                else
-                {
-                    ret = close(_fildes);
-                    if (0 != ret)
-                        err_msg = "close(...) failed";
-                    else
-                        _fildes = -1;
-                }
-            }
-            _dev_mutex[_device_path].unlock();
-
-            if (!err_msg.empty())
-                throw linux_backend_exception(err_msg);
-            
         }
 
         static int xioctl(int fh, unsigned long request, void *arg)
@@ -360,7 +327,7 @@ namespace librealsense
             if (_use_memory_map)
             {
                if(munmap(_start, _original_length) < 0)
-                   linux_backend_exception("munmap");
+                   LOG_DEBUG_V4L("munmap failed on buffer Dtor");
             }
             else
             {
@@ -578,7 +545,7 @@ namespace librealsense
             }
         }
 
-        bool v4l_uvc_device::get_devname_from_video_path(const std::string& video_path, std::string& devname)
+        bool v4l_uvc_device::get_devname_from_video_path(const std::string& video_path, std::string& devname, bool is_for_dfu)
         {
             std::ifstream uevent_file(video_path + "/uevent");
             if (!uevent_file)
@@ -591,10 +558,14 @@ namespace librealsense
             {
                 if (uevent_line.find("DEVNAME=") != std::string::npos)
                 {
-                    devname = "/dev/" + uevent_line.substr(uevent_line.find_last_of('=') + 1);
+                    devname = uevent_line.substr(uevent_line.find_last_of('=') + 1);
                 }
             }
             uevent_file.close();
+            if (!is_for_dfu)
+            {
+                devname = "/dev/" + devname;
+            }
             return true;
         }
 
@@ -686,7 +657,8 @@ namespace librealsense
                         continue;
                     }
                     std::string devname;
-                    if (get_devname_from_video_path(real_path, devname))
+                    bool for_dfu = true;
+                    if (get_devname_from_video_path(real_path, devname, for_dfu))
                     {
                         if (devname.empty())
                         {
@@ -755,9 +727,12 @@ namespace librealsense
             if (!is_usb_path_valid(video_path, dev_name, busnum, devnum, devpath))
             {
 #ifndef RS2_USE_CUDA
-               /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
-               Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
-               LOG_INFO("Failed to read busnum/devnum. Device Path: " << ("/sys/class/video4linux/" + name));
+                if (rsutils::rs2_is_gpu_available())
+                {
+                    /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
+                    Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
+                    LOG_INFO("Failed to read busnum/devnum. Device Path: " << ("/sys/class/video4linux/" + name));
+                }
 #endif
                throw linux_backend_exception("Failed to read busnum/devnum of usb device");
             }
@@ -800,6 +775,136 @@ namespace librealsense
             return info;
         }
 
+        bool v4l_uvc_device::is_format_supported_on_node(const std::string& dev_name, std::string v4l_4cc_fmt)
+        {
+            int fd = open(dev_name.c_str(), O_RDWR);
+            if (fd < 0)
+                throw linux_backend_exception("Mipi device format could not be grabbed");
+
+            struct v4l2_fmtdesc fmtdesc;
+            memset(&fmtdesc,0,sizeof(fmtdesc));
+            fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+            uint32_t format;
+            memcpy(&format, v4l_4cc_fmt.c_str(), sizeof(format));
+
+            while (ioctl(fd,VIDIOC_ENUM_FMT,&fmtdesc) == 0)
+            {
+                if (fmtdesc.pixelformat == format)
+                {
+                    ::close(fd);
+                    return true;
+                }
+
+                fmtdesc.index++;
+            }
+
+            ::close(fd);
+
+            return false;
+        }
+
+        bool v4l_uvc_device::is_device_depth_node(const std::string& dev_name)
+        {
+            bool is_depth = false;
+
+            // first search video node links, for example, video-rs-depth-0
+            std::smatch match;
+            static std::regex video_dev_rs("video-rs-");
+            static std::regex video_dev_depth("video-rs-depth-\\d+$");
+            if(std::regex_search(dev_name, match, video_dev_rs))
+            {
+                if (std::regex_search(dev_name, match, video_dev_depth))
+                    is_depth = true;
+                else
+                    is_depth = false;
+            }
+            // then search video nodes to find the depth node
+            else if (is_format_supported_on_node(dev_name, "Z16 "))
+                is_depth = true;
+            else
+                is_depth = false;
+
+            return is_depth;
+        }
+
+        uint16_t v4l_uvc_device::get_mipi_device_pid(const std::string& dev_name)
+        {
+            // GVD product ID
+            const uint8_t GVD_PID_OFFSET    = 4;
+
+            const uint8_t GVD_PID_D457      = 0x12;
+            const uint8_t GVD_PID_D430_GMSL = 0x0F;
+            const uint8_t GVD_PID_D415_GMSL = 0x06;
+
+            // device PID
+            uint16_t device_pid = 0;
+
+            int fd = open(dev_name.c_str(), O_RDWR);
+            if (fd < 0)
+                throw linux_backend_exception("Mipi device PID could not be found");
+
+            uint8_t gvd[276];
+            struct v4l2_ext_control ctrl;
+
+            memset(gvd,0,276);
+
+            ctrl.id = RS_CAMERA_CID_GVD;
+            ctrl.size = sizeof(gvd);
+            ctrl.p_u8 = gvd;
+
+            struct v4l2_ext_controls ext;
+
+            ext.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
+            ext.controls = &ctrl;
+            ext.count = 1;
+
+            int retries = 5;
+            bool opcode_ok = false;
+            while (!opcode_ok && retries--)
+            {
+                if (xioctl(fd, VIDIOC_G_EXT_CTRLS, &ext) == 0)
+                {
+                    auto opcode = gvd[0];
+                    if (opcode != 0x10)
+                    {
+                        LOG_WARNING("Wrong opcode when pulling GVD: gvd[0] returned as: " << opcode);
+                        continue;
+                    }
+                    else {
+                        opcode_ok = true;
+                    }
+
+                    uint8_t product_pid = gvd[4 + GVD_PID_OFFSET];
+
+                    switch(product_pid)
+                    {
+                        case(GVD_PID_D457):
+                            device_pid = D457_PID;
+                            break;
+
+                        case(GVD_PID_D430_GMSL):
+                            device_pid = D430_GMSL_PID;
+                            break;
+
+                        case(GVD_PID_D415_GMSL):
+                            device_pid = D415_GMSL_PID;
+                            break;
+
+                        default:
+                            LOG_WARNING("Unidentified MIPI device product id: 0x" << std::hex << (int) product_pid << "remaining retries = " << retries);
+                            device_pid = 0x0000;
+                            break;
+                    }
+                }
+                std::this_thread::sleep_for( std::chrono::milliseconds(100));
+            }
+
+            ::close(fd);
+
+            return device_pid;
+        }
+
         void v4l_uvc_device::get_mipi_device_info(const std::string& dev_name,
                                                   std::string& bus_info, std::string& card)
         {
@@ -831,6 +936,7 @@ namespace librealsense
                 bus_info = reinterpret_cast<const char *>(vcap.bus_info);
                 card = reinterpret_cast<const char *>(vcap.card);
             }
+
             ::close(fd);
         }
 
@@ -844,10 +950,25 @@ namespace librealsense
 
             get_mipi_device_info(dev_name, bus_info, card);
 
-            // the following 2 lines need to be changed in order to enable multiple mipi devices support
-            // or maybe another field in the info structure - TBD
+            // find device PID from depth video node
+            static uint16_t device_pid = 0;
+            try
+            {
+                if (is_device_depth_node(dev_name))
+                {
+                    device_pid = get_mipi_device_pid(dev_name);
+                }
+            }
+            catch(const std::exception & e)
+            {
+                LOG_WARNING("MIPI device product id detection issue, device will be skipped: " << e.what());
+                device_pid = 0;
+            }
+
             vid = 0x8086;
-            pid = 0xABCD; // D457 dev
+            pid = device_pid;
+
+//          std::cout << "video_path:" << video_path << ", name:" << dev_name << ", pid=" << std::hex << (int) pid << std::endl;
 
             static std::regex video_dev_index("\\d+$");
             std::smatch match;
@@ -865,20 +986,21 @@ namespace librealsense
             //  D457 exposes (assuming first_video_index = 0):
             // - video0 for Depth and video1 for Depth's md.
             // - video2 for RGB and video3 for RGB's md.
-            // - video4 for IR stream. IR's md is currently not available.
-            // - video5 for IMU (accel or gyro TBD)
+            // - video4 for IR and video5 for IR's md.
+            // - video6 for IMU (accel or gyro TBD)
             // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
             // further development is needed to permit use of several mipi devices
             static int  first_video_index = ind;
+
             // Use camera_video_nodes as number of /dev/video[%d] for each camera sensor subset
-            const int camera_video_nodes = 6;
+            const int camera_video_nodes = 7;
             int cam_id = ind / camera_video_nodes;
             ind = (ind - first_video_index) % camera_video_nodes; // offset from first mipi video node and assume 6 nodes per mipi camera
             if (ind == 0 || ind == 2 || ind == 4)
                 mi = 0; // video node indicator
-            else if (ind == 1 | ind == 3)
+            else if (ind == 1 | ind == 3 || ind == 5)
                 mi = 3; // metadata node indicator
-            else if (ind == 5)
+            else if (ind == 6)
                 mi = 4; // IMU node indicator
             else
             {
@@ -902,10 +1024,11 @@ namespace librealsense
             std::vector<std::string> dfu_device_paths = get_mipi_dfu_paths();
 
             for (const auto& dfu_device_path: dfu_device_paths) {
-                int vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
+                auto mipi_dfu_chardev = "/dev/" + dfu_device_path;
+                int vfd = open(mipi_dfu_chardev.c_str(), O_RDONLY | O_NONBLOCK);
                 if (vfd >= 0) {
                     // Use legacy DFU device node used in firmware_update_manager
-                    info.dfu_device_path = dfu_device_path;
+                    info.dfu_device_path = mipi_dfu_chardev;
                     ::close(vfd); // file exists, close file and continue to assign it
                     break;
                 }
@@ -1205,7 +1328,10 @@ namespace librealsense
         }
 
         v4l_uvc_device::v4l_uvc_device(const uvc_device_info& info, bool use_memory_map)
-            : _name(""), _info(),
+            : _name(info.id), 
+              _device_path(info.device_path),
+              _device_usb_spec(info.conn_spec),
+              _info(info),
               _is_capturing(false),
               _is_alive(true),
               _is_started(false),
@@ -1217,19 +1343,6 @@ namespace librealsense
               _buf_dispatch(use_memory_map),
               _frame_drop_monitor(DEFAULT_KPI_FRAME_DROPS_PERCENTAGE)
         {
-            foreach_uvc_device([&info, this](const uvc_device_info& i, const std::string& name)
-            {
-                if (i == info)
-                {
-                    _name = name;
-                    _info = i;
-                    _device_path = i.device_path;
-                    _device_usb_spec = i.conn_spec;
-                }
-            });
-            if (_name == "")
-                throw linux_backend_exception("device is no longer connected!");
-
             _named_mtx = std::unique_ptr<named_mutex>(new named_mutex(_name, 5000));
         }
 
@@ -2091,6 +2204,14 @@ namespace librealsense
                                     static_cast<float>(frame_interval.discrete.denominator) /
                                     static_cast<float>(frame_interval.discrete.numerator);
 
+                                // On D585S, we need to distinguish the occupancy and the label point cloud streams.
+                                // The condition currently support 2 resolutions for LPC
+                                // This needs to be refactored!
+                                if (this->_info.pid == 0X0B6B && frame_size.discrete.width == 2880 && (frame_size.discrete.height == 1040 || frame_size.discrete.height == 260)) // 0x0B6B pid for D585S_PID
+                                {
+                                    fourcc = 0x50414c38; // PAL8 used instead of GREY in order to distinguish between occupancy and point cloud streams
+                                }
+
                                 stream_profile p{};
                                 p.format = fourcc;
                                 p.width = frame_size.discrete.width;
@@ -2767,6 +2888,15 @@ namespace librealsense
 
         control_range v4l_mipi_device::get_pu_range(rs2_option option) const
         {
+            // Auto controls range is trimed to {0,1} range
+            if(option >= RS2_OPTION_ENABLE_AUTO_EXPOSURE && option <= RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
+            {
+                static const int32_t min = 0, max = 1, step = 1, def = 1;
+                control_range range(min, max, step, def);
+
+                return range;
+            }
+
             struct v4l2_query_ext_ctrl query = {};
             query.id = get_cid(option);
             if (xioctl(_fd, VIDIOC_QUERY_EXT_CTRL, &query) < 0)
@@ -2836,7 +2966,9 @@ namespace librealsense
 
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
-            bool mipi_device = 0xABCD == info.pid; // D457 development. Not for upstream
+            bool mipi_device = (D457_PID == info.pid ||
+                                D430_GMSL_PID == info.pid ||
+                                D415_GMSL_PID == info.pid);
             auto v4l_uvc_dev =        mipi_device ?         std::make_shared<v4l_mipi_device>(info) :
                               ((!info.has_metadata_node) ?  std::make_shared<v4l_uvc_device>(info) :
                                                             std::make_shared<v4l_uvc_meta_device>(info));

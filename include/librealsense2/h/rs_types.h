@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+   Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 /** \file rs_types.h
 * \brief
@@ -133,6 +133,7 @@ typedef enum rs2_log_severity {
 const char* rs2_log_severity_to_string(rs2_log_severity info);
 
 /** \brief Specifies advanced interfaces (capabilities) objects may implement. */
+// To add a new extension, append it at the end of this enum to preserve ordering.
 typedef enum rs2_extension
 {
     RS2_EXTENSION_UNKNOWN,
@@ -191,6 +192,10 @@ typedef enum rs2_extension
     RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR,
     RS2_EXTENSION_DEBUG_STREAM_SENSOR,
     RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE,
+    RS2_EXTENSION_ROTATION_FILTER,
+    RS2_EXTENSION_SAFETY_SENSOR,
+    RS2_EXTENSION_DEPTH_MAPPING_SENSOR,
+    RS2_EXTENSION_LABELED_POINTS,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
@@ -223,6 +228,36 @@ typedef enum rs2_matchers
 } rs2_matchers;
 const char* rs2_matchers_to_string(rs2_matchers stream);
 
+typedef enum rs2_point_cloud_label
+{
+    RS2_POINT_CLOUD_LABEL_UNKNOWN,                  // No valid classification can be made for this point
+    RS2_POINT_CLOUD_LABEL_UNDEFINED,                // NAN pixel
+    RS2_POINT_CLOUD_LABEL_INVALID,                  // This point is discarded, i.e. outside of vertical FOV or too close
+    RS2_POINT_CLOUD_LABEL_GROUND,                   // This point belongs to ground plane
+    RS2_POINT_CLOUD_LABEL_NEAR_GROUND,              // This point is not on ground plane, but yet not part of a true obstacle
+    RS2_POINT_CLOUD_LABEL_OVERHEAD,                 // This point belongs to something above robot's height, but below the ceiling height, 
+                                                    // and not part of a true obstacle
+    RS2_POINT_CLOUD_LABEL_ABOVE_CEILING_HEIGHT,     // This point belongs to something above the ceiling height
+    RS2_POINT_CLOUD_LABEL_GAP,                      // This point belongs to a Gap Region
+    RS2_POINT_CLOUD_LABEL_MASKED,                   // This point belongs to a Masked Region
+    RS2_POINT_CLOUD_LABEL_CLIFF,                    // This point is part of a possible cliff
+    RS2_POINT_CLOUD_LABEL_OBSTACLE,                 // This point is a potential obstacle
+    RS2_POINT_CLOUD_LABEL_OBSTACLE_DANGER,          // This point is an actual obstacle inside the danger zone
+    RS2_POINT_CLOUD_LABEL_OBSTACLE_WARNING,         // This point is an actual obstacle inside the warning zone
+    RS2_POINT_CLOUD_LABEL_COUNT
+} rs2_point_cloud_label;
+const char* rs2_point_cloud_label_to_string(rs2_point_cloud_label label);
+
+typedef enum rs2_calib_location
+{
+    RS2_CALIB_LOCATION_FIRST,
+    RS2_CALIB_LOCATION_EEPROM = RS2_CALIB_LOCATION_FIRST,
+    RS2_CALIB_LOCATION_FLASH,
+    RS2_CALIB_LOCATION_RAM,
+    RS2_CALIB_LOCATION_COUNT
+} rs2_calib_location;
+const char* rs2_calib_location_to_string(rs2_calib_location calib_location);
+
 
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_device rs2_device;
@@ -253,6 +288,7 @@ typedef struct rs2_sensor_list rs2_sensor_list;
 typedef struct rs2_sensor rs2_sensor;
 typedef struct rs2_options rs2_options;
 typedef struct rs2_options_list rs2_options_list;
+typedef struct rs2_streams_list rs2_streams_list;
 typedef struct rs2_options_changed_callback rs2_options_changed_callback;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_notification rs2_notification;
@@ -280,53 +316,6 @@ const char* rs2_get_failed_args                (const rs2_error* error);
 const char* rs2_get_error_message              (const rs2_error* error);
 void        rs2_free_error                     (rs2_error* error);
 
-#pragma pack(push, 1)
-/* rs2_calibration_roi - Array of four corners in Deph Frame Coordinate system that define a closed simple quadrangle (non-intersecting)*/
-typedef struct rs2_calibration_roi
-{
-    uint16_t mask_pixel[4][2];
-}rs2_calibration_roi;
-
-typedef struct float3_row_major { float x, y, z; } float3_row_major;
-typedef struct float3x3_row_major { float3_row_major x, y, z; } float3x3_row_major;
-
-typedef struct rs2_extrinsics_row_major
-{
-    float3x3_row_major rotation; // Rotation matrix
-    float3_row_major translation; // Metric units
-} rs2_extrinsics_row_major;
-
-typedef struct rs2_calibration_config
-{
-    uint8_t calib_roi_num_of_segments; // Within 0-4 range: 0 - Default.No limitations.Full FOV can be used in TC
-                                       //                   1 - 4: Segments defined.The segment must be sequential
-    rs2_calibration_roi roi[4];        // Segment 0 = convex tetragon - The vertices of the tetragon are ordered clockwise
-                                       //       Vertex = [x, y] = pixel coordinates in the reference depth map
-                                       //       0 - based coordinates : [0, 0] = center of the top - left pixel
-                                       // Segments 1-3 - structured identical to segment_#0 (reserved)
-                                       // The ROI segments can intersect, but each must be convex(angles <= 180 degrees).
-    uint8_t reserved1[12];
-    rs2_extrinsics_row_major camera_position;
-    uint8_t reserved2[300];
-    uint8_t crypto_signature[32];
-    uint8_t reserved3[39];
-} rs2_calibration_config;
-
-typedef struct rs2_calibration_config_header
-{
-    uint16_t version;       // major.minor. Big-endian
-    uint16_t table_type;    // type
-    uint32_t table_size;    // full size including: header footer
-    uint32_t calib_version; // major.minor.index
-    uint32_t crc32;         // crc of all the data in table excluding this header/CRC
-} rs2_calibration_config_header;
-
-typedef struct rs2_calibration_config_with_header
-{
-    rs2_calibration_config_header header;
-    rs2_calibration_config payload;
-} rs2_calibration_config_with_header;
-#pragma pack(pop)
 
 #ifdef __cplusplus
 }

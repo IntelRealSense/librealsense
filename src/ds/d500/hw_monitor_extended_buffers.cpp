@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #include "hw_monitor_extended_buffers.h"
 #include <ds/ds-private.h>
@@ -31,7 +31,7 @@ namespace librealsense
     // - no buffer bigger than 1 KB is expected with the current command => work as normal hw_monitor::send method
     // - buffer bigger than 1 KB expected to be received => iterate the hw_monitor::send method and append the results
     // - buffer bigger than 1 KB expected to be sent => iterate the hw_monitor, while iterating over the input
-    std::vector<uint8_t> hw_monitor_extended_buffers::send(command const & cmd, hwmon_response* p_response, bool locked_transfer) const
+    std::vector<uint8_t> hw_monitor_extended_buffers::send(command const & cmd, hwmon_response_type* p_response, bool locked_transfer) const
     {
         hwm_buffer_type buffer_type = get_buffer_type(cmd);
         switch( buffer_type)
@@ -49,7 +49,7 @@ namespace librealsense
         return std::vector<uint8_t>();
     }
 
-    std::vector<uint8_t> hw_monitor_extended_buffers::extended_receive(command cmd, hwmon_response* p_response, bool locked_transfer) const
+    std::vector<uint8_t> hw_monitor_extended_buffers::extended_receive(command cmd, hwmon_response_type* p_response, bool locked_transfer) const
     {
         std::vector< uint8_t > recv_msg;
 
@@ -83,7 +83,7 @@ namespace librealsense
         return recv_msg;
     }
 
-    void hw_monitor_extended_buffers::extended_send(command cmd, hwmon_response* p_response, bool locked_transfer) const
+    void hw_monitor_extended_buffers::extended_send(command cmd, hwmon_response_type* p_response, bool locked_transfer) const
     {
         // copying the data, so that this param can be reused for the sending via HWM
         auto table_data = cmd.data;

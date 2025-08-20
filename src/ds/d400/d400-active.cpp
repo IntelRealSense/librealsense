@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2016 RealSense, Inc. All Rights Reserved.
 
 #include <mutex>
 #include <chrono>
@@ -34,7 +34,7 @@ namespace librealsense
         auto pid = this->_pid;
         auto& depth_ep = get_depth_sensor();
 
-        if( pid == ds::RS457_PID )
+        if( _is_mipi_device )
         {
             depth_ep.register_option( RS2_OPTION_PROJECTOR_TEMPERATURE,
                                       std::make_shared< projector_temperature_option_mipi >(

@@ -1,10 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #include "core/advanced_mode.h"
 #include "json_loader.hpp"
 #include "ds/d400/d400-color.h"
 #include "ds/d500/d500-color.h"
+#include "ds/d500/d500-private.h"
 
 #include <src/ds/features/amplitude-factor-feature.h>
 #include <src/ds/features/remove-ir-pattern-feature.h>
@@ -106,17 +107,24 @@ namespace librealsense
             {
             case ds::RS410_PID:
             case ds::RS415_PID:
+            case ds::RS415_GMSL_PID:
                 default_410(p);
                 break;
             case ds::RS421_PID:
             case ds::RS430_PID:
             case ds::RS430I_PID:
+            case ds::RS430_GMSL_PID:
             case ds::RS435_RGB_PID:
             case ds::RS435I_PID:
                 default_430(p);
                 break;
+            case ds::RS436_PID:
+                default_436(p);
+                break;
             case ds::RS455_PID:
             case ds::RS457_PID:
+            case ds::D555_PID:
+            case ds::D585_PID:
                 default_450_mid_low_res(p);
                 switch (res)
                 {
@@ -134,6 +142,9 @@ namespace librealsense
                         << rsutils::string::hexdump( device_pid ) << ")" );
                     break;
                 }
+                break;
+            case ds::D585S_PID:
+                default_585S( p );
                 break;
             case ds::RS405U_PID:
                 default_405u(p);
@@ -451,6 +462,12 @@ namespace librealsense
         }
     }
 
+    void ds_advanced_mode_base::get_hdr_preset(hdr_preset::hdr_preset* ptr) const
+    {
+        auto buffer = send_receive(encode_command( ds::GETSUBPRESET ));
+        *ptr = parse_hdr_preset( buffer );
+    }
+
     void ds_advanced_mode_base::set_depth_control_group(const STDepthControlGroup& val)
     {
         set(val, advanced_mode_traits<STDepthControlGroup>::group);
@@ -732,6 +749,8 @@ namespace librealsense
     preset ds_advanced_mode_base::get_all() const
     {
         preset p;
+
+        rsutils::deferred depth_bulk = _depth_sensor.bulk_operation();
         get_depth_control_group(&p.depth_controls);
         get_rsm(&p.rsm);
         get_rau_support_vector_control(&p.rsvc);
@@ -751,6 +770,10 @@ namespace librealsense
         get_depth_auto_exposure(&p.depth_auto_exposure);
         get_depth_gain(&p.depth_gain);
         get_depth_auto_white_balance(&p.depth_auto_white_balance);
+
+        rsutils::deferred color_bulk;
+        if( *_color_sensor )
+            color_bulk = ( *_color_sensor )->bulk_operation();
         get_color_exposure(&p.color_exposure);
         get_color_auto_exposure(&p.color_auto_exposure);
         get_color_backlight_compensation(&p.color_backlight_compensation);
@@ -764,6 +787,9 @@ namespace librealsense
         get_color_white_balance(&p.color_white_balance);
         get_color_auto_white_balance(&p.color_auto_white_balance);
         get_color_power_line_frequency(&p.color_power_line_frequency);
+
+        get_hdr_preset(&p.auto_hdr);
+
         return p;
     }
 
@@ -772,10 +798,14 @@ namespace librealsense
         set_all_depth( p );
         if( should_set_rgb_preset() )
             set_all_rgb( p );
+        if( should_set_hdr_preset(p) )
+            set_hdr_preset( p );
     }
 
     void ds_advanced_mode_base::set_all_depth(const preset& p)
     {
+        rsutils::deferred depth_bulk = _depth_sensor.bulk_operation();
+
         set(p.depth_controls, advanced_mode_traits<STDepthControlGroup>::group);
         set(p.rsm           , advanced_mode_traits<STRsm>::group);
         set(p.rsvc          , advanced_mode_traits<STRauSupportVectorControl>::group);
@@ -811,6 +841,10 @@ namespace librealsense
 
     void ds_advanced_mode_base::set_all_rgb( const preset & p )
     {
+        rsutils::deferred color_bulk;
+        if( *_color_sensor )
+            color_bulk = ( *_color_sensor )->bulk_operation();
+
         set_color_auto_exposure(p.color_auto_exposure);
         if (p.color_auto_exposure.was_set && p.color_auto_exposure.auto_exposure == 0)
         {
@@ -839,6 +873,43 @@ namespace librealsense
         auto product_line = _depth_sensor.get_device().get_info( rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_LINE );
 
         return product_line != "D500";
+    }
+
+    bool ds_advanced_mode_base::should_set_hdr_preset(const preset& p)
+    {
+        return p.auto_hdr.header.num_of_items > 0;
+    }
+
+    void ds_advanced_mode_base::set_hdr_preset(const preset& p)
+    {
+        auto& dev = _depth_sensor.get_device();
+        if (!dev.supports_info(RS2_CAMERA_INFO_NAME) || 
+            dev.get_info(RS2_CAMERA_INFO_NAME).find("D45") == std::string::npos)
+        {
+            throw std::runtime_error("HDR preset is not supported on the connected device"); // feature only works for D45* cameras
+        }
+        // if auto exposure is not enabled, enable it if needed - temporary W/A until FW enable it
+        auto& auto_exp = _depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+        if (auto_exp.get_value() == 0 && p.auto_hdr.is_auto)
+        {
+            auto_exp.set(1);
+        }
+        
+        // some devices support multiple modes of auto exposure, for this feature to work correctly we need to set the correct mode
+        if (_depth_sensor.supports_option(RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE) && p.auto_hdr.is_auto)
+        {
+            auto& auto_exp_mode = _depth_sensor.get_option(RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE);
+            if (auto_exp_mode.get_value() != RS2_DEPTH_AUTO_EXPOSURE_ACCELERATED)
+            {
+                auto_exp_mode.set( RS2_DEPTH_AUTO_EXPOSURE_ACCELERATED );
+            }
+        }
+
+        // serialize the hdr_preset and send it
+        auto buffer = serialize_hdr_preset(p.auto_hdr.header, p.auto_hdr.items);
+        command cmd(ds::SETSUBPRESET, static_cast<int>(buffer.size()));
+        cmd.data = buffer;
+        auto res = _hw_monitor->send(cmd);
     }
 
     std::vector<uint8_t> ds_advanced_mode_base::send_receive(const std::vector<uint8_t>& input) const

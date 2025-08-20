@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019 RealSense, Inc. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
 #include <iostream>
@@ -12,29 +12,22 @@
 #include <thread>
 #include <string.h>
 #include <chrono>
-#include "tclap/CmdLine.h"
+#include <common/cli.h>
 
-using namespace TCLAP;
 
 int main(int argc, char * argv[]) try
 {
     // Parse command line arguments
-    CmdLine cmd("librealsense rs-record example tool", ' ');
-    SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
-    ValueArg<double>    time("t", "Time", "Amount of time to record (in seconds)", false, 10., "");
-    ValueArg<std::string> out_file("f", "FullFilePath", "the file where the data will be saved to", false, "test.bag", "");
+    using rs2::cli;
+    cli cmd( "librealsense rs-record example tool" );
+    cli::value< double > time( 't', "Time", "seconds", 10., "Amount of time to record (in seconds)" );
+    cli::value<std::string> out_file('f', "FullFilePath", "path", "", "the file where the data will be saved to", cli::required);
 
-    cmd.add(debug_arg);
     cmd.add(time);
     cmd.add(out_file);
-    cmd.parse(argc, argv);
+    auto settings = cmd.process(argc, argv);
 
-#ifdef BUILD_EASYLOGGINGPP
-    bool const debugging = debug_arg.getValue();
-    rs2::log_to_console( debugging ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_ERROR );
-#endif
-
-    rs2::pipeline pipe;
+    rs2::pipeline pipe( settings.dump() );
     rs2::config cfg;
     cfg.enable_record_to_file(out_file.getValue());
 

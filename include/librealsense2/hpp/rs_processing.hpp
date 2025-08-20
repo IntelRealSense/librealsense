@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #ifndef LIBREALSENSE_RS2_PROCESSING_HPP
 #define LIBREALSENSE_RS2_PROCESSING_HPP
@@ -526,6 +526,38 @@ namespace rs2
         }
     };
 
+    class m420_decoder : public filter
+    {
+    public:
+        /**
+        * Creates M420 decoder processing block.
+        * This block accepts raw M420 frames and outputs frames of other formats.
+        * M420 is a standard format,see:
+        *     https://www.kernel.org/doc/html/v4.10/media/uapi/v4l/pixfmt-m420.html
+        * Two lines (each of length equal to width of the current resolution) of luminance are followed by
+        * One line (of length width) of chrome values.
+        * The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
+        * best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+        * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        */
+        m420_decoder() : filter(init(), 1) { }
+
+    protected:
+        m420_decoder(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
+
+    private:
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_m420_decoder(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
+
     class y411_decoder : public filter
     {
     public:
@@ -847,6 +879,57 @@ namespace rs2
             // Redirect options API to the processing block
             //options::operator=(this);
 
+            return block;
+        }
+    };
+
+    class rotation_filter : public filter
+    {
+    public:
+        /**
+         * Create rotation filter
+         * Rotation filter performs rotation of the frames
+         */
+        rotation_filter()
+            : filter( init( std::vector< rs2_stream >{ RS2_STREAM_DEPTH } ), 1 )
+        {
+        }
+
+        rotation_filter( std::vector< rs2_stream > streams_to_rotate )
+            : filter( init( streams_to_rotate ), 1 )
+        {
+        }
+
+        rotation_filter( std::vector< rs2_stream > streams_to_rotate, float value )
+            : filter( init( streams_to_rotate ), 1 )
+        {
+            set_option( RS2_OPTION_ROTATION, value );
+        }
+
+        rotation_filter( filter f )
+            : filter( f )
+        {
+            rs2_error * e = nullptr;
+            if( ! rs2_is_processing_block_extendable_to( f.get(), RS2_EXTENSION_ROTATION_FILTER, &e ) && ! e )
+            {
+                _block.reset();
+            }
+            error::handle( e );
+        }
+
+    private:
+        friend class context;
+
+        std::shared_ptr< rs2_processing_block > init( std::vector< rs2_stream > streams_to_rotate )
+        {
+            rs2_error * e = nullptr;
+
+            rs2_streams_list streams_list;
+            streams_list.list = std::move( streams_to_rotate ); 
+
+            auto block = std::shared_ptr< rs2_processing_block >( rs2_create_rotation_filter_block( streams_list, &e ),
+                                                                  rs2_delete_processing_block );
+            error::handle( e );
             return block;
         }
     };

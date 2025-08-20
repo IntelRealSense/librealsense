@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -66,6 +66,7 @@ namespace librealsense
         std::vector<uint8_t> backup_flash( rs2_update_progress_callback_sptr callback) override;
         void update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode) override;
         bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
+        std::string get_opcode_string(int opcode) const override;
 
     protected:
         std::shared_ptr<ds_device_common> _ds_device_common;
@@ -90,6 +91,8 @@ namespace librealsense
 
         void init(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
         void register_features();
+
+        static void simulate_device_reconnect(std::shared_ptr<const device_info> dev_info);
 
         friend class d400_depth_sensor;
 
@@ -117,6 +120,7 @@ namespace librealsense
 
         std::shared_ptr<auto_gain_limit_option> _gain_limit_value_control;
         std::shared_ptr<auto_exposure_limit_option> _ae_limit_value_control;
+        bool _is_mipi_device;
     };
 
     class ds5u_device : public d400_device

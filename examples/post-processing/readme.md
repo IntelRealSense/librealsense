@@ -13,8 +13,11 @@ This example demonstrates usage of the following processing blocks:
   * Applies edge-preserving smoothing of depth data.
 * Temporal
   * Filters depth data by looking into previous frames.
+* Rotation
+  * Rotates depth and IR frames.
 
-For further infomration please refer to [Depth Post-Processing for Intel® RealSense™ Depth Camera D400 Series](https://dev.intelrealsense.com/docs/depth-post-processing)
+
+For further infomration please refer to [Depth Post-Processing for RealSense™ Depth Camera D400 Series](https://dev.realsenseai.com/docs/depth-post-processing)
 
 ## Expected Output
 ![expected output](https://user-images.githubusercontent.com/22654243/35924136-dd9cd1b6-0c2a-11e8-925a-84a52c0a5b96.gif)
@@ -25,7 +28,7 @@ This application displays a rotating point cloud of the depth frame, with GUI fo
 
 ### Declarations
 
-As with any SDK application we include the Intel RealSense Cross Platform API:
+As with any SDK application we include the RealSense Cross Platform API:
 
 ```cpp
 #include <librealsense2/rs.hpp>
@@ -61,6 +64,7 @@ struct filter_slider_ui
     std::string description;
     bool is_int;
     float value;
+    float step;
     rs2::option_range range;
 
     bool render(const float3& location, bool enabled);
@@ -132,8 +136,10 @@ At this point of the program the camera is configured and streams are available 
 Now, we create the filters that we will use in the application:
 
 ```cpp
-// Decalre filters
+// Declare filters
 rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
+rs2::rotation_filter rot_filter;    // Rotation - rotates frames
+rs2::threshold_filter thr_filter;   // Threshold  - removes values outside recommended range
 rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
 rs2::temporal_filter temp_filter;   // Temporal   - reduces temporal noise
 
@@ -150,8 +156,10 @@ one by one to a vector, **with order in mind**:
 // Initialize a vector that holds filters and their options
 std::vector<filter_options> filters;
 
-// The following order of emplacment will dictate the orders in which filters are applied
+// The following order of emplacement will dictate the orders in which filters are applied
 filters.emplace_back("Decimate", dec_filter);
+filters.emplace_back("Rotate", rot_filter);
+filters.emplace_back("Threshold", thr_filter);
 filters.emplace_back(disparity_filter_name, depth_to_disparity);
 filters.emplace_back("Spatial", spat_filter);
 filters.emplace_back("Temporal", temp_filter);
@@ -203,31 +211,34 @@ The `processing_thread` will do the following actions, to make the main thread m
 2. Apply all filters to the depth frame, one after the other:
 
   ```cpp
-          /* Apply filters.
-          The implemented flow of the filters pipeline is in the following order:
-          1. apply decimation filter
-          2. transform the scence into disparity domain
-          3. apply spatial filter
-          4. apply temporal filter
-          5. revert the results back (if step Disparity filter was applied
-          to depth domain (each post processing block is optional and can be applied independantly).
-          */
-          bool revert_disparity = false;
-          for (auto&& filter : filters)
-          {
-              if (filter.is_enabled)
-              {
-                  filtered = filter.filter.process(filtered);
-                  if (filter.filter_name == disparity_filter_name)
-                  {
-                      revert_disparity = true;
-                  }
-              }
-          }
-          if (revert_disparity)
-          {
-              filtered = disparity_to_depth.process(filtered);
-          }
+          
+            /* Apply filters.
+            The implemented flow of the filters pipeline is in the following order:
+            1. apply decimation filter
+            2. apply rotation filter
+            3. apply threshold filter
+            4. transform the scene into disparity domain
+            5. apply spatial filter
+            6. apply temporal filter
+            7. revert the results back (if step Disparity filter was applied
+            to depth domain (each post processing block is optional and can be applied independantly).
+            */
+            bool revert_disparity = false;
+            for (auto&& filter : filters)
+            {
+                if (filter.is_enabled)
+                {
+                    filtered = filter.filter.process(filtered);
+                    if (filter.filter_name == disparity_filter_name)
+                    {
+                        revert_disparity = true;
+                    }
+                }
+            }
+            if (revert_disparity)
+            {
+                filtered = disparity_to_depth.process(filtered);
+            }
   ```
 
 3. Push the original depth frame, and the filtered one, each to its respective queue:

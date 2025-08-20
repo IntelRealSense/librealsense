@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 
 #include "ds-options.h"
@@ -517,8 +517,8 @@ namespace librealsense
             return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave";
     }
 
-    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, bool is_fw_version_using_id)
-        : _hwm(hwm), _is_fw_version_using_id(is_fw_version_using_id)
+    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, bool is_fw_version_using_id, hwmon_response_type no_data_to_return_opcode)
+        : _hwm(hwm), _is_fw_version_using_id(is_fw_version_using_id), _no_data_to_return_opcode(no_data_to_return_opcode)
     {
         _range = [this]()
         {
@@ -552,20 +552,15 @@ namespace librealsense
             command cmd(ds::GETSUBPRESETID);
             try
             {
-                hwmon_response response;
+                hwmon_response_type response;
                 auto res = _hwm.send( cmd, &response );  // avoid the throw
-                switch( response )
+                if (response != _no_data_to_return_opcode) // If no subpreset is streaming, the firmware returns "NO_DATA_TO_RETURN" error
                 {
-                case hwmon_response::hwm_NoDataToReturn:
-                    // If no subpreset is streaming, the firmware returns "NO_DATA_TO_RETURN" error
-                    break;
-                default:
                     // if a subpreset is streaming, checking this is the alternating emitter sub preset
                     if( res.size() )
                         rv = ( res[0] == ds::ALTERNATING_EMITTER_SUBPRESET_ID ) ? 1.0f : 0.f;
                     else
-                        LOG_DEBUG( "alternating emitter query: " << hwmon_error_string( cmd, response ) );
-                    break;
+                        LOG_DEBUG( "alternating emitter query: " << _hwm.hwmon_error_string( cmd, response ) );
                 }
             }
             catch (...)

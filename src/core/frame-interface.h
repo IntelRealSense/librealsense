@@ -1,9 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <librealsense2/h/rs_frame.h>
 #include <memory>
+#include <cstdint> // for uint8_t
 #include <iosfwd>
 
 

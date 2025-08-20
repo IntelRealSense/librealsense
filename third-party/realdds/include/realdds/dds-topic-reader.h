@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
@@ -57,6 +57,7 @@ public:
     bool has_writers() const { return _n_writers > 0; }
 
     std::shared_ptr< dds_topic > const & topic() const { return _topic; }
+    dds_guid const & guid() const;
 
     typedef std::function< void() > on_data_available_callback;
     typedef std::function< void( eprosima::fastdds::dds::SubscriptionMatchedStatus const & ) >

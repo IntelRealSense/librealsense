@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -10,6 +10,7 @@
 #include "example.hpp"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 
 //////////////////////////////
@@ -47,10 +48,13 @@ public:
         ImGui::SetNextWindowPos(_position);
         //concate the name given with seq_id in order to make a unique name (uniqeness is needed for Begin())
         std::string name_id = std::string(_name) + std::to_string(_seq_id);
+        ImGuiSetStyleColors();
+        ImGui::GetStyle().Colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f); // Set the main background color to black
+
         ImGui::Begin(name_id.c_str(), nullptr, _sliders_flags);
         ImGui::Text("%s",_name);
         bool is_changed =
-            ImGui::SliderFloat("", &_value, _min_value, _max_value, "%.3f", 5.0f, false); //5.0f for logarithmic scale 
+            ImGui::SliderFloat("##HDRSlider", &_value, _min_value, _max_value, "%.3f", ImGuiSliderFlags_Logarithmic);
         if (is_changed) {
             _sensor.set_option(RS2_OPTION_SEQUENCE_ID, float(_seq_id));
             _sensor.set_option(_option, _value);
@@ -123,7 +127,7 @@ public:
         _text_box_hdr_explain("HDR Tutorial", { 120, 20 }, { 1000, 140 }),
         _text_box_first_frame("frame 1", { 200, 150 }, { 170, 40 }),
         _text_box_second_frame("frame 2", { 460, 150 }, { 170, 40 }),
-        _text_box_hdr_frame("hdr", { 850, 280 }, { 170, 40 })
+        _text_box_hdr_frame("hdr", { 850, 280 }, { 170, 20 })
     {
         // init frames map
         //for initilize only - an empty frame with its properties
@@ -145,9 +149,6 @@ public:
     //we need slider 2 to be showen before slider 1 (otherwise slider 1 padding is covering slider 2)
     void render_widgets() {
 
-        //start a new frame of ImGui
-        ImGui_ImplGlfw_NewFrame(1);
-
         _exposure_slider_seq_2.show();
         _exposure_slider_seq_1.show();
         _gain_slider_seq_2.show();
@@ -165,7 +166,7 @@ public:
 
         //render the ImGui features: sliders and text
         ImGui::Render();
-
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
     // return a reference to frames map

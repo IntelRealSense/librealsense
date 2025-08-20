@@ -1,9 +1,10 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 #include "pyrealsense2.h"
 #include <librealsense2/hpp/rs_internal.hpp>
 #include <librealsense2/hpp/rs_device.hpp>
+#include <librealsense2/hpp/rs_safety_sensor.hpp>
 #include <librealsense2/hpp/rs_record_playback.hpp> // for downcasts
 #include <common/metadata-helper.h>
 
@@ -22,6 +23,7 @@ void init_device(py::module &m) {
         .def("first_color_sensor", [](rs2::device& self) { return self.first<rs2::color_sensor>(); }) // No docstring in C++
         .def("first_motion_sensor", [](rs2::device& self) { return self.first<rs2::motion_sensor>(); }) // No docstring in C++
         .def("first_fisheye_sensor", [](rs2::device& self) { return self.first<rs2::fisheye_sensor>(); }) // No docstring in C++
+        .def("first_safety_sensor", [](rs2::device& self) { return self.first<rs2::safety_sensor>(); }) // No docstring in C++
         .def("supports", &rs2::device::supports, "Check if specific camera info is supported.", "info"_a)
         .def("get_info", &rs2::device::get_info, "Retrieve camera specific information, "
              "like versions of various internal components", "info"_a)
@@ -51,11 +53,21 @@ void init_device(py::module &m) {
                 ss << " (FW update id: " << self.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
             if (self.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
                 ss << "  FW: " << self.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+            if (self.supports(RS2_CAMERA_INFO_SMCU_FW_VERSION))
+                ss << "  SMCU: " << self.get_info(RS2_CAMERA_INFO_SMCU_FW_VERSION);
             if( self.supports( RS2_CAMERA_INFO_CAMERA_LOCKED )
                 && strcmp( "YES", self.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) ) )
                 ss << "  UNLOCKED";
-            if( self.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
-                ss << "  on USB" << self.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
+            if (self.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
+            {
+                auto connection_type = self.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
+                ss << "  on ";
+                ss << connection_type;
+                if (connection_type == "USB")
+                    if (self.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+                        ss << self.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+            }
+            
             else if( self.supports( RS2_CAMERA_INFO_PHYSICAL_PORT ) )
                 ss << "  @ " << self.get_info( RS2_CAMERA_INFO_PHYSICAL_PORT );
             ss << ")>";
@@ -164,16 +176,16 @@ void init_device(py::module &m) {
             int py_px_only)
         {
             constexpr int health_check_params = 4; // px, py, fx, fy for the calibration
-            float health{};
-            return std::make_tuple(self.run_uv_map_calibration(left, color, depth, py_px_only, &health, health_check_params), health);
+            float health[health_check_params];
+            return std::make_tuple(self.run_uv_map_calibration(left, color, depth, py_px_only, health, health_check_params), health);
         }, "Run target-based Depth-RGB UV-map calibraion. This call is executed on the caller's thread.",
             "left"_a, "color"_a, "depth"_a, "py_px_only"_a)
         .def("run_uv_map_calibration", [](const rs2::auto_calibrated_device& self, rs2::frame_queue left, rs2::frame_queue color, rs2::frame_queue depth,
                 int py_px_only, std::function<void(float)> callback)
             {
                 constexpr int health_check_params = 4; // px, py, fx, fy for the calibration
-                float health{};
-                return std::make_tuple(self.run_uv_map_calibration(left, color, depth, py_px_only, &health, health_check_params, callback), health);
+                float health[health_check_params];
+                return std::make_tuple(self.run_uv_map_calibration(left, color, depth, py_px_only, health, health_check_params, callback), health);
             }, "Run target-based Depth-RGB UV-map calibraion. This call is executed on the caller's thread and provides progress notifications via the callback.",
             "left"_a, "color"_a, "depth"_a, "py_px_only"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
         .def("calculate_target_z", [](const rs2::auto_calibrated_device& self, rs2::frame_queue queue1, rs2::frame_queue queue2, rs2::frame_queue queue3,

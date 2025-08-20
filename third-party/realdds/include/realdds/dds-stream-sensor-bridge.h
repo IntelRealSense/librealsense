@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -56,6 +56,9 @@ public:
         start_sensor_callback;
     typedef std::function< void( std::string const & sensor_name ) > stop_sensor_callback;
     typedef std::function< void( std::string const & error_string ) > on_error_callback;
+    typedef std::function< void( std::shared_ptr< realdds::dds_stream_server > const &,
+                                 std::shared_ptr< realdds::dds_stream_profile > const & ) >
+        on_stream_profile_change_callback;
 
 private:
     std::map< std::string, sensor_bridge > _sensors;
@@ -64,6 +67,7 @@ private:
     start_sensor_callback _on_start_sensor;
     stop_sensor_callback _on_stop_sensor;
     on_error_callback _on_error;
+    on_stream_profile_change_callback _on_stream_profile_change;
 
 public:
     dds_stream_sensor_bridge();
@@ -101,12 +105,16 @@ public:
     // Return true if the stream for the given server is currently streaming
     bool is_streaming( std::shared_ptr< dds_stream_server > const & ) const;
 
+    // Return the profile a server is set to, even if not yet streaming
+    std::shared_ptr< dds_stream_profile > get_profile( std::shared_ptr< dds_stream_server > const & ) const;
+
     // Notifications
 public:
     void on_readers_changed( readers_changed_callback callback ) { _on_readers_changed = std::move( callback ); }
     void on_start_sensor( start_sensor_callback callback ) { _on_start_sensor = std::move( callback ); }
     void on_stop_sensor( stop_sensor_callback callback ) { _on_stop_sensor = std::move( callback ); }
     void on_error( on_error_callback callback ) { _on_error = std::move( callback ); }
+    void on_stream_profile_change( on_stream_profile_change_callback callback ) { _on_stream_profile_change = std::move( callback ); }
 
     // Impl
 protected:

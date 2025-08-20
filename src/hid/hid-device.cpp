@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 #include <queue>
 #include "hid-device.h"
@@ -334,7 +334,7 @@ namespace librealsense
             //we want to change the sensitivity values only in gyro, for FW version >= 5.16
             if( featureReport.reportId == REPORT_ID_GYROMETER_3D
                 && _realsense_hid_report_actual_size == sizeof( REALSENSE_HID_REPORT ) )
-                featureReport.sensitivity = sensitivity;
+                featureReport.sensitivity = static_cast<unsigned short>(sensitivity);
 
 
             res = dev->control_transfer(USB_REQUEST_CODE_SET,

@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 #include "pyrealsense2.h"
 #include <librealsense2/hpp/rs_types.hpp>
@@ -64,5 +64,10 @@ void init_types(py::module &m) {
         .def_readwrite("max_x", &rs2::region_of_interest::max_x)
         .def_readwrite("max_y", &rs2::region_of_interest::max_y);
 
+    BIND_ENUM(m, rs2_calib_location, RS2_CALIB_LOCATION_COUNT, "Calib Location")
+
+    BIND_ENUM(m, rs2_safety_mode, RS2_SAFETY_MODE_COUNT, "Safety Mode")
+
     /** end rs_types.hpp **/
 }
+

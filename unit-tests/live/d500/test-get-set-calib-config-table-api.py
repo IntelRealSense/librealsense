@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
-# test:donotrun  ## TODO: change this when D5555 device is connected to libCI
+# test:donotrun  ## TODO: change this when relevant device is connected to libCI
 
 import pyrealsense2 as rs
 from rspy import test, log
@@ -86,7 +86,7 @@ read_result = ac_dev.get_calibration_config()
 
 # verify the JSON objects are equal (comparing JSON object because
 # the JSON string can have different order of inner fields
-test.check_equal(json.loads(read_result), json.loads(new_calib_config))
+test.check_equal_jsons(json.loads(read_result), json.loads(new_calib_config))
 
 test.finish()
 
@@ -232,7 +232,7 @@ read_result = ac_dev.get_calibration_config()
 
 # verify the JSON objects are equal (comparing JSON object because
 # the JSON string can have different order of inner fields
-test.check_equal(json.loads(read_result), json.loads(original_calib_config))
+test.check_equal_jsons(json.loads(read_result), json.loads(original_calib_config))
 
 test.finish()
 

@@ -1,5 +1,5 @@
-﻿// License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include "example.hpp"          // Include short list of convenience functions for rendering
@@ -19,11 +19,15 @@ int main(int argc, char * argv[]) try
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
+    rs2::config cfg;
+
+    // Enable all camera streams
+    cfg.enable_all_streams();
 
     // Start streaming with default recommended configuration
     // The default video configuration contains Depth and Color streams
     // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
-    pipe.start();
+    pipe.start(cfg);
 
     while (app) // Application still alive?
     {

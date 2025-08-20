@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -92,7 +92,7 @@ public:
     void stop_streaming() override;
     image_header const & get_image_header() const { return _image_header; }
 
-    virtual void publish_image( topics::image_msg && );
+    virtual void publish_image( topics::image_msg & );
 
 private:
     void check_profile( std::shared_ptr< dds_stream_profile > const & ) const override;

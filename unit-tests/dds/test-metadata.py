@@ -1,8 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023-4 RealSense, Inc. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 # We disable under Linux for now, pending feedback from FastDDS team:
 # Having two participants in the same process ("client" and "librs" below) usually works, but in this case the former
@@ -88,10 +88,10 @@ with test.remote.fork( nested_indent='  S' ) as remote:
 
     import threading
     image_received = threading.Event()
-    image_content = []
-    def on_image_available( stream, image, sample ):
-        log.d( f'----> image {image} {sample}')
-        image_content.append( image )
+    image_times = []
+    def on_image_available( stream, image_buffer, image_time, sample ):
+        log.d( f'----> image time {image_time} {sample}')
+        image_times.append( image_time )
         image_received.set()
 
     stream_direct.on_data_available( on_image_available )
@@ -99,7 +99,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
     stream_direct.start_streaming()
 
     def detect_image():
-        image_content.clear()
+        image_times.clear()
         image_received.clear()
 
     def wait_for_image( timeout=1, count=None ):
@@ -107,12 +107,12 @@ with test.remote.fork( nested_indent='  S' ) as remote:
         while not timer.has_expired():
             if not image_received.wait( timer.time_left() ):
                 raise TimeoutError( 'timeout waiting for image' )
-            if count is None  or  count <= len(image_content):
+            if count is None  or  count <= len(image_times):
                 return
             image_received.clear()
         if count is None:
             raise TimeoutError( 'timeout waiting for image' )
-        raise TimeoutError( f'timeout waiting for {count} images; {len(image_content)} received' )
+        raise TimeoutError( f'timeout waiting for {count} images; {len(image_times)} received' )
 
     class image_expected:
         def __init__( self, timeout=1, count=None ):
@@ -181,7 +181,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
     #############################################################################################
     #
     with test.closure( "Initialize librs device", on_fail=test.ABORT ):
-        import librs as rs
+        from rspy import librs as rs
         if log.is_debug_on():
             rs.log_to_console( rs.log_severity.debug )
         context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'librs' }} )
@@ -233,7 +233,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
         f = queue.wait_for_frame( 250 )  # A frame should now be available
         log.d( '---->', f )
         if test.check( f ) and test.check_equal( f.get_frame_number(), 1 ):     # first frame so far!
-            test.check_approx_abs( f.get_timestamp() * 1e-3, image_content[0].timestamp.to_double(), 1e-6 )  # frames are in ms
+            test.check_approx_abs( f.get_timestamp() * 1e-3, image_times[0].to_double(), 1e-6 )  # frames are in ms
             test.check_false( f.supports_frame_metadata( rs.frame_metadata_value.actual_fps ) )
             if test.check( f.supports_frame_metadata( rs.frame_metadata_value.white_balance ) ):
                 test.check_equal( f.get_frame_metadata( rs.frame_metadata_value.white_balance ), 0xbaad )
@@ -262,7 +262,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
         f = queue.wait_for_frame( 250 )
         log.d( '---->', f )
         if test.check( f ) and test.check_equal( f.get_frame_number(), 1234 ):
-            test.check_approx_abs( f.get_timestamp() * 1e-3, image_content[0].timestamp.to_double(), 1e-6 )  # frames are in ms
+            test.check_approx_abs( f.get_timestamp() * 1e-3, image_times[0].to_double(), 1e-6 )  # frames are in ms
             test.check_false( f.supports_frame_metadata( rs.frame_metadata_value.white_balance ) )
             if test.check( f.supports_frame_metadata( rs.frame_metadata_value.temperature ) ):
                 test.check_equal( f.get_frame_metadata( rs.frame_metadata_value.temperature ), 0xf00d )

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2018 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2018 RealSense, Inc. All Rights Reserved.
 
 #ifndef __RS_CONVERTER_CONVERTER_RAW_H
 #define __RS_CONVERTER_CONVERTER_RAW_H
@@ -38,7 +38,7 @@ namespace rs2 {
                         return;
                     }
 
-                    if (frames_map_get_and_set(videoframe.get_profile().stream_type(), videoframe.get_frame_number())) {
+                    if (frames_map_get_and_set(videoframe.get_profile().stream_type(), videoframe.get_profile().stream_index(), videoframe.get_frame_number())) {
                         return;
                     }
 

@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+   Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 /** \file rs_context.h
 * \brief Exposes RealSense context functionality for C compilers
@@ -32,7 +32,8 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error);
 *             the 'context' key in the file is taken as-is
 *             '<executable-name>/context' is merged, if it exists
 *             then the context-settings are merged
-*         dds: {}                       - (requires BUILD_WITH_DDS) false disables DDS; otherwise the DDS settings:
+*         dds: {}                       - DDS settings: (requires BUILD_WITH_DDS)
+*             enabled: false            - (bool) whether DDS is enabled
 *             domain: 0                 - (int) the number of the DDS domain [0-232]
 *             participant: <exe name>   - (string) the name of the participant
 *                 (see additional settings in realdds/doc/device.md#Settings)

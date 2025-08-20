@@ -1,8 +1,9 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 from rspy import test, log
 import time
+import pyrealsense2 as rs
 
 # global variable used to count on all the sensors simultaneously
 count_frames = False
@@ -74,11 +75,14 @@ def generate_callbacks(sensor_profiles_dict, profile_name_fps_dict):
     """
     def on_frame_received(frame):
         global count_frames
-        log.d(f"frame {frame.profile.stream_name()} #{profile_name_fps_dict[frame.profile.stream_name()] + 1} accepted") # todo remove these
+        profile_name = frame.profile.stream_name()
+        counted_frame_number = profile_name_fps_dict[frame.profile.stream_name()] + 1  # frame number counted in test
+        frame_number = frame.get_frame_number()  # the actual frame number from the metadata
+        frame_ts = frame.get_timestamp()
+        log.d(f"frame {profile_name} #{counted_frame_number} accepted with frame number {frame_number} and ts {frame_ts}")
         if count_frames:
-            profile_name = frame.profile.stream_name()
             profile_name_fps_dict[profile_name] += 1
-        log.d(f"frame {frame.profile.stream_name()} #{profile_name_fps_dict[frame.profile.stream_name()] + 1} finished")
+        log.d(f"frame {profile_name} #{counted_frame_number} callback finished")
 
     sensor_function_dict = {sensor_key: on_frame_received for sensor_key in sensor_profiles_dict}
     return sensor_function_dict
@@ -152,9 +156,12 @@ def perform_fps_test(sensor_profiles_arr, streams_combinations):
     for streams_to_test in streams_combinations:
         partial_dict = get_dict_for_streams(sensor_profiles_arr, streams_to_test)
         with test.closure("Testing", get_tested_profiles_string(partial_dict)):
+            log.i(partial_dict)
             expected_fps_dict = get_expected_fps_dict(partial_dict)
             log.d(get_test_details_str(partial_dict))
             fps_dict = measure_fps(partial_dict)
+            log.i("Expected: ", expected_fps_dict)
+            log.i("Got: ", fps_dict)
             test.check(check_fps_dict(fps_dict, expected_fps_dict))
 
 

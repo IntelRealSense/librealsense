@@ -1,13 +1,16 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-24 RealSense, Inc. All Rights Reserved.
 
 #include "uvc-sensor.h"
 
 #include "source.h"
 #include "device.h"
 #include "stream.h"
+#include "context.h"
+#include "image.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
+#include "proc/rotation-filter.h"
 #include "global_timestamp_reader.h"
 #include "device-calibration.h"
 #include "core/notification.h"
@@ -246,6 +249,9 @@ void log_callback_end( uint32_t fps,
         dec->get_option(RS2_OPTION_STREAM_FILTER).set(RS2_STREAM_COLOR);
         dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_ANY);
         res.push_back(dec);
+        std::vector< rs2_stream > streams_to_rotate;
+        streams_to_rotate.push_back( RS2_STREAM_COLOR );
+        res.push_back( std::make_shared< rotation_filter >( streams_to_rotate ) );
         return res;
     }
 
@@ -260,6 +266,11 @@ void log_callback_end( uint32_t fps,
             dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_Z16);
             res.push_back(dec);
         }
+
+        std::vector< rs2_stream > streams_to_rotate;
+        streams_to_rotate.push_back( RS2_STREAM_DEPTH);
+        streams_to_rotate.push_back( RS2_STREAM_INFRARED );
+        res.push_back( std::make_shared< rotation_filter >( streams_to_rotate ) );
         return res;
     }
 

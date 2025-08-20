@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include "backend.h"
@@ -154,7 +154,7 @@ namespace librealsense
 
             bool has_metadata();
 
-            static bool sort_hids(hid_input* first, hid_input* second);
+            static bool sort_hids(std::shared_ptr<hid_input> first, std::shared_ptr<hid_input> second);
 
             void create_channel_array();
 
@@ -181,8 +181,8 @@ namespace librealsense
             std::string _sensor_name;
             std::string _sampling_frequency_name;
             std::string _sensitivity_name;
-            std::list<hid_input*> _inputs;
-            std::list<hid_input*> _channels;
+            std::list<std::shared_ptr<hid_input>> _inputs;
+            std::list<std::shared_ptr<hid_input>> _channels;
             hid_callback _callback;
             std::atomic<bool> _is_capturing;
             std::unique_ptr<std::thread> _hid_thread;

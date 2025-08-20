@@ -1,9 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 #include "algo.h"
 #include "option.h"
 #include "core/video-frame.h"
+#include <algorithm>
 
 using namespace librealsense;
 

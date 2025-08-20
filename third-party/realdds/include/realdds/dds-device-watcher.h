@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -49,6 +49,8 @@ public:
     void start();
     void stop();
     bool is_stopped() const;
+
+    std::shared_ptr< dds_participant > get_participant() const { return _participant; }
 
     // Iterate over discovered devices until the callback returns false; returns true if all devices were iterated over
     // and this never happened.

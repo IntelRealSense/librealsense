@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 RealSense, Inc. All Rights Reserved.
 
 // This file is auto-generated from cubemap_pz.png
 static uint32_t cubemap_pz_png_size = 0x1604d;

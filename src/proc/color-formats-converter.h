@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -73,4 +73,17 @@ namespace librealsense
             color_converter(name, target_format) {};
         void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size) override;
     };
-}
+
+    class LRS_EXTENSION_API uyvy_to_yuyv : public color_converter
+    {
+    public:
+        uyvy_to_yuyv() : uyvy_to_yuyv( "UYVY to YUYV Converter" ) {};
+
+    protected:
+        uyvy_to_yuyv( const char * name ) : color_converter( name, RS2_FORMAT_YUYV, RS2_STREAM_COLOR )
+        {
+        };
+
+        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size ) override;
+    };
+    }

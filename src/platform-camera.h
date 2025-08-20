@@ -1,10 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "backend-device.h"
 #include "platform/platform-device-info.h"
+#include <thread>
 
 
 namespace librealsense {
@@ -17,9 +18,16 @@ public:
                      const std::vector< platform::uvc_device_info > & uvc_infos,
                      bool register_device_notifications );
 
+    ~platform_camera() override;
+
     virtual rs2_intrinsics get_intrinsics( unsigned int, const stream_profile & ) const { return rs2_intrinsics{}; }
 
     std::vector< tagged_profile > get_profiles_tags() const override;
+
+private:
+    void initialize();
+    std::thread _init_thread;
+    std::atomic< bool > should_stop{ false };  // to avoid delay when closing and _init_thread is still running
 };
 
 

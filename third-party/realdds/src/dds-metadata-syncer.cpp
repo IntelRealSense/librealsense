@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #include <realdds/dds-metadata-syncer.h>
 #include <realdds/dds-utilities.h>
@@ -112,7 +112,7 @@ bool dds_metadata_syncer::handle_match( std::unique_lock< std::mutex > & lock )
     _metadata_queue.pop_front();
     _frame_queue.pop_front();
 
-    if( _on_frame_ready )
+    if( _on_frame_ready && _started )
     {
         lock.unlock();
         _on_frame_ready( std::move( fh ), md );
@@ -132,7 +132,7 @@ bool dds_metadata_syncer::handle_frame_without_metadata( std::unique_lock< std::
     frame_holder fh = std::move( _frame_queue.front().second );
     _frame_queue.pop_front();
 
-    if( _on_frame_ready )
+    if( _on_frame_ready && _started )
     {
         lock.unlock();
         _on_frame_ready( std::move( fh ), metadata_type() );

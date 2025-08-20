@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 #include <string>
@@ -15,9 +15,11 @@ namespace hresult {
     inline std::string hr_to_string(HRESULT hr)
     {
         _com_error err(hr);
-        std::wstring errorMessage = (err.ErrorMessage()) ? err.ErrorMessage() : L"";
+        const TCHAR * error_text = err.ErrorMessage();
+        if( ! error_text )
+            error_text = TEXT( "" );
         std::ostringstream ss;
-        ss << "HResult 0x" << std::hex << hr << ": \"" << string::windows::win_to_utf(errorMessage.data()) << "\"";
+        ss << "HResult 0x" << std::hex << hr << ": \"" << string::windows::win_to_utf( error_text ) << "\"";
         return ss.str();
     }
 

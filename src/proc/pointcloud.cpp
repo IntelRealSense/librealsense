@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #include "pointcloud.h"
 #include "occlusion-filter.h"
@@ -18,10 +18,13 @@
 
 #ifdef RS2_USE_CUDA
 #include "proc/cuda/cuda-pointcloud.h"
+#include "rsutils/accelerators/gpu.h"
 #endif
 #ifdef __SSSE3__
 #include "proc/sse/sse-pointcloud.h"
 #endif
+#include "proc/neon/neon-pointcloud.h"
+
 
 namespace librealsense
 {
@@ -394,13 +397,17 @@ namespace librealsense
     std::shared_ptr<pointcloud> pointcloud::create()
     {
         #ifdef RS2_USE_CUDA
+        if (rsutils::rs2_is_gpu_available())
+        {
             return std::make_shared<librealsense::pointcloud_cuda>();
-        #else
+        }
+        #endif
         #ifdef __SSSE3__
             return std::make_shared<librealsense::pointcloud_sse>();
+        #elif defined(__ARM_NEON)  && ! defined ANDROID
+            return std::make_shared<librealsense::pointcloud_neon>();
         #else
             return std::make_shared<librealsense::pointcloud>();
-        #endif
         #endif
     }
 

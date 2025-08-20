@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -20,6 +20,7 @@
 
 #include "../third-party/stb_easy_font.h"
 #include "example-utils.hpp"
+#include "../third-party/imgui/imgui_impl_glfw.h"
 
 #ifndef PI
 #define PI  3.14159265358979323846
@@ -530,24 +531,40 @@ public:
         glfwSetWindowUserPointer(win, this);
         glfwSetMouseButtonCallback(win, [](GLFWwindow* w, int button, int action, int mods)
             {
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_MouseButtonCallback(w, button, action, mods);// Forward the event to ImGui's GLFW implementation
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
             });
 
         glfwSetScrollCallback(win, [](GLFWwindow* w, double xoffset, double yoffset)
             {
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_ScrollCallback(w, xoffset, yoffset); // Forwards scroll events to ImGui
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 s->on_mouse_scroll(xoffset, yoffset);
             });
 
         glfwSetCursorPosCallback(win, [](GLFWwindow* w, double x, double y)
             {
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_CursorPosCallback(w, x, y); // Forward the cursor position to ImGui
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 s->on_mouse_move(x, y);
             });
 
         glfwSetKeyCallback(win, [](GLFWwindow* w, int key, int scancode, int action, int mods)
             {
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_KeyCallback(w, key, scancode, action, mods);
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 if (0 == action) // on key release
                 {
@@ -602,24 +619,40 @@ public:
         glfwSetWindowUserPointer(win, this);
         glfwSetMouseButtonCallback(win, [](GLFWwindow* w, int button, int action, int mods)
             {
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_MouseButtonCallback(w, button, action, mods);// Forward the event to ImGui's GLFW implementation
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
             });
 
         glfwSetScrollCallback(win, [](GLFWwindow* w, double xoffset, double yoffset)
             {
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_ScrollCallback(w, xoffset, yoffset); // Forwards scroll events to ImGui
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 s->on_mouse_scroll(xoffset, yoffset);
             });
 
         glfwSetCursorPosCallback(win, [](GLFWwindow* w, double x, double y)
             {
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_CursorPosCallback(w, x, y); // Forward the cursor position to ImGui
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 s->on_mouse_move(x, y);
             });
 
         glfwSetKeyCallback(win, [](GLFWwindow* w, int key, int scancode, int action, int mods)
             {
+                if (ImGui::GetCurrentContext() != nullptr)
+                {
+                    ImGui_ImplGlfw_KeyCallback(w, key, scancode, action, mods);
+                }
                 auto s = (window*)glfwGetWindowUserPointer(w);
                 if (0 == action) // on key release
                 {
@@ -703,7 +736,7 @@ public:
         }
         else
         {
-            _main_win.put_text("Connect one or more Intel RealSense devices and rerun the example",
+            _main_win.put_text("Connect one or more RealSense devices and rerun the example",
                 0.4f, 0.5f, { 0.f,0.f, float(_width) , float(_height) });
         }
     }
@@ -738,7 +771,7 @@ public:
         }
         else
         {
-            _main_win.put_text("Connect one or more Intel RealSense devices and rerun the example",
+            _main_win.put_text("Connect one or more RealSense devices and rerun the example",
                 0.3f, 0.5f, { float(_canvas_left_top_x), float(_canvas_left_top_y), float(_canvas_width) , float(_canvas_height) });
         }
     }
@@ -1133,4 +1166,27 @@ void get_screen_resolution(unsigned int& window_width, unsigned int& window_heig
 
     window_width = mode->width;
     window_height = mode->height;
+}
+
+void ImGuiSetStyleColors() {
+    ImGui::SetNextWindowBgAlpha(0.5f); // Set the background alpha to 50% transparency
+    ImGui::GetStyle().WindowRounding = 10.0f; // Set the window rounding to 10.0f 
+    ImGui::GetStyle().WindowBorderSize = 0.0f;
+
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImVec4* colors = style.Colors;
+    colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f); // Set the main background color to dark gray
+
+    // Set other window-related colors 
+    colors[ImGuiCol_TitleBg] = ImVec4(0.286f, 0.298f, 0.549f, 1.0f);
+    colors[ImGuiCol_TitleBgActive] = ImVec4(0.286f, 0.298f, 0.549f, 1.0f);
+
+    // Set frame and button colors to gray
+    colors[ImGuiCol_FrameBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.35f, 0.35f, 0.35f, 1.0f);
+
+    colors[ImGuiCol_CheckMark] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f); // Change the color of the checkmark to gray
+
+    colors[ImGuiCol_SliderGrab] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f); // Change the color of the slider grab to gray
 }

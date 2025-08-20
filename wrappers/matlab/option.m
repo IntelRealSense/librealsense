@@ -71,7 +71,7 @@ classdef option < int64
         invalidation_bypass             (68)
         ambient_light_env_level         (69) % Deprecated - Use DIGITAL_GAIN instead
         digital_gain                    (69)
-        sensor_mode                     (70)
+        sensor_mode                     (70) % Deprecated
         emitter_always_on               (71)
         thermal_compensation            (72)
         trigger_camera_accuracy_health  (73)
@@ -94,6 +94,9 @@ classdef option < int64
         receiver_sensitivity            (90)
         emitter_frequency               (93)
         depth_auto_exposue_mode         (94)
-        count                           (95)
+        safety_preset_active_index      (95)
+        safety_mode                     (96)
+        rgb_tnr_enabled                 (97)
+        count                           (98)
     end
 end

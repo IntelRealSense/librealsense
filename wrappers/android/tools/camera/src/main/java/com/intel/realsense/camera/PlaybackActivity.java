@@ -8,6 +8,8 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.view.ViewGroup;
@@ -52,7 +54,6 @@ public class PlaybackActivity extends AppCompatActivity {
         super.onConfigurationChanged(newConfig);
 
         // handling device orientation changes to avoid interruption during playback
-
         // cleanup previous surface
         if(mGLSurfaceView != null) {
             mGLSurfaceView.clear();
@@ -94,9 +95,13 @@ public class PlaybackActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        if(mFilePath == null){
+     if(mFilePath == null){
+            Log.d(TAG, "onResume: mFilePath is null");
             Intent intent = new Intent(this, FileBrowserActivity.class);
-            intent.putExtra(getString(R.string.browse_folder), getString(R.string.realsense_folder) + File.separator + "video");
+            String correct_path= getExternalFilesDir(null).getAbsolutePath() +
+                    File.separator + getString(R.string.realsense_folder) + File.separator + "video";
+            intent.putExtra(getString(R.string.browse_folder),correct_path);
+            Log.d(TAG, "onResume: path: "+ correct_path);
             startActivityForResult(intent, OPEN_FILE_REQUEST_CODE);
         }
         else{

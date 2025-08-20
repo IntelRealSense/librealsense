@@ -1,5 +1,5 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
-//// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+//// Copyright(c) 2020 RealSense, Inc. All Rights Reserved.
 
 #include <rsutils/time/work-week.h>
 #include <string>
@@ -54,7 +54,7 @@ work_week::work_week( unsigned year, unsigned ww )
 work_week::work_week( const std::time_t & t )
 {
     tm buf;
-#ifdef WIN32
+#ifdef _WIN32
     localtime_s( &buf, &t );
     auto time = &buf;
 #else

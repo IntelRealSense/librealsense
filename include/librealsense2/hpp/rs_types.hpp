@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #ifndef LIBREALSENSE_RS2_TYPES_HPP
 #define LIBREALSENSE_RS2_TYPES_HPP
@@ -30,6 +30,11 @@ struct rs2_frame_callback
     virtual                                 ~rs2_frame_callback() {}
 };
 typedef std::shared_ptr<rs2_frame_callback> rs2_frame_callback_sptr;
+
+struct rs2_streams_list 
+{
+    std::vector< rs2_stream > list;
+};
 
 struct rs2_frame_processor_callback
 {
@@ -210,10 +215,5 @@ namespace rs2
 
 inline std::ostream & operator << (std::ostream & o, rs2_vector v) { return o << v.x << ", " << v.y << ", " << v.z; }
 inline std::ostream & operator << (std::ostream & o, rs2_quaternion q) { return o << q.x << ", " << q.y << ", " << q.z << ", " << q.w; }
-
-inline bool operator==(rs2_calibration_config const& self, rs2_calibration_config const& other)
-{
-    return !std::memcmp(&self, &other, sizeof(rs2_calibration_config));
-}
 
 #endif // LIBREALSENSE_RS2_TYPES_HPP

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <src/software-device.h>
@@ -8,10 +8,12 @@
 #include "sid_index.h"
 #include "rsdds-serializable.h"
 #include <src/auto-calibrated-proxy.h>
+#include <src/device-calibration.h>
 
 #include <rsutils/json-fwd.h>
 #include <memory>
 #include <vector>
+#include <set>
 
 
 namespace realdds {
@@ -45,6 +47,7 @@ class dds_device_proxy
     , public update_device_interface  // signed, recovery-mode
     , public dds_serializable
     , public auto_calibrated_proxy
+    , public calibration_change_device
 {
     std::shared_ptr< realdds::dds_device > _dds_dev;
     std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
@@ -55,6 +58,8 @@ class dds_device_proxy
     rsutils::subscription _metadata_subscription;
 
     int get_index_from_stream_name( const std::string & name ) const;
+    int get_unique_index_in_sensor( const std::shared_ptr< dds_sensor_proxy > & sensor,
+                                    const std::string & stream_name, rs2_stream stream_type ) const;
     void set_profile_intrinsics( std::shared_ptr< stream_profile_interface > const & profile,
                                  const std::shared_ptr< realdds::dds_stream > & stream ) const;
     void set_video_profile_intrinsics( std::shared_ptr< stream_profile_interface > const & profile,
@@ -74,6 +79,16 @@ public:
 
     void hardware_reset() override;
 
+    // calibration_change_device
+public:
+    void register_calibration_change_callback( rs2_calibration_change_callback_sptr callback ) override
+    {
+        _calib_changed_callbacks.insert( callback );
+    }
+
+private:
+    std::set< rs2_calibration_change_callback_sptr > _calib_changed_callbacks;
+
     // debug_interface
 private:
     std::vector< uint8_t > send_receive_raw_data( const std::vector< uint8_t > & ) override;
@@ -84,6 +99,7 @@ private:
                                           uint32_t param4 = 0,
                                           uint8_t const * data = nullptr,
                                           size_t dataLength = 0 ) const override;
+    std::string get_opcode_string(int opcode) const override;
 
     // updatable: unsigned, non-recovery-mode
 private:

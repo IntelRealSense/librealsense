@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -11,7 +11,7 @@
 namespace openvino_helpers
 {
     /*
-        Base class for any type of OpenVINO detection implementation, e.g. object_detection, age_gender_detection, etc.
+        Base class for any type of OpenVINO detection implementation, e.g. object_detection, etc.
 
         Encapsulates an ExecutableNetwork via operator->().
     */

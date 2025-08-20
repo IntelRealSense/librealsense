@@ -1,7 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 # test:device each(D400*) !D457  # D457 device is known for HW reset issues..
+# test:device each(D500*)
 
 import pyrealsense2 as rs
 from rspy import test, log
@@ -15,6 +16,7 @@ dev = None
 device_removed = False
 device_added = False
 MAX_ENUM_TIME_D400 = 5 # [sec]
+MAX_ENUM_TIME_D500 = 15 # [sec]
 
 def device_changed( info ):
     global dev, device_removed, device_added
@@ -28,10 +30,15 @@ def device_changed( info ):
             log.out( "Device addition detected at: ", time.perf_counter())
             device_added = True
 
-def get_max_enum_rime_by_device( dev ):
+def get_max_enum_time_by_device( dev ):
     if dev.get_info( rs.camera_info.product_line ) == "D400":
-        return MAX_ENUM_TIME_D400;
-    return 0;
+        return MAX_ENUM_TIME_D400
+    elif dev.get_info( rs.camera_info.product_line ) == "D500":
+        if dev.get_info( rs.camera_info.connection_type) == "DDS":
+            print(18)
+            return MAX_ENUM_TIME_D500 + 3  # some extra time for discovery and initialization for DDS
+        return MAX_ENUM_TIME_D500
+    return 0
 
 ################################################################################################
 test.start( "HW reset to enumeration time" )
@@ -40,7 +47,7 @@ test.start( "HW reset to enumeration time" )
 dev, ctx = test.find_first_device_or_exit()
 ctx.set_devices_changed_callback( device_changed )
 
-max_dev_enum_time = get_max_enum_rime_by_device( dev )
+max_dev_enum_time = get_max_enum_time_by_device( dev )
 time.sleep(1)
 log.out( "Sending HW-reset command" )
 enumeration_sw = Stopwatch() # we know we add the device removal time, but it shouldn't take long
@@ -57,7 +64,8 @@ while not t.has_expired():
 test.check( device_removed and not t.has_expired() ) # verifying we are not timed out
 
 log.out( "Pending for device addition" )
-t.start()
+buffer = 5 # we add 5 seconds so if the test pass the creteria by a short amount of time we can print it
+t = Timer( max_dev_enum_time + buffer )
 r_2_e_time = 0 # reset to enumeration time
 while not t.has_expired():
     if ( device_added ):
@@ -67,7 +75,11 @@ while not t.has_expired():
 
 test.check( device_added )
 test.check( r_2_e_time < max_dev_enum_time )
-log.d( "Enumeration time took", r_2_e_time, "[sec]" )
+
+if r_2_e_time:
+  log.d( "Enumeration time took", r_2_e_time, "[sec]" )
+else:
+  log.e( "Enumeration did not occur in ", max_dev_enum_time + buffer, "[sec]" )
 
 test.finish()
 

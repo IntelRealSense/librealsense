@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic.h>
@@ -7,6 +7,7 @@
 #include <realdds/dds-subscriber.h>
 #include <realdds/dds-serialization.h>
 #include <realdds/dds-utilities.h>
+#include <realdds/dds-guid.h>
 
 #include <rsutils/time/stopwatch.h>
 
@@ -88,6 +89,12 @@ dds_topic_reader::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind rel
     //     https://github.com/eProsima/Fast-DDS/discussions/2707
     // (default is PREALLOCATED_WITH_REALLOC_MEMORY_MODE)
     endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
+}
+
+
+dds_guid const & dds_topic_reader::guid() const
+{
+    return _reader ? _reader->guid() : unknown_guid;
 }
 
 

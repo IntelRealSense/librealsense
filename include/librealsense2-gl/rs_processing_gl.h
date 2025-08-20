@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+   Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 /** \file rs_processing_gl.h
 * \brief
@@ -74,6 +74,15 @@ struct glfw_binding
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_gl_create_yuy_decoder(int api_version, rs2_error** error);
+
+/**
+* Creates a processing block that can efficiently convert M420 image format to RGB variants
+* This is specifically useful for rendering the RGB frame to the screen (since the output is ready for rendering on the GPU)
+* \param[in] api_version Users are expected to pass their version of \c RS2_API_VERSION to make sure they are running the correct librealsense version.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_gl_create_m420_decoder(int api_version, rs2_error** error);
+
 
 /**
 * Creates y411 decoder processing block. This block accepts raw y411 frames and outputs frames in RGB8.

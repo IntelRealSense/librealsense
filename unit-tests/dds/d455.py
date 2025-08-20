@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
 import pyrealdds as dds
 from rspy import log, test
@@ -207,6 +207,7 @@ def color_stream():
     stream = dds.color_stream_server( "Color",  "RGB Camera" )
     stream.init_profiles( color_stream_profiles(), 10 )
     stream.init_options( rgb_camera_options() )
+    stream.set_intrinsics( color_stream_intrinsics() )
     return stream
 
 
@@ -398,4 +399,85 @@ def get_extrinsics():
     extrinsics[("Infrared_2","Infrared_1")] = extr
 
     return extrinsics
+  
+def color_stream_intrinsics():
+    intrinsics = []
 
+    intr = dds.video_intrinsics();
+    intr.width = 1280
+    intr.height = 800
+    intr.principal_point.x = 648.580993652344
+    intr.principal_point.y = 398.820983886719
+    intr.focal_length.x = 636.450012207031
+    intr.focal_length.y = 635.621948242188
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.0569772012531757,0.0660239011049271,0.000211432998185046,0.00068545201793313,-0.0208512991666794]
+    intrinsics.append( intr )
+
+    intr = dds.video_intrinsics();
+    intr.width = 1280
+    intr.height = 720
+    intr.principal_point.x = 648.580993652344
+    intr.principal_point.y = 358.821014404297
+    intr.focal_length.x = 636.450012207031
+    intr.focal_length.y = 635.622009277344
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.0569772012531757,0.0660239011049271,0.000211432998185046,0.00068545201793313,-0.0208512991666794]
+    intrinsics.append( intr )
+
+    intr = dds.video_intrinsics();
+    intr.width = 848
+    intr.height = 480
+    intr.principal_point.x = 429.684906005859
+    intr.principal_point.y = 239.21891784668
+    intr.focal_length.x = 421.648132324219
+    intr.focal_length.y = 421.099578857422
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.0569772012531757,0.0660239011049271,0.000211432998185046,0.00068545201793313,-0.0208512991666794]
+    intrinsics.append( intr )
+
+    intr = dds.video_intrinsics();
+    intr.width = 640
+    intr.height = 480
+    intr.principal_point.x = 325.148590087891
+    intr.principal_point.y = 239.292602539062
+    intr.focal_length.x = 381.869995117188
+    intr.focal_length.y = 381.373199462891
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.0569772012531757,0.0660239011049271,0.000211432998185046,0.00068545201793313,-0.0208512991666794]
+    intrinsics.append( intr )
+
+    intr = dds.video_intrinsics();
+    intr.width = 640
+    intr.height = 360
+    intr.principal_point.x = 324.290496826172
+    intr.principal_point.y = 179.410507202148
+    intr.focal_length.x = 318.225006103516
+    intr.focal_length.y = 317.811004638672
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.0569772012531757,0.0660239011049271,0.000211432998185046,0.00068545201793313,-0.0208512991666794]
+    intrinsics.append( intr )
+
+    intr = dds.video_intrinsics();
+    intr.width = 480
+    intr.height = 270
+    intr.principal_point.x = 243.217880249023
+    intr.principal_point.y = 134.557876586914
+    intr.focal_length.x = 238.668746948242
+    intr.focal_length.y = 238.358245849609
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.0569772012531757,0.0660239011049271,0.000211432998185046,0.00068545201793313,-0.0208512991666794]
+    intrinsics.append( intr )
+
+    intr = dds.video_intrinsics();
+    intr.width = 424
+    intr.height = 240
+    intr.principal_point.x = 214.84245300293
+    intr.principal_point.y = 119.60945892334
+    intr.focal_length.x = 210.824066162109
+    intr.focal_length.y = 210.549789428711
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.0569772012531757,0.0660239011049271,0.000211432998185046,0.00068545201793313,-0.0208512991666794]
+    intrinsics.append( intr )
+
+    return set( intrinsics )

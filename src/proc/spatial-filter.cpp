@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #include "option.h"
 #include "environment.h"
@@ -119,7 +119,7 @@ namespace librealsense
         holes_filling_mode->set_description(sp_hf_16_pixel_radius, "16-pixel radius");
         holes_filling_mode->set_description(sp_hf_unlimited_radius, "Unlimited");
 
-        auto weak_holes_filling_mode = std::weak_ptr<ptr_option<uint8_t>>();
+        auto weak_holes_filling_mode = std::weak_ptr<ptr_option<uint8_t>>(holes_filling_mode);
         holes_filling_mode->on_set([this, weak_holes_filling_mode](float val)
         {
             auto strong_holes_filling_mode = weak_holes_filling_mode.lock();

@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 import pyrealdds as dds
 from rspy import log, test
@@ -40,7 +40,9 @@ def close_server( instance ):
     Close the instance returned by broadcast_device()
     """
     global servers
-    del servers[instance]  # throws if does not exist
+    server = servers[instance]["server"]  # throws if does not exist
+    server.broadcast_disconnect()
+    del servers[instance]
 
 
 # From here down, we're in "interactive" mode (see test-device-init.py)

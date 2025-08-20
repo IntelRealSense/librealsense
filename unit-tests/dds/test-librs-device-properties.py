@@ -1,8 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2022-4 RealSense, Inc. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries:gha 2
+#test:retries 2
 
 from rspy import log, test
 log.nested = 'C  '
@@ -10,7 +10,7 @@ log.nested = 'C  '
 import d435i
 import d405
 import d455
-import librs as rs
+from rspy import librs as rs
 
 if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )

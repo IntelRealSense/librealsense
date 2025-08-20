@@ -1,9 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
-import re
 from rspy import log
-import platform
+from rspy import signals
 from abc import ABC, abstractmethod
 
 
@@ -13,6 +12,27 @@ class NoneFoundError( RuntimeError ):
 
 
 class device_hub(ABC):
+    def __getattribute__(self, name):
+        attr = super().__getattribute__(name)
+
+        # some hubs override / clear signals, this is used to re-register them, only for methods for now
+        if callable(attr) and not name.startswith('__'):
+            def wrapper(*args, **kwargs):
+                result = attr(*args, **kwargs)
+                signals.register_signal_handlers()
+                return result
+
+            return wrapper
+
+        return attr  # Return non-methods or special methods as-is
+
+    @abstractmethod
+    def get_name(self):
+        """
+        :return: name of the hub
+        """
+        pass
+
     @abstractmethod
     def connect(self, reset = False):
         """
@@ -141,13 +161,25 @@ def _find_active_hub():
     """
     Function finds an available hub to connect to and returns it
     """
+    active_hubs = []
     acroname_hub = _create_acroname()
     if acroname_hub:
-        return acroname_hub
+        active_hubs.append(acroname_hub)
+        pass
 
     ykush_hub = _create_ykush()
     if ykush_hub:
-        return ykush_hub
+        active_hubs.append(ykush_hub)
+
+    unifi_hub = _create_unifi()
+    if unifi_hub:
+        active_hubs.append(unifi_hub)
+
+    if len(active_hubs) > 1:
+        return _create_combined_hubs(active_hubs)
+    if len(active_hubs) == 1:
+        return active_hubs[0]
+
     import sys
     log.d('sys.path=', sys.path)
     return None
@@ -175,3 +207,26 @@ def _create_ykush():
         return None
     except BaseException:
         return None
+
+def _create_unifi():
+    try:
+        from rspy import unifi
+        return unifi.UniFiSwitch()
+    except ModuleNotFoundError:
+        return None
+    except EnvironmentError:
+        return None
+    except unifi.NoneFoundError:
+        return None
+    except BaseException as e:
+        return None
+
+def _create_combined_hubs(hub_list):
+    """
+    Function creates a combined hub from the list of hubs
+    :param hub_list: list of hubs
+    :return: combined hub
+    """
+    from rspy import combined_hub
+    return combined_hub.CombinedHub(hub_list)
+

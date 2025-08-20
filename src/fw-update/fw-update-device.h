@@ -1,11 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <src/core/device-interface.h>
 #include "fw-update-device-interface.h"
 #include "usb/usb-device.h"
 #include "platform/mipi-device.h"
+#include <iosfwd>
 
 namespace librealsense
 {
@@ -20,7 +21,7 @@ namespace librealsense
         RS2_DFU_STATUS_VERIFY = 0x07,       // Programmed memory failed verification.
         RS2_DFU_STATUS_ADDRESS = 0x08,      // Cannot program memory due to received address that is out of range.
         RS2_DFU_STATUS_NOTDONE = 0x09,      // Received DFU_DNLOAD with wLength = 0, but device does    not think it has all of the data yet.
-        RS2_DFU_STATUS_FIRMWARE = 0x0A,     // Device�s firmware is corrupt.It cannot return to run - time    (non - DFU) operations.
+        RS2_DFU_STATUS_FIRMWARE = 0x0A,     // Device's firmware is corrupt.It cannot return to run - time    (non - DFU) operations.
         RS2_DFU_STATUS_VENDOR = 0x0B,       // iString indicates a vendor - specific RS2_DFU_STATUS_or.
         RS2_DFU_STATUS_USBR = 0x0C,         // Device detected unexpected USB reset signaling.
         RS2_DFU_STATUS_POR = 0x0D,          // Device detected unexpected power on reset.
@@ -41,6 +42,8 @@ namespace librealsense
         RS2_DFU_STATE_DFU_UPLOAD_IDLE = 9,
         RS2_DFU_STATE_DFU_ERROR = 10
     } rs2_dfu_state;
+
+    std::ostream & operator<<( std::ostream &, rs2_dfu_state );
 
     typedef enum rs2_dfu_command {
         RS2_DFU_DETACH = 0,
@@ -161,7 +164,6 @@ namespace librealsense
         const std::string & get_product_line() const { return _product_line; }
         const std::string & get_serial_number() const { return _serial_number; }
         std::string to_string(platform::usb_status state) const;
-        std::string to_string(rs2_dfu_state state) const;
         virtual float compute_progress(float progress, float start, float end, float threshold) const;
 
         const int DEFAULT_TIMEOUT = 100;

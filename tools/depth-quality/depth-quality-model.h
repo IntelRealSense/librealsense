@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory. */
-/* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
+/* Copyright(c) 2019 RealSense, Inc. All Rights Reserved. */
 #pragma once
 
 #include <librealsense2/rs.hpp>
@@ -319,8 +319,10 @@ namespace rs2
             {
                 return _recorder.is_recording();
             }
-            void start_record()
+            void start_record(int limit_captures = -1)
             {
+                _limit_captures = limit_captures;
+                _is_capture_limited = limit_captures >= 0;
                 _recorder.start_record(this);
             }
             void stop_record(device_model* dev)
@@ -345,6 +347,8 @@ namespace rs2
             bool                    _active;
             std::vector<std::shared_ptr<metric_plot>> _plots;
             metrics_recorder _recorder;
+            int                     _limit_captures;
+            bool                    _is_capture_limited;
             std::string  _camera_info;
             mutable std::mutex      _m;
 
@@ -416,6 +420,10 @@ namespace rs2
 
             bool                            _use_ground_truth = false;
             int                             _ground_truth = 0;
+            bool                            _use_limit_capture;
+            int                             _limit_capture;
+            
+            
         };
     }
 }

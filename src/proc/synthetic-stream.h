@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -209,57 +209,6 @@ namespace librealsense
         bool should_process(const rs2::frame& frame) override;
     };
 
-    // Sequential chained processing blocks
-    // The order of the processing blocks defines the execution flow.
-    class LRS_EXTENSION_API composite_processing_block : public processing_block
-    {
-    public:
-        class bypass_option : public option
-        {
-        public:
-            bypass_option(composite_processing_block* parent, rs2_option opt)
-                : _parent(parent), _opt(opt) {}
-
-            void set(float value) override {
-                // While query and other read operations
-                // will only read from the currently selected
-                // block, setting an option will propogate
-                // to all blocks in the group
-                for (size_t i = 0; i < _parent->_processing_blocks.size(); i++)
-                {
-                    if (_parent->_processing_blocks[i]->supports_option(_opt))
-                    {
-                        _parent->_processing_blocks[i]->get_option(_opt).set(value);
-                    }
-                }
-            }
-            float query() const override { return get().query(); }
-            option_range get_range() const override { return get().get_range(); }
-            bool is_enabled() const override { return get().is_enabled(); }
-            bool is_read_only() const override { return get().is_read_only(); }
-            const char* get_description() const override { return get().get_description(); }
-            const char* get_value_description(float v) const override { return get().get_value_description(v); }
-            void enable_recording(std::function<void(const option &)> record_action) override {}
-
-            option& get() { return _parent->get(_opt).get_option(_opt); }
-            const option& get() const { return _parent->get(_opt).get_option(_opt); }
-        private:
-            composite_processing_block* _parent;
-            rs2_option _opt;
-        };
-
-        composite_processing_block();
-        composite_processing_block(const char* name);
-        virtual ~composite_processing_block() { _source.flush(); };
-
-        processing_block& get(rs2_option option);
-        void add(std::shared_ptr<processing_block> block);
-        void set_output_callback(rs2_frame_callback_sptr callback) override;
-        void invoke(frame_holder frames) override;
-
-    protected:
-        std::vector<std::shared_ptr<processing_block>> _processing_blocks;
-    };
 }
 
 // API structures

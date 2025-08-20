@@ -1,12 +1,14 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
-cmake_minimum_required(VERSION 3.8)
+# Copyright(c) 2019-2024 RealSense, Inc. All Rights Reserved.
+cmake_minimum_required(VERSION 3.10)
 
-project(RealsenseExamplesHelloRealSense)
+project( rs-hello-realsense )
 
-add_executable(rs-hello-realsense rs-hello-realsense.cpp)
-set_property(TARGET rs-hello-realsense PROPERTY CXX_STANDARD 11)
-target_link_libraries(rs-hello-realsense ${DEPENDENCIES})
-set_target_properties (rs-hello-realsense PROPERTIES FOLDER "Examples")
+add_executable( ${PROJECT_NAME} rs-hello-realsense.cpp )
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+target_link_libraries( ${PROJECT_NAME} ${DEPENDENCIES} )
+set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER "Examples" )
 
-install(TARGETS rs-hello-realsense RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+using_easyloggingpp( ${PROJECT_NAME} SHARED )
+
+install( TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} )

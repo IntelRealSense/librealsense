@@ -1,6 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
-cmake_minimum_required(VERSION 3.8)
+# Copyright(c) 2019-2024 RealSense, Inc. All Rights Reserved.
+cmake_minimum_required(VERSION 3.10)
 
 project(RealsenseExamplesGL)
 
@@ -9,7 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 if(BUILD_GRAPHICAL_EXAMPLES AND NOT APPLE)
     #pointcloud
-    add_executable(rs-gl rs-gl.cpp ../example.hpp)
+    add_executable(rs-gl rs-gl.cpp ../example.hpp ${IMGUI_SOURCES})
     set_property(TARGET rs-gl PROPERTY CXX_STANDARD 11)
     target_link_libraries(rs-gl ${DEPENDENCIES} realsense2-gl)
     include_directories(../)

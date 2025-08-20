@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 RealSense, Inc. All Rights Reserved.
 
 #include "d500-fw-update-device.h"
 #include "d500-private.h"
@@ -41,16 +41,20 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
 
         if (!_is_dfu_monitoring_enabled)
         {
-            LOG_DEBUG("Waiting for the FW to be burnt");
+            // This is a temporary logic, on a later stage SMCU DFU will become part of the same HW DFU and all logic will pass to the FW side.
+            // For now, we will distinguish by size - To be change!
+            bool is_smcu_dfu = fw_image_size < 5000000;
+            LOG_INFO( "Applying FW image ..." );
             static constexpr int D500_FW_DFU_TIME = 120; // [sec]
-            report_progress_and_wait_for_fw_burn(update_progress_callback, D500_FW_DFU_TIME);
+            static constexpr int D500_SMCU_DFU_TIME = 20; // [sec]
+            int runtime = is_smcu_dfu ? D500_SMCU_DFU_TIME : D500_FW_DFU_TIME;
+            report_progress_and_wait_for_fw_burn(update_progress_callback, runtime);
         }
     }
 
     bool ds_d500_update_device::wait_for_manifest_completion(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state,
         std::chrono::seconds timeout_seconds, rs2_update_progress_callback_sptr update_progress_callback) const
     {
-        std::chrono::seconds elapsed_seconds;
         auto start = std::chrono::system_clock::now();
         rs2_dfu_state dfu_state = RS2_DFU_STATE_APP_IDLE;
         dfu_status_payload status;
@@ -60,13 +64,18 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
         // when this DFU progress is enabled by FW
         int max_iteration_number_for_progress_start = 10;
 
-        do {
+        do
+        {
             uint32_t transferred = 0;
             auto sts = messenger->control_transfer(0xa1 /*DFU_GETSTATUS_PACKET*/, RS2_DFU_GET_STATUS, 0, 0, (uint8_t*)&status, sizeof(status), transferred, 5000);
             dfu_state = status.get_state();
             percentage_of_transfer = static_cast<int>(status.iString);
 
-            // the below code avoids process stuck when using a d5XX device, 
+            LOG_DEBUG( "DFU_GETSTATUS: " << platform::usb_status_to_string[sts] << "; state " << dfu_state
+                                         << "; iString " << percentage_of_transfer << "; bwPollTimeOut "
+                                         << status.bwPollTimeout );
+
+            // the below code avoids process stuck when using a d5XX device,
             // which has a fw version without the DFU progress feature
             if (percentage_of_transfer == 0 &&
                 ++iteration == max_iteration_number_for_progress_start)
@@ -75,22 +84,15 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
                 return true;
             }
 
-            std::stringstream ss;
-            ss << "DFU_GETSTATUS called, state is: " << to_string(dfu_state); 
-            ss << ", iString equals: " << percentage_of_transfer << ", and bwPollTimeOut equals: " << status.bwPollTimeout << std::endl;
-            LOG_DEBUG(ss.str().c_str());
-
             if (update_progress_callback)
             {
-                auto progress_for_bar = compute_progress(static_cast<float>(percentage_of_transfer), 20.f, 100.f, 5.f) / 100.f;
+                auto progress_for_bar = compute_progress(percentage_of_transfer / 100.f, 20.f, 100.f, 0.f) / 100.f;
                 update_progress_callback->on_update_progress(progress_for_bar);
             }
 
-            if (sts != platform::RS2_USB_STATUS_SUCCESS)
-                LOG_ERROR("control xfer error: " << platform::usb_status_to_string[sts]);
-
-            //test for dfu error state
-            if (status.is_error_state()) {
+            if( status.is_error_state() )
+            {
+                LOG_WARNING( "Control transfer error" );
                 return false;
             }
 
@@ -98,7 +100,7 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
             std::this_thread::sleep_for(std::chrono::seconds(1));
 
             auto curr = std::chrono::system_clock::now();
-            elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(curr - start);
+            auto elapsed_seconds = std::chrono::duration_cast< std::chrono::seconds >( curr - start );
             if (elapsed_seconds > timeout_seconds)
             {
                 LOG_ERROR("DFU in MANIFEST STATUS Timeout");
@@ -145,7 +147,7 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
             for (int i = 1; i <= 100; i++)
             {
                 auto percentage_of_transfer = i;
-                auto progress_for_bar = compute_progress(static_cast<float>(percentage_of_transfer), 20.f, 100.f, 5.f) / 100.f;
+                auto progress_for_bar = compute_progress(percentage_of_transfer / 100.f, 20.f, 100.f, 0.f) / 100.f;
                 update_progress_callback->on_update_progress(progress_for_bar);
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(iteration_sleep_time_ms)));
             }
@@ -155,8 +157,8 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
     }
     float ds_d500_update_device::compute_progress(float progress, float start, float end, float threshold) const
     {
-        if (threshold < 1.f)
-            throw std::invalid_argument("Avoid division by zero");
-        return start + (ceil(progress * threshold) / threshold) * (end - start) / 100.f;
+        if( threshold > 1.f )
+            progress = ceil( progress * threshold ) / threshold;
+        return start + progress * ( end - start );
     }
 }

@@ -1,18 +1,20 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
-cmake_minimum_required(VERSION 3.8)
+# Copyright(c) 2019-2024 RealSense, Inc. All Rights Reserved.
+cmake_minimum_required(VERSION 3.10)
 
-project(RealsenseExamplesMeasure)
+project( rs-measure )
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(rs-measure rs-measure.cpp ../example.hpp)
-    set_property(TARGET rs-measure PROPERTY CXX_STANDARD 11)
-    target_link_libraries(rs-measure ${DEPENDENCIES} Threads::Threads)
+    add_executable(${PROJECT_NAME} rs-measure.cpp ../example.hpp ${IMGUI_SOURCES})
+    set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+    target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} Threads::Threads)
     include_directories(../)
-    set_target_properties (rs-measure PROPERTIES FOLDER "Examples")
+    set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER "Examples")
 
-    install(TARGETS rs-measure RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    using_easyloggingpp( ${PROJECT_NAME} SHARED )
+
+    install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

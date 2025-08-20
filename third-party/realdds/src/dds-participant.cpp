@@ -1,11 +1,12 @@
+// Copyright(c) 2025 RealSense, Inc. All Rights Reserved.
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-participant.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
 #include <realdds/dds-time.h>
 #include <realdds/dds-serialization.h>
+#include <realdds/dds-network-adapter-watcher.h>
 
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
@@ -143,7 +144,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
             /* Process the case when a new publisher was found in the domain */
             LOG_DEBUG( _owner.name() << ": +writer (" << _owner.print( info.info.guid() ) << ") publishing "
                                      << info.info );
-            _owner.on_writer_added( info.info.guid(), info.info.topicName().c_str() );
+            _owner.on_writer_added( info.info );
             break;
 
         case eprosima::fastrtps::rtps::WriterDiscoveryInfo::REMOVED_WRITER:
@@ -162,7 +163,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         {
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::DISCOVERED_READER:
             LOG_DEBUG( _owner.name() << ": +reader (" << _owner.print( info.info.guid() ) << ") of " << info.info );
-            _owner.on_reader_added( info.info.guid(), info.info.topicName().c_str() );
+            _owner.on_reader_added( info.info );
             break;
 
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::REMOVED_READER:
@@ -209,6 +210,10 @@ dds_participant::qos::qos( std::string const & participant_name )
     //udp_transport->maxMessageSize = 1470; TODO this affects reading, too! We need writer-only property for this...
     transport().use_builtin_transports = false;
     transport().user_transports.push_back( udp_transport );
+
+    // If the user has many local interfaces (possible: I have 5!) then anything over the limit will not get
+    // communicated and end-point discovery will be affected. We want to avoid this so increase the limit:
+    allocation().locators.max_unicast_locators = 10;
 }
 
 
@@ -253,6 +258,13 @@ void dds_participant::init( dds_domain_id domain_id, qos & pqos, rsutils::json c
     else
         DDS_THROW( runtime_error, "provided settings are invalid: " << settings );
 
+    _adapter_watcher = std::make_shared< dds_network_adapter_watcher >(
+        [this]
+        {
+            LOG_DEBUG( name() << ": refreshing QoS" );
+            refresh_qos();
+        } );
+
     LOG_DEBUG( "participant " << realdds::print_raw_guid( guid() ) << " " << pqos << "\nis up on domain " << domain_id
                               << " from settings: " << std::setw( 4 ) << _settings );
 
@@ -293,9 +305,15 @@ dds_domain_id dds_participant::domain_id() const
 }
 
 
+eprosima::fastdds::dds::DomainParticipantQos const & dds_participant::get_qos() const
+{
+    return get()->get_qos();
+}
+
+
 rsutils::string::slice dds_participant::name() const
 {
-    auto & string_255 = get()->get_qos().name();
+    auto & string_255 = get_qos().name();
     return rsutils::string::slice( string_255.c_str(), string_255.size() );
 }
 
@@ -303,12 +321,18 @@ rsutils::string::slice dds_participant::name() const
 std::shared_ptr< const eprosima::fastdds::rtps::FlowControllerDescriptor >
 dds_participant::find_flow_controller( char const * name ) const
 {
-    for( auto & controller : get()->get_qos().flow_controllers() )
+    for( auto & controller : get_qos().flow_controllers() )
     {
         if( ! strcmp( name, controller->name ) )
             return controller;
     }
     return {};
+}
+
+
+void dds_participant::refresh_qos()
+{
+    get()->set_qos( get_qos() );
 }
 
 
@@ -335,14 +359,14 @@ std::string dds_participant::print( dds_guid const & guid_to_print ) const
 }
 
 
-void dds_participant::on_writer_added( dds_guid guid, char const * topic_name )
+void dds_participant::on_writer_added( eprosima::fastrtps::rtps::WriterProxyData const & data )
 {
     for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
             if( l->_on_writer_added )
-                l->_on_writer_added( guid, topic_name );
+                l->_on_writer_added( data );
         }
     }
 }
@@ -361,14 +385,14 @@ void dds_participant::on_writer_removed( dds_guid guid, char const * topic_name 
 }
 
 
-void dds_participant::on_reader_added( dds_guid guid, char const * topic_name )
+void dds_participant::on_reader_added( eprosima::fastrtps::rtps::ReaderProxyData const & data )
 {
     for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
             if( l->_on_reader_added )
-                l->_on_reader_added( guid, topic_name );
+                l->_on_reader_added( data );
         }
     }
 }
@@ -442,7 +466,7 @@ dds_guid dds_participant::create_guid()
     //      Group, Writer Group) and whether the Entity is a built-in Entity (fully pre-defined by the
     //      Protocol, automatically instantiated), a user-defined Entity (defined by the Protocol, but
     //      instantiated by the user only as needed by the application) or a vendor-specific Entity (defined by a
-    //      vendor-specific extension to the Protocol, can therefore be ignored by another vendor’s
+    //      vendor-specific extension to the Protocol, can therefore be ignored by another vendors
     //      implementation)
     // 
     //      ...

@@ -1,11 +1,11 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
+# Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 # test:device each(D400*) !D457  # D457 device is known for HW reset issues..
+# test:device each(D500*)
 
 import pyrealsense2 as rs
-from rspy import test, log
+from rspy import test, log, devices
 from rspy.timer import Timer
 import time
 
@@ -49,6 +49,7 @@ while not t.has_expired():
 test.check(device_removed)
 
 log.out("Pending for device addition")
+t = Timer( devices.MAX_ENUMERATION_TIME )
 t.start()
 while not t.has_expired():
     if ( device_added ):

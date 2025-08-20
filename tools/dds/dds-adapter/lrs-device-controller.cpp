@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024-5 RealSense, Inc. All Rights Reserved.
 
 #include "lrs-device-controller.h"
 
@@ -9,15 +9,23 @@
 #include <realdds/topics/imu-msg.h>
 #include <realdds/topics/blob-msg.h>
 #include <realdds/topics/dds-topic-names.h>
-#include <realdds/topics/ros2/ros2vector3.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-topic-reader-thread.h>
+#include <realdds/dds-topic-writer.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-guid.h>
 #include <realdds/dds-sample.h>
+
+#include <realdds/topics/ros2/get-parameters-msg.h>
+#include <realdds/topics/ros2/set-parameters-msg.h>
+#include <realdds/topics/ros2/list-parameters-msg.h>
+#include <realdds/topics/ros2/describe-parameters-msg.h>
+#include <realdds/topics/ros2/rcl_interfaces/msg/ParameterType.h>
+#include <realdds/topics/ros2/participant-entities-info-msg.h>
+#include <realdds/topics/ros2/parameter-events-msg.h>
 
 #include <rsutils/number/crc32.h>
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -26,6 +34,7 @@
 #include <rsutils/string/hexdump.h>
 #include <rsutils/time/timer.h>
 #include <rsutils/string/from.h>
+#include <rsutils/ios/field.h>
 
 #include <algorithm>
 #include <iostream>
@@ -34,6 +43,7 @@ using rsutils::string::hexarray;
 using rsutils::json;
 using namespace realdds;
 using tools::lrs_device_controller;
+using field = rsutils::ios::field;
 
 
 #define CREATE_SERVER_IF_NEEDED( X )                                                                                   \
@@ -634,6 +644,7 @@ lrs_device_controller::frame_to_streaming_server( rs2::frame const & f, rs2::str
 lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< realdds::dds_device_server > dds_device_server )
     : _rs_dev( dev )
     , _dds_device_server( dds_device_server )
+    , _control_dispatcher( QUEUE_MAX_SIZE )
 {
     if( ! _dds_device_server )
         throw std::runtime_error( "Empty dds_device_server" );
@@ -733,12 +744,12 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             ( static_cast< long double >( f.get_timestamp() ) / 1e3 );
 
                         realdds::topics::image_msg image;
+                        image.set_height( video->get_image_header().height );
+                        image.set_width( video->get_image_header().width );
+                        image.set_timestamp( timestamp );
                         auto data = static_cast< const uint8_t * >( f.get_data() );
-                        image.raw_data.assign( data, data + f.get_data_size() );
-                        image.height = video->get_image_header().height;
-                        image.width = video->get_image_header().width;
-                        image.timestamp = timestamp;
-                        video->publish_image( std::move( image ) );
+                        image.raw().data().assign( data, data + f.get_data_size() );
+                        video->publish_image( image );
 
                         publish_frame_metadata( f, timestamp );
                     } );
@@ -763,6 +774,24 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
             _dds_device_server->publish_notification( std::move( j ) );
         } );
     _bridge.init( supported_streams );
+    _bridge.on_stream_profile_change(
+        [this]( std::shared_ptr< realdds::dds_stream_server > const & server,
+                std::shared_ptr< realdds::dds_stream_profile > const & profile )
+        {
+            // Update that this profile has changed
+            if( _parameter_events_writer )
+            {
+                topics::ros2::parameter_events_msg msg;
+                msg.set_node_name( _ros2_node_name );
+                msg.set_timestamp( realdds::now() );
+                topics::ros2::parameter_events_msg::param_type p;
+                p.name( server->name() + "/profile" );
+                p.value().type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                p.value().string_value( profile->to_json().dump() );
+                msg.add_changed_param( std::move( p ) );
+                msg.write_to( *_parameter_events_writer );
+            }
+        } );
 
     extrinsics = get_extrinsics_map( dev );
 
@@ -779,6 +808,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                 {
                     rs2::sensor sensor( strong_sensor );
                     json option_values = json::object();
+                    topics::ros2::parameter_events_msg msg;
                     for( auto changed_option : options )
                     {
                         std::string const option_name = sensor.get_option_name( changed_option->id );
@@ -797,24 +827,39 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             continue;
                         }
                         json value;
+                        topics::ros2::parameter_events_msg::param_type p;
                         if( changed_option->is_valid )
                         {
                             switch( changed_option->type )
                             {
                             case RS2_OPTION_TYPE_FLOAT:
                                 if( auto e = std::dynamic_pointer_cast< realdds::dds_enum_option >( dds_option ) )
+                                {
                                     value = e->get_choices().at( int( changed_option->as_float ) );
+                                    p.value().type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                                    p.value().string_value( value );
+                                }
                                 else
+                                {
                                     value = changed_option->as_float;
+                                    p.value().type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_DOUBLE );
+                                    p.value().double_value( value );
+                                }
                                 break;
                             case RS2_OPTION_TYPE_STRING:
                                 value = changed_option->as_string;
+                                p.value().type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                                p.value().string_value( value );
                                 break;
                             case RS2_OPTION_TYPE_INTEGER:
                                 value = changed_option->as_integer;
+                                p.value().type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_INTEGER );
+                                p.value().integer_value( value );
                                 break;
                             case RS2_OPTION_TYPE_BOOLEAN:
                                 value = (bool)changed_option->as_integer;
+                                p.value().type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_BOOL );
+                                p.value().bool_value( value );
                                 break;
                             default:
                                 LOG_ERROR( "Unknown option '" << option_name << "' type: "
@@ -829,6 +874,8 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                         }
                         dds_option->set_value( std::move( value ) );
                         option_values[stream_name][option_name] = dds_option->get_value();
+                        p.name( stream_name + '/' + option_name );
+                        msg.add_changed_param( std::move( p ) );
                     }
                     if( option_values.size() )
                     {
@@ -838,6 +885,13 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                         } );
                         LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] options changed: " << std::setw( 4 ) << j );
                         _dds_device_server->publish_notification( std::move( j ) );
+                        if( _parameter_events_writer )
+                        {
+                            // Also publish on the ROS2 topic
+                            msg.set_node_name( _ros2_node_name );
+                            msg.set_timestamp( realdds::now() );
+                            msg.write_to( *_parameter_events_writer );
+                        }
                     }
                 }
             } );
@@ -867,6 +921,110 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
 }
 
 
+void lrs_device_controller::initialize_ros2_node_entities( std::string const & node_name,
+                                                           std::shared_ptr< realdds::dds_topic_writer > parameter_events_writer )
+{
+    // Note that we need to use the node name and not necessarily the realsense topic-root (which could be different!)
+    assert( '/' == *topics::ros2::NAMESPACE );
+    _ros2_node_name = rsutils::string::from()  // E.g., "/realsense/D455_12345678"
+        << topics::ros2::NAMESPACE
+        << topics::SEPARATOR
+        << node_name;
+    // Create ROS2 request & response channels
+    std::string const full_name = _ros2_node_name.substr( 1 );  // without the beginning /
+    auto const request_root = topics::ros2::SERVICE_REQUEST_ROOT + full_name;
+    auto const response_root = topics::ros2::SERVICE_RESPONSE_ROOT + full_name;
+    auto participant = _dds_device_server->participant();
+    auto subscriber = _dds_device_server->subscriber();
+    auto publisher = _dds_device_server->publisher();
+    if( auto topic = topics::ros2::get_parameters_request_msg::create_topic(
+            participant,
+            request_root + topics::ros2::GET_PARAMETERS_NAME + topics::ros2::REQUEST_SUFFIX ) )
+    {
+        _get_params_reader = std::make_shared< dds_topic_reader >( topic, subscriber );
+        _get_params_reader->on_data_available( [&] { on_get_params_request(); } );
+        dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        rqos.override_from_json( participant->settings().nested( "device", "get-parameters-request" ) );
+        _get_params_reader->run( rqos );
+    }
+    if( auto topic = topics::ros2::get_parameters_response_msg::create_topic(
+            participant,
+            response_root + topics::ros2::GET_PARAMETERS_NAME + topics::ros2::RESPONSE_SUFFIX ) )
+    {
+        _get_params_writer = std::make_shared< dds_topic_writer >( topic, publisher );
+        dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        wqos.history().depth = 10;  // default is 1
+        _get_params_writer->override_qos_from_json( wqos,
+            participant->settings().nested( "device", "get-parameters-response" ) );
+        _get_params_writer->run( wqos );
+    }
+    if( auto topic = topics::ros2::set_parameters_request_msg::create_topic(
+            participant,
+            request_root + topics::ros2::SET_PARAMETERS_NAME + topics::ros2::REQUEST_SUFFIX ) )
+    {
+        _set_params_reader = std::make_shared< dds_topic_reader >( topic, subscriber );
+        _set_params_reader->on_data_available( [&] { on_set_params_request(); } );
+        dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        rqos.override_from_json( participant->settings().nested( "device", "set-parameters-request" ) );
+        _set_params_reader->run( rqos );
+    }
+    if( auto topic = topics::ros2::set_parameters_response_msg::create_topic(
+            participant,
+            response_root + topics::ros2::SET_PARAMETERS_NAME + topics::ros2::RESPONSE_SUFFIX ) )
+    {
+        _set_params_writer = std::make_shared< dds_topic_writer >( topic, publisher );
+        dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        wqos.history().depth = 10;  // default is 1
+        _set_params_writer->override_qos_from_json( wqos,
+            participant->settings().nested( "device", "set-parameters-response" ) );
+        _set_params_writer->run( wqos );
+    }
+    if( auto topic = topics::ros2::list_parameters_request_msg::create_topic(
+            participant,
+            request_root + topics::ros2::LIST_PARAMETERS_NAME + topics::ros2::REQUEST_SUFFIX ) )
+    {
+        _list_params_reader = std::make_shared< dds_topic_reader >( topic, subscriber );
+        _list_params_reader->on_data_available( [&] { on_list_params_request(); } );
+        dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        rqos.override_from_json( participant->settings().nested( "device", "list-parameters-request" ) );
+        _list_params_reader->run( rqos );
+    }
+    if( auto topic = topics::ros2::list_parameters_response_msg::create_topic(
+            participant,
+            response_root + topics::ros2::LIST_PARAMETERS_NAME + topics::ros2::RESPONSE_SUFFIX ) )
+    {
+        _list_params_writer = std::make_shared< dds_topic_writer >( topic, publisher );
+        dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        wqos.history().depth = 10;  // default is 1
+        _list_params_writer->override_qos_from_json( wqos,
+            participant->settings().nested( "device", "list-parameters-response" ) );
+        _list_params_writer->run( wqos );
+    }
+    if( auto topic = topics::ros2::describe_parameters_request_msg::create_topic(
+            participant,
+            request_root + topics::ros2::DESCRIBE_PARAMETERS_NAME + topics::ros2::REQUEST_SUFFIX ) )
+    {
+        _describe_params_reader = std::make_shared< dds_topic_reader >( topic, subscriber );
+        _describe_params_reader->on_data_available( [&] { on_describe_params_request(); } );
+        dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        rqos.override_from_json( participant->settings().nested( "device", "describe-parameters-request" ) );
+        _describe_params_reader->run( rqos );
+    }
+    if( auto topic = topics::ros2::describe_parameters_response_msg::create_topic(
+            participant,
+            response_root + topics::ros2::DESCRIBE_PARAMETERS_NAME + topics::ros2::RESPONSE_SUFFIX ) )
+    {
+        _describe_params_writer = std::make_shared< dds_topic_writer >( topic, publisher );
+        dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        wqos.history().depth = 10;  // default is 1
+        _describe_params_writer->override_qos_from_json( wqos,
+            participant->settings().nested( "device", "describe-parameters-response" ) );
+        _describe_params_writer->run( wqos );
+    }
+    _parameter_events_writer = parameter_events_writer;
+}
+
+
 lrs_device_controller::~lrs_device_controller()
 {
     LOG_DEBUG( "LRS device manager for device: " << _device_sn << " deleted" );
@@ -877,6 +1035,19 @@ bool lrs_device_controller::is_recovery() const
 {
     auto update_device = rs2::update_device( _rs_dev );
     return update_device;
+}
+
+
+void lrs_device_controller::fill_ros2_node_entities( realdds::topics::ros2::node_entities_info & node ) const
+{
+    node.add_writer( _get_params_writer->guid() );
+    node.add_writer( _set_params_writer->guid() );
+    node.add_writer( _list_params_writer->guid() );
+    node.add_writer( _describe_params_writer->guid() );
+    node.add_reader( _get_params_reader->guid() );
+    node.add_reader( _set_params_reader->guid() );
+    node.add_reader( _list_params_reader->guid() );
+    node.add_reader( _describe_params_reader->guid() );
 }
 
 
@@ -1130,6 +1301,11 @@ size_t lrs_device_controller::get_index_of_profile( const realdds::dds_stream_pr
     for( size_t i = 0; i < profiles.size(); ++i )
     {
         auto dds_vp = std::dynamic_pointer_cast< dds_video_stream_profile >( profiles[i] );
+        if( ! dds_vp )
+        {
+            LOG_ERROR( "Profile is not a video profile" << profiles[i] );
+            continue;
+        }
         if( dds_vp->frequency() == profile.frequency()
             && dds_vp->encoding() == profile.encoding()
             && dds_vp->width()  == profile.width()
@@ -1677,6 +1853,359 @@ bool lrs_device_controller::update_stream_trinsics( json * p_changes )
     }
 
     return have_changes;
+}
+
+
+void lrs_device_controller::on_get_params_request()
+{
+    topics::ros2::get_parameters_request_msg control;
+    dds_sample sample;
+    while( control.take_next( *_get_params_reader, &sample ) )
+    {
+        if( ! control.is_valid() )
+            continue;
+
+        auto sample_j = json::array( {
+            rsutils::string::from( realdds::print_raw_guid( sample.sample_identity.writer_guid() ) ),
+            sample.sample_identity.sequence_number().to64long(),
+        } );
+
+        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] <----- get_parameters" );
+        topics::ros2::get_parameters_response_msg response;
+        for( auto & name : control.names() )
+        {
+            topics::ros2::get_parameters_response_msg::value_type value;  // NOT_SET
+            try
+            {
+                auto const sep = name.find( '/' );
+                std::string stream_name;  // empty, i.e. device option
+                std::string option_name = name;
+                if( sep != std::string::npos )
+                {
+                    stream_name = name.substr( 0, sep );
+                    auto stream_it = _stream_name_to_server.find( stream_name );
+                    if( stream_it == _stream_name_to_server.end() )
+                        throw std::runtime_error( "invalid stream name" );
+
+                    option_name = name.substr( sep + 1 );
+                    if( option_name == "profile" )
+                    {
+                        // return the current profile as a JSON array string
+                        auto profile = _bridge.get_profile( stream_it->second );
+                        value.string_value( profile->to_json().dump() );
+                        value.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                    }
+                }
+                if( value.type() == rcl_interfaces::msg::ParameterType_Constants::PARAMETER_NOT_SET )
+                {
+                    auto option = _dds_device_server->find_option( option_name, stream_name );
+                    if( ! option )
+                        throw std::runtime_error( "option not found" );
+                    if( option->is_valid() )  // Otherwise leave the value as unset
+                    {
+                        auto & j = option->get_value();
+                        switch( j.type() )
+                        {
+                        case json::value_t::string:
+                            value.string_value( j );
+                            value.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                            break;
+                        case json::value_t::number_float:
+                            value.double_value( j );
+                            value.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_DOUBLE );
+                            break;
+                        case json::value_t::number_integer:
+                        case json::value_t::number_unsigned:
+                            value.integer_value( j );
+                            value.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_INTEGER );
+                            break;
+                        case json::value_t::boolean:
+                            value.bool_value( j );
+                            value.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_BOOL );
+                            break;
+                        default:
+                            // Everything else, we'll communicate but as a JSON string...
+                            value.string_value( j.dump() );
+                            value.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                            break;
+                        }
+                    }
+                }
+                response.add( value );
+            }
+            catch( std::exception const & e )
+            {
+                LOG_ERROR( "[" << _dds_device_server->debug_name() << "][" << name << "] " << e.what() );
+                response.add( value );
+            }
+        }
+        // Now send the response back
+        try
+        {
+            response.respond_to( sample, *_get_params_writer );
+        }
+        catch( std::exception const & e )
+        {
+            LOG_ERROR( "[" << _dds_device_server->debug_name() << "] failed to send response: " << e.what() );
+        }
+    }
+}
+
+
+void lrs_device_controller::on_set_params_request()
+{
+    topics::ros2::set_parameters_request_msg control;
+    dds_sample sample;
+    while( control.take_next( *_set_params_reader, &sample ) )
+    {
+        if( ! control.is_valid() )
+            continue;
+
+        auto sample_j = json::array( {
+            rsutils::string::from( realdds::print_raw_guid( sample.sample_identity.writer_guid() ) ),
+            sample.sample_identity.sequence_number().to64long(),
+        } );
+        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] <----- set_parameters" );
+        topics::ros2::set_parameters_response_msg response;
+        for( auto & parameter : control.parameters() )
+        {
+            auto & name = parameter.name();
+            auto & value = parameter.value();
+            topics::ros2::set_parameters_response_msg::result_type result;  // failed; no reason
+            try
+            {
+                auto const sep = name.find( '/' );
+                std::string stream_name;  // empty, i.e. device option
+                std::string option_name = name;
+                if( sep != std::string::npos )
+                {
+                    stream_name = name.substr( 0, sep );
+                    auto stream_it = _stream_name_to_server.find( stream_name );
+                    if( stream_it == _stream_name_to_server.end() )
+                        throw std::runtime_error( "invalid stream name" );
+
+                    option_name = name.substr( sep + 1 );
+                    if( option_name == "profile" )
+                    {
+                        if( value.type() != rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING )
+                            throw std::runtime_error( "invalid profile type" );
+
+                        if( value.string_value().empty() )
+                        {
+                            // We need to provide a way to reset the profile, back to an implicit state
+                            // Providing an empty profile will do this
+                            // NOTE that it will do this for ALL streams!
+                            // NOTE this will call the on_stream_profile_change() callback and send out notifications
+                            _bridge.reset();
+                        }
+                        else
+                        {
+                            auto server = stream_it->second;
+                            auto requested_profile = create_dds_stream_profile( server->type_string(),
+                                                                                json::parse( value.string_value() ) );
+                            auto profile = find_profile( server, requested_profile );
+                            if( ! profile )
+                                throw std::runtime_error( "invalid profile '" + requested_profile->to_string() + "'" );
+
+                            LOG_DEBUG( "[" << _dds_device_server->debug_name() << "][" << name
+                                           << "] = " << value.string_value() );
+
+                            // NOTE this will call the on_stream_profile_change() callback and send out notifications
+                            _bridge.open( profile );
+                        }
+                        result.successful( true );
+                        response.add( result );
+                        continue;
+                    }
+                }
+                auto option = _dds_device_server->find_option( option_name, stream_name );
+                if( ! option )
+                    throw std::runtime_error( "option not found" );
+                json jvalue;
+                switch( value.type() )
+                {
+                case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING:
+                    try
+                    {
+                        jvalue = json::parse( value.string_value() );
+                    }
+                    catch( ... )
+                    {
+                        jvalue = value.string_value();
+                    }
+                    break;
+                case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_BOOL:
+                    jvalue = value.bool_value();
+                    break;
+                case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_INTEGER:
+                    jvalue = value.integer_value();
+                    break;
+                case rcl_interfaces::msg::ParameterType_Constants::PARAMETER_DOUBLE:
+                    jvalue = value.double_value();
+                    break;
+                default:
+                    // Everything else, we don't yet support
+                    throw std::runtime_error( "unsupported value type " + std::to_string( int( value.type() ) ) );
+                }
+                LOG_DEBUG( "[" << _dds_device_server->debug_name() << "][" << name << "] = " << jvalue );
+                set_option( option, jvalue );
+                result.successful( true );
+                response.add( result );
+            }
+            catch( std::exception const & e )
+            {
+                LOG_ERROR( "[" << _dds_device_server->debug_name() << "][" << name << "] " << e.what() );
+                result.reason( e.what() );
+                response.add( result );
+            }
+        }
+        // Now send the response back
+        try
+        {
+            response.respond_to( sample, *_set_params_writer );
+        }
+        catch( std::exception const & e )
+        {
+            LOG_ERROR( "[" << _dds_device_server->debug_name() << "] failed to send response: " << e.what() );
+        }
+    }
+}
+
+
+void lrs_device_controller::on_list_params_request()
+{
+    topics::ros2::list_parameters_request_msg control;
+    dds_sample sample;
+    while( control.take_next( *_list_params_reader, &sample ) )
+    {
+        if( ! control.is_valid() )
+            continue;
+
+        auto sample_j = json::array( {
+            rsutils::string::from( realdds::print_raw_guid( sample.sample_identity.writer_guid() ) ),
+            sample.sample_identity.sequence_number().to64long(),
+        } );
+        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] <----- list_parameters" << field::group() << control );
+        topics::ros2::list_parameters_response_msg response;
+        if( control.prefixes().empty() || control.prefixes().size() == 1 && control.prefixes().front() == "" )
+        {
+            // Include device options (with empty prefix)
+            for( auto & option : _dds_device_server->options() )
+                response.add( option->get_name() );
+        }
+        for( auto & stream_server : _dds_device_server->streams() )
+        {
+            // Stream options use the stream name as the prefix
+            response.add( stream_server.first + "/profile" );
+            if( control.prefixes().empty()
+                || std::find( control.prefixes().begin(), control.prefixes().end(), stream_server.first )
+                       != control.prefixes().end() )
+            {
+                for( auto & option : stream_server.second->options() )
+                    response.add( stream_server.first + '/' + option->get_name() );
+            }
+        }
+        // Now send the response back
+        try
+        {
+            response.respond_to( sample, *_list_params_writer );
+        }
+        catch( std::exception const & e )
+        {
+            LOG_ERROR( "[" << _dds_device_server->debug_name() << "] failed to send response: " << e.what() );
+        }
+    }
+}
+
+
+void lrs_device_controller::on_describe_params_request()
+{
+    topics::ros2::describe_parameters_request_msg control;
+    dds_sample sample;
+    while( control.take_next( *_describe_params_reader, &sample ) )
+    {
+        if( ! control.is_valid() )
+            continue;
+
+        auto sample_j = json::array( {
+            rsutils::string::from( realdds::print_raw_guid( sample.sample_identity.writer_guid() ) ),
+            sample.sample_identity.sequence_number().to64long(),
+        } );
+        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] <----- describe_parameters" );
+        topics::ros2::describe_parameters_response_msg response;
+        for( auto & name : control.names() )
+        {
+            topics::ros2::describe_parameters_response_msg::descriptor_type desc;  // NOT_SET
+            desc.name( name );
+            try
+            {
+                auto const sep = name.find( '/' );
+                std::string stream_name;  // empty, i.e. device option
+                std::string option_name = name;
+                if( sep != std::string::npos )
+                {
+                    stream_name = name.substr( 0, sep );
+                    auto stream_it = _stream_name_to_server.find( stream_name );
+                    if( stream_it == _stream_name_to_server.end() )
+                        throw std::runtime_error( "invalid stream name" );
+
+                    option_name = name.substr( sep + 1 );
+                    if( option_name == "profile" )
+                    {
+                        desc.description( "the current stream profile" );
+                        desc.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                    }
+                }
+                if( desc.type() == rcl_interfaces::msg::ParameterType_Constants::PARAMETER_NOT_SET )
+                {
+                    auto option = _dds_device_server->find_option( option_name, stream_name );
+                    if( ! option )
+                        throw std::runtime_error( "option not found" );
+                    desc.description( option->get_description() );
+                    desc.read_only( option->is_read_only() );
+                    if( option->is_valid() )  // Otherwise leave the type as unset
+                    {
+                        auto & j = option->get_value();
+                        switch( j.type() )
+                        {
+                        case json::value_t::string:
+                            desc.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                            break;
+                        case json::value_t::number_float:
+                            desc.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_DOUBLE );
+                            break;
+                        case json::value_t::number_integer:
+                        case json::value_t::number_unsigned:
+                            desc.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_INTEGER );
+                            break;
+                        case json::value_t::boolean:
+                            desc.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_BOOL );
+                            break;
+                        default:
+                            // Everything else, we'll communicate but as a JSON string...
+                            desc.type( rcl_interfaces::msg::ParameterType_Constants::PARAMETER_STRING );
+                            break;
+                        }
+                    }
+                }
+                response.add( desc );
+            }
+            catch( std::exception const & e )
+            {
+                LOG_ERROR( "[" << _dds_device_server->debug_name() << "][" << name << "] " << e.what() );
+                //response.add( desc );
+            }
+        }
+        // Now send the response back
+        try
+        {
+            response.respond_to( sample, *_describe_params_writer );
+        }
+        catch( std::exception const & e )
+        {
+            LOG_ERROR( "[" << _dds_device_server->debug_name() << "] failed to send response: " << e.what() );
+        }
+    }
 }
 
 

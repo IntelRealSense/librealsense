@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <set>
@@ -11,6 +11,8 @@
 #include "updates-model.h"
 #include "calibration-model.h"
 #include "objects-in-frame.h"
+#include "dds-model.h"
+#include "hdr-model.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -69,6 +71,29 @@ namespace rs2
 
     void open_issue(const device_models_list& devices);
 
+    template <typename T>
+    std::string safe_call(T t)
+    {
+        try
+        {
+            t();
+            return "";
+        }
+        catch (const error& e)
+        {
+            return error_to_string(e);
+        }
+        catch (const std::exception& e)
+        {
+            return e.what();
+        }
+        catch (...)
+        {
+            return "Unknown error occurred";
+        }
+    }
+
+
     struct textual_icon
     {
         explicit constexpr textual_icon(const char(&unicode_icon)[4]) :
@@ -108,6 +133,11 @@ namespace rs2
         {
             static const char* enable_writing{ "calibration.enable_writing" };
         }
+        namespace dds
+        {
+            static const char* enable_dds{ "context.dds.enabled" };
+            static const char* domain_id{ "context.dds.domain" };
+        }
         namespace viewer
         {
             static const char* is_3d_view{ "viewer_model.is_3d_view" };
@@ -137,6 +167,10 @@ namespace rs2
             static const char* hwlogger_xml{ "viewer_model.hwlogger_xml" };
 
             static const char* last_ip{ "viewer_model.last_ip" };
+
+            static const char* lpc_point_size{ "viewer_model.lpc_point_size" };
+            static const char* show_safety_zones_3d{ "viewer_model.show_safety_zones_3d" };
+            static const char* show_safety_zones_2d{ "viewer_model.show_safety_zones_2d" };
         }
         namespace window
         {
@@ -153,7 +187,7 @@ namespace rs2
         namespace performance
         {
             static const char* glsl_for_rendering{ "performance.glsl_for_rendering.v2" };
-            static const char* glsl_for_processing{ "performance.glsl_for_processing.v2" };
+            static const char* glsl_for_processing{ "performance.glsl_for_processing.v3" };
             static const char* enable_msaa{ "performance.msaa" };
             static const char* msaa_samples{ "performance.msaa_samples" };
             static const char* show_fps{ "performance.show_fps" };
@@ -230,6 +264,8 @@ namespace rs2
         static const textual_icon cube{ u8"\uf1b2" };
         static const textual_icon measure{ u8"\uf545" };
         static const textual_icon wifi{ u8"\uf1eb" };
+        static const textual_icon grid_6{ u8"\uf58d" };
+        static const textual_icon polygon{ u8"\uf5ee" };
     }
 
     class viewer_model;
@@ -370,7 +406,9 @@ namespace rs2
         void check_for_device_updates(viewer_model& viewer, bool activated_by_user = false);
         bool disable_record_button_logic(bool is_streaming, bool is_playback_device);
         std::string get_record_button_hover_text(bool is_streaming);
+        bool is_depth_mapping_camera_streaming_alone();
 
+        void open_hdr_config_tool_window();
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
 
@@ -378,6 +416,7 @@ namespace rs2
         std::shared_ptr<syncer_model> syncer;
         std::shared_ptr<rs2::asynchronous_syncer> dev_syncer;
         bool is_streaming() const;
+        bool is_color_streaming() const;
         bool metadata_supported = false;
         bool get_curr_advanced_controls = true;
         device dev;
@@ -402,7 +441,7 @@ namespace rs2
         // This class is in charge of camera accuracy health window parameters,
         // Needed as a member for reseting the window memory on device disconnection.
 
-
+        bool show_advanced_mode_popup = false;
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
         int draw_playback_controls(ux_window& window, ImFont* font, viewer_model& view);
@@ -443,6 +482,9 @@ namespace rs2
         bool draw_device_panel_auto_calib_d400(viewer_model& viewer, bool& something_to_show, std::string& error_message);
         bool draw_device_panel_auto_calib_d500(viewer_model& viewer, bool& something_to_show, std::string& error_message);
 
+        std::thread check_for_device_updates_thread;
+        std::mutex dev_mutex;
+        std::atomic<bool> stopping;
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
         rsutils::time::periodic_timer      _update_readonly_options_timer;
@@ -451,6 +493,8 @@ namespace rs2
         std::shared_ptr<updates_model> _updates;
         std::shared_ptr<sw_update::dev_updates_profile::update_profile >_updates_profile;
         calibration_model _calib_model;
+        dds_model _dds_model;
+        hdr_model _hdr_model;
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);

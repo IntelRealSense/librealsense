@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019-2024 RealSense, Inc. All Rights Reserved.
 
 #include "fw-update-factory.h"
 #include "fw-update-device.h"
@@ -24,6 +24,8 @@ namespace librealsense
         if( ds::RS_D400_USB2_RECOVERY_PID == usb_info.pid )
             return RS2_PRODUCT_LINE_D400;
         if( ds::D555_RECOVERY_PID == usb_info.pid )
+            return RS2_PRODUCT_LINE_D500;
+        if( ds::D585S_RECOVERY_PID == usb_info.pid )
             return RS2_PRODUCT_LINE_D500;
         return 0;
     }
@@ -75,6 +77,7 @@ namespace librealsense
                         case ds::RS_D400_USB2_RECOVERY_PID:
                             return std::make_shared< ds_d400_update_device >(shared_from_this(), usb);
                         case ds::D555_RECOVERY_PID:
+                        case ds::D585S_RECOVERY_PID:
                             return std::make_shared< ds_d500_update_device >(shared_from_this(), usb);
                         default:
                             // Do nothing
@@ -98,7 +101,7 @@ namespace librealsense
                     continue;
                 switch (info.pid)
                 {
-                case ds::RS457_RECOVERY_PID:
+                case ds::RS400_MIPI_RECOVERY_PID:
                     return std::make_shared< ds_d400_update_device >(shared_from_this(), mipi);
                 default:
                     // Do nothing

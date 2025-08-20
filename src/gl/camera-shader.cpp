@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019 RealSense, Inc. All Rights Reserved.
 
 #include "camera-shader.h"
 #include "rendering.h"
@@ -164,7 +164,8 @@ namespace librealsense
             {
                 auto dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
                 if (starts_with(dev_name, "Intel RealSense D415")) index = 0;
-                if (starts_with(dev_name, "Intel RealSense D435")) index = 1;
+                if (starts_with(dev_name, "Intel RealSense D435") ||
+                    starts_with(dev_name, "Intel RealSense D436")) index = 1;
                 if (starts_with(dev_name, "Intel RealSense D45")) index = 2;
             };
 

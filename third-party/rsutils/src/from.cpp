@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #include <rsutils/string/from.h>
 #include <time.h>
@@ -50,7 +50,7 @@ std::string from::datetime( char const * format )
 {
     time_t t = time( nullptr );
     tm buf;
-#ifdef WIN32
+#ifdef _WIN32
     localtime_s( &buf, &t );
     auto time = &buf;
 #else

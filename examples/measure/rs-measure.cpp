@@ -1,8 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017-24 RealSense, Inc. All Rights Reserved.
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include "example.hpp"          // Include short list of convenience functions for rendering
+
+#include <common/cli.h>
 
 // This example will require several standard data-structures and algorithms:
 #define _USE_MATH_DEFINES
@@ -98,8 +100,12 @@ void render_simple_distance(const rs2::depth_frame& depth,
 
 int main(int argc, char * argv[]) try
 {
+    auto settings = rs2::cli( "rs-measure example" )
+        .process( argc, argv );
+
+    rs2::context ctx( settings.dump() );
     std::string serial;
-    if (!device_with_streams({ RS2_STREAM_COLOR,RS2_STREAM_DEPTH }, serial))
+    if( ! device_with_streams( ctx, { RS2_STREAM_COLOR, RS2_STREAM_DEPTH }, serial ) )
         return EXIT_SUCCESS;
 
     // OpenGL textures for the color and depth frames
@@ -133,7 +139,7 @@ int main(int argc, char * argv[]) try
     rs2::align align_to(RS2_STREAM_DEPTH);
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
-    rs2::pipeline pipe;
+    rs2::pipeline pipe( ctx );
 
     rs2::config cfg;
     if (!serial.empty())

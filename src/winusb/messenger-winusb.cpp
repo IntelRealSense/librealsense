@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 #if (_MSC_FULL_VER < 180031101)
 #error At least Visual Studio 2013 Update 4 is required to compile this backend
@@ -113,7 +113,7 @@ namespace librealsense
             if (!sts)
             {
                 auto lastResult = GetLastError();
-                LOG_ERROR("failed to set timeout policy, error: " << lastResult);
+                LOG_DEBUG( "failed to set timeout policy, error: " << lastResult );
                 return winusb_status_to_rs(lastResult);
             }
             return RS2_USB_STATUS_SUCCESS;

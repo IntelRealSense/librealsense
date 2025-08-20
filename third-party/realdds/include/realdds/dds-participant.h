@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include "dds-defines.h"
@@ -21,6 +21,12 @@ class DomainParticipant;
 class DomainParticipantFactory;
 }  // namespace dds
 }  // namespace fastdds
+namespace fastrtps {
+namespace rtps {
+class WriterProxyData;
+class ReaderProxyData;
+}  // namespace rtps
+}  // namespace fastrtps
 }  // namespace eprosima
 #ifdef BUILD_EASYLOGGINGPP
 namespace el {
@@ -39,6 +45,9 @@ class slice;
 namespace realdds {
 
 
+class dds_network_adapter_watcher;
+
+
 // The starting point for any DDS interaction, a participant has a name and is the focal point for creating, destroying,
 // and managing other DDS objects. It defines the DDS domain (ID) in which every other object lives.
 //
@@ -53,6 +62,7 @@ class dds_participant
     struct listener_impl;
 
     rsutils::json _settings;
+    std::shared_ptr< dds_network_adapter_watcher > _adapter_watcher;
 
 public:
     dds_participant() = default;
@@ -70,6 +80,12 @@ public:
     public:
         qos( std::string const & participant_name );
     };
+
+    // Return the QoS (so user won't have to actually know about the DomainParticipant)
+    eprosima::fastdds::dds::DomainParticipantQos const & get_qos() const;
+
+    // Refresh the QoS, so it will pick up any changes in the system (e.g., if adapters have changed)
+    void refresh_qos();
 
     // Creates the underlying DDS participant and sets the QoS.
     // If callbacks are needed, set them before calling init. Note they may be called before init returns!
@@ -143,9 +159,9 @@ public:
     {
         friend class dds_participant;
 
-        std::function< void( dds_guid, char const* topic_name ) > _on_writer_added;
+        std::function< void( eprosima::fastrtps::rtps::WriterProxyData const & ) > _on_writer_added;
         std::function< void( dds_guid, char const* topic_name ) > _on_writer_removed;
-        std::function< void( dds_guid, char const* topic_name ) > _on_reader_added;
+        std::function< void( eprosima::fastrtps::rtps::ReaderProxyData const & ) > _on_reader_added;
         std::function< void( dds_guid, char const* topic_name ) > _on_reader_removed;
         std::function< void( dds_guid, char const* participant_name ) > _on_participant_added;
         std::function< void( dds_guid, char const* participant_name ) > _on_participant_removed;
@@ -154,7 +170,7 @@ public:
         listener() = default;
 
     public:
-        listener* on_writer_added( std::function< void( dds_guid guid, char const* topic_name ) > callback )
+        listener* on_writer_added( std::function< void( eprosima::fastrtps::rtps::WriterProxyData const & ) > callback )
         {
             _on_writer_added = std::move( callback );
             return this;
@@ -164,7 +180,7 @@ public:
             _on_writer_removed = std::move( callback );
             return this;
         }
-        listener* on_reader_added( std::function< void( dds_guid guid, char const* topic_name ) > callback )
+        listener* on_reader_added( std::function< void( eprosima::fastrtps::rtps::ReaderProxyData const & ) > callback )
         {
             _on_reader_added = std::move( callback );
             return this;
@@ -218,9 +234,9 @@ private:
     std::shared_ptr< listener_impl > _domain_listener;
     std::atomic< uint32_t > _next_entity_id{ 0 };  // for create_guid()
 
-    void on_writer_added( dds_guid, char const * topic_name );
+    void on_writer_added( eprosima::fastrtps::rtps::WriterProxyData const & );
     void on_writer_removed( dds_guid, char const * topic_name );
-    void on_reader_added( dds_guid, char const * topic_name );
+    void on_reader_added( eprosima::fastrtps::rtps::ReaderProxyData const & );
     void on_reader_removed( dds_guid, char const * topic_name );
     void on_participant_added( dds_guid, char const * participant_name );
     void on_participant_removed( dds_guid, char const * participant_name );

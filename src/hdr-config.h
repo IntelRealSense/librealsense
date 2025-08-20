@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2020 RealSense, Inc. All Rights Reserved. */
 
 
 #pragma once
@@ -31,7 +31,7 @@ namespace librealsense
     {
     public:
         hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep,
-            const option_range& exposure_range, const option_range& gain_range);
+            const option_range& exposure_range, const option_range& gain_range, hwmon_response_type no_data_to_return_opcode);
 
 
         float get(rs2_option option) const;
@@ -87,6 +87,7 @@ namespace librealsense
         option_range _gain_range;
         bool _use_workaround;
         float _pre_hdr_exposure;
+        hwmon_response_type _no_data_to_return_opcode;
     };
 
 }

@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 """
 Yepkit USB Switchable Hub
@@ -59,6 +59,11 @@ class Ykush(device_hub.device_hub):
         self._ykush = None
         self.NUM_PORTS = 3
 
+    def get_name(self):
+        """
+        :return: name of the hub
+        """
+        return "YKUSH"
 
     def connect(self, reset = False, serial = None, path = None):
         """
@@ -123,6 +128,8 @@ class Ykush(device_hub.device_hub):
         """
         result = True
         changed = False
+        log.d(f"Enabling ports {ports if ports is not None else 'all'} on YKUSH"
+              f"{', disabling other ports' if disable_other_ports else ''}")
         for port in self.all_ports():
             if ports is None or port in ports:
                 if not self.is_port_enabled( port ):
@@ -155,6 +162,7 @@ class Ykush(device_hub.device_hub):
         """
         result = True
         changed = False
+        log.d(f"Disabling ports {ports if ports is not None else 'all'} on YKUSH")
         for port in self.all_ports():
             if ports is None or port in ports:
                 if self.is_port_enabled( port ):

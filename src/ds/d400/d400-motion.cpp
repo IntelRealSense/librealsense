@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2016-24 RealSense, Inc. All Rights Reserved.
 
 #include "d400-motion.h"
 
@@ -19,23 +19,39 @@
 #include "stream.h"
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
-#include <src/fourcc.h>
 #include <src/metadata-parser.h>
 #include <src/hid-sensor.h>
-using namespace librealsense;
+
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
+
+
 namespace librealsense
 {
     // D457 development
-    const std::map<uint32_t, rs2_format> motion_fourcc_to_rs2_format = {
-        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_MOTION_XYZ32F},
+    const std::map<fourcc::value_type, rs2_format> motion_fourcc_to_rs2_format = {
+        {fourcc('G','R','E','Y'), RS2_FORMAT_MOTION_XYZ32F},
     };
-    const std::map<uint32_t, rs2_stream> motion_fourcc_to_rs2_stream = {
-        {rs_fourcc('G','R','E','Y'), RS2_STREAM_ACCEL},
+    const std::map<fourcc::value_type, rs2_stream> motion_fourcc_to_rs2_stream = {
+        {fourcc('G','R','E','Y'), RS2_STREAM_ACCEL},
     };
 
     rs2_motion_device_intrinsic d400_motion_base::get_motion_intrinsics(rs2_stream stream) const
     {
         return _ds_motion_common->get_motion_intrinsics(stream);
+    }
+
+    bool d400_motion_base::is_imu_high_accuracy() const
+    {
+        // D400 FW 5.16 and above use 32 bits in the struct, instead of 16.
+        return _fw_version >= firmware_version( 5, 16, 0, 0 ); 
+    }
+
+    double d400_motion_base::get_gyro_default_scale() const
+    {
+        // FW scale in the HID feature report was 10 up to FW version 5.16, changed to 1000 to support gyro sensitivity option.
+        // D400 FW performs conversion from raw to physical, we get [deg/sec] values.
+        return _fw_version >= firmware_version( 5, 16, 0, 0 ) ? 0.0001 : 0.1;
     }
 
     std::shared_ptr<synthetic_sensor> d400_motion_uvc::create_uvc_device(std::shared_ptr<context> ctx,
@@ -68,10 +84,11 @@ namespace librealsense
         // register pre-processing
         std::shared_ptr<enable_motion_correction> mm_correct_opt = nullptr;
 
+        auto mm_calib = _ds_motion_common->get_calib_handler();
         //  Motion intrinsic calibration presents is a prerequisite for motion correction.
         try
         {
-            if (_mm_calib)
+            if (mm_calib)
             {
                 mm_correct_opt = std::make_shared<enable_motion_correction>(motion_ep.get(),
                     option_range{ 0, 1, 1, 1 });
@@ -85,8 +102,8 @@ namespace librealsense
         motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL}, {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            [&, mm_correct_opt, gyro_scale_factor]()
-            { return std::make_shared< motion_to_accel_gyro >( _mm_calib, mm_correct_opt, gyro_scale_factor, high_accuracy );
+            [&, mm_calib, high_accuracy, mm_correct_opt, gyro_scale_factor]()
+            { return std::make_shared< motion_to_accel_gyro >( mm_calib, mm_correct_opt, gyro_scale_factor, high_accuracy );
         });
 
         return motion_ep;
@@ -147,19 +164,6 @@ namespace librealsense
     {
         auto raw_sensor = get_motion_sensor().get_raw_sensor();
         return std::dynamic_pointer_cast< hid_sensor >( raw_sensor );
-    }
-
-    bool d400_motion::is_imu_high_accuracy() const
-    {
-        // D400 FW 5.16 and above use 32 bits in the struct, instead of 16.
-        return _fw_version >= firmware_version( 5, 16, 0, 0 );
-    }
-
-    double d400_motion::get_gyro_default_scale() const
-    {
-        // FW scale in the HID feature report was 10 up to 5.16, changed to 1000 to support gyro sensitivity option.
-        // D400 FW performs conversion from raw to physical, we get [deg/sec] values.
-        return _fw_version >= firmware_version( 5, 16, 0, 0 ) ? 0.0001 : 0.1;
     }
 
     d400_motion_uvc::d400_motion_uvc( std::shared_ptr< const d400_info > const & dev_info )

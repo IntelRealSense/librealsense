@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -152,9 +152,6 @@ namespace openvino_helpers
     /*
         Allow manipulation of a face bounding box so as to make additional face analytic networks more
         effective.
-
-        For example, a face may not include the hair. Gender detection, though, may find the hair very
-        important for proper classification!
     */
     inline cv::Rect adjust_face_bbox(
         cv::Rect const & r,

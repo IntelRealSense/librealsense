@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017-2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017-2024 RealSense, Inc. All Rights Reserved.
 
 #ifndef LIBREALSENSE_RS2_DEVICE_HPP
 #define LIBREALSENSE_RS2_DEVICE_HPP
@@ -54,17 +54,8 @@ namespace rs2
          */
         std::string get_type() const
         {
-            if( supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
-                return "USB";
-            if( supports( RS2_CAMERA_INFO_PRODUCT_ID ) )
-            {
-                std::string pid = get_info( RS2_CAMERA_INFO_PRODUCT_ID );
-                if( pid == "ABCD" ) // Specific for D457
-                    return "GMSL";
-                if( pid == "BBCD" ) // Specific for D457 Recovery DFU
-                    return "GMSL";
-                return pid;  // for DDS devices, this will be "DDS"
-            }
+            if( supports( RS2_CAMERA_INFO_CONNECTION_TYPE ) )
+                return get_info(RS2_CAMERA_INFO_CONNECTION_TYPE);
             return {};
         }
 
@@ -1041,6 +1032,14 @@ namespace rs2
             results.insert(results.begin(), start, start + size);
 
             return results;
+        }
+
+        std::string get_opcode_string(int opcode)
+        {
+            rs2_error* e = nullptr;
+            char buffer[1024];
+            rs2_hw_monitor_get_opcode_string(opcode, buffer, sizeof(buffer), _dev.get(), &e);
+            return std::string(buffer);
         }
     };
 

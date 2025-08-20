@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2025 RealSense, Inc. All Rights Reserved.
 
 
 #include "converter-csv.hpp"
@@ -53,12 +53,12 @@ converter_csv::converter_csv(const std::string& filePath, rs2_stream streamType)
 
 void converter_csv::convert_depth(rs2::depth_frame& depthframe)
 {
-    if (frames_map_get_and_set(depthframe.get_profile().stream_type(), depthframe.get_frame_number())) {
+    if (frames_map_get_and_set(depthframe.get_profile().stream_type(), depthframe.get_profile().stream_index(), depthframe.get_frame_number())) {
         return;
     }
 
     start_worker(
-        [this, &depthframe] {
+        [this, depthframe] {
 
             std::stringstream filename;
             filename << _filePath
@@ -146,7 +146,7 @@ void converter_csv::save_motion_pose_data_to_file()
 
 void converter_csv::convert_motion_pose(rs2::frame& f)
 {
-    if (frames_map_get_and_set(f.get_profile().stream_type(), f.get_frame_number())) {
+    if (frames_map_get_and_set(f.get_profile().stream_type(), f.get_profile().stream_index(), f.get_frame_number())) {
         return;
     }
 

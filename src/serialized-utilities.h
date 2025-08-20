@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <string>
@@ -50,6 +50,9 @@ namespace librealsense
 
             // return only the parameters section
             json get_params() const { return *_parameters; };
+
+            // return only the hdr-preset section
+            json get_hdr_preset() const { return *_hdr_preset; };
                 
         protected:
             device_info read_device_info() const;
@@ -60,6 +63,7 @@ namespace librealsense
             int _schema_version;
             json _root;
             json *_parameters;
+            json *_hdr_preset;
         };
 
         class json_preset_writer
@@ -76,6 +80,7 @@ namespace librealsense
             std::string to_string() const { return _root.dump(4); }
 
             void write_param(const std::string& key, const json& value);
+            void write_root_param(const std::string& key, const json& value);
 
         protected:
             void write_schema();

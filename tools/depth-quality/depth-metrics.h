@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 //
 // Plane Fit implementation follows http://www.ilikebigbits.com/blog/2015/3/2/plane-from-points algorithm
 #pragma once
@@ -54,7 +54,7 @@ namespace rs2
             const plane p,
             const rs2::region_of_interest roi,
             const float baseline_mm,
-            const float focal_length_pixels,
+            const rs2_intrinsics* intrin,
             const int ground_thruth_mm,
             const bool plane_fit,
             const float plane_fit_to_ground_truth_mm,
@@ -161,9 +161,11 @@ namespace rs2
 
             snapshot_metrics result{ w, h, roi, {} };
 
-            std::mutex m;
+            if( w <= roi.max_x || h <= roi.max_y ) // Resolution has changed since calculating roi, avoid accessing illegal pixels.
+                return result;
 
             std::vector<rs2::float3> roi_pixels;
+            std::vector<rs2::float3> roi_deprojected_points;
 
 //#pragma omp parallel for - TODO optimization envisaged
             for (int y = roi.min_y; y < roi.max_y; ++y)
@@ -177,19 +179,18 @@ namespace rs2
                         float pixel[2] = { float(x), float(y) };
                         float point[3];
                         auto distance = depth_raw * units;
+                        rs2_deproject_pixel_to_point(point, intrin, pixel, distance);// transform from pixels to metric units (meters) according to intrinsics.
 
-                        rs2_deproject_pixel_to_point(point, intrin, pixel, distance);
-
-                        std::lock_guard<std::mutex> lock(m);
-                        roi_pixels.push_back({ point[0], point[1], point[2] });
+                        roi_pixels.push_back({ pixel[0], pixel[1], distance });
+                        roi_deprojected_points.push_back({ point[0], point[1], point[2] });
                     }
                 }
 
-            if (roi_pixels.size() < 3) { // Not enough pixels in RoI to fit a plane
+            if (roi_deprojected_points.size() < 3) { // Not enough pixels in RoI to fit a plane
                 return result;
             }
 
-            plane p = plane_from_points(roi_pixels);
+            plane p = plane_from_points(roi_deprojected_points);
 
             if (p == plane{ 0, 0, 0, 0 }) { // The points in RoI don't span a valid plane
                 return result;
@@ -212,7 +213,7 @@ namespace rs2
             // Angle can be calculated from param C
             result.angle = static_cast<float>(std::acos(std::abs(p.c)) / M_PI * 180.);
 
-            callback(roi_pixels, p, roi, baseline_mm, intrin->fx, ground_truth_mm, plane_fit_present,
+            callback(roi_pixels, p, roi, baseline_mm, intrin, ground_truth_mm, plane_fit_present,
                 plane_fit_to_gt_offset_mm, result.distance, record, samples);
 
             // Calculate normal

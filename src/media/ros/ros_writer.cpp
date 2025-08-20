@@ -1,7 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019 RealSense, Inc. All Rights Reserved.
 
 #include "proc/decimation-filter.h"
+#include "proc/rotation-filter.h"
 #include "proc/threshold.h"
 #include "proc/disparity-transform.h"
 #include "proc/spatial-filter.h"
@@ -14,6 +15,8 @@
 #include "core/motion-frame.h"
 #include <src/core/sensor-interface.h>
 #include <src/core/device-interface.h>
+#include <src/points.h>
+#include <src/labeled-points.h>
 
 #include <rsutils/string/from.h>
 
@@ -65,6 +68,12 @@ namespace librealsense
         if (Is<pose_frame>(frame.frame))
         {
             write_pose_frame(stream_id, timestamp, std::move(frame));
+            return;
+        }
+
+        if (Is<labeled_points>(frame.frame))
+        {
+            write_labeled_points_frame(stream_id, timestamp, std::move(frame));
             return;
         }
     }
@@ -226,6 +235,23 @@ namespace librealsense
             imu_msg.angular_velocity.y = data_ptr[1];
             imu_msg.angular_velocity.z = data_ptr[2];
         }
+        else if (stream_id.stream_type == RS2_STREAM_MOTION)
+        {
+            auto data_imu = *reinterpret_cast<const rs2_combined_motion*>(frame.frame->get_frame_data());
+            // orientation part
+            imu_msg.orientation.x = data_imu.orientation.x;
+            imu_msg.orientation.y = data_imu.orientation.y;
+            imu_msg.orientation.z = data_imu.orientation.z;
+            imu_msg.orientation.w = data_imu.orientation.w;
+            // GYRO part
+            imu_msg.angular_velocity.x = data_imu.angular_velocity.x;
+            imu_msg.angular_velocity.y = data_imu.angular_velocity.y;
+            imu_msg.angular_velocity.z = data_imu.angular_velocity.z;
+            // ACCEL part
+            imu_msg.linear_acceleration.x = data_imu.linear_acceleration.x;
+            imu_msg.linear_acceleration.y = data_imu.linear_acceleration.y;
+            imu_msg.linear_acceleration.z = data_imu.linear_acceleration.z;
+        }
         else
         {
             throw io_exception("Unsupported stream type for a motion frame");
@@ -310,6 +336,28 @@ namespace librealsense
         write_message(md_topic, timestamp, frame_num_msg);
 
         // Write the rest of the frame metadata and stream extrinsics
+        write_additional_frame_messages(stream_id, timestamp, frame);
+    }
+
+    void ros_writer::write_labeled_points_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame)
+    {
+        sensor_msgs::Image image;
+
+        auto labeled_points_frame = dynamic_cast<librealsense::labeled_points*>(frame.frame);
+        if (!labeled_points_frame) 
+            throw invalid_value_exception("null pointer recieved from dynamic pointer casting.");
+
+        convert(RS2_FORMAT_Y8, image.encoding);
+        image.is_bigendian = is_big_endian();
+        auto size = labeled_points_frame->get_vertex_count() * labeled_points_frame->get_bpp() / 8;
+        auto p_data = frame->get_frame_data();
+        image.data.assign(p_data, p_data + size);
+        image.header.seq = static_cast<uint32_t>(frame->get_frame_number());
+        std::chrono::duration<double, std::milli> timestamp_ms(frame->get_frame_timestamp());
+        image.header.stamp = rs2rosinternal::Time(std::chrono::duration<double>(timestamp_ms).count());
+        image.header.version = "1"; // the field is unused and therefore assigned for ROSbag versions control
+        auto image_topic = ros_topic::frame_data_topic(stream_id);
+        write_message(image_topic, timestamp, image);
         write_additional_frame_messages(stream_id, timestamp, frame);
     }
 
@@ -513,6 +561,7 @@ namespace librealsense
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_HOLE_FILLING_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_HDR_MERGE);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_SEQUENCE_ID_FILTER);
+        RETURN_IF_EXTENSION(block, RS2_EXTENSION_ROTATION_FILTER);
 
 #undef RETURN_IF_EXTENSION
 

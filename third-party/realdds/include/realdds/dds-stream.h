@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -14,7 +14,6 @@
 namespace realdds {
 
 namespace topics {
-class image_msg;
 class imu_msg;
 class flexible_msg;
 }  // namespace topics
@@ -67,7 +66,7 @@ public:
 
     void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) override;
 
-    typedef std::function< void( topics::image_msg &&, dds_sample && ) > on_data_available_callback;
+    typedef std::function< void( std::vector< uint8_t > &&, dds_time &&, dds_sample && ) > on_data_available_callback;
     void on_data_available( on_data_available_callback cb ) { _on_data_available = cb; }
 
     void set_intrinsics( std::set< video_intrinsics > intrinsics ) { _intrinsics = std::move( intrinsics ); }
@@ -76,6 +75,21 @@ public:
 protected:
     void handle_data() override;
     bool can_start_streaming() const override { return _on_data_available != nullptr; }
+
+    template< typename frame_type >
+    void handle_image()
+    {
+        frame_type frame;
+        dds_sample sample;
+        while( _reader && frame_type::take_next( *_reader, &frame, &sample ) )
+        {
+            if( ! frame.is_valid() )
+                continue;
+
+            if( is_streaming() && _on_data_available )
+                _on_data_available( std::move( frame.raw().data() ), frame.timestamp(), std::move( sample ) );
+        }
+    }
 
     std::set< video_intrinsics > _intrinsics;
     on_data_available_callback _on_data_available = nullptr;

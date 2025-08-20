@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 RealSense, Inc. All Rights Reserved.
 
 #include <glad/glad.h>
 #include "updates-model.h"
@@ -7,6 +7,7 @@
 #include "ux-window.h"
 #include "os.h"
 #include <stb_image.h>
+#include <realsense_imgui.h>
 #include "sw-update/http-downloader.h"
 #include <rsutils/easylogging/easyloggingpp.h>
 
@@ -41,7 +42,7 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
     ImGui::SetNextWindowSize({ positions.w, positions.h });
 
     auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders;
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar;
 
     ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
@@ -144,6 +145,8 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
         ImGui::SetCursorPos({ positions.w - 145, positions.h - 25 });
 
         auto enabled = ignore || no_update_needed;
+        ImGui::PushStyleColor(ImGuiCol_Border, black); 
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.5f);
         if (enabled)
         {
             if (_fw_update_state != fw_update_states::started)
@@ -180,12 +183,13 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("To close this window you must install all essential update\n"
+                RsImGui::CustomTooltip("To close this window you must install all essential update\n"
                     "or agree to the warning of closing without it");
-
             }
             ImGui::PopStyleColor(2);
         }
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor();
         ImGui::EndPopup();
     }
     ImGui::PopStyleColor(3);
@@ -295,7 +299,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
         ImGui::PushStyleColor(ImGuiCol_Text, white);
         ImGui::Text("%s", "Content:"); ImGui::SameLine();
         ImGui::PopStyleColor();
-        ImGui::Text("%s", "Intel RealSense SDK 2.0, Intel RealSense Viewer and Depth Quality Tool");
+        ImGui::Text("%s", "RealSense SDK 2.0, RealSense Viewer and Depth Quality Tool");
 
         sw_text_pos.y += 20;
         ImGui::SetCursorScreenPos(sw_text_pos);
@@ -411,7 +415,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
             sw_text_pos.y += 15;
             ImGui::SetCursorScreenPos(sw_text_pos);
             ImGui::InputTextMultiline("##Software Update Description", const_cast<char*>(msg),
-                strlen(msg) + 1, ImVec2(ImGui::GetContentRegionAvailWidth() - 150, pos.mid_y - (pos.orig_pos.y + 160) - 40),
+                strlen(msg) + 1, ImVec2(ImGui::GetContentRegionAvail().x - 150, pos.mid_y - (pos.orig_pos.y + 160) - 40),
                 ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor(7);
             ImGui::PopTextWrapPos();
@@ -439,7 +443,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
             if (ImGui::IsItemHovered())
             {
                 std::string tooltip = "This will redirect you to download the selected software from:\n" + selected_software_update.download_link;
-                ImGui::SetTooltip("%s", tooltip.c_str());
+                RsImGui::CustomTooltip("%s", tooltip.c_str());
                 window.link_hovered();
             }
 
@@ -686,7 +690,7 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
         fw_text_pos.y += 15;
         ImGui::SetCursorScreenPos(fw_text_pos);
         ImGui::InputTextMultiline("##Firmware Update Description", const_cast<char*>(msg),
-            strlen(msg) + 1, ImVec2(ImGui::GetContentRegionAvailWidth() - 150, 75),
+            strlen(msg) + 1, ImVec2(ImGui::GetContentRegionAvail().x - 150, 75),
             ImGuiInputTextFlags_ReadOnly);
         ImGui::PopStyleColor(7);
         ImGui::PopTextWrapPos();
@@ -729,7 +733,7 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("This will download selected firmware and install it to the device");
+            RsImGui::CustomTooltip("This will download selected firmware and install it to the device");
             window.link_hovered();
         }
         ImGui::PopStyleColor(2);

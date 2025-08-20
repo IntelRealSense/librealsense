@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 RealSense, Inc. All Rights Reserved.
 
 #include "hdr-config.h"
 #include "ds/d400/d400-private.h"
@@ -10,7 +10,7 @@
 namespace librealsense
 {
     hdr_config::hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep,
-        const option_range& exposure_range, const option_range& gain_range) :
+        const option_range& exposure_range, const option_range& gain_range, hwmon_response_type no_data_to_return_opcode) :
         _hwm(hwm),
         _sensor(depth_ep),
         _is_enabled(false),
@@ -23,7 +23,8 @@ namespace librealsense
         _exposure_range(exposure_range),
         _gain_range(gain_range),
         _use_workaround(true),
-        _pre_hdr_exposure(0.f)
+        _pre_hdr_exposure(0.f),
+        _no_data_to_return_opcode(no_data_to_return_opcode)
     {
         _hdr_sequence_params.clear();
         _hdr_sequence_params.resize(DEFAULT_HDR_SEQUENCE_SIZE);
@@ -230,20 +231,15 @@ namespace librealsense
             command cmd(ds::GETSUBPRESETID);
             try
             {
-                hwmon_response response;
+                hwmon_response_type response;
                 auto res = _hwm.send( cmd, &response );  // avoid the throw
-                switch( response )
+                if (response != _no_data_to_return_opcode) // If no subpreset is streaming, the firmware returns "NO_DATA_TO_RETURN" error
                 {
-                case hwmon_response::hwm_NoDataToReturn:
-                    // If no subpreset is streaming, the firmware returns "NO_DATA_TO_RETURN" error
-                    break;
-                default:
                     // If a subpreset is streaming, checking this is the current HDR sub preset
                     if( res.size() )
                         rv = ( is_hdr_id( res[0] ) ) ? 1.0f : 0.f;
                     else
-                        LOG_DEBUG( "hdr_config query: " << hwmon_error_string( cmd, response ) );
-                    break;
+                        LOG_DEBUG( "hdr_config query: " << _hwm.hwmon_error_string( cmd, response ) );
                 }
             }
             catch (...)

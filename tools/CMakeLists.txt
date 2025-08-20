@@ -1,13 +1,17 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
-cmake_minimum_required(VERSION 3.8)
+# Copyright(c) 2019-2024 RealSense, Inc. All Rights Reserved.
+cmake_minimum_required(VERSION 3.10)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
-list(APPEND DEPENDENCIES realsense2)
+set_security_flags_for_executable() # tools are executables so we want position indepandent executables and not libraries
+
+list( APPEND DEPENDENCIES ${LRS_TARGET} tclap )
+# Add all imgui cpp source files and store the list in the IMGUI_SOURCES variable
+file(GLOB IMGUI_SOURCES "../third-party/imgui/*.cpp") 
 
 if(BUILD_TOOLS)
     add_subdirectory(convert)
@@ -45,3 +49,5 @@ if(BUILD_EXAMPLES)
         endif()
     endif()
 endif()
+
+unset_security_flags_for_executable()

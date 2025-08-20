@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 RealSense, Inc. All Rights Reserved.
 
 #include <realdds/dds-serialization.h>
 #include <realdds/dds-utilities.h>
@@ -172,15 +172,31 @@ std::ostream & operator<<( std::ostream & os, WireProtocolConfigQos const & qos 
 {
     WireProtocolConfigQos _def;
     os << dump_field( qos, participant_id );
-    os << dump_field_as( qos, prefix, realdds::print_raw_guid_prefix );
+    if( qos.prefix != realdds::dds_guid_prefix() )
+        os << dump_field_as( qos, prefix, realdds::print_raw_guid_prefix );
     os << field::separator << "builtin" << field::group() << qos.builtin;
-    
+
     //fastrtps::rtps::PortParameters port;
     //fastrtps::rtps::ThroughputControllerDescriptor throughput_controller;
     //rtps::LocatorList default_unicast_locator_list;
     //rtps::LocatorList default_multicast_locator_list;
     //rtps::ExternalLocators default_external_unicast_locators;
     //bool ignore_non_matching_locators = false;
+    return os;
+}
+
+
+std::ostream & operator<<( std::ostream & os, ParticipantResourceLimitsQos const & qos )
+{
+    ParticipantResourceLimitsQos _def;
+
+    os << field::separator << "locators" << field::group() << qos.locators;
+    //ResourceLimitedContainerConfig participants;
+    //ResourceLimitedContainerConfig readers;
+    //ResourceLimitedContainerConfig writers;
+    //SendBuffersAllocationAttributes send_buffers;
+    //VariableLengthDataLimits data_limits;
+    //fastdds::rtps::ContentFilterProperty::AllocationConfiguration content_filter;
     return os;
 }
 
@@ -205,7 +221,7 @@ std::ostream & operator<<( std::ostream & os, DomainParticipantQos const & qos )
             os << field::separator << *controller;
     }
     //EntityFactoryQosPolicy entity_factory_;
-    //ParticipantResourceLimitsQos allocation_;
+    os << field::separator << "allocation" << field::group() << qos.allocation();
     os << field::separator << "transport" << field::group() << qos.transport();
     os << field::separator << "wire-protocol" << field::group() << qos.wire_protocol();
     if( ! qos.properties().properties().empty() )
@@ -388,32 +404,26 @@ void from_json( json const & j, Duration_t & duration )
 namespace rtps {
 
 
+std::ostream & operator<<( std::ostream & os, RemoteLocatorsAllocationAttributes const & qos )
+{
+    RemoteLocatorsAllocationAttributes _def;
+
+    os << dump_field( qos, max_unicast_locators );
+    os << dump_field( qos, max_multicast_locators );
+    return os;
+}
+
+
 std::ostream & operator<<( std::ostream & os, WriterProxyData const & info )
 {
-    field::group group;
-    os << "'" << info.topicName() << "' " << group;
-    os << /*field::separator << "type" <<*/ field::value << info.typeName();
-    os << /*field::separator << "reliability" << field::group() <<*/ info.m_qos.m_reliability;
-    if( ! ( info.m_qos.m_durability == eprosima::fastdds::dds::DurabilityQosPolicy() ) )
-        os << /*field::separator << "durability" << field::group() <<*/ info.m_qos.m_durability;
-    if( ! ( info.m_qos.m_liveliness == eprosima::fastdds::dds::LivelinessQosPolicy() ) )
-        os << field::separator << "liveliness" << field::value << info.m_qos.m_liveliness;
-    if( info.m_qos.m_publishMode.flow_controller_name
-        && info.m_qos.m_publishMode.flow_controller_name != eprosima::fastdds::rtps::FASTDDS_FLOW_CONTROLLER_DEFAULT )
-        os << field::separator << "flow-controller" << field::value << "'"
-           << info.m_qos.m_publishMode.flow_controller_name << "'";
+    os << "'" << info.topicName() << "' " << field::group() << realdds::print_writer_info( info );
     return os;
 }
 
 
 std::ostream & operator<<( std::ostream & os, ReaderProxyData const & info )
 {
-    field::group group;
-    os << "'" << info.topicName() << "' " << group;
-    os << /*field::separator << "type" <<*/ field::value << info.typeName();
-    os << /*field::separator << "reliability" << field::group() <<*/ info.m_qos.m_reliability;
-    if( ! ( info.m_qos.m_durability == eprosima::fastdds::dds::DurabilityQosPolicy() ) )
-        os << /*field::separator << "durability" << field::group() <<*/ info.m_qos.m_durability;
+    os << "'" << info.topicName() << "' " << field::group() << realdds::print_reader_info( info );
     return os;
 }
 
@@ -439,6 +449,7 @@ std::ostream & operator<<( std::ostream & os, DiscoverySettings const & qos )
 
 std::ostream & operator<<( std::ostream & os, BuiltinAttributes const & qos )
 {
+    BuiltinAttributes _def;
     os << field::separator << "discovery-config" << field::group() << qos.discovery_config;
     //bool use_WriterLivelinessProtocol = true;
     //TypeLookupSettings typelookup_config;
@@ -453,7 +464,7 @@ std::ostream & operator<<( std::ostream & os, BuiltinAttributes const & qos )
     //    MemoryManagementPolicy_t::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
     //uint32_t writerPayloadSize = BUILTIN_DATA_MAX_SIZE;
     //uint32_t mutation_tries = 100u;
-    //bool avoid_builtin_multicast = true;
+    os << dump_field( qos, avoid_builtin_multicast );
     return os;
 }
 
@@ -464,6 +475,34 @@ std::ostream & operator<<( std::ostream & os, BuiltinAttributes const & qos )
 
 
 namespace realdds {
+
+
+std::ostream & operator<<( std::ostream & os, print_writer_info const & pwi )
+{
+    auto & info = pwi.info;
+    os << /*field::separator << "type" <<*/ field::value << info.typeName();
+    os << /*field::separator << "reliability" << field::group() <<*/ info.m_qos.m_reliability;
+    if( ! ( info.m_qos.m_durability == eprosima::fastdds::dds::DurabilityQosPolicy() ) )
+        os << /*field::separator << "durability" << field::group() <<*/ info.m_qos.m_durability;
+    if( ! ( info.m_qos.m_liveliness == eprosima::fastdds::dds::LivelinessQosPolicy() ) )
+        os << field::separator << "liveliness" << field::value << info.m_qos.m_liveliness;
+    if( info.m_qos.m_publishMode.flow_controller_name
+        && info.m_qos.m_publishMode.flow_controller_name != eprosima::fastdds::rtps::FASTDDS_FLOW_CONTROLLER_DEFAULT )
+        os << field::separator << "flow-controller" << field::value << "'"
+           << info.m_qos.m_publishMode.flow_controller_name << "'";
+    return os;
+}
+
+
+std::ostream & operator<<( std::ostream & os, print_reader_info const & pri )
+{
+    auto & info = pri.info;
+    os << /*field::separator << "type" <<*/ field::value << info.typeName();
+    os << /*field::separator << "reliability" << field::group() <<*/ info.m_qos.m_reliability;
+    if( ! ( info.m_qos.m_durability == eprosima::fastdds::dds::DurabilityQosPolicy() ) )
+        os << /*field::separator << "durability" << field::group() <<*/ info.m_qos.m_durability;
+    return os;
+}
 
 
 eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability_kind_from_string( std::string const & s )
@@ -698,6 +737,8 @@ void override_participant_qos_from_json( eprosima::fastdds::dds::DomainParticipa
     j.nested( "participant-id" ).get_ex( wp.participant_id );
     j.nested( "lease-duration" ).get_ex( wp.builtin.discovery_config.leaseDuration );  // must be > announcement period!
     j.nested( "announcement-period" ).get_ex( wp.builtin.discovery_config.leaseDuration_announcementperiod );
+    
+    j.nested( "max-unicast-locators" ).get_ex( qos.allocation().locators.max_unicast_locators );
 
     j.nested( "use-builtin-transports" ).get_ex( qos.transport().use_builtin_transports );
     if( auto udp_j = j.nested( "udp" ) )

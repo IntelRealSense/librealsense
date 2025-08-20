@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-24 RealSense, Inc. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
 #include <glad/glad.h>
@@ -16,7 +16,7 @@
 #include <math.h>
 #include <fstream>
 
-#include "tclap/CmdLine.h"
+#include <common/cli.h>
 #include "example-utils.hpp"
 
 using namespace std;
@@ -207,23 +207,24 @@ public:
 
 int main(int argc, char** argv) try
 {
+    auto settings = rs2::cli( "rs-benchmark tool" )
+        .process( argc, argv );
+    rs2::context ctx( settings.dump() );
+
     std::string serial;
     rs2_stream second_stream;
-    if (!device_with_streams({ RS2_STREAM_DEPTH }, serial))
+    if( ! device_with_streams( ctx, { RS2_STREAM_DEPTH }, serial ) )
         return EXIT_SUCCESS;
 
-    if (device_with_streams({ RS2_STREAM_COLOR }, serial))
+    if( device_with_streams( ctx, { RS2_STREAM_COLOR }, serial ) )
         second_stream = RS2_STREAM_COLOR;
-    else if (device_with_streams({ RS2_STREAM_INFRARED }, serial))
+    else if( device_with_streams( ctx, { RS2_STREAM_INFRARED }, serial ) )
         second_stream = RS2_STREAM_INFRARED;
     else
     {
         std::cout<< " Connect a Depth Camera that supports either RGB or Infrared streams." <<std::endl;
         return EXIT_SUCCESS;
     }
-
-    CmdLine cmd("librealsense rs-benchmark tool", ' ', RS2_API_FULL_VERSION_STR);
-    cmd.parse(argc, argv);
 
     glfwInit();
     glfwWindowHint(GLFW_VISIBLE, 0);
@@ -250,7 +251,7 @@ int main(int argc, char** argv) try
     suites.push_back(make_shared<gl_blocks>());
 #endif
 
-    pipeline p;
+    pipeline p( ctx );
     config cfg;
     if (!serial.empty())
         cfg.enable_device(serial);

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <librealsense2/hpp/rs_types.hpp>
@@ -47,7 +47,7 @@ public:
 
 private:
     rs2_notifications_callback_sptr _callback;
-    std::mutex _callback_mutex;
+    mutable std::mutex _callback_mutex;
     dispatcher _dispatcher;
 };
 

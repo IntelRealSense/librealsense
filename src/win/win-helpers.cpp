@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 #if (_MSC_FULL_VER < 180031101)
     #error At least Visual Studio 2013 Update 4 is required to compile this backend
@@ -113,7 +113,7 @@ namespace librealsense
                 return false;
             }
 
-            if(ids.size() > 2 && (ids[2].size() != 5 || ids[2].substr(0,3) != "mi_" || !(std::istringstream(ids[2].substr(3,2)) >> mi)))
+            if(ids.size() > 2 && (ids[2].size() != 5 || ids[2].substr(0,3) != "mi_" || !(std::istringstream(ids[2].substr(3,2)) >> std::hex >> mi)))
             {
                 LOG_DEBUG( "malformed mi string: " << tokens[1] );
                 return false;
@@ -491,14 +491,16 @@ namespace librealsense
                 }
 
                 // Enumerate all imaging devices
-                for (int member_index = 0; ; ++member_index)
+                // 0x1000 ia a large enough limit to permit maximum connection, while avoiding infinite loop
+                for (DWORD member_index = 0; member_index < 0x1000; ++member_index)
                 {
                     // Get device information element from the device information set
                     if (SetupDiEnumDeviceInfo(device_info, member_index, &devInfo) == FALSE)
                     {
-                        if( GetLastError() == ERROR_NO_MORE_ITEMS )
-                            break; // stop when none left
-                        continue; // silently ignore other errors
+                        DWORD last_error = GetLastError();
+                        if (last_error == ERROR_NO_MORE_ITEMS) 
+                            break; // stop when none left 
+                        continue; // silently ignore other errors }
                     }
 
                     std::string parent_uid;

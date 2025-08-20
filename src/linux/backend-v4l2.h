@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015-2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-2024 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -105,17 +105,10 @@ namespace librealsense
             bool try_lock();
 
         private:
-            void acquire();
-            void release();
-
             std::string _device_path;
             uint32_t _timeout;
             int _fildes;
-            static std::recursive_mutex _init_mutex;
-            static std::map<std::string, std::recursive_mutex> _dev_mutex;
-            static std::map<std::string, int> _dev_mutex_cnt;
-            int _object_lock_counter;
-            std::mutex _mutex;
+            std::atomic< int > _lock_counter;
         };
         static int xioctl(int fh, unsigned long request, void *arg);
 
@@ -329,6 +322,9 @@ namespace librealsense
 
             static uvc_device_info get_info_from_mipi_device_path(const std::string& video_path, const std::string& name);
 
+            static bool is_format_supported_on_node(const std::string& dev_name, std::string v4l_4cc_fmt);
+            static bool is_device_depth_node(const std::string& dev_name);
+            static uint16_t get_mipi_device_pid(const std::string& dev_name);
             static void get_mipi_device_info(const std::string& dev_name,
                                              std::string& bus_info, std::string& card);
 
@@ -405,7 +401,7 @@ namespace librealsense
             virtual inline std::shared_ptr<buffer> get_video_buffer(__u32 index) const {return _buffers[index];}
             virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return nullptr;}
 
-            static bool get_devname_from_video_path(const std::string& real_path, std::string& devname);
+            static bool get_devname_from_video_path(const std::string& real_path, std::string& devname, bool is_for_dfu = false);
 
             power_state _state = D3;
             std::string _name = "";
@@ -470,6 +466,11 @@ namespace librealsense
 
             std::vector<std::shared_ptr<buffer>> _md_buffers;
         };
+
+
+        const uint16_t D457_PID      = 0xABCD;
+        const uint16_t D430_GMSL_PID = 0xABCE;
+        const uint16_t D415_GMSL_PID = 0xABCF;
 
         // D457 Development. To be merged into underlying class
         class v4l_mipi_device : public v4l_uvc_meta_device

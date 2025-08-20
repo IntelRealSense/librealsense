@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 RealSense, Inc. All Rights Reserved.
 
 #include "platform-camera.h"
 #include "ds/ds-timestamp.h"
@@ -8,23 +8,25 @@
 #include "proc/color-formats-converter.h"
 #include "backend.h"
 #include "platform/platform-utils.h"
-#include <src/fourcc.h>
 #include <src/metadata-parser.h>
+
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
 
 
 namespace librealsense {
 namespace {
 
 
-const std::map< uint32_t, rs2_format > platform_color_fourcc_to_rs2_format = {
-    { rs_fourcc( 'Y', 'U', 'Y', '2' ), RS2_FORMAT_YUYV },
-    { rs_fourcc( 'Y', 'U', 'Y', 'V' ), RS2_FORMAT_YUYV },
-    { rs_fourcc( 'M', 'J', 'P', 'G' ), RS2_FORMAT_MJPEG },
+const std::map< fourcc::value_type, rs2_format > platform_color_fourcc_to_rs2_format = {
+    { fourcc( 'Y', 'U', 'Y', '2' ), RS2_FORMAT_YUYV },
+    { fourcc( 'Y', 'U', 'Y', 'V' ), RS2_FORMAT_YUYV },
+    { fourcc( 'M', 'J', 'P', 'G' ), RS2_FORMAT_MJPEG },
 };
-const std::map< uint32_t, rs2_stream > platform_color_fourcc_to_rs2_stream = {
-    { rs_fourcc( 'Y', 'U', 'Y', '2' ), RS2_STREAM_COLOR },
-    { rs_fourcc( 'Y', 'U', 'Y', 'V' ), RS2_STREAM_COLOR },
-    { rs_fourcc( 'M', 'J', 'P', 'G' ), RS2_STREAM_COLOR },
+const std::map< fourcc::value_type, rs2_stream > platform_color_fourcc_to_rs2_stream = {
+    { fourcc( 'Y', 'U', 'Y', '2' ), RS2_STREAM_COLOR },
+    { fourcc( 'Y', 'U', 'Y', 'V' ), RS2_STREAM_COLOR },
+    { fourcc( 'M', 'J', 'P', 'G' ), RS2_STREAM_COLOR },
 };
 
 
@@ -62,6 +64,36 @@ private:
 
 }  // namespace
 
+void platform_camera::initialize()
+{
+    auto const n_sensors = get_sensors_count();
+    for (auto i = 0; i < n_sensors; ++i)
+    {
+        if (auto sensor = dynamic_cast<platform_camera_sensor*>(&(get_sensor(i))))
+        {
+            if (sensor->get_device().get_info(RS2_CAMERA_INFO_NAME) == "Platform Camera")
+            {
+                auto options = std::vector< rs2_option >{ RS2_OPTION_BACKLIGHT_COMPENSATION,
+                                                          RS2_OPTION_BRIGHTNESS,
+                                                          RS2_OPTION_CONTRAST,
+                                                          RS2_OPTION_EXPOSURE,
+                                                          RS2_OPTION_GAMMA,
+                                                          RS2_OPTION_HUE,
+                                                          RS2_OPTION_SATURATION,
+                                                          RS2_OPTION_SHARPNESS,
+                                                          RS2_OPTION_WHITE_BALANCE,
+                                                          RS2_OPTION_ENABLE_AUTO_EXPOSURE,
+                                                          RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE };
+                for (const auto& option : options)
+                {
+                    if (should_stop)
+                        return;  // Stop initialization if requested
+                    sensor->try_register_pu(option);
+                }
+            }
+        }
+    }
+}
 
 platform_camera::platform_camera( std::shared_ptr< const device_info > const & dev_info,
                                   const std::vector< platform::uvc_device_info > & uvc_infos,
@@ -95,6 +127,7 @@ platform_camera::platform_camera( std::shared_ptr< const device_info > const & d
     if( usb_spec_names.count( usb_mode ) && ( usb_undefined != usb_mode ) )
         usb_type_str = usb_spec_names.at( usb_mode );
 
+    register_info(RS2_CAMERA_INFO_CONNECTION_TYPE, "USB");
     register_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str );
     register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, uvc_infos.front().unique_id );
     register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, uvc_infos.front().device_path );
@@ -115,19 +148,19 @@ platform_camera::platform_camera( std::shared_ptr< const device_info > const & d
     color_ep->register_metadata( RS2_FRAME_METADATA_FRAME_TIMESTAMP,
                                  make_uvc_header_parser( &platform::uvc_header::timestamp ) );
 
-    color_ep->try_register_pu( RS2_OPTION_BACKLIGHT_COMPENSATION );
-    color_ep->try_register_pu( RS2_OPTION_BRIGHTNESS );
-    color_ep->try_register_pu( RS2_OPTION_CONTRAST );
-    color_ep->try_register_pu( RS2_OPTION_EXPOSURE );
-    color_ep->try_register_pu( RS2_OPTION_GAMMA );
-    color_ep->try_register_pu( RS2_OPTION_HUE );
-    color_ep->try_register_pu( RS2_OPTION_SATURATION );
-    color_ep->try_register_pu( RS2_OPTION_SHARPNESS );
-    color_ep->try_register_pu( RS2_OPTION_WHITE_BALANCE );
-    color_ep->try_register_pu( RS2_OPTION_ENABLE_AUTO_EXPOSURE );
-    color_ep->try_register_pu( RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE );
+    // Create a thread to call initialize after a delay
+    _init_thread = std::thread([this]() {
+        std::this_thread::sleep_for(std::chrono::seconds(2)); // Delay for 2 seconds
+        this->initialize();
+    });
 }
 
+platform_camera::~platform_camera()
+{
+    should_stop = true;
+    if( _init_thread.joinable() )
+        _init_thread.join();
+}
 
 std::vector< tagged_profile > platform_camera::get_profiles_tags() const
 {

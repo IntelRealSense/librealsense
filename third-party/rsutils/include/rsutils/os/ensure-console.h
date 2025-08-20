@@ -1,11 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
 
 namespace rsutils {
 namespace os {
+
+
+bool has_console();
 
 
 // In a Windows application, console output does not automatically get relfected in a console, even if run from a

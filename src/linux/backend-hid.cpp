@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 #include "metadata.h"
 #include "backend-hid.h"
@@ -7,6 +7,7 @@
 #include "types.h"
 
 #include <rsutils/string/from.h>
+#include "rsutils/accelerators/gpu.h"
 
 #include <thread>
 #include <chrono>
@@ -759,7 +760,7 @@ namespace librealsense
             return false;
         }
 
-        bool iio_hid_sensor::sort_hids(hid_input* first, hid_input* second)
+        bool iio_hid_sensor::sort_hids(std::shared_ptr<hid_input> first, std::shared_ptr<hid_input> second)
         {
             return (second->get_hid_input_info().index >= first->get_hid_input_info().index);
         }
@@ -979,8 +980,9 @@ namespace librealsense
 
                         try
                         {
-                            auto* new_input = new hid_input(_iio_device_path, file);
+                            auto new_input = std::make_shared<hid_input>(_iio_device_path, file);
                             // push to input list.
+                            
                             _inputs.push_front(new_input);
                         }
                         catch(...)
@@ -1232,23 +1234,26 @@ namespace librealsense
             for (auto& elem : common_sensors)
             {
                 hid_device_info hid_dev_info{};
-                if(!get_hid_device_info(elem.c_str(), hid_dev_info))
+                if (!get_hid_device_info(elem.c_str(), hid_dev_info))
                 {
 #ifdef RS2_USE_CUDA
-                    /* On the Jetson TX, ina3221x is the power monitor (I2C bus)
-                    This code is checking the IIA device directory, but tries to compare as USB HID device
-                    The ina3221x is not a HID device. Check here to avoid spamming the console.
-                    Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
-                    std::string device_path_str(elem.c_str());
-                    device_path_str+="/";
-                    std::string dev_name;
-                    std::ifstream(device_path_str + "name") >> dev_name;
-                    if (dev_name != std::string("ina3221x")) {
-                        LOG_WARNING("Failed to read busnum/devnum. Device Path: " << elem);
+                    if (rsutils::rs2_is_gpu_available())
+                    {
+                        /* On the Jetson TX, ina3221x is the power monitor (I2C bus)
+                        This code is checking the IIA device directory, but tries to compare as USB HID device
+                        The ina3221x is not a HID device. Check here to avoid spamming the console.
+                        Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
+                        std::string device_path_str(elem.c_str());
+                        device_path_str += "/";
+                        std::string dev_name;
+                        std::ifstream(device_path_str + "name") >> dev_name;
+                        if (dev_name != std::string("ina3221x")) {
+                            LOG_WARNING("Failed to read busnum/devnum. Device Path: " << elem);
+                        }
+                        continue;
                     }
-#else
-                    LOG_INFO("Failed to read busnum/devnum. Device Path: " << elem);
 #endif
+                    LOG_INFO("Failed to read busnum/devnum. Device Path: " << elem);
                     continue;
                 }
                 action(hid_dev_info);

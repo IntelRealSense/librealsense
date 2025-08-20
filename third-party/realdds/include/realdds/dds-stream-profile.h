@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <rsutils/json-fwd.h>
@@ -134,6 +134,7 @@ public:
     uint16_t width() const { return _width; }
     uint16_t height() const { return _height; }
     dds_video_encoding const & encoding() const { return _encoding; }
+    bool is_compressed_encoding() const;
 
     std::string details_to_string() const override;
 

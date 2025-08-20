@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 #include <librealsense2/rs.hpp>
@@ -27,12 +27,15 @@ namespace rs2
         std::string value_as_string() const;
         float value_as_float() const;
 
+        void update_value( const rs2::option_value & updated_value, notifications_model & model );
+
         rs2_option opt;
         option_range range;
         std::shared_ptr<options> endpoint;
         float unset_value = 0;
         bool have_unset_value = false;
         rsutils::time::stopwatch last_set_stopwatch;
+        rsutils::time::stopwatch last_slider_hold_stopwatch;
         bool* invalidate_flag = nullptr;
         bool supported = false;
         bool read_only = false;

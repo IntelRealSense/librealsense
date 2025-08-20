@@ -1,8 +1,9 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
 # test:device:jetson D457
-# test:donotrun:!jetson 
+# test:donotrun:!jetson
+# test:retries 3
 
 import pyrealsense2 as rs
 from rspy import test

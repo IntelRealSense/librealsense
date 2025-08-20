@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #include <realdds/dds-stream-sensor-bridge.h>
 #include <realdds/dds-device-server.h>
@@ -153,19 +153,18 @@ void dds_stream_sensor_bridge::reset( bool by_force )
         for( auto & name2stream : sensor.streams )
         {
             auto & stream = name2stream.second;
-            stream.profile = stream.server->default_profile();
-            stream.is_explicit = false;
-            if( stream.is_implicit )
+            auto default_profile = stream.server->default_profile();
+            if( stream.profile != default_profile )
             {
-                auto profile = stream.server->default_profile();
-                if( stream.profile != profile )
-                {
+                if( stream.is_implicit )
                     LOG_DEBUG( "restoring stream '" << stream.server->name() << "' to default profile "
-                                                    << profile->to_string() );
-                    stream.profile = profile;
-                }
-                stream.is_implicit = false;
+                               << default_profile->to_string() );
+                if( _on_stream_profile_change )
+                    _on_stream_profile_change( stream.server, default_profile );
+                stream.profile = default_profile;
             }
+            stream.is_explicit = false;
+            stream.is_implicit = false;
         }
     }
 }
@@ -206,7 +205,12 @@ void dds_stream_sensor_bridge::open( std::shared_ptr< realdds::dds_stream_profil
         sensor.verify_compatible_profile( profile );
 
         LOG_DEBUG( "opening " << profile->to_string() );
-        stream.profile = profile;
+        if( profile != stream.profile )
+        {
+            if( _on_stream_profile_change )
+                _on_stream_profile_change( server, profile );
+            stream.profile = profile;
+        }
         stream.is_explicit = true;
     }
 }
@@ -229,6 +233,8 @@ void dds_stream_sensor_bridge::close( std::shared_ptr< dds_stream_server > const
         if( stream.profile != profile )
         {
             LOG_DEBUG( "restoring stream '" << stream.server->name() << "' to default profile " << profile->to_string() );
+            if( _on_stream_profile_change )
+                _on_stream_profile_change( server, profile );
             stream.profile = profile;
         }
     }
@@ -386,7 +392,12 @@ void dds_stream_sensor_bridge::add_implicit_profiles()
                 }
 
                 LOG_DEBUG( "adding implicit " << implicit_profile->to_string() );
-                implicit_stream.profile = implicit_profile;
+                if( implicit_profile != implicit_stream.profile )
+                {
+                    if( _on_stream_profile_change )
+                        _on_stream_profile_change( implicit_stream.server, implicit_profile );
+                    implicit_stream.profile = implicit_profile;
+                }
                 implicit_stream.is_implicit = true;
             }
         }
@@ -426,6 +437,8 @@ void dds_stream_sensor_bridge::stop_sensor( std::string const & sensor_name, sen
             {
                 LOG_DEBUG( "restoring stream '" << stream.server->name() << "' to default profile "
                                                 << profile->to_string() );
+                if( _on_stream_profile_change )
+                    _on_stream_profile_change( stream.server, profile );
                 stream.profile = profile;
             }
             stream.is_implicit = false;
@@ -442,6 +455,18 @@ bool dds_stream_sensor_bridge::is_streaming( std::shared_ptr< dds_stream_server 
     sensor_bridge const & sensor = name2sensor->second;
     stream_bridge const & stream = sensor.streams.at( server->name() );
     return stream.is_streaming;
+}
+
+
+std::shared_ptr< dds_stream_profile >
+dds_stream_sensor_bridge::get_profile( std::shared_ptr< dds_stream_server > const & server ) const
+{
+    auto name2sensor = _sensors.find( server->sensor_name() );
+    if( name2sensor == _sensors.end() )
+        DDS_THROW( runtime_error, "invalid sensor name '" + server->sensor_name() + "'" );
+    sensor_bridge const & sensor = name2sensor->second;
+    stream_bridge const & stream = sensor.streams.at( server->name() );
+    return stream.profile;
 }
 
 

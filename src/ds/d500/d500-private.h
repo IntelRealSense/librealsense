@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -16,7 +16,10 @@ namespace librealsense
     {
         const uint16_t D555_PID = 0x0B56;
         const uint16_t D555_RECOVERY_PID = 0x0ADE;
-
+        const uint16_t D585S_RECOVERY_PID = 0x0ADD;
+        const uint16_t D585_PID = 0x0B6A; // D585, D for depth
+        const uint16_t D585S_PID = 0x0B6B; // D585S, S for safety
+        
         // DS500 depth XU identifiers
         const uint8_t DS5_HKR_PVT_TEMPERATURE = 0x15;
         const uint8_t DS5_HKR_PROJECTOR_TEMPERATURE = 0x16;
@@ -24,25 +27,43 @@ namespace librealsense
 
         // d500 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {
-            D555_PID
+            D555_PID,
+            D585_PID,
+            D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_multi_sensors_pid = {
-            D555_PID
+            D555_PID,
+            D585_PID,
+            D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_sensors_pid = {
-            D555_PID
+            D555_PID,
+            D585_PID,
+            D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_bmi_085_pid = {
-            D555_PID
+            D555_PID,
+            D585_PID,
+            D585S_PID
         };
 
         static const std::map< std::uint16_t, std::string > rs500_sku_names = {
-            { ds::D555_PID,          "Intel RealSense D555" },
-            { ds::D555_RECOVERY_PID, "Intel RealSense D555 Recovery" }
+            { D555_PID,          "Intel RealSense D555" },
+            { D555_RECOVERY_PID, "Intel RealSense D555 Recovery" },
+            { D585_PID,             "Intel RealSense D585" },
+            { D585S_PID,            "Intel RealSense D585S" },
+            { D585S_RECOVERY_PID,   "Intel RealSense D585S Recovery"}
         };
+
+        //TODO
+        //static std::map<uint16_t, std::string> d500_device_to_fw_min_version = {
+        //    {D585_PID, "0.0.0.0"},
+        //    {D585S_PID, "0.0.0.0"},
+        //    {D585S_RECOVERY_PID , "0.0.0.0"}
+        //};
 
         bool d500_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
@@ -55,6 +76,7 @@ namespace librealsense
             constexpr size_t optical_module_serial_offset = 0x54;
             constexpr size_t mb_module_serial_offset = 0x7a;
             constexpr size_t fw_version_offset = 0xba;
+            constexpr size_t safety_sw_suite_version_offset = 0x10F;
         }  // namespace d500_gvd_offsets
 
         struct d500_gvd_parsed_fields
@@ -65,6 +87,7 @@ namespace librealsense
             std::string optical_module_sn;
             std::string mb_module_sn;
             std::string fw_version;
+            std::string safety_sw_suite_version;
         };
 
         enum class d500_calibration_table_id
@@ -83,7 +106,11 @@ namespace librealsense
             rgb_lut_id = 0xba,
             imu_calibration_id = 0xbb,
             stream_pipe_config_id = 0xbe,
+            safety_presets_table_id = 0xc0da,
+            safety_preset_id = 0xc0db,
+            safety_interface_cfg_id = 0xc0dc,
             calib_cfg_id = 0xc0dd,
+            app_config_table_id = 0xc0de,
             max_id = -1
         };
 
@@ -452,6 +479,108 @@ namespace librealsense
             { EHU_IDX_SF_OS_EXCEPTION, "SF OS EXCEPTION ERROR" },
             { EHU_IDX_FLASH_DATA_CRC_ERR, "FLASH DATA CRC ERROR" },
             { EHU_IDX_DSP_UP_CHECKSUM_ERR, "DSP UP CHECKSUM ERROR" },
+        };
+
+        class d500_hwmon_response : public hwmon_response_interface
+        {
+        public:
+            enum opcodes : hwmon_response_type
+            {
+               SUCCESS                            =  0,
+               INVALID_COMMAND                    = -1,
+               INVALID_PARAM                      = -2,
+               HW_NOT_READY                       = -3,  // (different from #21)
+               UNAUTHORIZED_USER_ACTION           = -4,
+               INTEGRITY_ERROR                    = -5,
+               CRC_ERROR                          = -6,
+               GPIO_PIN_NUMBER_INVALID            = -7,
+               GPIO_PIN_DIRECTION_INVALID         = -8,
+               ILLEGAL_ADDRESS                    = -9,
+               ILLEGAL_SIZE                       = -10,
+               PARAMS_TABLE_NOT_VALID             = -11,
+               PARAMS_TABLE_ID_NOT_VALID          = -12,
+               PARAMS_TABLE_WRONG_EXISTING_SIZE   = -13,
+               SPI_READ_FAILED                    = -14,
+               SPI_WRITE_FAILED                   = -15,
+               TABLE_IS_EMPTY                     = -16,
+               VALUE_OUT_OF_RANGE                 = -17,
+               OPERATION_TIMEOUT                  = -18,
+               COMMAND_NOT_SUPPORTED              = -19, // (inappropriate FW/SKU)
+               INCOMPLETE_DATA                    = -20,
+               SW_NOT_READY                       = -21, // (mind the difference from #3)
+               RESERVED_22                        = -22,
+               RESERVED_23                        = -23,
+               RESERVED_24                        = -24,
+               RESERVED_25                        = -25,
+               RESERVED_26                        = -26,
+               RESERVED_27                        = -27,
+               RESERVED_28                        = -28,
+               RESERVED_29                        = -29,
+               RESERVED_30                        = -30,
+               RESERVED_31                        = -31,
+               RESERVED_32                        = -32,
+               RESERVED_33                        = -33,
+               RESERVED_34                        = -34,
+               RESERVED_35                        = -35,
+               RESERVED_36                        = -36,
+               RESERVED_37                        = -37,
+               RESERVED_38                        = -38,
+               RESERVED_39                        = -39,
+               LAST_ERROR                         = RESERVED_39 - 1, // if more error codes are added, this value should be updated
+            };
+
+            // Elaborate HW Monitor response
+            const std::map<hwmon_response_type, std::string> hwmon_response_report = {
+               { SUCCESS,                          "Success" },
+               { INVALID_COMMAND,                  "Invalid Command" },
+               { INVALID_PARAM,                    "Invalid Param" },
+               { HW_NOT_READY,                     "HW Not Ready" },
+               { UNAUTHORIZED_USER_ACTION,         "Unauthorized User Action" },
+               { INTEGRITY_ERROR,                  "Integrity Error" },
+               { CRC_ERROR,                        "CRC Error" },
+               { GPIO_PIN_NUMBER_INVALID,          "GPIO Pin Number Invalid" },
+               { GPIO_PIN_DIRECTION_INVALID,       "GPIO Pin Direction Invalid" },
+               { ILLEGAL_ADDRESS,                  "Illegal Address" },
+               { ILLEGAL_SIZE,                     "Illegal Size" },
+               { PARAMS_TABLE_NOT_VALID,           "Params Table Not Valid" },
+               { PARAMS_TABLE_ID_NOT_VALID,        "Params Table Id Not Valid" },
+               { PARAMS_TABLE_WRONG_EXISTING_SIZE, "Params Table Wrong Existing Size" },
+               { SPI_READ_FAILED,                  "Spi Read Failed" },
+               { SPI_WRITE_FAILED,                 "Spi Write Failed" },
+               { TABLE_IS_EMPTY,                   "Table Is Empty" },
+               { VALUE_OUT_OF_RANGE,               "Value Out Of Range" },
+               { OPERATION_TIMEOUT,                "Operation Timeout" },
+               { COMMAND_NOT_SUPPORTED,            "Command Not Supported" },
+               { INCOMPLETE_DATA,                  "Incomplete Data" },
+               { SW_NOT_READY,                     "SW Not Ready" },
+               { RESERVED_22,                      "Reserved 22" },
+               { RESERVED_23,                      "Reserved 23" },
+               { RESERVED_24,                      "Reserved 24" },
+               { RESERVED_25,                      "Reserved 25" },
+               { RESERVED_26,                      "Reserved 26" },
+               { RESERVED_27,                      "Reserved 27" },
+               { RESERVED_28,                      "Reserved 28" },
+               { RESERVED_29,                      "Reserved 29" },
+               { RESERVED_30,                      "Reserved 30" },
+               { RESERVED_31,                      "Reserved 31" },
+               { RESERVED_32,                      "Reserved 32" },
+               { RESERVED_33,                      "Reserved 33" },
+               { RESERVED_34,                      "Reserved 34" },
+               { RESERVED_35,                      "Reserved 35" },
+               { RESERVED_36,                      "Reserved 36" },
+               { RESERVED_37,                      "Reserved 37" },
+               { RESERVED_38,                      "Reserved 38" },
+               { RESERVED_39,                      "Reserved 39" },
+               { LAST_ERROR,                       "Last Error" }
+            };
+
+            virtual std::string hwmon_error2str(hwmon_response_type opcode) const override {
+                if (hwmon_response_report.find(opcode) != hwmon_response_report.end())
+                    return hwmon_response_report.at(opcode);
+                return {};
+            }
+
+            virtual hwmon_response_type success_value() const override { return SUCCESS; };
         };
 
     } // namespace ds

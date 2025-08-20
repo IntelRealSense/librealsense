@@ -1,8 +1,9 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 #include "pyrealsense2.h"
 #include <librealsense2/hpp/rs_sensor.hpp>
+#include <librealsense2/hpp/rs_safety_sensor.hpp>
 #include "max-usable-range-sensor.h"
 
 void init_sensor(py::module &m) {
@@ -73,6 +74,7 @@ void init_sensor(py::module &m) {
         .def(BIND_DOWNCAST(sensor, color_sensor))
         .def(BIND_DOWNCAST(sensor, motion_sensor))
         .def(BIND_DOWNCAST(sensor, fisheye_sensor))
+        .def(BIND_DOWNCAST(sensor, safety_sensor))
         .def(BIND_DOWNCAST(sensor, pose_sensor))
         .def(BIND_DOWNCAST(sensor, wheel_odometer))
         .def(BIND_DOWNCAST(sensor, max_usable_range_sensor))
@@ -115,6 +117,18 @@ void init_sensor(py::module &m) {
 
     py::class_<rs2::fisheye_sensor, rs2::sensor> fisheye_sensor(m, "fisheye_sensor"); // No docstring in C++
     fisheye_sensor.def(py::init<rs2::sensor>(), "sensor"_a);
+
+    py::class_<rs2::safety_sensor, rs2::sensor> safety_sensor(m, "safety_sensor"); // No docstring in C++
+    safety_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
+        .def("get_safety_preset", &rs2::safety_sensor::get_safety_preset, "get safety preset at index", "index"_a, py::call_guard<py::gil_scoped_release>())
+        .def("set_safety_preset", &rs2::safety_sensor::set_safety_preset, "set safety preset at index", "index"_a, "safety_preset"_a, py::call_guard<py::gil_scoped_release>())
+        .def("get_safety_interface_config", 
+            &rs2::safety_sensor::get_safety_interface_config,
+            "get safety interface config", "calib_location"_a = RS2_CALIB_LOCATION_RAM, py::call_guard<py::gil_scoped_release>())
+        .def("set_safety_interface_config", &rs2::safety_sensor::set_safety_interface_config,
+            "set safety interface config", "safety_interface_config"_a, py::call_guard<py::gil_scoped_release>())
+        .def("get_application_config", &rs2::safety_sensor::get_application_config, "get application config", py::call_guard<py::gil_scoped_release>())
+        .def("set_application_config", &rs2::safety_sensor::set_application_config, "set application config", "application_config_json_str"_a, py::call_guard<py::gil_scoped_release>());
 
     py::class_<rs2::max_usable_range_sensor, rs2::sensor> mur_sensor(m, "max_usable_range_sensor");
     mur_sensor.def(py::init<rs2::sensor>(), "sensor"_a)

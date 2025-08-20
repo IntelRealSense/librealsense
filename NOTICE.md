@@ -1,9 +1,9 @@
-# Intel® RealSense™ 
+# RealSense™ 
 
 ## Third Party Programs
 
 
-### This file specifies all 3rd party SW components used for Intel® RealSense™ SDK and the inbound license for each of these 3rd party components.
+### This file specifies all 3rd party SW components used for RealSense™ SDK and the inbound license for each of these 3rd party components.
 
 #### MIT License 
 
@@ -13,6 +13,7 @@
 | GLAD | https://glad.dav1d.de/, https://github.com/Dav1dde/glad | MIT License | Copyright (c) 2013-2022 David Herberth |
 | JSON for Modern C++ | https://github.com/nlohmann/json | MIT License | Copyright (c) 2013-2022 Niels Lohmann |
 | imgui | https://github.com/ocornut/imgui | MIT License  | Copyright (c) 2014-2024 Omar Cornut |
+| implot | https://github.com/epezent/implot | MIT License  | Copyright (c) 2020 Evan Pezent |
 | rapidxml | https://github.com/Fe-Bell/RapidXML | MIT License  | Copyright (c) 2006, 2007 Marcin Kalicinski |
 | easyloggingpp | https://github.com/abumq/easyloggingpp | MIT License | Copyright (c) 2012-present @abumq (Majid Q.) |
 | tclap | http://tclap.sourceforge.net/ | MIT License | Copyright (c) 2003 Michael E. Smoot, Copyright (c) 2004 Daniel Aarno, Copyright (c) 2017 Google Inc.  |

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -27,13 +27,14 @@ namespace librealsense
     class ds_device_common
     {
     public:
-        ds_device_common(device* ds_device, std::shared_ptr<hw_monitor> hwm) :
+        ds_device_common(device* ds_device, std::shared_ptr<hw_monitor> hwm, bool is_mipi = false) :
             _owner(ds_device),
             _hw_monitor(hwm),
+            _is_mipi(is_mipi),
             _is_locked(true)
         {}
 
-        void enter_update_state() const;
+        void enter_update_state(const command& cmd) const;
         std::vector<uint8_t> backup_flash( rs2_update_progress_callback_sptr callback);
         void update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode);
 
@@ -47,6 +48,7 @@ namespace librealsense
         device* _owner;
         std::shared_ptr<hw_monitor> _hw_monitor;
         bool _is_locked;
+        bool _is_mipi;
     };
 
     

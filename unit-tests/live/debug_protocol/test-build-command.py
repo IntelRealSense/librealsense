@@ -1,10 +1,11 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 # test:device D400*
+# test:device each(D555)
 
 import pyrealsense2 as rs
-from rspy import devices, log, test, file, repo
+from rspy import log, test, file, repo
 
 
 #############################################################################################

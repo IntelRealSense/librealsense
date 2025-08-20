@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -171,9 +171,16 @@ public:
                 std::cout << "       Description   : " << description << std::endl;
 
                 // Get the current value of the option
-                float current_value = sensor.get_option(option_type);
-                std::cout << "       Current Value : " << current_value << std::endl;
-
+                if (option_type != RS2_OPTION_REGION_OF_INTEREST)
+                {
+                    float current_value = sensor.get_option(option_type);
+                    std::cout << "       Current Value : " << current_value << std::endl;
+                }
+                else
+                {
+                    rs2_option_rect current_value = sensor.get_option_value(option_type)->as_rect;
+                    std::cout << "       Current Value : [(" << current_value.x1 << "," << current_value.y1 << "), (" << current_value.x2 << "," << current_value.y2 << ")]" << std::endl;
+                }
                 //To change the value of an option, please follow the change_sensor_option() function
             }
             else
@@ -304,6 +311,12 @@ public:
         if (!sensor.supports(option_type))
         {
             std::cerr << "This option is not supported by this sensor" << std::endl;
+            return;
+        }
+
+        if (option_type == RS2_OPTION_REGION_OF_INTEREST)
+        {
+            std::cerr << "Setting ROI is not demonstrated in this example. Check `set_region_of_interest` API" << std::endl;
             return;
         }
 

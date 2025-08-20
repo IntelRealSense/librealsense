@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 /** \file rs_option.h
 * \brief
@@ -96,7 +96,7 @@ extern "C" {
         RS2_OPTION_INVALIDATION_BYPASS, /**< Enable\disable pixel invalidation */
         RS2_OPTION_AMBIENT_LIGHT, /**< DEPRECATED! - Use RS2_OPTION_DIGITAL_GAIN instead. */
         RS2_OPTION_DIGITAL_GAIN = RS2_OPTION_AMBIENT_LIGHT, /**< Change the depth digital gain see rs2_digital_gain for values */
-        RS2_OPTION_SENSOR_MODE, /**< The resolution mode: see rs2_sensor_mode for values */
+        RS2_OPTION_SENSOR_MODE, /**< DEPRECATED! - The resolution mode: see rs2_sensor_mode for values */
         RS2_OPTION_EMITTER_ALWAYS_ON, /**< Enable Laser On constantly (GS SKU Only) */
         RS2_OPTION_THERMAL_COMPENSATION, /**< Depth Thermal Compensation for selected D400 SKUs */
         RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, /**< DEPRECATED as of 2.46! */
@@ -123,8 +123,16 @@ extern "C" {
         RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE, /**< Select depth sensor auto exposure mode see rs2_depth_auto_exposure_mode for values  */
         RS2_OPTION_OHM_TEMPERATURE, /**< Temperature of the Optical Head Sensor */
         RS2_OPTION_SOC_PVT_TEMPERATURE, /**< Temperature of PVT SOC */
-        RS2_OPTION_GYRO_SENSITIVITY,/**< Control of the gyro sensitivity level, see rs2_gyro_sensitivity for values */
+        RS2_OPTION_GYRO_SENSITIVITY,/**< Control of the gyro sensitivity level, see rs2_gyro_sensitivity for values */ 
         RS2_OPTION_REGION_OF_INTEREST,/**< The rectangular area used from the streaming profile */
+        RS2_OPTION_ROTATION,/**Rotates frames*/
+
+        // Safety camera options
+        RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX, /**< Set / Get current active safety preset index**/
+        RS2_OPTION_SAFETY_MODE, /**< Safety camera operation mode see rs2_safety_camera_mode for values*/
+        RS2_OPTION_RGB_TNR_ENABLED, /**< RGB Temporal Noise Reduction enabling ON (1) / OFF (0)*/
+        RS2_OPTION_SAFETY_MCU_TEMPERATURE, /**< Temperature of the SMCU */
+        RS2_OPTION_LEFT_IR_TEMPERATURE, /**< Temperature of the Left IR Sensor */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -236,7 +244,7 @@ extern "C" {
     } rs2_l500_visual_preset;
     const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset);
 
-    /** \brief For setting the camera_mode option */
+    /** \brief DEPRECATED! - For setting the camera_mode option */
     typedef enum rs2_sensor_mode
     {
         RS2_SENSOR_MODE_VGA,
@@ -290,6 +298,26 @@ extern "C" {
         RS2_DEPTH_AUTO_EXPOSURE_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_depth_auto_exposure_mode;
     const char* rs2_depth_auto_exposure_mode_to_string( rs2_depth_auto_exposure_mode mode );
+
+    /** \brief values for RS2_OPTION_SAFETY_MODE option. */
+    typedef enum rs2_safety_mode
+    {
+        RS2_SAFETY_MODE_RUN,
+        RS2_SAFETY_MODE_STANDBY,
+        RS2_SAFETY_MODE_SERVICE,
+        RS2_SAFETY_MODE_COUNT        
+    } rs2_safety_mode;
+    const char* rs2_safety_mode_to_string( rs2_safety_mode mode );
+
+    /** \brief values for RS2_OPTION_INTER_CAM_SYNC_MODE option. */
+    typedef enum rs2_d500_intercam_sync_mode {
+        RS2_D500_INTERCAM_SYNC_NONE = 0,
+        RS2_D500_INTERCAM_SYNC_RGB_MASTER = 1,
+        RS2_D500_INTERCAM_SYNC_PWM_MASTER = 2,
+        RS2_D500_INTERCAM_SYNC_EXTERNAL_MASTER = 3,
+        RS2_D500_INTERCAM_SYNC_COUNT
+    } rs2_d500_intercam_sync_mode;
+    const char * rs2_d500_intercam_sync_mode_to_string( rs2_d500_intercam_sync_mode mode );
 
       /** \brief values for RS2_OPTION_GYRO_SENSITIVITY option. */
     typedef enum rs2_gyro_sensitivity

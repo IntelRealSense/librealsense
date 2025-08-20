@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -23,7 +23,8 @@ namespace rs2
     class d500_on_chip_calib_manager : public process_manager
     {
     public:
-        d500_on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, device dev);
+        d500_on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, 
+            device dev);
 
         enum calib_action
         {
@@ -85,7 +86,7 @@ namespace rs2
             RS2_CALIB_STATE_ABORT_CALLED
         };
 
-        d500_autocalib_notification_model(std::string name, std::shared_ptr<d500_on_chip_calib_manager> manager, bool expaned);
+        d500_autocalib_notification_model(std::string name, std::shared_ptr<process_manager> manager, bool expaned);
 
         d500_on_chip_calib_manager& get_manager() { return *std::dynamic_pointer_cast<d500_on_chip_calib_manager>(update_manager); }
         void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;

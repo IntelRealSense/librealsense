@@ -1,5 +1,5 @@
 info("Building with CUDA requires CMake v3.8+")
-cmake_minimum_required(VERSION 3.8.0)
+cmake_minimum_required(VERSION 3.10)
 enable_language( CUDA )
 
 find_package(CUDA REQUIRED)

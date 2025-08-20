@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include "rs-dds-sensor-proxy.h"
@@ -8,10 +8,10 @@
 
 namespace librealsense {
 
-// For cases when checking if this is< depth_sensor > (like realsense-viewer::subdevice_model)
+// For cases when checking if this is< depth_sensor > or is< depth_stereo_sensor > (like realsense-viewer::subdevice_model and on-chip-calib)
 class dds_depth_sensor_proxy
     : public dds_sensor_proxy
-    , public depth_sensor
+    , public depth_stereo_sensor
 {
     using super = dds_sensor_proxy;
 
@@ -25,6 +25,9 @@ public:
 
     // Needed by abstract interfaces
     float get_depth_scale() const override;
+    float get_stereo_baseline_mm() const override;
+
+    bool extend_to( rs2_extension, void ** ptr ) override;  // extendable_interface
 
 protected:
     void add_no_metadata( frame *, streaming_impl & ) override;

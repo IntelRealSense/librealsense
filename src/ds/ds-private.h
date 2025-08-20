@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -60,6 +60,7 @@ namespace librealsense
         const uint8_t DS5_THERMAL_COMPENSATION              = 0xF;
         const uint8_t DS5_EMITTER_FREQUENCY                 = 0x10;
         const uint8_t DS5_DEPTH_AUTO_EXPOSURE_MODE          = 0x11;
+
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE                      = 1;
 
@@ -126,13 +127,14 @@ namespace librealsense
             HKR_THERMAL_COMPENSATION = 0x84, // Control HKR thermal compensation
             GETAELIMITS = 0x89,   //Auto Exp/Gain Limit command FW version >= 5.13.0.200
             SETAELIMITS = 0x8A,   //Auto Exp/Gain Limit command FW version >= 5.13.0.200
-
-
+            SAFETY_PRESET_READ = 0x94,  // Read safety preset from given index
+            SAFETY_PRESET_WRITE = 0x95,   // Write safety preset to given index
             APM_STROBE_SET = 0x96,        // Control if Laser on constantly or pulse
             APM_STROBE_GET = 0x99,        // Query if Laser on constantly or pulse
             SET_HKR_CONFIG_TABLE = 0xA6, // HKR Set Internal sub calibration table
             GET_HKR_CONFIG_TABLE = 0xA7, // HKR Get Internal sub calibration table
             CALIBRESTOREEPROM = 0xA8, // HKR Store EEPROM Calibration
+            RGB_TNR = 0xAA,      // RGB Temporal Noise Reduction
             GET_FW_LOGS = 0xB4, // Get FW logs extended format
             SET_CALIB_MODE = 0xB8,      // Set Calibration Mode
             GET_CALIB_STATUS = 0xB9      // Get Calibration Status
@@ -207,6 +209,7 @@ namespace librealsense
             CAP_INTERCAM_HW_SYNC = (1u << 8),
             CAP_IP65 = (1u << 9),
             CAP_IR_FILTER = (1u << 10),
+            CAP_BMI_088 = (1u << 11),
             CAP_MAX
         };
 
@@ -221,7 +224,8 @@ namespace librealsense
             { ds_caps::CAP_BMI_055,          "IMU BMI_055"       },
             { ds_caps::CAP_BMI_085,          "IMU BMI_085"       },
             { ds_caps::CAP_IP65,             "IP65 Sealed device"},
-            { ds_caps::CAP_IR_FILTER,        "IR filter"         }
+            { ds_caps::CAP_IR_FILTER,        "IR filter"         },
+            { ds_caps::CAP_BMI_088,          "IMU BMI_088"       }
         };
 
         inline ds_caps operator &(const ds_caps lhs, const ds_caps rhs)
@@ -552,6 +556,7 @@ namespace librealsense
 
         const uint8_t I2C_IMU_BMI055_ID_ACC = 0xfa;
         const uint8_t I2C_IMU_BMI085_ID_ACC = 0x1f;
+        const uint8_t I2C_IMU_BMI088_ID_ACC = 0x1e;
 
         enum gvd_fields_size
         {

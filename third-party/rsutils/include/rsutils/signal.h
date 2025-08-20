@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -112,7 +112,11 @@ public:
     }
 
     // How many subscriptions are active
-    size_t size() const { return _impl->subscribers.size(); }
+    size_t size() const
+    {
+        std::lock_guard< std::mutex > locker( _impl->mutex );
+        return _impl->subscribers.size();
+    }
 };
 
 

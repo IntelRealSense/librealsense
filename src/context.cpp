@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 #include "context.h"
 #include "device-info.h"
@@ -35,6 +35,10 @@ namespace librealsense {
         auto const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
         auto config = rsutils::json_config::load_from_file( filename );
 
+        if (config.is_discarded())
+        {
+            LOG_ERROR( "No valid configuration file found at : " << filename << " loading defaults" );
+        }
         // Take only the 'context' part of it
         config = rsutils::json_config::load_settings( config, "context", "config-file" );
 
@@ -45,8 +49,6 @@ namespace librealsense {
 
 
     context::context( json const & settings )
-        : _settings( load_settings( settings ) )  // global | application | local
-        , _device_mask( _settings.nested( "device-mask" ).default_value< unsigned >( RS2_PRODUCT_LINE_ANY ) )
     {
         static bool version_logged = false;
         if( ! version_logged )
@@ -54,6 +56,9 @@ namespace librealsense {
             version_logged = true;
             LOG_DEBUG( "Librealsense VERSION: " << RS2_API_FULL_VERSION_STR );
         }
+
+         _settings = load_settings( settings );  // global | application | local
+         _device_mask = _settings.nested( "device-mask" ).default_value< unsigned >( RS2_PRODUCT_LINE_ANY );
     }
 
 
@@ -88,7 +93,12 @@ namespace librealsense {
 
     /*static*/ std::shared_ptr< context > context::make( char const * json_settings )
     {
-        return make( ( ! json_settings || ! *json_settings ) ? json::object() : json::parse( json_settings ) );
+        if ( ! json_settings || ! *json_settings )
+            return make(json::object());
+
+        json raw_j = json::parse(json_settings, nullptr, false);
+
+        return make(raw_j);
     }
 
 
@@ -116,7 +126,7 @@ namespace librealsense {
         {
             for( auto & dev_info : factory->query_devices( requested_mask ) )
             {
-                LOG_INFO( "... " << dev_info->get_address() );
+                LOG_DEBUG( "... " << dev_info->get_address() );
                 list.push_back( dev_info );
             }
         }
@@ -124,12 +134,12 @@ namespace librealsense {
         {
             if( auto dev_info = item.second.lock() )
             {
-                LOG_INFO( "... " << dev_info->get_address() );
+                LOG_DEBUG( "... " << dev_info->get_address() );
                 list.push_back( dev_info );
             }
         }
-        LOG_INFO( "Found " << list.size() << " RealSense devices (0x" << std::hex << requested_mask << " requested & 0x"
-                           << get_device_mask() << " from device-mask in settings)" << std::dec );
+        LOG_DEBUG( "Found " << list.size() << " RealSense devices (0x" << std::hex << requested_mask
+                            << " requested & 0x" << get_device_mask() << " from device-mask in settings)" << std::dec );
         return list;
     }
 

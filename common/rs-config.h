@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <rsutils/json.h>
@@ -86,6 +86,101 @@ namespace rs2
         void remove(const char* key);
 
         static config_file& instance();
+
+        // Retrieves a value from a nested JSON structure using dot notation
+        template< typename T >
+        T get_nested( const std::string & path, const T & def ) const
+        {
+            std::istringstream ss( path );
+            std::string token;
+            const rsutils::json * current = &_j;
+
+            while( std::getline( ss, token, '.' ) )
+            {
+                if( ! current->contains( token ) )
+                {
+                    return def;
+                }
+                current = &( *current )[token];  // getting to the next level in the JSON structure
+            }
+
+            T ret_value;
+            if (!current->get_ex<T>(ret_value))
+            {
+                return def;
+            }
+            return ret_value;
+        }
+
+        // Sets a value in a nested JSON structure using dot notation
+        template< typename T >
+        void set_nested( const std::string & path, const T & val )
+        {
+            std::vector< std::string > keys;
+            std::istringstream ss( path );
+            std::string token;
+
+            while( std::getline( ss, token, '.' ) )
+            {
+                keys.push_back( token );
+            }
+            rsutils::json * current = &_j;
+
+            for( size_t i = 0; i < keys.size() - 1; ++i )
+            {
+                if( ! current->contains( keys[i] ) )
+                {
+                    ( *current )[keys[i]] = rsutils::json::object();
+                }
+                current = &( *current )[keys[i]];
+            }
+
+            ( *current )[keys.back()] = val;
+            save();
+        }
+
+        // Sets a default value to the config and default map
+        template< typename T >
+        void set_nested_default( const std::string & path, const T & default_val )
+        {
+            std::vector< std::string > keys;
+            std::istringstream ss( path );
+            std::string token;
+
+            while( std::getline( ss, token, '.' ) )
+            {
+                keys.push_back( token );
+            }
+
+            rsutils::json * current = &_j;
+            bool exists = true;
+
+            for( const auto & key : keys )
+            {
+                if( ! current->contains( key ) )
+                {
+                    exists = false;
+                    break;
+                }
+                current = &( *current )[key];
+            }
+
+            // If it doesn't exist, set the default value in JSON 
+            if( ! exists )
+            {
+                current = &_j;
+                for( size_t i = 0; i < keys.size() - 1; ++i )
+                {
+                    if( ! current->contains( keys[i] ) )
+                    {
+                        ( *current )[keys[i]] = rsutils::json::object();
+                    }
+                    current = &( *current )[keys[i]];
+                }
+                ( *current )[keys.back()] = default_val;
+                save();
+            }
+        }
 
     private:
         std::string get_default(const char* key, const char* def) const;

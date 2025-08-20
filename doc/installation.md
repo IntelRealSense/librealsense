@@ -43,7 +43,7 @@ Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this cap
    sudo apt-get install git wget cmake build-essential
    ```
 4. Prepare Linux Backend and the Dev. Environment \
-   Unplug any connected Intel RealSense camera and run:
+   Unplug any connected RealSense camera and run:
    ```sh
    sudo apt-get install libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev at
    ```
@@ -71,8 +71,9 @@ if not the SDK will use a timer polling approach which is less sensitive for dev
    * Download and unzip the latest stable _librealsense2_ version from `master` branch \
      [IntelRealSense.zip](https://github.com/IntelRealSense/librealsense/archive/master.zip)
 
-2. Run Intel Realsense permissions script from _librealsense2_ root directory:
+2. Run Realsense permissions script from _librealsense2_ root directory:
    ```sh
+   cd librealsense
    ./scripts/setup_udev_rules.sh
    ```
    Notice: You can always remove permissions by running: `./scripts/setup_udev_rules.sh --uninstall`

@@ -49,8 +49,11 @@ public class StreamProfileSelector implements Comparable<StreamProfileSelector> 
     public String getResolutionString() {
         if(!getProfile().is(Extension.VIDEO_PROFILE))
             return "";
-        VideoStreamProfile vsp = getProfile().as(Extension.VIDEO_PROFILE);
-        return String.valueOf(vsp.getWidth()) + "x" + String.valueOf(vsp.getHeight());
+        try (VideoStreamProfile vsp = getProfile().as(Extension.VIDEO_PROFILE)) {
+            return String.valueOf(vsp.getWidth()) + "x" + String.valueOf(vsp.getHeight());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private int findIndex(StreamFormat format, int fps, int width, int height){

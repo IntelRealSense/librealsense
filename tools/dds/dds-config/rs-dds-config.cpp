@@ -1,12 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
-#include <librealsense2/rs.hpp>
+#include <rsutils/type/eth-config.h>
 
-#include "eth-config.h"
-
-#include <tclap/CmdLine.h>
-#include <tclap/ValueArg.h>
+#include <common/cli.h>
 
 #include <rsutils/os/special-folder.h>
 #include <rsutils/json.h>
@@ -15,28 +12,17 @@
 #include <rsutils/string/from.h>
 
 #include <iostream>
+#include <fstream>
 #include <thread>
 #include <set>
 
-using namespace TCLAP;
+#include <librealsense2/rs.hpp>
+
+
 using rsutils::json;
 using rsutils::type::ip_address;
-
-
-static json load_settings( json const & local_settings )
-{
-    // Load the realsense configuration file settings
-    std::string const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
-    auto config = rsutils::json_config::load_from_file( filename );
-
-    // Take just the 'context' part
-    config = rsutils::json_config::load_settings( config, "context", "config-file" );
-
-    // Patch the given local settings into the configuration
-    config.override( local_settings, "local settings" );
-
-    return config;
-}
+using rsutils::type::eth_config;
+using rsutils::type::link_priority;
 
 
 uint32_t const GET_ETH_CONFIG = 0xBB;
@@ -122,15 +108,38 @@ eth_config get_eth_config( rs2::debug_protocol hwm, bool golden )
 }
 
 
+struct describe_device
+{
+    rs2::device const & device;
+    describe_device( rs2::device const & d ) : device( d ) {}
+};
+
+std::ostream & operator<<( std::ostream & os, describe_device const & dd )
+{
+    os << dd.device.get_description();
+    if( dd.device.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
+        os << ", FW version " << dd.device.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
+    return os;
+}
+
+
+void list_device( rs2::device const & device )
+{
+    INFO( describe_device( device ) );
+}
+
+
 bool find_device( rs2::context const & ctx,
                   rs2::device & device,
                   eth_config & config,
-                  ValueArg< std::string > & sn_arg,
+                  rs2::cli::value< std::string > & sn_arg,
                   bool const golden,
-                  std::set< std::string > & devices_looked_at )
+                  std::set< std::string > & devices_looked_at,
+                  bool & recovery )
 {
     auto device_list = ctx.query_devices();
     auto const n_devices = device_list.size();
+    bool more_than_one_device = false;
     for( uint32_t i = 0; i < n_devices; ++i )
     {
         auto possible_device = device_list[i];
@@ -141,17 +150,23 @@ bool find_device( rs2::context const & ctx,
                 continue;
             if( ! devices_looked_at.insert( sn ).second )
                 continue;  // insert failed: device was already looked at
-            LOG_DEBUG( "trying " << possible_device.get_description() );
-            config = get_eth_config( possible_device, golden );
+            LOG_DEBUG( "trying " << describe_device( possible_device ) );
+            std::string name = possible_device.get_info( RS2_CAMERA_INFO_NAME );
+            if( name.find( "Recovery" ) != std::string::npos )
+                recovery = true;
+            else
+                config = get_eth_config( possible_device, golden );
             if( device )
-                throw std::runtime_error( "More than one device is available; please use --serial-number" );
-            device = possible_device;
+                more_than_one_device = true;
+            list_device( device = possible_device );
         }
         catch( std::exception const & e )
         {
             LOG_DEBUG( "failed! " << e.what() );
         }
     }
+    if( more_than_one_device )
+        throw std::runtime_error( "More than one device is available; please use --serial-number" );
     return device;
 }
 
@@ -159,94 +174,113 @@ bool find_device( rs2::context const & ctx,
 int main( int argc, char * argv[] )
 try
 {
-    CmdLine cmd( "librealsense rs-dds-config tool", ' ', RS2_API_FULL_VERSION_STR );
-    SwitchArg debug_arg( "", "debug", "Enable debug (-D-) output; by default only errors (-E-) are shown" );
-    SwitchArg quiet_arg( "", "quiet", "Suppress regular informational (-I-) messages" );
-    SwitchArg reset_arg( "", "reset", "Hardware reset without making any changes" );
-    SwitchArg no_reset_arg( "", "no-reset", "Do not hardware reset after changes are made" );
-    SwitchArg golden_arg( "", "golden", "Show R/O golden values vs. current; mutually exclusive with any changes" );
-    SwitchArg factory_reset_arg( "", "factory-reset", "Reset settings back to the --golden values" );
-    ValueArg< std::string > sn_arg( "", "serial-number",
-                                    "Device serial-number to use, if more than one device is available",
-                                    false, "", "S/N" );
-    ValueArg< std::string > ip_arg( "", "ip",
-                                    "Device static IP address to use when DHCP is off",
-                                    false, "", "1.2.3.4" );
-    ValueArg< std::string > mask_arg( "", "mask",
-                                    "Device static IP network mask to use when DHCP is off",
-                                    false, "", "1.2.3.4" );
-    ValueArg< std::string > gateway_arg( "", "gateway",
-                                      "Device static IP network mask to use when DHCP is off",
-                                      false, "", "1.2.3.4" );
-    ValueArg< std::string > dhcp_arg( "", "dhcp",
-                                      "DHCP dynamic IP discovery 'on' or 'off'",
-                                      false, "on", "on/off" );
-    ValueArg< uint32_t > dhcp_timeout_arg( "", "dhcp-timeout",
-                                           "Seconds before DHCP times out and falls back to a static IP",
-                                           false, 30, "seconds" );
-    ValueArg< uint32_t > link_timeout_arg( "", "link-timeout",
-                                           "Milliseconds before --eth-first link times out and falls back to USB",
-                                           false, 4000, "milliseconds" );
-    ValueArg< int > domain_id_arg( "", "domain-id", "DDS Domain ID to use (default is 0)", false, 0, "0-232" );
-    SwitchArg usb_first_arg( "", "usb-first", "Prioritize USB before Ethernet" );
-    SwitchArg eth_first_arg( "", "eth-first", "Prioritize Ethernet and fall back to USB after link timeout" );
-    SwitchArg dynamic_priority_arg( "", "dynamic-priority", "Dynamically prioritize the last-working connection method (the default)" );
+    using cli = rs2::cli_no_dds;
 
-    // In reverse order to how they will be listed
-    cmd.add( no_reset_arg );
-    cmd.add( domain_id_arg );
-    cmd.add( gateway_arg );
-    cmd.add( mask_arg );
-    cmd.add( ip_arg );
-    cmd.add( dhcp_timeout_arg );
-    cmd.add( dhcp_arg );
-    cmd.add( link_timeout_arg );
-    cmd.add( dynamic_priority_arg );
-    cmd.add( eth_first_arg );
-    cmd.add( usb_first_arg );
-    cmd.add( factory_reset_arg );
-    cmd.add( golden_arg );
-    cmd.add( reset_arg );
-    cmd.add( sn_arg );
-    cmd.add( quiet_arg );
-    cmd.add( debug_arg );
-    cmd.parse( argc, argv );
+    cli::flag quiet_arg( "quiet", "Suppress regular informational (-I-) messages" );
+    cli::flag reset_arg( "reset", "Hardware reset without making any changes" );
+    cli::flag disable_arg( "disable", "Disable DDS in all librealsense examples & tools by default" );
+    cli::flag no_reset_arg( "no-reset", "Do not hardware reset after changes are made" );
+    cli::flag golden_arg( "golden", "Show R/O golden values vs. current; mutually exclusive with any changes" );
+    cli::flag factory_reset_arg( "factory-reset", "Reset settings back to the --golden values" );
+    cli::value< std::string > sn_arg( "serial-number", "S/N", "", "Device serial-number to use, if more than one device is available" );
+    cli::value< std::string > ip_arg( "ip", "address", "", "Device static IP address to use when DHCP is off" );
+    cli::value< std::string > mask_arg( "mask", "1.2.3.4", "", "Device static IP network mask to use when DHCP is off" );
+    cli::value< std::string > gateway_arg( "gateway", "1.2.3.4", "", "Gateway to use when DHCP is off" );
+    cli::value< std::string > dhcp_arg( "dhcp", "on/off", "on", "DHCP dynamic IP discovery 'on' or 'off'" );
+    cli::value< uint32_t > dhcp_timeout_arg( "dhcp-timeout", "seconds", 30, "Seconds before DHCP times out and falls back to a static IP" );
+    cli::value< uint32_t > link_timeout_arg( "link-timeout", "milliseconds", 4000, "Milliseconds before --eth-first link times out and falls back to USB" );
+    cli::value< uint32_t > mtu_arg( "mtu", "bytes", 9000, "Size per Ethernet packet. 500-9000 in 500 byte steps" );
+    cli::value< uint16_t > trans_delay_arg( "transmission-delay", "microseconds", 0, "Wait this much after each packet is sent before sending next one. 0-144 in 3 microsecond steps" );
+    cli::value< int > domain_id_arg( "domain-id", "0-232", 0, "DDS Domain ID to use (default is 0)" );
+    cli::flag usb_first_arg( "usb-first", "Prioritize USB and fall back to Ethernet after link timeout" );
+    cli::flag eth_first_arg( "eth-first", "Prioritize Ethernet and fall back to USB after link timeout" );
+    cli::flag dynamic_priority_arg( "dynamic-priority", "Dynamically prioritize the last-working connection method (the default)" );
+
+    json settings = cli( "rs-dds-config Ethernet device configuration tool" )
+                        .arg( quiet_arg )
+                        .arg( sn_arg )
+                        .arg( reset_arg )
+                        .arg( disable_arg )
+                        .arg( golden_arg )
+                        .arg( factory_reset_arg )
+                        .arg( usb_first_arg )
+                        .arg( eth_first_arg )
+                        .arg( dynamic_priority_arg )
+                        .arg( link_timeout_arg )
+                        .arg( dhcp_arg )
+                        .arg( dhcp_timeout_arg )
+                        .arg( mtu_arg )
+                        .arg( trans_delay_arg )
+                        .arg( ip_arg )
+                        .arg( mask_arg )
+                        .arg( gateway_arg )
+                        .arg( domain_id_arg )
+                        .arg( no_reset_arg )
+                        .process( argc, argv );
 
     g_quiet = quiet_arg.isSet();
+
+    if( disable_arg.isSet() )
+    {
+        auto const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
+        auto config = rsutils::json_config::load_from_file( filename );
+        
+        if( config.nested( "context", "dds", "enabled" ).default_value( false ) )
+        {
+            config["context"]["dds"].erase("enabled");
+            std::ofstream out( filename );
+            out << std::setw( 2 ) << config;
+            out.close();
+            INFO( "DDS has been disabled by default" );
+        }
+        else
+        {
+            INFO( "DDS is already disabled; no changes made" );
+        }
+        return EXIT_SUCCESS;
+    }
+    
+    // Enable DDS in future runs
+    auto const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
+    auto config = rsutils::json_config::load_from_file( filename );
+    if( ! config )
+        config = json::object();
+
+    if( ! config.nested( "context", "dds", "enabled" ).default_value( false ) )
+    {
+        config["context"]["dds"]["enabled"] = true;
+        try
+        {
+            std::ofstream out( filename );
+            out << std::setw( 2 ) << config;
+            out.close();
+            INFO( "DDS is now enabled by default in " RS2_CONFIG_FILENAME );
+        }
+        catch( std::exception const & e )
+        {
+            std::cout << "-W-  FAILED to enable DDS by default: " << e.what() << std::endl;
+        }
+    }
+
     bool const golden = golden_arg.isSet();
 
-    rs2::log_to_console( debug_arg.isSet() ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_ERROR );
-
     // Create a RealSense context and look for a device
-    json settings = load_settings( json::object() );
     rs2::context ctx( settings.dump() );
 
     rs2::device device;
     eth_config current;
     std::set< std::string > devices_looked_at;
-    if( ! find_device( ctx, device, current, sn_arg, golden, devices_looked_at ) )
+    bool recovery = false;
+    if( ! find_device( ctx, device, current, sn_arg, golden, devices_looked_at, recovery ) )
     {
-        auto dds_enabled = settings.nested( "dds", "enabled", &json::is_boolean );
-        if( ! dds_enabled || dds_enabled.get< bool >() )
-        {
-            LOG_DEBUG( "Waiting for ETH devices..." );
-            int tries = 5;
-            while( tries-- > 0 )
-            {
-                std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
-                if( find_device( ctx, device, current, sn_arg, golden, devices_looked_at ) )
-                    break;
-            }
-        }
-        if( ! device )
-        {
-            if( sn_arg.isSet() )
-                throw std::runtime_error( "Device not found or does not support Eth" );
+        if( sn_arg.isSet() )
+            throw std::runtime_error( "Device not found or does not support Eth" );
 
-            throw std::runtime_error( "No device found supporting Eth" );
-        }
+        throw std::runtime_error( "No device found supporting Eth" );
     }
-    INFO( "Device: " << device.get_description() );
+
+    if( recovery )
+        throw std::runtime_error( "Recovery devices don't support Ethernet params configuration" );
 
     eth_config requested( current );
     if( golden || factory_reset_arg.isSet() || reset_arg.isSet() )
@@ -315,6 +349,14 @@ try
                 throw std::invalid_argument( "--domain-id must be 0-232" );
             requested.dds.domain_id = domain_id_arg.getValue();
         }
+        if( mtu_arg.isSet() )
+        {
+            requested.link.mtu = mtu_arg.getValue();
+        }
+        if( trans_delay_arg.isSet() )
+        {
+            requested.transmission_delay = trans_delay_arg.getValue();
+        }
     }
 
     if( ! g_quiet )
@@ -340,7 +382,7 @@ try
                 else
                     INFO( indent( 4 ) << setting( "link", "OFF" ) );
             }
-            INFO( indent( 8 ) << setting( "MTU, bytes", current.link.mtu ) );
+            INFO( indent( 8 ) << setting( "MTU, bytes", current.link.mtu, requested.link.mtu ) );
             INFO( indent( 8 ) << setting( "timeout, ms", current.link.timeout, requested.link.timeout ) );
             INFO( indent( 8 ) << setting( "priority", current.link.priority, requested.link.priority ) );
         }
@@ -350,6 +392,8 @@ try
             INFO( indent( 4 ) << setting( "DHCP", current_dhcp, requested_dhcp ) );
             INFO( indent( 8 ) << setting( "timeout, sec", current.dhcp.timeout, requested.dhcp.timeout ) );
         }
+        INFO( indent( 4 ) << setting( "transmission delay, us", current.transmission_delay, requested.transmission_delay ) );
+        std::cout << std::endl;
     }
 
     if( golden )
@@ -392,5 +436,6 @@ catch( const rs2::error & e )
 catch( const std::exception & e )
 {
     std::cerr << "-F- " << e.what() << std::endl;
+    std::cerr << "-F- Did not apply requested configuration changes" << std::endl;
     return EXIT_FAILURE;
 }

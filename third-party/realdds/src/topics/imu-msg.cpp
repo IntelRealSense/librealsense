@@ -1,9 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-5 RealSense, Inc. All Rights Reserved.
 
-#include <realdds/topics/ros2/ros2imu.h>
 #include <realdds/topics/imu-msg.h>
-#include <realdds/topics/ros2/ros2imuPubSubTypes.h>
+#include <realdds/topics/ros2/sensor_msgs/msg/ImuPubSubTypes.h>
 
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>

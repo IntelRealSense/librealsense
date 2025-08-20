@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #include "presets.h"
 
@@ -361,7 +361,41 @@ namespace librealsense
         p.depth_gain.gain = 16.f;
     }
 
-    void default_430(preset& p)
+    void default_430_color_only(preset& p)
+    {
+        p.color_control.disableRAUColor = 0;
+        p.color_control.disableSADColor = 0;
+        p.color_control.disableSADNormalize = 0;
+        p.color_control.disableSLOLeftColor = 0;
+        p.color_control.disableSLORightColor = 0;
+        p.cc.colorCorrection1 = 0.298828f;
+        p.cc.colorCorrection2 = 0.293945f;
+        p.cc.colorCorrection3 = 0.293945f;
+        p.cc.colorCorrection4 = 0.114258f;
+        p.cc.colorCorrection5 = 0.f;
+        p.cc.colorCorrection6 = 0.f;
+        p.cc.colorCorrection7 = 0.f;
+        p.cc.colorCorrection8 = 0.f;
+        p.cc.colorCorrection9 = 0.f;
+        p.cc.colorCorrection10 = 0.f;
+        p.cc.colorCorrection11 = 0.f;
+        p.cc.colorCorrection12 = 0.f;
+        p.color_auto_exposure.auto_exposure = 1;
+        p.color_exposure.exposure = 156;
+        p.color_backlight_compensation.backlight_compensation = 0;
+        p.color_brightness.brightness = 0;
+        p.color_contrast.contrast = 50;
+        p.color_gain.gain = 64;
+        p.color_gamma.gamma = 300;
+        p.color_hue.hue = 0;
+        p.color_power_line_frequency.power_line_frequency = 3;
+        p.color_saturation.saturation = 64;
+        p.color_sharpness.sharpness = 50;
+        p.color_auto_white_balance.auto_white_balance = 1;
+        p.color_white_balance.white_balance = 4600;
+    }
+
+    void default_430_except_color(preset& p)
     {
         p.depth_controls.deepSeaMedianThreshold = 500;
         p.depth_controls.deepSeaNeighborThreshold = 7;
@@ -385,11 +419,6 @@ namespace librealsense
         p.rsvc.minWEsum = 3;
         p.rsvc.uShrink = 3;
         p.rsvc.vShrink = 1;
-        p.color_control.disableRAUColor = 0;
-        p.color_control.disableSADColor = 0;
-        p.color_control.disableSADNormalize = 0;
-        p.color_control.disableSLOLeftColor = 0;
-        p.color_control.disableSLORightColor = 0;
         p.rctc.rauDiffThresholdBlue = 51;
         p.rctc.rauDiffThresholdGreen = 51;
         p.rctc.rauDiffThresholdRed = 51;
@@ -404,18 +433,6 @@ namespace librealsense
         p.spc.sloK2PenaltyMod2 = 130;
         p.hdad.lambdaAD = 800.f;
         p.hdad.lambdaCensus = 26.f;
-        p.cc.colorCorrection1 = 0.298828f;
-        p.cc.colorCorrection2 = 0.293945f;
-        p.cc.colorCorrection3 = 0.293945f;
-        p.cc.colorCorrection4 = 0.114258f;
-        p.cc.colorCorrection5 = 0.f;
-        p.cc.colorCorrection6 = 0.f;
-        p.cc.colorCorrection7 = 0.f;
-        p.cc.colorCorrection8 = 0.f;
-        p.cc.colorCorrection9 = 0.f;
-        p.cc.colorCorrection10 = 0.f;
-        p.cc.colorCorrection11 = 0.f;
-        p.cc.colorCorrection12 = 0.f;
         p.depth_table.depthClampMax = 65536;
         p.depth_table.depthClampMin = 0;
         p.depth_table.depthUnits = 1000;
@@ -427,22 +444,15 @@ namespace librealsense
         p.laser_power.laser_power = 150.f;
         p.depth_exposure.exposure = 8500.f;
         p.depth_auto_exposure.auto_exposure = 1;
-        p.color_auto_exposure.auto_exposure = 1;
-        p.color_exposure.exposure = 156;
-        p.color_backlight_compensation.backlight_compensation = 0;
-        p.color_brightness.brightness = 0;
-        p.color_contrast.contrast = 50;
-        p.color_gain.gain = 64;
-        p.color_gamma.gamma = 300;
-        p.color_hue.hue = 0;
-        p.color_power_line_frequency.power_line_frequency = 3;
-        p.color_saturation.saturation = 64;
-        p.color_sharpness.sharpness = 50;
-        p.color_auto_white_balance.auto_white_balance = 1;
-        p.color_white_balance.white_balance = 4600;
         p.depth_gain.gain = 16.f;
         p.hdad.ignoreSAD = 0;
         p.amplitude_factor.amplitude = 0.f;
+    }
+
+    void default_430(preset& p)
+    {
+        default_430_except_color(p);
+        default_430_color_only(p);
     }
     // the only different between high res to mid & low is the amplitude_factor value
     void default_450_high_res(preset& p)
@@ -450,8 +460,7 @@ namespace librealsense
         p.amplitude_factor.amplitude = 0.f;
     }
 
-    //used as base preset for the D450
-    void default_450_mid_low_res(preset& p)
+    void default_450_mid_low_res_except_color(preset& p)
     {
         p.depth_controls.deepSeaMedianThreshold = 500;
         p.depth_controls.deepSeaNeighborThreshold = 7;
@@ -475,11 +484,6 @@ namespace librealsense
         p.rsvc.minWEsum = 3;
         p.rsvc.uShrink = 3;
         p.rsvc.vShrink = 1;
-        p.color_control.disableRAUColor = 0;
-        p.color_control.disableSADColor = 0;
-        p.color_control.disableSADNormalize = 0;
-        p.color_control.disableSLOLeftColor = 0;
-        p.color_control.disableSLORightColor = 0;
         p.rctc.rauDiffThresholdBlue = 51;
         p.rctc.rauDiffThresholdGreen = 51;
         p.rctc.rauDiffThresholdRed = 51;
@@ -494,6 +498,29 @@ namespace librealsense
         p.spc.sloK2PenaltyMod2 = 130;
         p.hdad.lambdaAD = 800.f;
         p.hdad.lambdaCensus = 26.f;
+        p.depth_table.depthClampMax = 65536;
+        p.depth_table.depthClampMin = 0;
+        p.depth_table.depthUnits = 1000;
+        p.depth_table.disparityShift = 0;
+        p.ae.meanIntensitySetPoint = 1000;
+        p.census.uDiameter = 9;
+        p.census.vDiameter = 9;
+        p.laser_state.laser_state = 1;
+        p.laser_power.laser_power = 150.f;
+        p.depth_exposure.exposure = 8500.f;
+        p.depth_auto_exposure.auto_exposure = 1;
+        p.depth_gain.gain = 16.f;
+        p.hdad.ignoreSAD = 0;
+        p.amplitude_factor.amplitude = 0.08f;
+    }
+
+    void default_450_mid_low_res_color_only(preset& p)
+    {
+        p.color_control.disableRAUColor = 0;
+        p.color_control.disableSADColor = 0;
+        p.color_control.disableSADNormalize = 0;
+        p.color_control.disableSLOLeftColor = 0;
+        p.color_control.disableSLORightColor = 0;
         p.cc.colorCorrection1 = -0.493164f;
         p.cc.colorCorrection2 = 0.831055f;
         p.cc.colorCorrection3 = 0.831055f;
@@ -506,17 +533,6 @@ namespace librealsense
         p.cc.colorCorrection10 = -0.272461f;
         p.cc.colorCorrection11 = -0.272461f;
         p.cc.colorCorrection12 = -0.355469f;
-        p.depth_table.depthClampMax = 65536;
-        p.depth_table.depthClampMin = 0;
-        p.depth_table.depthUnits = 1000;
-        p.depth_table.disparityShift = 0;
-        p.ae.meanIntensitySetPoint = 1000;
-        p.census.uDiameter = 9;
-        p.census.vDiameter = 9;
-        p.laser_state.laser_state = 1;
-        p.laser_power.laser_power = 150.f;
-        p.depth_exposure.exposure = 8500.f;
-        p.depth_auto_exposure.auto_exposure = 1;
         p.color_auto_exposure.auto_exposure = 1;
         p.color_exposure.exposure = 156;
         p.color_backlight_compensation.backlight_compensation = 0;
@@ -530,10 +546,105 @@ namespace librealsense
         p.color_sharpness.sharpness = 50;
         p.color_auto_white_balance.auto_white_balance = 1;
         p.color_white_balance.white_balance = 4600;
+    }
+
+    //used as base preset for the D450
+    void default_450_mid_low_res(preset& p)
+    {
+        default_450_mid_low_res_except_color(p);
+        default_450_mid_low_res_color_only(p);
+    }
+
+    // D436 has same depth as D435 and same color as D455
+    void default_436(preset& p)
+    {
+        default_430_except_color(p);
+        default_450_mid_low_res_color_only(p);
+    }
+
+    void default_585S( preset & p )
+    {
+        p.depth_controls.deepSeaMedianThreshold = 97;
+        p.depth_controls.deepSeaNeighborThreshold = 0;
+        p.depth_controls.deepSeaSecondPeakThreshold = 0;
+        p.depth_controls.lrAgreeThreshold = 146;
+        p.depth_controls.minusDecrement = 20;
+        p.depth_controls.plusIncrement = 0;
+        p.depth_controls.scoreThreshA = 0;
+        p.depth_controls.scoreThreshB = 3043;
+        p.depth_controls.textureCountThreshold = 0;
+        p.depth_controls.textureDifferenceThreshold = 0;
+        p.rsm.diffThresh = 7.96875f;
+        p.rsm.removeThresh = 115;
+        p.rsm.rsmBypass = 0; // inverted field, should be the opposite in the json
+        p.rsm.sloRauDiffThresh = 3.96875f;
+        p.rsvc.minEast = 1;
+        p.rsvc.minNorth = 1;
+        p.rsvc.minNSsum = 3;
+        p.rsvc.minSouth = 1;
+        p.rsvc.minWest = 1;
+        p.rsvc.minWEsum = 3;
+        p.rsvc.uShrink = 3;
+        p.rsvc.vShrink = 1;
+        p.color_control.disableRAUColor = 1;
+        p.color_control.disableSADColor = 1;
+        p.color_control.disableSADNormalize = 1;
+        p.color_control.disableSLOLeftColor = 1;
+        p.color_control.disableSLORightColor = 1;
+        p.rctc.rauDiffThresholdBlue = 0;
+        p.rctc.rauDiffThresholdGreen = 51;
+        p.rctc.rauDiffThresholdRed = 51;
+        p.sctc.diffThresholdBlue = 72;
+        p.sctc.diffThresholdGreen = 72;
+        p.sctc.diffThresholdRed = 72;
+        p.spc.sloK1Penalty = 0;
+        p.spc.sloK1PenaltyMod1 = 102;
+        p.spc.sloK1PenaltyMod2 = 71;
+        p.spc.sloK2Penalty = 146;
+        p.spc.sloK2PenaltyMod1 = 192;
+        p.spc.sloK2PenaltyMod2 = 129;
+        p.hdad.lambdaAD = 800.f;
+        p.hdad.lambdaCensus = 26.f;
+        p.cc.colorCorrection1 = -0.492961f;
+        p.cc.colorCorrection2 = 0.831006f;
+        p.cc.colorCorrection3 = 0.831006f;
+        p.cc.colorCorrection4 = -0.367724f;
+        p.cc.colorCorrection5 = -0.133556f;
+        p.cc.colorCorrection6 = -0.323342f;
+        p.cc.colorCorrection7 = -0.323342f;
+        p.cc.colorCorrection8 = 1.19149f;
+        p.cc.colorCorrection9 = 0.908797f;
+        p.cc.colorCorrection10 = -0.272686f;
+        p.cc.colorCorrection11 = -0.272686f;
+        p.cc.colorCorrection12 = -0.355955f;
+        p.depth_table.depthClampMax = 65536;
+        p.depth_table.depthClampMin = 0;
+        p.depth_table.depthUnits = 1000;
+        p.depth_table.disparityMode = 0;
+        p.depth_table.disparityShift = 0;
+        p.ae.meanIntensitySetPoint = 0;
+        p.census.uDiameter = 9;
+        p.census.vDiameter = 9;
+        p.laser_state.laser_state = 1;
+        p.laser_power.laser_power = 360.f;
+        p.depth_exposure.exposure = 10000.f;
+        p.depth_auto_exposure.auto_exposure = 1;
+        p.color_auto_exposure.auto_exposure = 1;
+        p.color_exposure.exposure = 166;
+        p.color_backlight_compensation.backlight_compensation = 0;
+        p.color_brightness.brightness = 0;
+        p.color_contrast.contrast = 50;
+        p.color_gain.gain = 16;
+        p.color_gamma.gamma = 100;
+        p.color_hue.hue = 0;
+        p.color_power_line_frequency.power_line_frequency = 0;
+        p.color_saturation.saturation = 64;
+        p.color_sharpness.sharpness = 50;
+        p.color_auto_white_balance.auto_white_balance = 1;
+        p.color_white_balance.white_balance = 4600;
         p.depth_gain.gain = 16.f;
         p.hdad.ignoreSAD = 0;
-        p.amplitude_factor.amplitude = 0.08f;
-
+        p.amplitude_factor.amplitude = 0.f;
     }
 
     void high_accuracy(preset& p)

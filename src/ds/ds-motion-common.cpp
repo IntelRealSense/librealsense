@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 RealSense, Inc. All Rights Reserved.
 
 #include "ds-motion-common.h"
 
@@ -22,22 +22,23 @@
 #include "ds-options.h"
 #include "ds-private.h"
 #include <src/stream.h>
-#include <src/fourcc.h>
 #include <src/metadata-parser.h>
 
+#include <rsutils/type/fourcc.h>
+using rsutils::type::fourcc;
 #include <cstddef>
 
 namespace librealsense
 {
     using namespace ds;
 
-    const std::map<uint32_t, rs2_format> fisheye_fourcc_to_rs2_format = {
-        {rs_fourcc('R','A','W','8'), RS2_FORMAT_RAW8},
-        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_RAW8},
+    const std::map<fourcc::value_type, rs2_format> fisheye_fourcc_to_rs2_format = {
+        {fourcc('R','A','W','8'), RS2_FORMAT_RAW8},
+        {fourcc('G','R','E','Y'), RS2_FORMAT_RAW8},
     };
-    const std::map<uint32_t, rs2_stream> fisheye_fourcc_to_rs2_stream = {
-        {rs_fourcc('R','A','W','8'), RS2_STREAM_FISHEYE},
-        {rs_fourcc('G','R','E','Y'), RS2_STREAM_FISHEYE},
+    const std::map<fourcc::value_type, rs2_stream> fisheye_fourcc_to_rs2_stream = {
+        {fourcc('R','A','W','8'), RS2_STREAM_FISHEYE},
+        {fourcc('G','R','E','Y'), RS2_STREAM_FISHEYE},
     };
 
     void fisheye_auto_exposure_roi_method::set(const region_of_interest& roi)
@@ -285,9 +286,6 @@ namespace librealsense
         _fps_and_sampling_frequency_per_rs2_stream =
         { { RS2_STREAM_GYRO,     {{unsigned(odr::IMU_FPS_200),  hid_fps_translation.at(odr::IMU_FPS_200)},
                                  { unsigned(odr::IMU_FPS_400),  hid_fps_translation.at(odr::IMU_FPS_400)}}} };
-
-        // motion correction
-        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->get_pid());
     }
 
     rs2_motion_device_intrinsic ds_motion_common::get_motion_intrinsics(rs2_stream stream) const
@@ -462,8 +460,17 @@ namespace librealsense
         // Dynamically populate the supported HID profiles according to the selected IMU module
         std::vector<odr> accel_fps_rates;
         std::map<unsigned, unsigned> fps_and_frequency_map;
-        if (ds::ds_caps::CAP_BMI_085 && _device_capabilities)
-            accel_fps_rates = { odr::IMU_FPS_100,odr::IMU_FPS_200 };
+        if ((_device_capabilities & ds::ds_caps::CAP_BMI_085) != ds::ds_caps::CAP_UNDEFINED || 
+            (_device_capabilities & ds::ds_caps::CAP_BMI_088) != ds::ds_caps::CAP_UNDEFINED)
+        {
+               accel_fps_rates = { odr::IMU_FPS_100, odr::IMU_FPS_200 };
+            if( _owner->supports_info( RS2_CAMERA_INFO_PRODUCT_LINE )
+                && _owner->get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) == "D400" )
+            {
+                // D400 new BMI's also support rate of 400 for the accelerometer
+                accel_fps_rates.push_back( odr::IMU_FPS_400 );
+            }
+        }
         else // Applies to BMI_055 and unrecognized sensors
             accel_fps_rates = { odr::IMU_FPS_63,odr::IMU_FPS_250 };
 

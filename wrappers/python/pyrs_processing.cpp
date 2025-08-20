@@ -1,8 +1,9 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 #include "pyrealsense2.h"
 #include <librealsense2/hpp/rs_processing.hpp>
+#include <memory>
 
 void init_processing(py::module &m) {
     /** rs_processing.hpp **/
@@ -65,6 +66,7 @@ void init_processing(py::module &m) {
             return new rs2::filter(filter_function, queue_size);
         }), "filter_function"_a, "queue_size"_a = 1)
         .def(BIND_DOWNCAST(filter, decimation_filter))
+        .def( BIND_DOWNCAST( filter, rotation_filter ) )
         .def(BIND_DOWNCAST(filter, disparity_transform))
         .def(BIND_DOWNCAST(filter, hole_filling_filter))
         .def(BIND_DOWNCAST(filter, spatial_filter))
@@ -156,6 +158,9 @@ void init_processing(py::module &m) {
     py::class_<rs2::decimation_filter, rs2::filter> decimation_filter(m, "decimation_filter", "Performs downsampling by using the median with specific kernel size.");
     decimation_filter.def(py::init<>())
         .def(py::init<float>(), "magnitude"_a);
+
+    py::class_< rs2::rotation_filter, rs2::filter > rotation_filter(m, "rotation_filter","Performs rotation of frames." );
+    rotation_filter.def( py::init<>() ).def( py::init< std::vector< rs2_stream > >(), "value"_a );
 
     py::class_<rs2::temporal_filter, rs2::filter> temporal_filter(m, "temporal_filter", "Temporal filter smooths the image by calculating multiple frames "
                                                                   "with alpha and delta settings. Alpha defines the weight of current frame, and delta defines the"

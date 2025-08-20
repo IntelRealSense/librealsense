@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 #include <iostream>
@@ -13,9 +13,8 @@
 //////////////////////////////
 
 // Find devices with specified streams
-bool device_with_streams(std::vector <rs2_stream> stream_requests, std::string& out_serial)
+bool device_with_streams( rs2::context & ctx, std::vector< rs2_stream > stream_requests, std::string & out_serial )
 {
-    rs2::context ctx;
     auto devs = ctx.query_devices();
     std::vector <rs2_stream> unavailable_streams = stream_requests;
     for (auto dev : devs)

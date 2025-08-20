@@ -1,10 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
 
 #include <viewer.h>
 #include "d500-on-chip-calib.h"
-
 
 namespace rs2
 {
@@ -46,7 +45,7 @@ namespace rs2
 
         auto calib_dev = _dev.as<auto_calibrated_device>();
         float health = 0.f;
-        int timeout_ms = 120000; // 2 minutes
+        int timeout_ms = 240000; // increased to 4 minutes for additional algo processing
         auto ans = calib_dev.run_on_chip_calibration(json, &health,
             [&](const float progress) {_progress = progress; }, timeout_ms);
 
@@ -81,6 +80,18 @@ namespace rs2
 
     void d500_on_chip_calib_manager::prepare_for_calibration()
     {
+        // safety sensor in service mode - if safety sensor exists
+        auto sensors = _dev.query_sensors();
+        for (auto&& s : sensors)
+        {
+            if (s.is<rs2::safety_sensor>())
+            {
+                rs2::safety_sensor safety_s = s.as<rs2::safety_sensor>();
+                set_option_if_needed<rs2::safety_sensor>(safety_s, RS2_OPTION_SAFETY_MODE, RS2_SAFETY_MODE_SERVICE);
+                break;
+            }
+        }
+
         // set depth preset as default preset, turn projector ON and depth AE ON
         if (_sub->s->supports(RS2_CAMERA_INFO_NAME) && 
             (std::string(_sub->s->get_info(RS2_CAMERA_INFO_NAME)) == "Stereo Module"))
@@ -88,7 +99,8 @@ namespace rs2
             auto depth_sensor = _sub->s->as <rs2::depth_sensor>();
 
             // disabling the depth visual preset change for D555 - not needed
-            if (get_device_pid() != "0B56" && get_device_pid() != "DDS")
+            std::string dev_name = _dev.supports( RS2_CAMERA_INFO_NAME ) ? _dev.get_info( RS2_CAMERA_INFO_NAME ) : "";
+            if( dev_name.find( "D555" ) == std::string::npos )
             {
                 // set depth preset as default preset
                 set_option_if_needed<rs2::depth_sensor>(depth_sensor, RS2_OPTION_VISUAL_PRESET, 1);
@@ -111,7 +123,7 @@ namespace rs2
     }
 
     d500_autocalib_notification_model::d500_autocalib_notification_model(std::string name, 
-        std::shared_ptr<d500_on_chip_calib_manager> manager, bool exp)
+        std::shared_ptr<process_manager> manager, bool exp)
         : process_notification_model(manager)
     {
         enable_expand = false;
@@ -185,6 +197,15 @@ namespace rs2
         else
         {
             update_ui_on_calibration_complete(win, x, y);
+            if (get_manager().get_device_pid() == "0B6B")
+            {
+                if (!reset_called &&
+                    get_manager().action != d500_on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB_ABORT)
+                {
+                    get_manager().reset_device();
+                    reset_called = true;
+                }
+            }
         }
 
         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
@@ -287,12 +308,13 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Abort Calibration Process");
+            RsImGui::CustomTooltip("Abort Calibration Process");
         }
     }
 
     void d500_autocalib_notification_model::update_ui_after_abort_called(ux_window& win, int x, int y)
     {
+        ImGui::SetCursorScreenPos({ float(x + 10), float(y) });
         ImGui::Text("%s", "Calibration Aborting");
         ImGui::SetCursorScreenPos({ float(x + 10), float(y + 40) });
         ImGui::PushFont(win.get_large_font());

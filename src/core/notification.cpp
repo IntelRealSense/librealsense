@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #include "notification.h"
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -48,6 +48,7 @@ void notifications_processor::set_callback( rs2_notifications_callback_sptr call
 
 rs2_notifications_callback_sptr notifications_processor::get_callback() const
 {
+    std::lock_guard< std::mutex > lock( _callback_mutex );
     return _callback;
 }
 

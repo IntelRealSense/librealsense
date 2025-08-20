@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #ifdef _MSC_VER
 #ifndef NOMINMAX
@@ -15,6 +15,7 @@
 #include <opengl3.h>
 
 #include <imgui_internal.h>
+#include <realsense_imgui.h>
 
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <third-party/arcball_camera.h>
@@ -22,7 +23,9 @@
 #include <rsutils/os/special-folder.h>
 #include <rsutils/string/trim-newlines.h>
 #include <common/utilities/imgui/wrap.h>
+#include <common/labeled-point-cloud-utilities.h>
 
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <regex>
 
 namespace rs2
@@ -70,7 +73,7 @@ namespace rs2
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
 
-        ImGui_ScopePushFont(font);
+        RsImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -136,7 +139,7 @@ namespace rs2
                 {
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("Enable meshing to allow vertex normals calculation");
+                        RsImGui::CustomTooltip("Enable meshing to allow vertex normals calculation");
                     }
                     ImGui::PopStyleColor(2);
                     ImGui::PopStyleVar();
@@ -176,8 +179,7 @@ namespace rs2
             ImGui::PopStyleColor(2); // button color
 
             auto apply = [&]() {
-                config_file::instance() = temp_cfg;
-                update_configuration();
+                update_configuration(&temp_cfg);
             };
 
             ImGui::PushStyleColor(ImGuiCol_Button, button_color);
@@ -226,7 +228,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", "Save settings and export file");
+                RsImGui::CustomTooltip("%s", "Save settings and export file");
             }
             ImGui::SameLine();
             if( ImGui::Button( "Cancel", ImVec2( font_size * 8.f, 0 ) ) )
@@ -235,7 +237,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", "Close window without saving any changes to the settings");
+                RsImGui::CustomTooltip("%s", "Close window without saving any changes to the settings");
             }
 
             ImGui::PopStyleColor(3);
@@ -307,7 +309,7 @@ namespace rs2
         if (hovered)
         {
             win.link_hovered();
-            ImGui::SetTooltip("%s", description);
+            RsImGui::CustomTooltip("%s", description);
         }
 
         if (clicked && !disabled)
@@ -338,6 +340,9 @@ namespace rs2
                 break;
             }
         }
+
+        // Initialize selected_labeled_points_source_uid for clearing it when needed
+        init_labeled_points_uid();
 
         // Initialize and prepare depth and texture sources
         int selected_depth_source = -1;
@@ -668,6 +673,79 @@ namespace rs2
 
         left += button_width;
 
+        //-----------------------------
+        // -------------------- LPC Settings ----------------
+        if (last_labeled_points)
+        {
+            ImGui::GetWindowDrawList()->AddLine({ cursor.x + left - 1, cursor.y + 5 },
+                { cursor.x + left - 1, cursor.y + top_bar_height - 5 }, ImColor(grey));
+
+            left += 10;
+
+            // -------------------- LPC Points Size ----------------
+            const auto lpc_popup = "LPC Draw";
+            if (big_button(&select_lpc_point_size, win, left, 0, textual_icons::grid_6,
+                "Point Size", true, true,
+                "Labeled Point Cloud"))
+            {
+                ImGui::OpenPopup(lpc_popup);
+            }
+
+            ImGui::SetNextWindowPos({ cursor.x + left + 5, cursor.y + 60 });
+            if (ImGui::BeginPopup(lpc_popup))
+            {
+                select_lpc_point_size = true;
+
+                bool selected = selected_lpc_points_size == lpc_points_size::lpc_small;
+                if (ImGui::MenuItem("Small", nullptr, &selected))
+                {
+                    if (selected) selected_lpc_points_size = lpc_points_size::lpc_small;
+                }
+
+                selected = selected_lpc_points_size == lpc_points_size::lpc_medium;
+                if (ImGui::MenuItem("Medium", nullptr, &selected))
+                {
+                    if (selected) selected_lpc_points_size = lpc_points_size::lpc_medium;
+                }
+
+                selected = selected_lpc_points_size == lpc_points_size::lpc_large;
+                if (ImGui::MenuItem("Large", nullptr, &selected))
+                {
+                    if (selected) selected_lpc_points_size = lpc_points_size::lpc_large;
+                }
+                config_file::instance().set(configurations::viewer::lpc_point_size, static_cast<int>(selected_lpc_points_size));
+                ImGui::EndPopup();
+            }
+            else
+            {
+                select_lpc_point_size = false;
+            }
+            left += 80;
+
+            if (show_safety_zones_3d)
+            {
+                bool active = true;
+                if (big_button(&active, win, left, 0, textual_icons::polygon,
+                    "S. Zones", false, true,
+                    "Show/hide Safety Zones"))
+                {
+                    show_safety_zones_3d = false;
+                    config_file::instance().set(configurations::viewer::show_safety_zones_3d, show_safety_zones_3d);
+                }
+            }
+            else
+            {
+                bool active = false;
+                if (big_button(&active, win, left, 0, textual_icons::polygon,
+                    "S. Zones", false, true,
+                    "Show/hide Safety Zones"))
+                {
+                    show_safety_zones_3d = true;
+                    config_file::instance().set(configurations::viewer::show_safety_zones_3d, show_safety_zones_3d);
+                }
+            }
+        }
+
 
         ImGui::PopStyleColor(5);
 
@@ -789,13 +867,14 @@ namespace rs2
         _hidden_options.emplace(RS2_OPTION_STREAM_FORMAT_FILTER);
         _hidden_options.emplace(RS2_OPTION_STREAM_INDEX_FILTER);
         _hidden_options.emplace(RS2_OPTION_FRAMES_QUEUE_SIZE);
-        _hidden_options.emplace(RS2_OPTION_SENSOR_MODE);
         _hidden_options.emplace(RS2_OPTION_NOISE_ESTIMATION);
         _hidden_options.emplace(RS2_OPTION_REGION_OF_INTEREST);
     }
 
-    void viewer_model::update_configuration()
+    void viewer_model::update_configuration(config_file* new_cfg)
     {
+        if (new_cfg)
+            config_file::instance() = *new_cfg;
         rs2_error* e = nullptr;
         auto version = rs2_get_api_version(&e);
         if (e) rs2::error::handle(e);
@@ -865,6 +944,14 @@ namespace rs2
 
         show_skybox = config_file::instance().get_or_default(
             configurations::performance::show_skybox, true);
+
+        selected_lpc_points_size = static_cast<lpc_points_size>(config_file::instance().get_or_default(
+            configurations::viewer::lpc_point_size, static_cast<int>(lpc_points_size::lpc_small)
+        ));
+
+        show_safety_zones_3d = config_file::instance().get_or_default(
+            configurations::viewer::show_safety_zones_3d, true
+        );
     }
 
 
@@ -917,6 +1004,11 @@ namespace rs2
                 selected_depth_source_uid = -1;
             }
 
+            if (selected_labeled_points_source_uid == i)
+            {
+                last_labeled_points = labeled_points();
+            }
+
             if (selected_tex_source_uid == i)
             {
                 last_texture.reset();
@@ -945,7 +1037,7 @@ namespace rs2
     {
         auto font_dynamic = window.get_font();
 
-        ImGui_ScopePushFont(font_dynamic);
+        RsImGui_ScopePushFont(font_dynamic);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -1088,7 +1180,7 @@ namespace rs2
     void viewer_model::show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y, int id,
         const ImVec4& text_color, const std::string& tooltip)
     {
-        ImGui_ScopePushFont(font_18);
+        RsImGui_ScopePushFont(font_18);
 
         std::string label = rsutils::string::from() << label_str << id;
 
@@ -1097,7 +1189,7 @@ namespace rs2
         ImGui::Text("%s", text);
         ImGui::PopStyleColor();
         if (ImGui::IsItemHovered() && tooltip != "")
-            ImGui::SetTooltip("%s", tooltip.c_str());
+            RsImGui::CustomTooltip("%s", tooltip.c_str());
 
     }
     void viewer_model::show_paused_icon(ImFont* font_18, int x, int y, int id)
@@ -1230,6 +1322,20 @@ namespace rs2
         return res;
     }
 
+    void force_minimum_size_for_display(rs2::stream_model& model)
+    {
+        // patch for safety sensor
+        if (model.profile.stream_type() == RS2_STREAM_SAFETY || 
+            model.profile.stream_type() == RS2_STREAM_LABELED_POINT_CLOUD)
+        {
+            // The following values have been chosen so that the safety stream's
+            // metadata could be shown entirely (without that,, the safety window
+            // is too thin to permit the user to see the metadata fields
+            model.size.x = 7.f;
+            model.size.y = 10.f;
+        }
+    }
+
     std::map<int, rect> viewer_model::calc_layout(const rect& r)
     {
         const int top_bar_height = 32;
@@ -1240,6 +1346,8 @@ namespace rs2
         {
             if (stream.second.is_stream_visible())
             {
+                force_minimum_size_for_display(stream.second);
+                
                 active_streams.insert(&stream.second);
                 stream_index[&stream.second] = stream.first;
             }
@@ -1278,6 +1386,7 @@ namespace rs2
     {
         std::shared_ptr<texture_buffer> texture_frame = nullptr;
         points p;
+        labeled_points lab_points;
         frame f{};
         gc_streams();
 
@@ -1342,10 +1451,15 @@ namespace rs2
                     continue;
                 }
 
+                if (f.is<labeled_points>())
+                {
+                    if (!paused)
+                        lab_points = f.as<labeled_points>();
+                }
+
                 auto texture = upload_frame( std::move( f ) );
 
-                if( ( selected_tex_source_uid == -1 && f.get_profile().format() == RS2_FORMAT_Z16 )
-                    || ( f.get_profile().format() != RS2_FORMAT_ANY && is_3d_texture_source( f ) ) )
+                if ( should_texture_frame_be_updated(f) )
                 {
                     texture_frame = texture;
                 }
@@ -1372,12 +1486,13 @@ namespace rs2
 
         ImGui::SetNextWindowPos({ viewer_rect.x, viewer_rect.y });
         ImGui::SetNextWindowSize({ viewer_rect.w, viewer_rect.h });
-
-        ImGui::Begin("Viewport", nullptr, { viewer_rect.w, viewer_rect.h }, 0.f, flags);
+        ImGui::SetNextWindowBgAlpha(0.f);
+        ImGui::Begin("Viewport", nullptr,flags);
 
         try
         {
-            draw_viewport( viewer_rect, window, devices, error_message, texture_frame, p );
+            draw_viewport( viewer_rect, window, devices, error_message, 
+                texture_frame, p, lab_points );
 
             modal_notification_on = not_model->draw( window,
                                                      static_cast< int >( window.width() ),
@@ -1498,7 +1613,7 @@ namespace rs2
             auto relative_mouse_y = ImGui::GetMousePos().y - top_y_ruler;
             auto y = (bottom_y_ruler - top_y_ruler) - relative_mouse_y;
             ss << std::fixed << std::setprecision(2) << (y / ratio) << ruler_units;
-            ImGui::SetTooltip("%s", ss.str().c_str());
+            RsImGui::CustomTooltip("%s", ss.str().c_str());
             colored_ruler_opac = 1.f;
             numbered_ruler_background_opac = hovered_numbered_ruler_opac;
         }
@@ -1637,7 +1752,9 @@ namespace rs2
             auto&& stream_size = stream_mv.size;
             auto stream_rect = view_rect.adjust_ratio(stream_size).grow(-3);
 
-            stream_mv.show_frame(stream_rect, mouse, error_message);
+            if (should_render_frame(stream_mv)) {
+                stream_mv.show_frame(stream_rect, mouse, error_message);
+            }
 
             auto p = stream_mv.dev->dev.as<playback>();
             float posX = stream_rect.x + 9;
@@ -1658,7 +1775,7 @@ namespace rs2
             stream_mv.show_stream_footer(font1, stream_rect, mouse, streams, *this);
 
 
-            if (val_in_range(stream_mv.profile.format(), { RS2_FORMAT_RAW10 , RS2_FORMAT_RAW16, RS2_FORMAT_MJPEG }))
+            if (val_in_range(stream_mv.profile.format(), { RS2_FORMAT_RAW10 , RS2_FORMAT_RAW16, RS2_FORMAT_MJPEG, RS2_FORMAT_M420 }))
             {
                 show_rendering_not_supported(font2, static_cast<int>(stream_rect.x), static_cast<int>(stream_rect.y), static_cast<int>(stream_rect.w),
                     static_cast<int>(stream_rect.h), stream_mv.profile.format());
@@ -1736,6 +1853,16 @@ namespace rs2
 
                         break;
                     }
+                    case RS2_STREAM_OCCUPANCY:
+                        auto frame = streams[stream].texture->get_last_frame();
+                        auto zoom = streams[stream].dev->normalized_zoom.w;
+                        if (frame && frame.get_data() && streams[stream].show_safety_zones_2d && zoom == 1)
+                        {
+                            draw_zone_2d(Zone::Diagnostic, stream_rect, frame);
+                            draw_zone_2d(Zone::Warning, stream_rect, frame);
+                            draw_zone_2d(Zone::Danger, stream_rect, frame);
+                        }
+                        break;
                 }
             }
 
@@ -1827,7 +1954,7 @@ namespace rs2
 
                     // Don't draw text in boxes that are too small...
                     auto h = bbox.h;
-                    ImGui::PushStyleColor( ImGuiCol_Text, ImColor( 1.f, 1.f, 1.f, a ) );
+                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 1.f, a ) );
                     ImColor bg( dark_sensor_bg.x, dark_sensor_bg.y, dark_sensor_bg.z, dark_sensor_bg.w * a );
 
                     if( fabs(object.mean_depth) > 0.f )
@@ -1922,7 +2049,7 @@ namespace rs2
     }
 
     void viewer_model::render_3d_view(const rect& viewer_rect, ux_window& win,
-        std::shared_ptr<texture_buffer> texture, rs2::points points)
+        std::shared_ptr<texture_buffer> texture, rs2::points points, rs2::labeled_points labeled_points)
     {
         auto top_bar_height = 60.f;
 
@@ -1933,6 +2060,11 @@ namespace rs2
         if (texture)
         {
             last_texture = texture;
+        }
+
+        if (labeled_points)
+        {
+            last_labeled_points = labeled_points;
         }
 
         auto bottom_y = win.framebuf_height() - viewer_rect.y - viewer_rect.h;
@@ -2001,21 +2133,6 @@ namespace rs2
             glEnd();
             glPopAttrib();
         }
-
-        auto x = static_cast<float>(-M_PI / 2);
-        float _rx[4][4] = {
-            { 1 , 0, 0, 0 },
-            { 0, static_cast<float>(cos(x)), static_cast<float>(-sin(x)), 0 },
-            { 0, static_cast<float>(sin(x)), static_cast<float>(cos(x)), 0 },
-            { 0, 0, 0, 1 }
-        };
-        static const double z = M_PI;
-        static float _rz[4][4] = {
-            { float(cos(z)), float(-sin(z)),0, 0 },
-            { float(sin(z)), float(cos(z)), 0, 0 },
-            { 0 , 0, 1, 0 },
-            { 0, 0, 0, 1 }
-        };
 
         {
             float tiles = 24;
@@ -2228,6 +2345,11 @@ namespace rs2
 
         check_gl_error();
 
+        if (last_labeled_points)
+        {
+            draw_3d_labeled_points(viewer_rect, last_labeled_points);
+        }
+
         _measurements.draw(win);
 
         glPopMatrix();
@@ -2238,10 +2360,18 @@ namespace rs2
 
         glDisable(GL_DEPTH_TEST);
 
-        if (ImGui::IsKeyPressed('R') || ImGui::IsKeyPressed('r'))
+        if (ImGui::GetIO().KeysDown[ImGuiKey_R])
         {
             reset_camera();
         }
+    }
+
+    bool viewer_model::should_render_frame(const rs2::stream_model& model) const
+    {
+        if (model.profile.stream_type() == RS2_STREAM_SAFETY)
+            return false;
+
+        return true;
     }
 
     void viewer_model::show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices)
@@ -2298,10 +2428,10 @@ namespace rs2
         {
             ImGui::OpenPopup("More Options");
         }
-
+        ImGui::PopFont();
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("%s", "More Options...");
+            RsImGui::CustomTooltip("%s", "More Options...");
         }
 
         if (window.is_fullscreen())
@@ -2318,13 +2448,12 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Exit the App");
+                RsImGui::CustomTooltip("Exit the App");
                 window.link_hovered();
             }
             ImGui::PopStyleColor(3);
         }
 
-        ImGui::PopFont();
 
         ImGui::PushStyleColor(ImGuiCol_Text, black);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
@@ -2334,7 +2463,7 @@ namespace rs2
 
         ImGui::PushFont(window.get_font());
 
-        const char* menu_items[] = { "Report Issue", "Intel Store", "Settings", "About" };
+        const char* menu_items[] = { "Report Issue", "RS Store", "Settings", "About" };
         bool open_settings_popup = false;
         bool open_about_popup = false;
 
@@ -2356,7 +2485,7 @@ namespace rs2
 
             if( ImGui::Selectable( menu_items[1] ) )
             {
-                open_url("https://store.intelrealsense.com/");
+                open_url("https://store.realsenseai.com/");
             }
 
             if( ImGui::Selectable( menu_items[2] ) )
@@ -2404,9 +2533,9 @@ namespace rs2
             ImGui::SetNextWindowSize({ w, h });
 
             flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar;
 
-            ImGui_ScopePushFont(window.get_font());
+            RsImGui_ScopePushFont(window.get_font());
             ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -2471,7 +2600,12 @@ namespace rs2
 
                 ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + 65) });
                 ImGui::Separator();
-
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_PopupBg, dark_window_background);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
+                ImVec2 child_size = ImVec2(0, ImGui::GetContentRegionAvail().y-50);
+                if (ImGui::BeginChild("ScrollableRegion", child_size, true, ImGuiWindowFlags_AlwaysVerticalScrollbar))
+                {
                 if (tab == 0)
                 {
                     int recording_setting = temp_cfg.get(configurations::record::file_save_mode);
@@ -2526,7 +2660,7 @@ namespace rs2
                     int font_samples = temp_cfg.get(configurations::performance::font_oversample);
                     ImGui::Text("Font Samples: ");
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Increased font samples produce nicer text, but require more GPU memory, sometimes resulting in boxes instead of font characters");
+                        RsImGui::CustomTooltip("Increased font samples produce nicer text, but require more GPU memory, sometimes resulting in boxes instead of font characters");
 
                     ImGui::SameLine();
                     ImGui::PushItemWidth(80);
@@ -2543,7 +2677,7 @@ namespace rs2
                     int font_size = temp_cfg.get( configurations::window::font_size );
                     ImGui::Text( "Font Size: " );
                     if( ImGui::IsItemHovered() )
-                        ImGui::SetTooltip( "Viewer Font Size" );
+                        RsImGui::CustomTooltip( "Viewer Font Size" );
                     
                     ImGui::SameLine();
                     ImGui::PushItemWidth( 80 );
@@ -2564,7 +2698,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::glsl_for_rendering, gpu_rendering);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Using OpenGL 3 shaders is a widely supported way to boost rendering speeds on modern GPUs.");
+                        RsImGui::CustomTooltip("Using OpenGL 3 shaders is a widely supported way to boost rendering speeds on modern GPUs.");
 
                     bool gpu_processing = temp_cfg.get(configurations::performance::glsl_for_processing);
                     if (ImGui::Checkbox("Use GLSL for Processing", &gpu_processing))
@@ -2573,7 +2707,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::glsl_for_processing, gpu_processing);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Using OpenGL 3 shaders for depth data processing can reduce CPU utilisation.");
+                        RsImGui::CustomTooltip("Using OpenGL 3 shaders for depth data processing can reduce CPU utilisation.");
 
                     if (gpu_processing && !gpu_rendering)
                     {
@@ -2589,7 +2723,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::enable_msaa, msaa);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("MSAA will improve the rendering quality of edges at expense of greater GPU memory utilisation.");
+                        RsImGui::CustomTooltip("MSAA will improve the rendering quality of edges at expense of greater GPU memory utilisation.");
 
                     if (msaa)
                     {
@@ -2611,7 +2745,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::show_fps, show_fps);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Show application refresh rate in window title\nThis rate is unrelated to camera FPS and measures application responsivness");
+                        RsImGui::CustomTooltip("Show application refresh rate in window title\nThis rate is unrelated to camera FPS and measures application responsivness");
 
 
                     bool vsync = temp_cfg.get(configurations::performance::vsync);
@@ -2621,7 +2755,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::vsync, vsync);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Vertical sync will try to synchronize application framerate to the monitor refresh-rate (usually limiting the framerate to 60)");
+                        RsImGui::CustomTooltip("Vertical sync will try to synchronize application framerate to the monitor refresh-rate (usually limiting the framerate to 60)");
 
                     bool fullscreen = temp_cfg.get(configurations::window::is_fullscreen);
                     if (ImGui::Checkbox("Fullscreen (F8)", &fullscreen))
@@ -2636,7 +2770,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::show_skybox, show_skybox);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("When enabled, this option provides background to the 3D view, instead of leaving it blank.\nThis is purely cosmetic");
+                        RsImGui::CustomTooltip("When enabled, this option provides background to the 3D view, instead of leaving it blank.\nThis is purely cosmetic");
 
                     bool enable_occlusion_invalidation = temp_cfg.get(configurations::performance::occlusion_invalidation);
                     if (ImGui::Checkbox("Perform Occlusion Invalidation", &enable_occlusion_invalidation))
@@ -2644,7 +2778,7 @@ namespace rs2
                         temp_cfg.set(configurations::performance::occlusion_invalidation, enable_occlusion_invalidation);
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Occlusions are a natural side-effect of having multiple sensors\nWhen this option is enabled, the SDK will filter out occluded pixels");
+                        RsImGui::CustomTooltip("Occlusions are a natural side-effect of having multiple sensors\nWhen this option is enabled, the SDK will filter out occluded pixels");
                 }
 
                 if( tab == 2 )
@@ -2679,7 +2813,7 @@ namespace rs2
                         ImGui::PopStyleVar();
                         if( ImGui::IsItemHovered() )
                         {
-                            ImGui::SetTooltip( "%s", "--debug was specified; this cannot be applied without a restart" );
+                            RsImGui::CustomTooltip( "%s", "--debug was specified; this cannot be applied without a restart" );
                         }
                     }
                     bool log_to_file = temp_cfg.get(configurations::viewer::log_to_file);
@@ -2807,6 +2941,34 @@ namespace rs2
                             catch (...){}
                         }
                     }
+
+                    ImGui::Separator();
+                    bool enable_dds = temp_cfg.get_nested<bool>("context.dds.enabled" , false);
+                    int domain_id = temp_cfg.get_nested<int>("context.dds.domain" , 0);
+                    if( ImGui::Checkbox( "Enable DDS", &enable_dds ) )
+                    {
+                        temp_cfg.set_nested("context.dds.enabled", enable_dds);
+                    }
+                    if( enable_dds )
+                    {
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosX( ImGui::GetCursorPosX() + 50 );
+                        ImGui::PushItemWidth( 150.0f );
+                        ImGui::Text( "Domain ID" );
+                        ImGui::SameLine();
+                        if( ImGui::InputInt( "##Domain ID", &domain_id ) )
+                        {
+                            if( domain_id < 0 )
+                                domain_id = 0;
+                            else if( domain_id > 232 )
+                                domain_id = 232;
+                            temp_cfg.set_nested("context.dds.domain", domain_id);
+                        }
+                    }
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 0.8f));
+                    ImGui::Text(u8"\uf071 DDS changes will take effect only after restarting the application ");
+                    ImGui::PopStyleColor();
+
                 }
 
                 if (tab == 3)
@@ -2819,7 +2981,7 @@ namespace rs2
                     }
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "When firmware of the device is below the version bundled with this software release\nsuggest firmware update");
+                        RsImGui::CustomTooltip("%s", "When firmware of the device is below the version bundled with this software release\nsuggest firmware update");
                     }
 #ifdef CHECK_FOR_UPDATES
                     ImGui::Separator();
@@ -2827,7 +2989,7 @@ namespace rs2
                     ImGui::Text("%s", "SW/FW Updates From Server:");
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Select the server URL of the SW/FW updates information");
+                        RsImGui::CustomTooltip("%s", "Select the server URL of the SW/FW updates information");
                     }
                     ImGui::SameLine();
 
@@ -2854,7 +3016,7 @@ namespace rs2
                     }
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Add file:// prefix to use a local DB file ");
+                        RsImGui::CustomTooltip("%s", "Add file:// prefix to use a local DB file ");
                     }
 
                     if (!official_url)
@@ -2867,6 +3029,8 @@ namespace rs2
                     }
 #endif
                 }
+                }
+                ImGui::EndChild();
 
                 ImGui::Separator();
 
@@ -2882,13 +3046,12 @@ namespace rs2
                 }
 
                 auto apply = [&](){
-                    config_file::instance() = temp_cfg;
                     window.on_reload_complete = [this](){
                         _skybox.reset();
                     };
                     if (reload_required) window.reload();
                     else if (refresh_required) window.refresh();
-                    update_configuration();
+                    update_configuration(&temp_cfg);
 
                     if (refresh_updates)
                         for (auto&& dev : devices)
@@ -2903,7 +3066,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "Save settings and close");
+                    RsImGui::CustomTooltip("%s", "Save settings and close");
                 }
                 ImGui::SameLine();
 
@@ -2917,7 +3080,7 @@ namespace rs2
                 ImGui::PopStyleColor(2);
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "Save settings");
+                    RsImGui::CustomTooltip("%s", "Save settings");
                 }
                 ImGui::SameLine();
                 if (ImGui::Button("Cancel", ImVec2(120, 0)))
@@ -2926,9 +3089,10 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "Close window without saving any changes to the settings");
+                    RsImGui::CustomTooltip("%s", "Close window without saving any changes to the settings");
                 }
-
+                ImGui::PopStyleColor(2);
+                ImGui::PopStyleVar();
                 ImGui::EndPopup();
             }
 
@@ -2951,9 +3115,9 @@ namespace rs2
             ImGui::SetNextWindowSize({ w, h });
 
             flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar;
 
-            ImGui_ScopePushFont(window.get_font());
+            RsImGui_ScopePushFont(window.get_font());
             ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -2962,11 +3126,19 @@ namespace rs2
 
             if (ImGui::BeginPopupModal(menu_items[3], nullptr, flags))
             {
+                // splash original width, height
+                auto width = 1920;
+                auto height = 1080;
+
+                // considering the pixels in which the Realsense logo is within splash image
+                ImVec2 uv0 = ImVec2(200.f / width, 300.f / height);
+                ImVec2 uv1 = ImVec2(1700.f / width, 600.f / height);
+
                 ImGui::Image((void*)(intptr_t)window.get_splash().get_gl_handle(),
-                             ImVec2(w - 30, 100), {0.20f, 0.38f}, {0.80f, 0.56f});
+                             ImVec2(w - 30, 100), uv0, uv1);
 
                 auto realsense_pos = ImGui::GetCursorPos();
-                ImGui::Text("Intel RealSense is a suite of depth-sensing and motion-tracking technologies.");
+                ImGui::Text("RealSense is a suite of depth-sensing and motion-tracking technologies.");
 
                 ImGui::Text("librealsense is an open-source cross-platform SDK for working with RealSense devices.");
 
@@ -2978,9 +3150,7 @@ namespace rs2
                 auto license_pos = ImGui::GetCursorPos();
                 ImGui::Text("Apache License, Version 2.0.");
 
-                ImGui::Text("RealSense is a registered trademark of Intel Corporation.");
-
-                ImGui::Text("Copyright 2018 Intel Corporation.");
+                ImGui::Text("Copyright RealSense Inc 2018-2025.");
 
                 if( RS2_API_BUILD_VERSION )
                 {
@@ -2997,7 +3167,7 @@ namespace rs2
 
                 ImGui::SetCursorPos({ realsense_pos.x - 4, realsense_pos.y - 3 });
 
-                hyperlink(window, "Intel RealSense", "https://realsense.intel.com/");
+                hyperlink(window, "RealSense", "https://realsenseai.com/");
 
                 ImGui::SetCursorPos({ github_pos.x - 4, github_pos.y - 3 });
                 hyperlink(window, "github.com/IntelRealSense/librealsense", "https://github.com/IntelRealSense/librealsense/");
@@ -3064,22 +3234,22 @@ namespace rs2
         auto x_axis = cross(dir, up);
         auto step = sec_since_update * 0.3f;
 
-        if (ImGui::IsKeyPressed('w') || ImGui::IsKeyPressed('W'))
+        if (ImGui::GetIO().KeysDown[ImGuiKey_W])
         {
             pos = pos + dir * step;
             target = target + dir * step;
         }
-        if (ImGui::IsKeyPressed('s') || ImGui::IsKeyPressed('S'))
+        if (ImGui::GetIO().KeysDown[ImGuiKey_S])
         {
             pos = pos - dir * step;
             target = target - dir * step;
         }
-        if (ImGui::IsKeyPressed('d') || ImGui::IsKeyPressed('D'))
+        if (ImGui::GetIO().KeysDown[ImGuiKey_D])
         {
             pos = pos + x_axis * step;
             target = target + x_axis * step;
         }
-        if (ImGui::IsKeyPressed('a') || ImGui::IsKeyPressed('A'))
+        if (ImGui::GetIO().KeysDown[ImGuiKey_A])
         {
             pos = pos - x_axis * step;
             target = target - x_axis * step;
@@ -3096,7 +3266,7 @@ namespace rs2
             auto cy = mouse.cursor.y + overflow.y;
             auto py = mouse.prev_cursor.y + overflow.y;
 
-            auto dragging = ImGui::IsKeyDown(GLFW_KEY_LEFT_CONTROL);
+            auto dragging = ImGui::GetIO().KeysDown[GLFW_KEY_LEFT_CONTROL];
 
             // Limit how much user mouse can jump between frames
             // This can work poorly when the app FPS is really terrible (< 10)
@@ -3302,7 +3472,7 @@ namespace rs2
 
     void viewer_model::draw_viewport(const rect& viewer_rect,
         ux_window& window, int devices, std::string& error_message,
-        std::shared_ptr<texture_buffer> texture, points points)
+        std::shared_ptr<texture_buffer> texture, points points, labeled_points labeled_points)
     {
         if (!modal_notification_on)
             updates->draw(not_model, window, error_message);
@@ -3335,7 +3505,7 @@ namespace rs2
             rect fb_size{ 0, 0, (float)window.framebuf_width(), (float)window.framebuf_height() };
             rect new_rect = viewer_rect.normalize(window_size).unnormalize(fb_size);
 
-            render_3d_view(new_rect, window, texture, points);
+            render_3d_view(new_rect, window, texture, points, labeled_points);
 
             auto rect_copy = viewer_rect;
             rect_copy.y += 60;
@@ -3345,7 +3515,7 @@ namespace rs2
                 _measurements.show_tooltip(window);
         }
 
-        if (ImGui::IsKeyPressed(' '))
+        if (ImGui::IsKeyPressed(ImGuiKey_Space))
         {
             if (paused)
             {
@@ -3445,4 +3615,213 @@ namespace rs2
             }
         }
     }
+
+    void viewer_model::init_labeled_points_uid()
+    {
+        for (auto&& s : streams)
+        {
+            if (s.second.is_stream_visible() &&
+                s.second.profile.stream_type() == RS2_STREAM_LABELED_POINT_CLOUD)
+            {
+                auto stream_origin_iter = streams_origin.find(s.second.profile.unique_id());
+                if (stream_origin_iter != streams_origin.end() &&
+                    streams.find(stream_origin_iter->second) != streams.end() &&
+                    selected_labeled_points_source_uid != stream_origin_iter->second)
+                {
+                    selected_labeled_points_source_uid = stream_origin_iter->second;
+                }
+            }
+        }
+    }
+
+    void viewer_model::draw_zone_3d(Zone zone, const rs2::labeled_points& frame)
+    {
+        glLineWidth(4.0f);
+        glBegin(GL_LINE_LOOP);
+
+        const auto MM_TO_METER_SCALE = 0.001f; // coords are in mm, converts to meters
+        auto zone_to_draw = init_zone(zone, frame, MM_TO_METER_SCALE); 
+        set_polygon_color(zone);
+
+        for (vertex& v : zone_to_draw)
+        {
+            // we transform LPC to depth - z=0 in LPC will be transformed to depth sensor (=camera) height
+            // - drawn after the matrix rotation & translation
+            glVertex3f(v.x, v.y, 0); 
+        }
+
+        glEnd();
+        glLineWidth(1.0f);
+    }
+
+    void viewer_model::draw_3d_labeled_points(const rect& viewer_rect, rs2::labeled_points labeled_points)
+    {
+        auto labeled_points_profile = last_labeled_points.get_profile().as<video_stream_profile>();
+        // Non-linear correspondence customized for non-flat surface exploration
+        if (labeled_points_profile.width() <= 0)
+            throw std::runtime_error("Profile width must be greater than 0.");
+
+        float point_size = std::sqrt(viewer_rect.w / labeled_points_profile.width());
+        if (selected_lpc_points_size == lpc_points_size::lpc_medium)
+            point_size *= 3.f;
+        else if (selected_lpc_points_size == lpc_points_size::lpc_large)
+            point_size *= 5.f;
+        glPointSize(point_size);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+        
+        auto& lpc_stream_model = streams.at(labeled_points_profile.unique_id());
+        
+        rs2_extrinsics lpc_to_depth = lpc_stream_model.dev->get_extrinsics_from_depth();
+        auto rot = lpc_to_depth.rotation;
+        GLfloat rotation_matrix[16] = { rot[0], rot[3], rot[6], 0,
+                                        rot[1], rot[4], rot[7], 0,
+                                        rot[2], rot[5], rot[8], 0,
+                                         0    ,   0,      0,    1 };
+        glMultMatrixf(rotation_matrix);
+
+        // getting inverse of the translation, in depth coordinates, as this is the one needed by OpenGL
+        glTranslatef(-lpc_to_depth.translation[0], -lpc_to_depth.translation[1], -lpc_to_depth.translation[2]);
+        
+        if (show_safety_zones_3d)
+        {
+            draw_zone_3d(Zone::Danger, labeled_points);
+            draw_zone_3d(Zone::Warning, labeled_points);
+            draw_zone_3d(Zone::Diagnostic, labeled_points);
+        }
+
+        glBegin(GL_POINTS);
+        {
+            auto vertices = last_labeled_points.get_vertices();
+            auto vertices_size = last_labeled_points.size();
+            auto labels = last_labeled_points.get_labels();
+            auto label_to_color3f = labeled_point_cloud_utilities::get_label_to_color3f();
+
+            /* this segment actually renders the labeled pointcloud */
+            for (int i = 0; i < vertices_size; ++i)
+            {
+                // Set the vertex color from the label value
+                auto label = labels[i];
+                auto color = label_to_color3f[static_cast<rs2_point_cloud_label>(label)];
+                glColor3f(color.x, color.y, color.z);
+
+                // Draw the vertex
+                rs2::vertex vtx = { vertices[i].x, vertices[i].y, vertices[i].z };
+                glVertex3fv(std::move(vtx));
+            }
+        }
+        glEnd();
+
+        glColor4f(1.f, 1.f, 1.f, 1.f);
+
+        check_gl_error();
+    }
+
+    bool viewer_model::should_texture_frame_be_updated(const rs2::frame& f) const
+    {
+        return (f.get_profile().stream_type() != RS2_STREAM_LABELED_POINT_CLOUD &&
+            ((selected_tex_source_uid == -1 && f.get_profile().format() == RS2_FORMAT_Z16)
+                || (f.get_profile().format() != RS2_FORMAT_ANY && is_3d_texture_source(f))));
+    }
+
+    void viewer_model::set_polygon_color(Zone zone)
+    {
+        switch (zone)
+        {
+        case Zone::Danger:
+            glColor3f(red.x, red.y, red.z);
+            break;
+        case Zone::Warning:
+            glColor3f(yellow.x, yellow.y, yellow.z);
+            break;
+        case Zone::Diagnostic:
+            glColor3f(regular_blue.x, regular_blue.y, regular_blue.z);
+            break;
+        default:
+            LOG_ERROR("Invalid zone, got: " << static_cast<int>(zone));
+            return;
+        }
+    }
+
+    std::vector<vertex> viewer_model::init_zone(Zone zone, const frame& frame, float scale_factor)
+    {
+        std::vector<vertex> points;
+        rs2_frame_metadata_value md_value;
+        switch (zone)
+        {
+        case Zone::Danger:
+            md_value = RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD;
+            break;
+        case Zone::Warning:
+            md_value = RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD;
+            break;
+        case Zone::Diagnostic:
+            md_value = RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD;
+            break;
+        default:
+            LOG_ERROR("Invalid zone, got: " << static_cast<int>(zone));
+            return points;
+        }
+
+        // assuming all md values are subsequent 
+        vertex x0 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value))) * scale_factor,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 1))) * scale_factor, 0 };
+        vertex x1 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 2))) * scale_factor,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 3))) * scale_factor, 0 };
+        vertex x2 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 4))) * scale_factor,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 5))) * scale_factor, 0 };
+        vertex x3 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 6))) * scale_factor,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 7))) * scale_factor, 0 };
+        points = { x0, x1, x2, x3 };
+        return points;
+    }
+
+    // get a vertex in LPC corrdinates, and transform to openGL corrdinates
+    // we can't use the rotation matrix (from the extrinsics) here as this is only a transformation in 2D and not in 3D
+    // the transformation we need is expected to stay the same - mirror the values on X and Y axis
+    vertex viewer_model::transform_vertex(vertex v, const rect& normalize_from, const rect& unnormalize_to)
+    {
+        vertex v2 = { 0,0,0 };
+
+        // normalize each value between 0 and 1, v is expected to be within normalize_from
+        // note v.y -> v2.x and v.x -> v2.y, this is a part of the transformation
+        v2.x = (v.y - normalize_from.x) / normalize_from.w;
+        v2.y = (v.x - normalize_from.y) / normalize_from.h;
+
+        // since x and y are normalized to be between 0 and 1, we can use this to mirror them
+        v2.x = 1 - v2.x;
+        v2.y = 1 - v2.y;
+
+        // 'unnormalize' the values back, so they fit in the wanted frame, unnormalize_to
+        v2.x = v2.x * unnormalize_to.w + unnormalize_to.x;
+        v2.y = v2.y * unnormalize_to.h + unnormalize_to.y;
+
+        return v2;
+    }
+
+
+    void viewer_model::draw_zone_2d(Zone zone, const rect& draw_within, const frame& frame)
+    {
+        glLineWidth(3.0f);
+        glBegin(GL_LINE_LOOP);
+
+        auto MM_TO_CM_SCALE = 0.1f;  // coords are in mm, converts to cm
+        auto zone_to_draw = init_zone(zone, frame, MM_TO_CM_SCALE);
+        set_polygon_color(zone);
+
+        constexpr GLfloat width = 512; // range of Y values for polygons - -2.56 - +2.56 meters
+        constexpr GLfloat height = 640; // range of X values for polygons - 0-6.4 meters
+        rect safety_regions_rect = { -256, 0, width, height };  //-256 is the minimum Y value, 0 is the minimum X value, all zones are within this area
+        for (vertex& v : zone_to_draw)
+        {
+            auto vertex = transform_vertex(v, safety_regions_rect, draw_within);
+            glVertex2f(vertex.x, vertex.y);
+        }
+
+        glEnd();
+        glLineWidth(1.0f);
+    }
+
+        
 }

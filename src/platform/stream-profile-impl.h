@@ -1,8 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include "stream-profile.h"
+#include <rsutils/type/fourcc.h>
+#include <ostream>
 
 
 namespace librealsense {
@@ -23,7 +25,16 @@ public:
     {
     }
 
-    virtual stream_profile const & get_backend_profile() const override { return _backend_stream_profile; }
+    stream_profile const & get_backend_profile() const override { return _backend_stream_profile; }
+
+    void to_stream( std::ostream & os ) const override
+    {
+        os << " [";
+        os << _backend_stream_profile.width << 'x' << _backend_stream_profile.height;
+        os << ' ' << rsutils::type::fourcc( _backend_stream_profile.format );
+        os << " @ " << _backend_stream_profile.fps << " Hz";
+        os << "]";
+    }
 };
 
 

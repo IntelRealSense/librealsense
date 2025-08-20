@@ -1,7 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2021 RealSense, Inc. All Rights Reserved.
 
-#test:device D400* !D457
+# test:device each(D400*)
+# test:device each(D500*)
 
 import pyrealsense2 as rs, os, time, tempfile, platform, sys
 from rspy import devices, log, test
@@ -109,12 +110,12 @@ def stop_sensor( sensor ):
         if sensor.get_active_streams():
             try:
                 sensor.stop()
+                sensor.close()
             except RuntimeError as rte:
                 if str( rte ) != "stop_streaming() failed. UVC device is not streaming!":
                     test.unexpected_exception()
             except Exception:
                 test.unexpected_exception()
-            sensor.close()
 
 # create temporary folder to record to that will be deleted automatically at the end of the script
 # (requires that no files are being held open inside this directory. Important to not keep any handle open to a file
@@ -127,6 +128,7 @@ test.start("Trying to record and playback using pipeline interface")
 
 cfg = pipeline = None
 try:
+    # dev, ctx = test.find_first_device_or_exit()  # uncomment when running in a loop
     # creating a pipeline and recording to a file
     pipeline = rs.pipeline(ctx)
     cfg = rs.config()
@@ -169,11 +171,11 @@ try:
     time.sleep(3)
 
     recorder.pause()
+
+    stop_sensor(depth_sensor)
+    stop_sensor(color_sensor)
+
     recorder = None
-    color_sensor.stop()
-    color_sensor.close()
-    depth_sensor.stop()
-    depth_sensor.close()
 
     color_filters = [f.get_info(rs.camera_info.name) for f in color_sensor.get_recommended_filters()]
     depth_filters = [f.get_info(rs.camera_info.name) for f in depth_sensor.get_recommended_filters()]
@@ -239,11 +241,11 @@ try:
     time.sleep(3)
 
     recorder.pause()
+
+    stop_sensor(depth_sensor)
+    stop_sensor(color_sensor)
+
     recorder = None
-    color_sensor.stop()
-    color_sensor.close()
-    depth_sensor.stop()
-    depth_sensor.close()
 
     playback = ctx.load_device( file_name )
 

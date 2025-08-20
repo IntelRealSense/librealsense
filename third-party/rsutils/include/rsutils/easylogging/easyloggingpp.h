@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021-4 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 // When including this file outside LibRealSense you also need to:
@@ -69,7 +69,7 @@
     do                                                                                                                 \
     {                                                                                                                  \
         auto logger__ = el::Loggers::getLogger( rsutils::g_librealsense_elpp_id );                                     \
-        if( logger__ && logger__->enabled( el::Level::LEVEL ) )                                                        \
+        if( logger__ && logger__->typedConfigurations() &&  logger__->enabled( el::Level::LEVEL ) )                    \
         {                                                                                                              \
             std::ostringstream os__;                                                                                   \
             os__ << __VA_ARGS__;                                                                                       \

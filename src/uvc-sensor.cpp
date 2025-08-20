@@ -1,9 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 RealSense, Inc. All Rights Reserved.
 
 #include "uvc-sensor.h"
 #include "device.h"
 #include "stream.h"
+#include "image.h"
 #include "global_timestamp_reader.h"
 #include "core/video-frame.h"
 #include "core/notification.h"
@@ -192,7 +193,7 @@ void uvc_sensor::open( const stream_profiles & requests )
                         expected_size = compute_frame_expected_size( width, height, bpp );
 
                     // For compressed formats copy the raw data as is
-                    if( val_in_range( req_profile_base->get_format(), { RS2_FORMAT_MJPEG, RS2_FORMAT_Z16H } ) )
+                    if( val_in_range( req_profile_base->get_format(), { RS2_FORMAT_MJPEG } ) )
                         expected_size = static_cast< int >( f.frame_size );
 
                     auto extension = frame_source::stream_to_frame_types( req_profile_base->get_stream_type() );

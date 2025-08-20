@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 RealSense, Inc. All Rights Reserved.
 
 #include "measurement.h"
 #include "ux-window.h"
@@ -77,7 +77,8 @@ std::vector<int> measurement_state::find_path(int from, int to)
 
 void measurement::add_point(interest_point p)
 {
-    auto shift = ImGui::IsKeyDown(GLFW_KEY_LEFT_SHIFT) || ImGui::IsKeyDown(GLFW_KEY_RIGHT_SHIFT);
+    ImGuiIO& io = ImGui::GetIO();
+    auto shift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
 
     if (is_enabled())
     {
@@ -334,7 +335,7 @@ void measurement::update_input(ux_window& win, const rs2::rect& viewer_rect)
 {
     id = 0;
 
-    if (ImGui::IsKeyPressed('Z') || ImGui::IsKeyPressed('z'))
+    if (ImGui::IsKeyPressed(ImGuiKey_Z))
         restore_state();
 
     input_ctrl.prev_mouse_down = input_ctrl.mouse_down;
@@ -430,7 +431,8 @@ void measurement::restore_state()
 
 void measurement::draw(ux_window& win)
 {
-    auto shift = ImGui::IsKeyDown(GLFW_KEY_LEFT_SHIFT) || ImGui::IsKeyDown(GLFW_KEY_RIGHT_SHIFT);
+    ImGuiIO& io = ImGui::GetIO();
+    auto shift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
 
     auto p_idx = point_hovered(win);
     if (p_idx >= 0 && !win.get_mouse().mouse_down[0])
@@ -670,7 +672,7 @@ void measurement::show_tooltip(ux_window& win)
         {
             std::string tt = rsutils::string::from() << std::fixed << std::setprecision(3)
                 << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
-            ImGui::SetTooltip("%s", tt.c_str());
+            RsImGui::CustomTooltip("%s", tt.c_str());
         }
     }
 }

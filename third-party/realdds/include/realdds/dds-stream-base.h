@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -32,6 +32,7 @@ protected:
     dds_options _options;
     std::vector< std::string > _recommended_filters;
     bool _metadata_enabled = false;
+    bool _compressed = false;
 
     dds_stream_base( std::string const & stream_name, std::string const & sensor_name );
     

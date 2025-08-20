@@ -5,9 +5,9 @@
 
 ## Overview
 
-This application allows you to test the camera’s depth quality, including: Z-Accuracy, Sub-Pixel and Z RMS errors (spatial noise) and Fill Rate.
+This application allows you to test the camera’s depth quality, including: Z-Accuracy, Sub-Pixel, Z RMS errors (spatial noise), Fill Rate and Temporal Noise.
 You should be able to easily get and interpret several of the depth quality metrics, or record and save the data for offline analysis.
-<br>Please refer to [RealSense DepthQualityTesting White Paper](https://www.intel.com/content/dam/support/us/en/documents/emerging-technologies/intel-realsense-technology/RealSense_DepthQualityTesting.pdf) for further information.
+<br>Please refer to [RealSense DepthQualityTesting White Paper](https://dev.realsenseai.com/docs/camera-depth-testing-methodology/) for further information.
 
 
 ## Quick Start
@@ -29,6 +29,7 @@ You should be able to easily get and interpret several of the depth quality metr
     * Sub-Pixel RMS Error
   * Fill-Rate
   * Distance to target
+  * Temporal Noise
 * Export metrics and device configuration
 * Depth Sensor controls
 
@@ -70,6 +71,14 @@ _D'<sub>i</sub>_ - Z-error: Distance (signed) from the rotated _D<sub>i</sub>_ c
 _GT_ - Ground Truth distance to the wall (mm)  
 ![](./res/z_accuracy_d_rotated.gif)  
 ![](./res/z_accuracy_percentage.gif)
+
+### Temporal Noise
+_STD<sub>n</sub>_ - Matrix of Standard deviation calculated per pixel over N images (N is set to 40 images).  
+_Median<sub>n</sub>_ - Matrix of Median calculated per pixel over N images.  
+Division - Matrix consist of Division of _STD<sub>n</sub>_ by _Median<sub>n</sub>_ per pixel.  
+Temporal Noise (%)  is calculated as the median of the Division matrix, multiplied by 100 to get the percentage.
+
+
 <!---
 Math expressions generated with
 http://www.numberempire.com/texequationeditor/equationeditor.php

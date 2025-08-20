@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -13,6 +13,8 @@ namespace librealsense
     {
     public:
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
+        bool is_imu_high_accuracy() const override;
+        double get_gyro_default_scale() const override;
 
         std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(synthetic_sensor* ep,
             const platform::extension_unit* fisheye_xu);
@@ -35,7 +37,6 @@ namespace librealsense
         std::shared_ptr<stream_interface> _gyro_stream;
 
         uint16_t _pid;    // product PID
-        std::shared_ptr<mm_calib_handler>        _mm_calib;
         optional_value<uint8_t> _motion_module_device_idx;
     };
 
@@ -49,8 +50,6 @@ namespace librealsense
         ds_motion_sensor & get_motion_sensor();
         std::shared_ptr<hid_sensor > get_raw_motion_sensor();
 
-        bool is_imu_high_accuracy() const override;
-        double get_gyro_default_scale() const override;
 
     protected:
         friend class ds_motion_common;

@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2015-2017 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2015-2017 RealSense, Inc. All Rights Reserved.
 
 """
 OpenGL Pointcloud viewer with http://pyglet.org

@@ -1,5 +1,5 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
-//// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+//// Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 #include "d500-private.h"
 #include <src/platform/uvc-device-info.h>
@@ -22,6 +22,8 @@ namespace librealsense
                     switch (info.pid)
                     {
                     case D555_PID:
+                    case D585_PID:
+                    case D585S_PID:
                         found = (result.mi == 6);
                         break;
                     default:
@@ -47,15 +49,31 @@ namespace librealsense
             {
             case d500_calibration_table_id::depth_calibration_id:
             {
-                return get_d500_depth_intrinsic_by_resolution(raw_data, width, height, is_symmetrization_enabled);
+                if ( !raw_data.empty() )
+                    return get_d500_depth_intrinsic_by_resolution(raw_data, width, height, is_symmetrization_enabled);
+                else
+                    LOG_ERROR("Cannot read depth table intrinsic values, using default values");
+                break;
             }
             case d500_calibration_table_id::rgb_calibration_id:
             {
-                return get_d500_color_intrinsic_by_resolution(raw_data, width, height);
+                if ( !raw_data.empty() )
+                    return get_d500_color_intrinsic_by_resolution(raw_data, width, height);
+                else
+                    LOG_ERROR("Cannot read color table intrinsic values, using default values");
+                break;
             }
             default:
                 throw invalid_value_exception(rsutils::string::from() << "Parsing Calibration table type " << static_cast<int>(table_id) << " is not supported");
             }
+
+            // If we got here, the table is empty so continue with default values
+            rs2_intrinsics intrinsics = {0};
+            intrinsics.height = height;
+            intrinsics.width = width;
+            intrinsics.ppx = intrinsics.fx = width / 2.f;
+            intrinsics.ppy = intrinsics.fy = height / 2.f;
+            return intrinsics;
         }
 
         // Algorithm prepared by Oscar Pelc in matlab:

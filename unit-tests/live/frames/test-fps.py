@@ -1,7 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 # test:device each(D400*)
+# test:device each(D500*) 
 # test:donotrun:!nightly
 
 import pyrealsense2 as rs
@@ -62,12 +63,13 @@ def measure_fps(sensor, profile, seconds_to_count_frames = 10):
 
 
 delta_Hz = 1
-tested_fps = [6, 15, 30, 60, 90]
-time_to_test_fps = [20, 13, 10, 5, 4]
+tested_fps = [5, 6, 15, 30, 60, 90]
+time_to_test_fps = [25, 20, 13, 10, 5, 4]
 test.check_equal( len(tested_fps), len(time_to_test_fps) )
 
 dev, _ = test.find_first_device_or_exit()
 product_line = dev.get_info(rs.camera_info.product_line)
+camera_name = dev.get_info(rs.camera_info.name)
 
 #####################################################################################################
 test.start("Testing depth fps " + product_line + " device - "+ platform.system() + " OS")
@@ -84,7 +86,12 @@ for i in range(len(tested_fps)):
         dp = next(p for p in ds.profiles
                   if p.fps() == requested_fps
                   and p.stream_type() == rs.stream.depth
-                  and p.format() == rs.format.z16)
+                  and p.format() == rs.format.z16
+                  # On D585S the operational depth resolution is 1280x720
+                  # 1280x960 is also available but only allowed in service mode
+                  # 60 fps is only available in bypass mode
+                  and ((p.as_video_stream_profile().height() == 720 and p.fps() != 60) if "D585S" in camera_name else True))
+
     except StopIteration:
         log.i("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
     else:
@@ -121,12 +128,13 @@ if cs:
                       if p.fps() == requested_fps
                       and p.stream_type() == rs.stream.color
                       and p.format() == rs.format.rgb8)
+                 
         except StopIteration:
             log.i("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
         else:
             fps = measure_fps(cs, cp, time_to_test_fps[i])
             log.i("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
-            delta_Hz = requested_fps * 0.05 # Validation KPI is 5%
+            delta_Hz = requested_fps * (0.10 if requested_fps == 5 else 0.05) # Validation KPI is 5% for all non 5 FPS rate
             test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
 
 test.finish()

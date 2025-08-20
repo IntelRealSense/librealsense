@@ -1,12 +1,19 @@
-// License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #include "stream-model.h"
 #include "subdevice-model.h"
 #include "viewer.h"
 #include "os.h"
 #include <imgui_internal.h>
+#include <realsense_imgui.h>
 
+struct attribute
+{
+    std::string name;
+    std::string value;
+    std::string description;
+};
 
 namespace rs2
 {
@@ -19,6 +26,8 @@ namespace rs2
             configurations::viewer::show_map_ruler, true);
         show_stream_details = config_file::instance().get_or_default(
             configurations::viewer::show_stream_details, false);
+        show_safety_zones_2d = config_file::instance().get_or_default(
+            configurations::viewer::show_safety_zones_2d, true);
     }
 
     std::shared_ptr<texture_buffer> stream_model::upload_frame(frame&& f)
@@ -48,9 +57,24 @@ namespace rs2
             else
                 frame_md.md_attributes[i].first = false;
         }
-
+        create_graph(profile.stream_type());
         texture->upload(f);
         return texture;
+    }
+
+    void stream_model::create_graph(rs2_stream stream_type)
+    {
+        if (!graph_initialized) 
+        {
+            // create graph if the stream is gyro/accel
+            if (profile.stream_type() == RS2_STREAM_GYRO) {
+                graph = std::make_shared<graph_model>("Gyro graph", RS2_STREAM_GYRO);
+            }
+            else if (profile.stream_type() == RS2_STREAM_ACCEL) {
+                graph = std::make_shared<graph_model>("Accel graph", RS2_STREAM_ACCEL);
+            }
+            graph_initialized = true;
+        }
     }
 
     void outline_rect(const rect& r)
@@ -145,6 +169,7 @@ namespace rs2
         profile = p;
         texture->colorize = d->depth_colorizer;
         texture->yuy2rgb = d->yuy2rgb;
+        texture->m420_to_rgb = d->m420_to_rgb;
         texture->y411 = d->y411;
 
         if (auto vd = p.as<video_stream_profile>())
@@ -173,6 +198,14 @@ namespace rs2
         }
         catch(...) {};
 
+        show_metadata_by_default(p);
+    }
+
+    void stream_model::show_metadata_by_default(const rs2::stream_profile& p)
+    {
+        // The purpose is to show metadata to a user by default because a user will not see frames in this stream.
+        if (p.stream_type() == RS2_STREAM_SAFETY)
+            show_metadata = true;
     }
 
     bool stream_model::draw_reflectivity( int x,
@@ -366,7 +399,7 @@ namespace rs2
     bool draw_combo_box(const std::string& id, const std::vector<std::string>& device_names, int& new_index)
     {
         std::vector<const char*>  device_names_chars = get_string_pointers(device_names);
-        return ImGui::Combo(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
+        return RsImGui::CustomComboBox(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
     }
 
     void stream_model::show_stream_header(ImFont* font, const rect &stream_rect, viewer_model& viewer)
@@ -377,8 +410,10 @@ namespace rs2
         if (!viewer.allow_stream_close) --num_of_buttons;
         if (viewer.streams.size() > 1) ++num_of_buttons;
         if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
+        if (RS2_FORMAT_MOTION_XYZ32F == profile.format()) ++num_of_buttons; // Motion graph button
+        if (RS2_STREAM_OCCUPANCY == profile.stream_type() && _normalized_zoom.w == 1) ++num_of_buttons; // Safety zones button
 
-        ImGui_ScopePushFont(font);
+        RsImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
 
@@ -454,12 +489,43 @@ namespace rs2
         ImGui::PushTextWrapPos(stream_rect.x + stream_rect.w - 32 * num_of_buttons - 5);
         ImGui::Text("%s", label.c_str());
         if (tooltip != label && ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", tooltip.c_str());
+            RsImGui::CustomTooltip("%s", tooltip.c_str());
         ImGui::PopTextWrapPos();
 
         ImGui::SetCursorScreenPos({ stream_rect.x + stream_rect.w - 32 * num_of_buttons, stream_rect.y - top_bar_height });
-
-
+        
+        if (graph)
+        {
+            label = rsutils::string::from() << textual_icons::bar_chart << "##graph view" << profile.unique_id();
+            if (show_graph)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    graph->clear();
+                    show_graph = false;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    RsImGui::CustomTooltip("Close graph view");
+                }
+                ImGui::PopStyleColor(2);
+            }
+            else
+            {
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    show_graph = true;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    RsImGui::CustomTooltip("Open graph view");
+                }
+            }
+            ImGui::SameLine();
+        }
+        
         label = rsutils::string::from() << textual_icons::metadata << "##Metadata" << profile.unique_id();
         if (show_metadata)
         {
@@ -471,7 +537,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Hide frame metadata");
+                RsImGui::CustomTooltip("Hide frame metadata");
             }
             ImGui::PopStyleColor(2);
         }
@@ -483,7 +549,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Show frame metadata");
+                RsImGui::CustomTooltip("Show frame metadata");
             }
         }
         ImGui::SameLine();
@@ -502,7 +568,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Hide color map ruler");
+                    RsImGui::CustomTooltip("Hide color map ruler");
                 }
                 ImGui::PopStyleColor(2);
             }
@@ -515,7 +581,40 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Show color map ruler");
+                    RsImGui::CustomTooltip("Show color map ruler");
+                }
+            }
+            ImGui::SameLine();
+        }
+
+        if (RS2_STREAM_OCCUPANCY == profile.stream_type() && _normalized_zoom.w == 1) // hide polygons button when zooming in
+        {
+            label = rsutils::string::from() << textual_icons::polygon << "##Safety zones";
+            if (show_safety_zones_2d)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    show_safety_zones_2d = false;
+                    config_file::instance().set(configurations::viewer::show_safety_zones_2d, show_safety_zones_2d);
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    RsImGui::CustomTooltip("Hide safety polygons");
+                }
+                ImGui::PopStyleColor(2);
+            }
+            else
+            {
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    show_safety_zones_2d = true;
+                    config_file::instance().set(configurations::viewer::show_safety_zones_2d, show_safety_zones_2d);
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    RsImGui::CustomTooltip("Show safety polygons");
                 }
             }
             ImGui::SameLine();
@@ -537,7 +636,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Resume sensor");
+                RsImGui::CustomTooltip("Resume sensor");
             }
             ImGui::PopStyleColor(2);
         }
@@ -555,7 +654,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Pause sensor");
+                RsImGui::CustomTooltip("Pause sensor");
             }
         }
         ImGui::SameLine();
@@ -572,7 +671,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Save snapshot");
+            RsImGui::CustomTooltip("Save snapshot");
         }
         ImGui::SameLine();
 
@@ -591,7 +690,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Hide stream info overlay");
+                RsImGui::CustomTooltip("Hide stream info overlay");
             }
 
             ImGui::PopStyleColor(2);
@@ -607,7 +706,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Show stream info overlay");
+                RsImGui::CustomTooltip("Show stream info overlay");
             }
         }
         ImGui::SameLine();
@@ -625,7 +724,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Maximize stream to full-screen");
+                    RsImGui::CustomTooltip("Maximize stream to full-screen");
                 }
 
                 ImGui::SameLine();
@@ -643,7 +742,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Restore tile view");
+                    RsImGui::CustomTooltip("Restore tile view");
                 }
 
                 ImGui::PopStyleColor(2);
@@ -664,7 +763,7 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Stop this sensor");
+                RsImGui::CustomTooltip("Stop this sensor");
             }
         }
 
@@ -731,11 +830,11 @@ namespace rs2
                         }
                         else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
                         {
-                            ImGui::SetTooltip("Timestamp: Global Time");
+                            RsImGui::CustomTooltip("Timestamp: Global Time");
                         }
                         else
                         {
-                            ImGui::SetTooltip("Timestamp: Hardware Clock");
+                            RsImGui::CustomTooltip("Timestamp: Hardware Clock");
                         }
                     }
 
@@ -765,7 +864,7 @@ namespace rs2
                         ImGui::Text("%s", label.c_str());
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Stream Resolution, Format");
+                        RsImGui::CustomTooltip("%s", "Stream Resolution, Format");
                     }
 
                     ImGui::SameLine();
@@ -780,7 +879,7 @@ namespace rs2
                         ImGui::Text("%s", label.c_str());
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
+                        RsImGui::CustomTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
                     }
                 }
 
@@ -788,8 +887,25 @@ namespace rs2
             }
         }
 
-        if (show_metadata)
+
+
+        if (show_metadata && timestamp > 0)  // ts > 0 checked so that the metadata panel will not be drawn before frames arrival
             stream_model::draw_stream_metadata(timestamp, timestamp_domain, frame_number, profile, original_size, stream_rect);
+
+        if (show_graph && graph)
+        {
+            if (dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
+            {
+                graph->pause();
+            }
+            else
+            {
+                if(graph->is_paused())
+                    graph->resume();
+            }
+            graph->process_frame(texture->get_last_frame());
+            graph->draw(stream_rect);
+        }
 
         ImGui::PopStyleColor(5);
     }
@@ -874,46 +990,43 @@ namespace rs2
 
         const std::string no_md = "no md";
 
-        if( timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME )
+        if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
         {
-            stream_details.push_back( { no_md, "", ""} );
+            stream_details.push_back({ no_md, "", "" });
         }
 
-        std::map< rs2_frame_metadata_value, std::string > descriptions = {
-            { RS2_FRAME_METADATA_FRAME_COUNTER, "A sequential index managed per-stream. Integer value" },
-            { RS2_FRAME_METADATA_FRAME_TIMESTAMP,
-              "Timestamp set by device clock when data readout and transmit commence. Units are device dependent" },
-            { RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
-              "Timestamp of the middle of sensor's exposure calculated by device. usec" },
-            { RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
-              "Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec" },
-            { RS2_FRAME_METADATA_GAIN_LEVEL,
-              "A relative value increasing which will increase the Sensor's gain factor.\n"
-              "When AE is set On, the value is controlled by firmware. Integer value" },
-            { RS2_FRAME_METADATA_AUTO_EXPOSURE, "Auto Exposure Mode indicator. Zero corresponds to AE switched off. " },
-            { RS2_FRAME_METADATA_WHITE_BALANCE, "White Balance setting as a color temperature. Kelvin degrees" },
-            { RS2_FRAME_METADATA_TIME_OF_ARRIVAL, "Time of arrival in system clock" },
-            { RS2_FRAME_METADATA_TEMPERATURE,
-              "Temperature of the device, measured at the time of the frame capture. Celsius degrees " },
-            { RS2_FRAME_METADATA_BACKEND_TIMESTAMP, "Timestamp get from uvc driver. usec" },
-            { RS2_FRAME_METADATA_ACTUAL_FPS, "Hardware FPS * 1000 =\n"
-              "1000000 * (frame-number - prev-frame-number) / (timestamp - prev-timestamp)" },
-            { RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE,
-              "Laser power mode. Zero corresponds to Laser power switched off and one for switched on." },
-            { RS2_FRAME_METADATA_EXPOSURE_PRIORITY,
-              "Exposure priority. When enabled Auto-exposure algorithm is allowed to reduce requested FPS to "
-              "sufficiently increase exposure time (an get enough light)" },
-            { RS2_FRAME_METADATA_POWER_LINE_FREQUENCY,
-              "Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto. " },
+        std::map<rs2_frame_metadata_value, std::string> descriptions = {
+            { RS2_FRAME_METADATA_FRAME_COUNTER                        , "A sequential index managed per-stream. Integer value" },
+            { RS2_FRAME_METADATA_FRAME_TIMESTAMP                      , "Timestamp set by device clock when data readout and transmit commence. Units are device dependent" },
+            { RS2_FRAME_METADATA_SENSOR_TIMESTAMP                     , "Timestamp of the middle of sensor's exposure calculated by device. usec" },
+            { RS2_FRAME_METADATA_ACTUAL_EXPOSURE                      , "Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec" },
+            { RS2_FRAME_METADATA_GAIN_LEVEL                           , "A relative value increasing which will increase the Sensor's gain factor.\n"
+                                                                        "When AE is set On, the value is controlled by firmware. Integer value" },
+            { RS2_FRAME_METADATA_AUTO_EXPOSURE                        , "Auto Exposure Mode indicator. Zero corresponds to AE switched off. " },
+            { RS2_FRAME_METADATA_WHITE_BALANCE                        , "White Balance setting as a color temperature. Kelvin degrees" },
+            { RS2_FRAME_METADATA_TIME_OF_ARRIVAL                      , "Time of arrival in system clock" },
+            { RS2_FRAME_METADATA_TEMPERATURE                          , "Temperature of the device, measured at the time of the frame capture. Celsius degrees " },
+            { RS2_FRAME_METADATA_BACKEND_TIMESTAMP                    , "Timestamp get from uvc driver. usec" },
+            { RS2_FRAME_METADATA_ACTUAL_FPS                           , "Hardware FPS * 1000 =\n1000000 * (frame-number - prev-frame-number) / (timestamp - prev-timestamp)" },
+            { RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE               , "Laser power mode. Zero corresponds to Laser power switched off and one for switched on." },
+            { RS2_FRAME_METADATA_EXPOSURE_PRIORITY                    , "Exposure priority. When enabled Auto-exposure algorithm is allowed to reduce requested FPS to sufficiently increase exposure time (an get enough light)" },
+            { RS2_FRAME_METADATA_POWER_LINE_FREQUENCY                 , "Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto. " },
         };
 
-        for( auto i = 0; i < RS2_FRAME_METADATA_COUNT; i++ )
+
+        //add_descriptions_for_d500_metadata_fields(descriptions);
+        std::string pid = this->dev->dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        if (pid == "0B6B")
+            add_d585S_metadata_descriptions(descriptions);
+        for (auto i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
         {
-            auto && kvp = frame_md.md_attributes[i];
-            if( kvp.first )
+            auto&& kvp = frame_md.md_attributes[i];
+            if (kvp.first)
             {
                 auto val = (rs2_frame_metadata_value)i;
-                std::string name = rs2_frame_metadata_to_string( val );
+                std::string name = rs2_frame_metadata_to_string(val);
+                if( pid == "0B6B" )
+                    name = adapt_d585S_metadata_name( name );
                 std::string desc;
                 if( descriptions.find( val ) != descriptions.end() )
                     desc = descriptions[val];
@@ -1007,7 +1120,7 @@ namespace rs2
                 {
                     if( ImGui::IsItemHovered() )
                     {
-                        ImGui::SetTooltip( "%s", at.description.c_str() );
+                        RsImGui::CustomTooltip( "%s", at.description.c_str() );
                     }
                 }
 
@@ -1042,8 +1155,225 @@ namespace rs2
         ImGui::EndChild();
     }
 
+    void stream_model::add_d585S_metadata_descriptions(std::map<rs2_frame_metadata_value, std::string>& descriptions) const
+    {
+        std::vector<std::string> meanings;
+        descriptions[RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_COUNTER] = "Counter of the depth frame upon which the stream was calculated";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1] = "Designates the \"Yellow\" zone status: 1 - High, 0 - Low";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1_ORIGIN] = "When l1 is low - equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to High state";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2] = "Designates the \"Red\" zone status: 1 - High, 0 - Low";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2_ORIGIN] = "When l2 is low - equals to frame_counter in safety_header - For l2=0x1 : hold the Frame id on last transition to High state";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1_VERDICT] = "Current verdict for l1 Safety Signal - May differ from l1_signal due to additional logics applied";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2_VERDICT] = "Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied";
+        descriptions[RS2_FRAME_METADATA_SAFETY_OPERATIONAL_MODE] = "Reflects the SC operational mode (XU control)";
+
+        meanings = { "Not Safe", "Collison(s) in danger zone", "Collision(s) in warning zone" };
+        descriptions[RS2_FRAME_METADATA_SAFETY_VISION_VERDICT] = "Depth Visual Safety Verdict:" + get_meaning(RS2_FRAME_METADATA_SAFETY_VISION_VERDICT, meanings, "Safe");
+        
+        meanings = { 
+            "HaRa triggers identified",
+            "Collison(s) in danger zone",
+            "Collision(s) in warning zone",
+            "Depth fill rate in the diagnostic zone is lower than the require confidence level",
+            "Depth fill rate in the floor area is lower than the require confidence level",
+            "Cliff detection was triggered",
+            "Depth noise standard deviation is higher than permitted level",
+            "Camera posture/floor position critical deviation is detected",
+            "Safety preset error",
+            "Image depth fill Rate is lower than the require confidence level",
+            "Contious frame drops",
+            "Sustained frame drops",
+            "Frozen depth image (CRC recurrence)",
+            "FTTI miss (data latency)",
+            "Safety & Security check failure"
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_HARA_EVENTS] = "HaRa events:" + get_meaning(RS2_FRAME_METADATA_SAFETY_HARA_EVENTS, meanings, "No HaRa events identified");
+        
+        meanings = { "Preset inconsistency identified", "Preset CRC check invalid", "Discrepancy between actual and expected Preset Id", "Preset Selection with GPIO is invalidated."};
+        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY] = "Preset integrity:" + get_meaning(RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY, meanings, "Preset integrity identified");
+        
+        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID_SELECTED] = "Safety Preset index set via Adaptive Field selection GPIO";
+        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID_USED] = "Safety Preset index used in the latest Vision Safety algo processing";
+        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS] = "SOC critical notification: L2/L3 that requires handling/troubleshooting in S.MCU 32-bit value, as supplied by STL mechanism";
+
+        meanings = { "HKR Reset", "HKR Shutdown"};
+        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION] = "Bitmask, enumerated:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION, meanings, "No action taken");
+
+        meanings = { "Not safe", "ADC1 over-voltage", "ADC1 under-voltage", "ADC2 over-voltage", "ADC2 under-voltage", "ADC3 over-voltage", 
+            "ADC3 under-voltage", "ADC4 over-voltage", "ADC4 under-voltage", "ADC5 over-voltage", "ADC5 under-voltage", "ADC6 over-voltage", 
+            "ADC6 under-voltage", "ADC7 over-voltage", "ADC7 under-voltage", "PVT0 over-voltage", "PVT0 under-voltage", "PVT1 over-voltage", 
+            "PVT1 under-voltage", "PVT2 over-voltage", "PVT2 under-voltage", "PVT3 over-voltage", "PVT3 under-voltage", "PVT4 over-voltage", 
+            "PVT4 under-voltage", "PVT5 over-voltage", "PVT5 under-voltage", "PVT6 over-voltage", "PVT6 under-voltage", "IR L over-voltage", 
+            "IR L under-voltage", "Projector L over-voltage", "Projector L under-voltage", "IMU sensor over-voltage", "IMU sensor under-voltage", 
+            "RGB sensor over-voltage", "RGB sensor under-voltage", "IR R over-voltage", "IR R under-voltage", "Projector R over-voltage", 
+            "Projector R under-voltage", "APM PRIN L over-voltage", "APM PRIN L under-voltage", "APM PRIN R over-voltage", "APM PRIN R under-voltage", 
+            "Thermal over-voltage", "Thermal under-voltage", "Humidity over-voltage", "Humidity under-voltage", "SMCU temprature over-voltage", "SMCU temprature under-voltage" };
+        descriptions[RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT] = "MB Fusa events:" + get_meaning(RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT, meanings, "Safe");
+
+        meanings = { "GMT Clock is outside safe threshold", "GMT Clock is not avaialble"};
+        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_GMT_STATUS] = "MB Fusa events:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SOC_GMT_STATUS, meanings, "GMT Clock Ok");
+
+        descriptions[RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION] = "Bitmask, enumerated";
+        descriptions[RS2_FRAME_METADATA_SAFETY_MB_STATUS] = "Provision for future enhancements";
+        descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_LIVELINESS] = "Bitmask, enumerated";
+        descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_STATE] = "Bitmask, enumerated";
+        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID] = "Designates the Safety Zone index in [0..63] range used in algo pipe";
+        descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL] = "In millidegrees. Relative to X (forward) axis. Positive value is CCW";
+        descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH] = "In millidegrees. Relative to Y (left) axis. Positive value is CCW";
+        descriptions[RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_MEDIAN_HEIGHT] = "In millimeters. Relative to the leveled pointcloud CS";
+        descriptions[RS2_FRAME_METADATA_FLOOR_DETECTION] = "Percentage";
+        descriptions[RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_FILL_RATE] = "Percentage";
+        descriptions[RS2_FRAME_METADATA_DEPTH_FILL_RATE] = "Unsigned value in range of [0..100]. Use [x = 0xFF] if not applicable";
+        descriptions[RS2_FRAME_METADATA_DEPTH_STDEV] = "Spatial accuracy in millimetric units";
+        descriptions[RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS] = "Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile)";
+        descriptions[RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS] = "Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile)";
+        descriptions[RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE] = "Edge size of each tile, measured in cm";
+        descriptions[RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES] = "The max number of points is 640*360";
+
+        meanings =
+        {
+            "ERROR_UNKNOWN", "ERROR_GRID_CELL_SIZE_OUT_OF_RANGE", "ERROR_DANGER_ZONE_OUT_OF_FOV", "ERROR_DANGER_ZONE_INVALID_GEOMETRY",
+            "ERROR_WARNING_ZONE_OUT_OF_FOV", "ERROR_WARNING_ZONE_INVALID_GEOMETRY", "ERROR_DIAGNOSTIC_ZONE_OUT_OF_FOV",
+            "ERROR_DIAGNOSTIC_ZONE_INVALID_GEOMETRY", "ERROR_MASK_INVALID_GEOMETRY", "ERROR_MASK_MIN_DISTANCE_OUT_OF_RANGE", "ERROR_MASK_OUT_OF_FOV",
+            "ERROR_ROBOT_HEIGHT_OUT_OF_RANGE", "ERROR_SURFACE_HEIGHT_OUT_OF_RANGE", "ERROR_SURFACE_STEEPNESS_OUT_OF_RANGE", "ERROR_TRANSFORMATION_INVALID"
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_TYPE] = "Safety Preset Error Types:" + get_meaning(RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_TYPE, meanings, "OK");
+
+        meanings =
+        {
+            "OSSD2_A_present",
+            "OSSD2_A status : Raised / Idle",
+            "OSSD2_B_present",
+            "OSSD2_B status : Raised / Idle"
+            "Device_Ready_present",
+            "Device_Ready on / off",
+            "Error signal present",
+            "Error signal on / off",
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_OUT] = "Non-FuSa GPIO Out:" + get_meaning(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_OUT, meanings, "OK");
+
+        meanings =
+        {
+            "Interlock_present",
+            "Interlock_status: Raised / Idle",
+            "HW_Reset_present",
+            "HW_Reset status: Raised / Idle"
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_IN] = "Non-FuSa GPIO In:" + get_meaning(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_IN, meanings, "OK");
+
+        meanings =
+        {
+            "Unit is Locked",
+            "OHM Serial Numbers check is valid",
+            "APM Serial Numbers check is valid",
+            "TBD",
+            "Depth calibration data is valid",
+            "Triggered calibration result is valid",
+            "Triggered calibration data is valid"
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY] = "Soc Safety and Security:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY, meanings, "None");
+
+        meanings =
+        {
+            "Global Notification",
+            "SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm",
+            "SMCU Image CRC Check failed",
+            "LBIST Failure",
+            "MONBIST Failure",
+            "SMU Alive Alarm Failure",
+            "RegMon CPU0 SRAM Failure",
+            "MBIST Config0 Failure",
+            "MBIST Config1 Failure",
+            "DTS Result Failure",
+            "RegMon CPU1 SRAM Failure",
+            "RegMon CPU2 SRAM Failure",
+            "RegMon SMU and PLL Failure",
+            "MCU Startup SFR Test"
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_HW_MONITOR_STATUS] = "SMCU HW Monitor Status:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SMCU_HW_MONITOR_STATUS, meanings, "None");
+
+        meanings =
+        {
+            "Global Notification (SW Monitor Ok=0, Fail=1)",
+            "SW Monitor Status (Ok=0, fail =1)",
+            "Keep-Alive failure","Keep-Alive failure","Keep-Alive failure",
+            "Keep-Alive failure","Keep-Alive failure","Keep-Alive failure",
+            "Keep-Alive failure","Keep-Alive failure","Keep-Alive failure",
+            "SMCU Image CRC Check failed",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure"
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_SW_MONITOR_STATUS] = "SMCU SW Monitor Status:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SMCU_SW_MONITOR_STATUS, meanings, "None");
+    }
+
+    std::string stream_model::adapt_d585S_metadata_name( const std::string & name ) const
+    {
+        if( name == "Manual White Balance" )
+            return "White Balance"; // D585S also outputs auto white balance values in this fields so the "manual" in the name is wrong
+
+        return name;
+    }
+
+
+    // every bit is represented by its own meaning - first bit by first meaning second by second meaning etc.
+    // if the value is 0, meaning_for_zero will be used instead
+    std::string stream_model::get_meaning(const rs2_frame_metadata_value& md_val, const std::vector<std::string>& bits_meanings, const std::string& meaning_for_zero) const
+    {
+        if (bits_meanings.size() > 63)
+            return "bits meanings passed is too long!"; // not supposed to reach here
+        std::string meanings_str = "";
+        uint64_t attribute_val = frame_md.md_attributes[md_val].second;
+        uint64_t bitmask = 1;
+        int i = 0;
+        for (const std::string& bit_meaning : bits_meanings)
+        {
+            if (attribute_val & bitmask)
+            {
+                meanings_str += "\n" + bit_meaning + " (" + std::to_string(i) + ")";
+            }
+            bitmask = bitmask << 1;
+            i++;
+        }
+        if (meanings_str.empty() && !meaning_for_zero.empty())
+            meanings_str = "\n" + meaning_for_zero;
+        return meanings_str;
+    }
+
+    std::string stream_model::smcu_internal_state_to_string(rs2_metadata_type& attribute_val) const
+    {
+        switch(attribute_val)
+        {
+            case 0: return "INIT_STATE";
+            case 1: return "TRANSITION_STATE";
+            case 2: return "RUN_SAFE_STATE";
+            case 3: return "SERVICE_STATE";
+            case 4: return "TESTER_STATE";
+            case 5: return "DFU_HKR_STATE";
+            case 6: return "PAUSE_STATE";
+            case 7: return "WARNING_STATE";
+            case 8: return "DANGER_STATE";
+            case 9: return "DANGER_ERROR_STATE";
+            case 10: return "INTERLOCK_DANGER_STATE";
+            case 11: return "NON_CRITICAL_ERROR_STATE";
+            case 12: return "IRRECOVERABLE_LOCK_ERROR_STATE";
+            case 13: return "DFU_MCU_STATE";
+            case 14: return "PENDING_STATE";
+
+        }
+        return rsutils::string::from() << "UNDEFINED:" << attribute_val;
+    }
+
     std::string stream_model::format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const
     {
+        if (md_val == RS2_FRAME_METADATA_SAFETY_OPERATIONAL_MODE)
+            return rs2_safety_mode_to_string((rs2_safety_mode)attribute_val);
+        if (md_val == RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_INTERNAL_STATE)
+            return smcu_internal_state_to_string(attribute_val);
         if (should_show_in_hex(md_val))
             return rsutils::string::from() << "0x" << std::hex << attribute_val; // return value as hex
         return rsutils::string::from() << attribute_val;
@@ -1052,7 +1382,27 @@ namespace rs2
     bool stream_model::should_show_in_hex(rs2_frame_metadata_value& md_val) const
     {
         // place in the SET metadata types you wish to display in HEX format
-        static std::unordered_set< int > show_in_hex;
+        static std::unordered_set< int > show_in_hex(
+            {
+                RS2_FRAME_METADATA_SAFETY_VISION_VERDICT,
+                RS2_FRAME_METADATA_SAFETY_HARA_EVENTS,
+                RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY,
+                RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT,
+                RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION,
+                RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION,
+                RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L2_ERROR_TYPE,
+                RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L3_ERROR_TYPE,
+                RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS,
+                RS2_FRAME_METADATA_SAFETY_SMCU_LIVELINESS,
+                RS2_FRAME_METADATA_SAFETY_SMCU_STATE,
+                RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_STATUS_BITMASK,
+                RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_BIST_STATUS,
+                RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_OUT,
+                RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY,
+                RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_IN,
+                RS2_FRAME_METADATA_SAFETY_SMCU_HW_MONITOR_STATUS,
+                RS2_FRAME_METADATA_SAFETY_SMCU_SW_MONITOR_STATUS
+            });
 
         if (show_in_hex.find(md_val) != show_in_hex.end())
             return true;
@@ -1114,7 +1464,7 @@ namespace rs2
 
                 // Draw maximum usable depth range
                 auto ds = sensor_from_frame(texture->get_last_frame())->as<depth_sensor>();
-                if (!viewer.is_option_skipped(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
+                if (ds && !viewer.is_option_skipped(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
                 {
                     if (ds.supports(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) &&
                         (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) == 1.0f))
@@ -1199,7 +1549,7 @@ namespace rs2
 
             std::string msg(ss.str().c_str());
 
-            ImGui_ScopePushFont(font);
+            RsImGui_ScopePushFont(font);
 
             // adjust windows size to the message length
             auto new_line_start_idx = msg.find_first_of('\n');
@@ -1310,7 +1660,7 @@ namespace rs2
                 ImGui::Text("%s:", motion.name.c_str());
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", motion.toolTip.c_str());
+                    RsImGui::CustomTooltip("%s", motion.toolTip.c_str());
                 }
                 ImGui::PopStyleColor(1);
 
@@ -1411,7 +1761,7 @@ namespace rs2
             ImGui::Text("%s:", pose.name.c_str());
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", pose.toolTip.c_str());
+                RsImGui::CustomTooltip("%s", pose.toolTip.c_str());
             }
 
             if (pose.fixedColor == false)
@@ -1637,7 +1987,7 @@ namespace rs2
     {
         auto zoom_val = 1.f;
         // Allow mouse scrolling for zoom when not displaying scrollable metadata
-        if (stream_rect.contains(g.cursor) && !show_metadata)
+        if(stream_rect.contains(g.cursor) && !show_metadata && !show_graph)
         {
             static const auto wheel_step = 0.1f;
             auto mouse_wheel_value = -g.mouse_wheel * 0.1f;

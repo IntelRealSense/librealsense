@@ -12,7 +12,7 @@ jobs:
 
   build_lrs_ros2_package:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       matrix:
         ros_distribution:
@@ -43,12 +43,12 @@ jobs:
     steps:
 
       - name: setup ROS environment
-        uses: ros-tooling/setup-ros@v0.7
+        uses: ros-tooling/setup-ros@87aeba050fd62d0ee5d5fdf4b6c9f847892ea864 #v0.7.13
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
 
       - name: build librealsense ROS 2
-        uses: ros-tooling/action-ros-ci@v0.3
+        uses: ros-tooling/action-ros-ci@1ff2c804b4c2383146d8cd8444dfda64ab4bf7ac #v0.4.3
         with:
           target-ros2-distro: ${{ matrix.ros_distribution }}
           skip-tests: true

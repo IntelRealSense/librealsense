@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -155,6 +155,19 @@ namespace librealsense
                 {
                     for (auto&& sensor : _results)
                         sensor.second->start(callback);
+                }
+
+                template< class T >
+                void open_and_start( T callback )
+                {
+                    // Calling open() than start() opens all relevant sensors before starting any of them.
+                    // For some device backends we want to open and start each sensor before opening the next sensor.
+                    for( auto it = _dev_to_profiles.rbegin(); it != _dev_to_profiles.rend(); it++ )
+                    {
+                        auto && sub = _results.at( it->first );
+                        sub->open( it->second );
+                        sub->start( callback );
+                    }
                 }
 
                 void stop()

@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #test:donotrun:!dds
 
@@ -126,7 +126,7 @@ def find_active_profile( stream_name ):
     raise KeyError( f"can't find '{sensor_name}' profile for stream '{stream_name}'" )
 
 def find_server_profile( stream_name, profile_string ):
-    by_string = f"<'{stream_name}' {profile_string}>"
+    by_string = f"<'{stream_name}' {profile_string}>"    
     for profile in servers[stream_name].profiles():
         if profile.to_string() == by_string:
             return profile
@@ -331,12 +331,12 @@ with test.closure( "open and close" ):
     bridge.open( find_server_profile( 'Infrared_1', '1280x800 mono8 @ 30 Hz' ))
     bridge.close( servers['Infrared_1'] )
     bridge.close( servers['Infrared_1'] )
-    bridge.open( find_server_profile( 'Infrared_1', '1280x800 Y16 @ 25 Hz' ))
+    bridge.open( find_server_profile( 'Infrared_1', '1280x800 mono16 @ 25 Hz' ))
     bridge.reset()
-    bridge.open( find_server_profile( 'Infrared_1', '1280x800 Y16 @ 15 Hz' ))
+    bridge.open( find_server_profile( 'Infrared_1', '1280x800 mono16 @ 15 Hz' ))
     test.check_throws( lambda:
-        bridge.open( find_server_profile( 'Infrared_1', '1280x800 Y16 @ 25 Hz' )),
-        RuntimeError, "profile <'Infrared_1' 1280x800 Y16 @ 25 Hz> is incompatible with already-open <'Infrared_1' 1280x800 Y16 @ 15 Hz>" )
+        bridge.open( find_server_profile( 'Infrared_1', '1280x800 mono16 @ 25 Hz' )),
+        RuntimeError, "profile <'Infrared_1' 1280x800 mono16 @ 25 Hz> is incompatible with already-open <'Infrared_1' 1280x800 mono16 @ 15 Hz>" )
 reset()
 #
 #############################################################################################

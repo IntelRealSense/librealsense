@@ -3,6 +3,10 @@ lib/
 
 ubuntu-xenial/
 ubuntu-xenial-hwe/
+ubuntu-focal-master/
+
+.gitconfig
+
 
 # Docs
 doc/doxygen/html/
@@ -89,3 +93,4 @@ librealsense-log.txt
 *.cxx
 
 .vscode/*
+/unit-tests/.idea

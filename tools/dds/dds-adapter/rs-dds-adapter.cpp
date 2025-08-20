@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-5 RealSense, Inc. All Rights Reserved.
 
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
@@ -7,36 +7,44 @@
 #include <realdds/dds-option.h>
 #include <realdds/dds-log-consumer.h>
 #include <realdds/topics/device-info-msg.h>
+#include <realdds/topics/dds-topic-names.h>
+#include <realdds/topics/ros2/participant-entities-info-msg.h>
+#include <realdds/topics/ros2/parameter-events-msg.h>
+#include <realdds/dds-publisher.h>
+#include <realdds/dds-topic-writer.h>
 
 #include "lrs-device-watcher.h"
 #include "lrs-device-controller.h"
 
-#include <tclap/CmdLine.h>
-#include <tclap/ValueArg.h>
+#include <common/cli.h>
 
 #include <rsutils/os/executable-name.h>
 #include <rsutils/os/special-folder.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
 #include <rsutils/json-config.h>
+#include <rsutils/concurrency/control-c-handler.h>
+#include <rsutils/concurrency/delayed.h>
+#include <rsutils/string/from.h>
 
 #include <string>
 #include <iostream>
 #include <map>
 #include <set>
 
-using namespace TCLAP;
 using namespace realdds;
+using rsutils::json;
 
 
-std::string get_topic_root( std::string const & name, std::string const & serial_number )
+std::string build_node_name( std::string const & rs2_camera_name, std::string const & serial_number )
 {
-    // Build device root path (we use a device model only name like DXXX)
-    // example: /realsense/D435/11223344
+    // Build the ROS2 node name, without a namespace
+    // example: D435_11223344
+    // NOTE: the serial number here may be the device update ID or the actual device serial number
     constexpr char const * DEVICE_NAME_PREFIX = "Intel RealSense ";
     constexpr size_t DEVICE_NAME_PREFIX_CCH = 16;
     // We don't need the prefix in the path
-    std::string model_name = name;
+    std::string model_name = rs2_camera_name;
     if( model_name.length() > DEVICE_NAME_PREFIX_CCH
         && 0 == strncmp( model_name.data(), DEVICE_NAME_PREFIX, DEVICE_NAME_PREFIX_CCH ) )
     {
@@ -45,14 +53,21 @@ std::string get_topic_root( std::string const & name, std::string const & serial
     for( auto it = model_name.begin(); it != model_name.end(); ++it )
         if( *it == ' ' )
             *it = '_';  // e.g., 'D4xx Recovery'
-    constexpr char const * RS_ROOT = "realsense/";
-    return RS_ROOT + model_name + '_' + serial_number;
+    return model_name + '_' + serial_number;
+}
+
+
+std::string get_topic_root( std::string const & rs2_camera_name, std::string const & serial_number )
+{
+    // Build device root path (we use a device model only name like DXXX)
+    // example: realsense/D435_11223344
+    return realdds::topics::ROOT + build_node_name( rs2_camera_name, serial_number );
 }
 
 
 topics::device_info rs2_device_to_info( rs2::device const & dev )
 {
-    rsutils::json j;
+    json j;
 
     // Name is mandatory
     std::string const name = dev.get_info( RS2_CAMERA_INFO_NAME );
@@ -86,7 +101,7 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
 }
 
 
-static rsutils::json load_settings( rsutils::json const & local_settings )
+static json load_settings( json const & local_settings )
 {
     // Load the realsense configuration file settings
     std::string const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
@@ -112,48 +127,36 @@ static rsutils::json load_settings( rsutils::json const & local_settings )
 int main( int argc, char * argv[] )
 try
 {
-    dds_domain_id domain = -1;  // from settings; default to 0
-    CmdLine cmd( "librealsense rs-dds-adapter tool, use CTRL + C to stop..", ' ', RS2_API_FULL_VERSION_STR );
-    ValueArg< dds_domain_id > domain_arg( "d",
-                                          "domain",
-                                          "Select domain ID to publish on",
-                                          false,
-                                          0,
-                                          "0-232" );
-    SwitchArg debug_arg( "", "debug", "Enable debug logging", false );
-
-    cmd.add( domain_arg );
-    cmd.add( debug_arg );
-    cmd.parse( argc, argv );
+    using cli = rs2::cli_no_dds;  // no --eth, --no-eth, --eth-only, --domain-id
+    cli::value< dds_domain_id > domain_arg( "domain-id", "0-232", 0, "Select domain ID to publish on" );
+    cli cmd( "librealsense rs-dds-adapter tool: use USB devices as network devices" );
+    auto settings = cmd  // in order we want listed:
+        .arg( domain_arg )
+        .process( argc, argv );
 
     // Configure the same logger as librealsense
-    rsutils::configure_elpp_logger( debug_arg.isSet() );
+    rsutils::configure_elpp_logger( cmd.debug_arg.isSet() );
     // Intercept DDS messages and redirect them to our own logging mechanism
     eprosima::fastdds::dds::Log::ClearConsumers();
     eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
 
-    if( debug_arg.isSet() )
-    {
-        rs2::log_to_console( RS2_LOG_SEVERITY_DEBUG );
+    if( cmd.debug_arg.isSet() )
         eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Info );
-    }
     else
-    {
-        rs2::log_to_console( RS2_LOG_SEVERITY_ERROR );
         eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
-    }
 
+    dds_domain_id domain = -1;  // from settings; default to 0
     if( domain_arg.isSet() )
     {
         domain = domain_arg.getValue();
-        if( domain > 232 )
+        if( domain < 0 || domain > 232 )
         {
             std::cerr << "Invalid domain value, enter a value in the range [0, 232]" << std::endl;
             return EXIT_FAILURE;
         }
     }
 
-    std::cout << "Starting RS DDS Adapter.." << std::endl;
+    std::cout << "Starting RS DDS Adapter on domain " << domain << " ..." << std::endl;
 
     // Create a DDS participant
     auto participant = std::make_shared< dds_participant >();
@@ -163,6 +166,23 @@ try
         participant->init( domain, "rs-dds-adapter", std::move( dds_settings ) );
     }
 
+    // Create a ROS2 "context" (not really, but good enough for now)
+    std::shared_ptr< realdds::dds_topic_writer > discovery_info_writer;
+    auto publisher = std::make_shared< realdds::dds_publisher >( participant );
+    if( auto topic = realdds::topics::ros2::participant_entities_info_msg::create_topic(
+        participant,
+        topics::ros2::DISCOVERY_INFO ) )
+    {
+        // The ros_discovery_info topic is where we'll make our cameras visible to ROS2: each camera will be a ROS2 node
+        // that will publish its own set of parameters etc.
+        discovery_info_writer = std::make_shared< dds_topic_writer >( topic, publisher );
+        dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS,
+                                    eprosima::fastdds::dds::TRANSIENT_LOCAL_DURABILITY_QOS );
+        discovery_info_writer->override_qos_from_json( wqos,
+            participant->settings().nested( "device", "ros-discovery-info" ) );
+        discovery_info_writer->run( wqos );
+    }
+
     struct device_handler
     {
         topics::device_info info;
@@ -170,15 +190,56 @@ try
         std::shared_ptr< tools::lrs_device_controller > controller;
     };
     std::map< rs2::device, device_handler > device_handlers_list;
-    
+
     std::cout << "Start listening to RS devices.." << std::endl;
 
     // Create a RealSense context
-    rsutils::json j = {
-        { "dds",               false   }, // Don't discover DDS devices from the network, we want local devices only 
-        { "format-conversion", "basic" }  // Don't convert raw sensor formats (except interleaved) will be done by receiver
-    };
-    rs2::context ctx( j.dump() );
+    settings["dds"] = false;                  // We want non-DDS (local) devices only
+    settings["format-conversion"] = "basic";  // Conversion of raw sensor formats will be done by the receiver
+    rs2::context ctx( settings.dump() );
+
+    // Set up the ros_discovery_info broadcaster
+    rsutils::concurrency::delayed broadcast_ros_discovery_info(
+        [&]
+        {
+            realdds::topics::ros2::participant_entities_info_msg msg;
+
+            // The RMW context gid is initialized, at least with the FastRTPS implementation, from the participant's GUID (see
+            // init_context_impl()), so the GID of the "ParticipantEntitiesInfo" is simply the participant GUID.
+            msg.set_gid( participant->guid() );
+
+            std::string const node_namespace = realdds::topics::ros2::NAMESPACE;
+            for( auto const & dev2handler : device_handlers_list )
+            {
+                auto & device = dev2handler.second;
+                if( device.info.serial_number().empty() )
+                    continue;  // E.g., recovery device
+                std::string node_name = build_node_name( device.info.name(), device.info.serial_number() );
+                topics::ros2::participant_entities_info_msg::node node( node_namespace, node_name );
+                device.controller->fill_ros2_node_entities( node );
+                msg.add( std::move( node ) );
+            }
+
+            msg.write_to( *discovery_info_writer );
+        } );
+
+    // And a writer for the ROS2 /parameter_events topics
+    std::shared_ptr< realdds::dds_topic_writer > parameter_events_writer;
+    std::string const
+        parameters_events_topic_name = rsutils::string::from()
+                                    << topics::ros2::ROOT
+                                    << topics::ros2::PARAMETER_EVENTS_NAME;
+    if( auto topic = realdds::topics::ros2::parameter_events_msg::create_topic(
+        participant,
+        parameters_events_topic_name.c_str() ) )
+    {
+        // The parameter_events topic is where we'll publish any new/changed/deleted events
+        parameter_events_writer = std::make_shared< dds_topic_writer >( topic, publisher );
+        dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        parameter_events_writer->override_qos_from_json( wqos,
+            participant->settings().nested( "device", "ros-parameter-events" ) );
+        parameter_events_writer->run( wqos );
+    }
 
     // Run the LRS device watcher
     tools::lrs_device_watcher dev_watcher( ctx );
@@ -193,14 +254,21 @@ try
                 = std::make_shared< realdds::dds_device_server >( participant, dev_info.topic_root() );
  
             // Create a lrs_device_manager for this device
-            std::shared_ptr< tools::lrs_device_controller > lrs_device_controller
-                = std::make_shared< tools::lrs_device_controller >( dev, dds_device_server );
+            auto lrs_device_controller = std::make_shared< tools::lrs_device_controller >( dev, dds_device_server );
+
+            if( ! dev_info.serial_number().empty() )
+                lrs_device_controller->initialize_ros2_node_entities(
+                    build_node_name( dev_info.name(), dev_info.serial_number() ),
+                    parameter_events_writer );
 
             // Finally, we're ready to broadcast it
             dds_device_server->broadcast( dev_info );
 
             // Keep a pair of device controller and server per RS device
             device_handlers_list.emplace( dev, device_handler{ dev_info, dds_device_server, lrs_device_controller } );
+
+            if( ! dev_info.serial_number().empty() )
+                broadcast_ros_discovery_info.call_in( std::chrono::milliseconds( 200 ) );
         },
         // Handle a device disconnection
         [&]( rs2::device dev ) {
@@ -208,11 +276,20 @@ try
             auto const & handler = device_handlers_list.at( dev );
 
             device_handlers_list.erase( dev );
+
+            broadcast_ros_discovery_info.call_in( std::chrono::milliseconds( 200 ) );
         } );
 
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 0);// Pend until CTRL + C is pressed 
-
+    {
+        rsutils::concurrency::control_c_handler control_c;
+        control_c.wait();
+    }
     std::cout << "Shutting down rs-dds-adapter..." << std::endl;
+
+    // Broadcast we are shutting down
+    device_handlers_list.clear();
+    broadcast_ros_discovery_info.call_now();
+    discovery_info_writer->wait_for_acks( realdds::dds_time{ 1, 0 } );
 
     return EXIT_SUCCESS;
 }

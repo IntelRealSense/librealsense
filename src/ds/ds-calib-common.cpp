@@ -1,19 +1,116 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
 
 #include <src/ds/ds-calib-common.h>
 
 #include <src/types.h>
+#include <src/device.h>
+#include <src/auto-calibrated-device.h>
 #include <src/librealsense-exception.h>
+#include <src/core/sensor-interface.h>
+#include <src/core/extension.h>
 #include <librealsense2/hpp/rs_processing.hpp>
 
+#include <rsutils/json.h>
 #include <rsutils/string/from.h>
 
 #include <array>
 
 namespace librealsense
 {
+    thermal_compensation_guard::thermal_compensation_guard( auto_calibrated_interface * handle ) : restart_tl(false), snr(nullptr)
+    {
+        if( Is< librealsense::device >( handle ) )
+        {
+            try
+            {
+                snr = &( As< librealsense::device >( handle )->get_sensor( 0 ) ); // Depth sensor is assigned first by design
+
+                if( snr->supports_option( RS2_OPTION_THERMAL_COMPENSATION ) )
+                    restart_tl = ( snr->get_option( RS2_OPTION_THERMAL_COMPENSATION ).query() != 0 );
+
+                if( restart_tl )
+                {
+                    snr->get_option( RS2_OPTION_THERMAL_COMPENSATION ).set( 0.f );
+                    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) ); // Allow for FW changes to propagate
+                }
+            }
+            catch( ... )
+            {
+                LOG_WARNING( "Thermal Compensation guard failed to invoke" );
+            }
+        }
+    }
+
+    thermal_compensation_guard::~thermal_compensation_guard()
+    {
+        try
+        {
+            if (snr && restart_tl)
+                snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).set(1.f);
+        }
+        catch (...) {
+            LOG_WARNING("Thermal Compensation guard failed to complete");
+        }
+    }
+
+    std::map< std::string, int > ds_calib_common::parse_json( const std::string & json_content )
+    {
+        auto j = rsutils::json::parse( json_content );
+
+        std::map< std::string, int > values;
+
+        for( auto it = j.begin(); it != j.end(); ++it )
+        {
+            values[it.key()] = it.value();
+        }
+
+        return values;
+    }
+
+    void ds_calib_common::update_value_if_exists( const std::map< std::string, int > & jsn, const std::string & key, int & value )
+    {
+        auto it = jsn.find( key );
+        if( it != jsn.end() )
+            value = it->second;
+    }
+
+    void ds_calib_common::check_params( int speed, int scan_parameter, int data_sampling )
+    {
+        if( speed < ds_calib_common::SPEED_VERY_FAST || speed > ds_calib_common::SPEED_WHITE_WALL )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'speed' "
+                                           << speed << " is out of range (0 - 4)." );
+        if( scan_parameter != ds_calib_common::PY_SCAN && scan_parameter != ds_calib_common::RX_SCAN )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'scan parameter' "
+                                           << scan_parameter << " is out of range (0 - 1)." );
+        if( data_sampling != ds_calib_common::POLLING && data_sampling != ds_calib_common::INTERRUPT )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'data sampling' "
+                                           << data_sampling << " is out of range (0 - 1)." );
+    }
+
+    void ds_calib_common::check_tare_params( int speed, int scan_parameter, int data_sampling,
+                                             int average_step_count, int step_count, int accuracy )
+    {
+        check_params( speed, scan_parameter, data_sampling );
+
+        if( average_step_count < 1 || average_step_count > 30 )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'number of frames to average' "
+                                           << average_step_count << " is out of range (1 - 30)." );
+        if( step_count < 5 || step_count > 30 )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'max iteration steps' "
+                                           << step_count << " is out of range (5 - 30)." );
+        if( accuracy < ACCURACY_VERY_HIGH || accuracy > ACCURACY_LOW )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'subpixel accuracy' " << accuracy
+                                           << " is out of range (0 - 3)." );
+    }
+
     void ds_calib_common::check_focal_length_params( int step_count,
                                                      int fy_scan_range,
                                                      int keep_new_value_after_sucessful_scan,
@@ -64,29 +161,28 @@ namespace librealsense
                                                 int progress,
                                                 rs2_update_progress_callback_sptr progress_callback )
     {
-        fx = -1.0f;
-        std::vector< std::array< float, 4 > > rect_sides_arr;
-
         rs2_error * e = nullptr;
-        rs2_frame * f = nullptr;
-
         int queue_size = rs2_frame_queue_size( frames, &e );
         if( queue_size == 0 )
             throw std::runtime_error( "Extract target rectangle info - no frames in input queue!" );
 
-        int fc = 0;
-        while( ( fc++ < queue_size ) && rs2_poll_for_frame( frames, &f, &e ) )
+        int frame_counter = 0;
+        bool first_time = true;
+        rs2_frame * f = nullptr;
+        std::vector< std::array< float, 4 > > rect_sides_arr;
+        while( ( frame_counter++ < queue_size ) && rs2_poll_for_frame( frames, &f, &e ) )
         {
             rs2::frame ff( f );
             if( ff.get_data() )
             {
-                if( fx < 0.0f )
+                if( first_time )
                 {
                     auto p = ff.get_profile();
                     auto vsp = p.as< rs2::video_stream_profile >();
                     rs2_intrinsics intrin = vsp.get_intrinsics();
                     fx = intrin.fx;
                     fy = intrin.fy;
+                    first_time = false;
                 }
 
                 std::array< float, 4 > rec_sides_cur{};
@@ -100,7 +196,7 @@ namespace librealsense
                 rect_sides_arr.emplace_back( rec_sides_cur );
             }
 
-            rs2_release_frame( f );
+            ff = {}; // Release the frame, don't need it for progress callback
 
             if( progress_callback )
                 progress_callback->on_update_progress( static_cast< float >( ++progress ) );
@@ -227,4 +323,25 @@ namespace librealsense
         return ratio_to_apply;
     }
 
+    void ds_calib_common::handle_calibration_error( int status )
+    {
+        switch( status )
+        {
+        case ds_calib_common::STATUS_EDGE_TOO_CLOSE:
+            throw std::runtime_error( "Calibration didn't converge! - edges too close\n"
+                                      "Please retry in different lighting conditions" );
+        case ds_calib_common::STATUS_FILL_FACTOR_TOO_LOW:
+                throw std::runtime_error( "Not enough depth pixels! - low fill factor)\n"
+                                          "Please retry in different lighting conditions" );
+        case ds_calib_common::STATUS_NOT_CONVERGE:
+                throw std::runtime_error( "Calibration failed to converge\n"
+                                          "Please retry in different lighting conditions" );
+        case ds_calib_common::STATUS_NO_DEPTH_AVERAGE:
+            throw std::runtime_error( "Calibration didn't converge! - no depth average\n"
+                                          "Please retry in different lighting conditions" );
+        default:
+            throw std::runtime_error( rsutils::string::from() <<
+                                      "Calibration didn't converge! (RESULT=" << int( status ) << ")" );
+        }
+    }
 }  // namespace librealsense

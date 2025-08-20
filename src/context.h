@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <rsutils/signal.h>
@@ -67,10 +67,11 @@ namespace librealsense
         std::shared_ptr< processing_block_interface > create_pp_block( std::string const & name,
                                                                        rsutils::json const & settings );
 
-    private:
+    
         void invoke_devices_changed_callbacks( std::vector< std::shared_ptr< device_info > > const & devices_removed,
                                                std::vector< std::shared_ptr< device_info > > const & devices_added );
 
+    private:
         std::map< std::string /*address*/, std::weak_ptr< device_info > > _user_devices;
 
         rsutils::signal< std::vector< std::shared_ptr< device_info > > const & /*removed*/,
@@ -78,7 +79,7 @@ namespace librealsense
             _devices_changed;
 
         rsutils::json _settings; // Save operation settings
-        unsigned const _device_mask;
+        unsigned _device_mask;
 
         std::vector< std::shared_ptr< device_factory > > _factories;
     };

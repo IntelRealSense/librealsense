@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <fastdds/dds/core/policy/QosPolicies.hpp>
@@ -22,6 +22,7 @@ std::ostream & operator<<( std::ostream &, LivelinessQosPolicy const & );
 std::ostream & operator<<( std::ostream &, DataSharingQosPolicy const & );
 std::ostream & operator<<( std::ostream &, RTPSEndpointQos const & );
 std::ostream & operator<<( std::ostream &, PublishModeQosPolicy const & );
+std::ostream & operator<<( std::ostream &, ParticipantResourceLimitsQos const & );
 
 class DomainParticipantQos;
 std::ostream & operator<<( std::ostream &, DomainParticipantQos const & );
@@ -49,6 +50,7 @@ namespace rtps {
 std::ostream & operator<<( std::ostream &, class WriterProxyData const & );
 std::ostream & operator<<( std::ostream &, class ReaderProxyData const & );
 std::ostream & operator<<( std::ostream &, BuiltinAttributes const & );
+std::ostream & operator<<( std::ostream &, RemoteLocatorsAllocationAttributes const & );
 }  // namespace rtps
 
 }  // namespace fastrtps
@@ -59,6 +61,23 @@ namespace realdds {
 
 
 class dds_participant;
+
+
+struct print_writer_info
+{
+    eprosima::fastrtps::rtps::WriterProxyData const & info;
+    print_writer_info( eprosima::fastrtps::rtps::WriterProxyData const & info ) : info( info ) {}
+};
+std::ostream & operator<<( std::ostream & os, print_writer_info const & );
+
+
+struct print_reader_info
+{
+    eprosima::fastrtps::rtps::ReaderProxyData const & info;
+    print_reader_info( eprosima::fastrtps::rtps::ReaderProxyData const & info ) : info( info ) {}
+};
+std::ostream & operator<<( std::ostream & os, print_reader_info const & );
+
 
 
 eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability_kind_from_string( std::string const & );

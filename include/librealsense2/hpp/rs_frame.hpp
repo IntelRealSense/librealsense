@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017 RealSense, Inc. All Rights Reserved.
 
 #ifndef LIBREALSENSE_RS2_FRAME_HPP
 #define LIBREALSENSE_RS2_FRAME_HPP
@@ -112,10 +112,19 @@ namespace rs2
         */
         std::string stream_name() const
         {
-            std::stringstream ss;
-            ss << rs2_stream_to_string(stream_type());
-            if (stream_index() != 0) ss << " " << stream_index();
-            return ss.str();
+            rs2_error * e = nullptr;
+            std::string name = rs2_get_stream_profile_name( _profile, &e );
+
+            if( name.empty() )
+            {
+                std::stringstream ss;
+                ss << rs2_stream_to_string( stream_type() );
+                if( stream_index() != 0 )
+                    ss << " " << stream_index();
+                name = ss.str();
+            }
+
+            return name;
         }
 
         /**
@@ -735,7 +744,7 @@ namespace rs2
         float u, v;
         operator const float*() const { return &u; }
     };
-
+ 
     class points : public frame
     {
     public:
@@ -804,6 +813,106 @@ namespace rs2
         size_t size() const
         {
             return _size;
+        }
+
+    private:
+        size_t _size;
+    };
+
+
+    class labeled_points : public frame
+    {
+    public:
+        /**
+        * Extends the frame class with additional point cloud related attributes and functions
+        */
+        labeled_points() : frame(), _size(0) {}
+
+        /**
+        * Extends the frame class with additional point cloud related attributes and functions
+        * \param[in] frame - existing frame instance
+        */
+        labeled_points(const frame& f)
+            : frame(f), _size(0)
+        {
+            rs2_error* e = nullptr;
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_LABELED_POINTS, &e) == 0 && !e))
+            {
+                reset();
+            }
+            error::handle(e);
+
+            if (get())
+            {
+                _size = rs2_get_frame_labeled_points_count(get(), &e);
+                error::handle(e);
+            }
+        }
+
+        /**
+        * Retrieve the vertices of the point cloud
+        * \param[in] vertex* - pointer of vertex structure
+        */
+        const vertex* get_vertices() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_frame_labeled_vertices(get(), &e);
+            error::handle(e);
+            return (const vertex*)res;
+        }
+
+        /**
+        * Retrieve the attributes of the point cloud stream
+        * \param[out] attributes* - pointer of attributes structure
+        */
+        const uint8_t* get_labels() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_frame_labels(get(), &e);
+            error::handle(e);
+            return (uint8_t * )res;
+        }
+
+        // Returns the vertices counts
+        size_t size() const
+        {
+            return _size;
+        }
+
+        /**
+        * returns labeled point cloud width in pixels
+        * \return        frame width in pixels
+        */
+        unsigned int get_width() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_labeled_points_width(get(), &e);
+            error::handle(e);
+            return r;
+        }
+
+        /**
+        * returns labeled point cloud height in pixels
+        * \return        frame height in pixels
+        */
+        unsigned int get_height() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_labeled_points_height(get(), &e);
+            error::handle(e);
+            return r;
+        }
+
+        /**
+        * retrieve bits per pixel
+        * \return            number of bits per one pixel
+        */
+        unsigned int get_bits_per_pixel() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_labeled_points_bits_per_pixel(get(), &e);
+            error::handle(e);
+            return r;
         }
 
     private:
@@ -1037,6 +1146,13 @@ namespace rs2
                     f = ir;
             }
             return f;
+        }
+
+        labeled_points get_labeled_point_cloud_frame() const
+        {
+            auto f = first_or_default(RS2_STREAM_LABELED_POINT_CLOUD);
+
+            return f.as<labeled_points>();
         }
         /**
         * Retrieve the first infrared frame, if no frame is found, return an empty frame instance.

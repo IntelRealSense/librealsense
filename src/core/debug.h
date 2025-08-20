@@ -1,9 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include "extension.h"
 #include <vector>
+#include <string>
 
 namespace librealsense
 {
@@ -18,6 +19,7 @@ namespace librealsense
             uint32_t param4 = 0,
             uint8_t const * data = nullptr,
             size_t dataLength = 0) const = 0;
+        virtual std::string get_opcode_string(int opcode) const = 0;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_DEBUG, librealsense::debug_interface);

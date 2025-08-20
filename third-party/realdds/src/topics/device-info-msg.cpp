@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/dds-topic-names.h>
@@ -70,6 +70,12 @@ std::string const & device_info::serial_number() const
 void device_info::set_serial_number( std::string const & v )
 {
     _json[key::serial] = v;
+}
+
+
+bool device_info::is_recovery() const
+{
+    return _json.nested( key::recovery, &rsutils::json::is_boolean ).default_value( false );
 }
 
 

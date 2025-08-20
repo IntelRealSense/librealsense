@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 #include <rsutils/json.h>
 #include <rsutils/json-config.h>
@@ -103,8 +103,7 @@ public:
 
 // Load the contents of a file into a JSON object.
 // 
-// Throws if any errors are encountered with the file or its contents.
-// Returns the contents. If the file wasn't there, returns missing_json.
+// Returns the contents. If the file wasn't there or corrupted, returns missing_json.
 //
 json json_config::load_from_file( std::string const & filename )
 {
@@ -114,18 +113,15 @@ json json_config::load_from_file( std::string const & filename )
         try
         {
             json result;
-            ::nlohmann::detail::parser< json, input_stream_adapter >( input_stream_adapter( f ) ).parse( true, result );
+            ::nlohmann::detail::parser< json, input_stream_adapter >( input_stream_adapter( f ), nullptr, false ).parse( false, result );
             return result;
         }
-        catch( std::exception const & e )
-        {
-            throw std::runtime_error( "failed to load configuration file (" + filename
-                                      + "): " + std::string( e.what() ) );
-        }
+        // Even that we set allow_exceptions = false, we add an extra protection that if it will
+        // throw we catch it here and fallback to return missing_json.
+        catch( ... ) {}
     }
     return missing_json;
 }
-
 
 
 // Loads configuration settings from 'global' content (loaded by load_from_file()?).
@@ -411,7 +407,7 @@ public:
             {
                 dump( *i, pretty_print_width, ensure_ascii, indent_step, new_indent );
                 _o.put( ',' );
-                if( need_to_indent || pretty_print_width && _line_width > pretty_print_width )
+                if( need_to_indent || (pretty_print_width && _line_width > pretty_print_width ))
                 {
                     newline();
                     _o.write( _indent_string.c_str(), new_indent );
@@ -1100,7 +1096,7 @@ private:
             }
         };
 
-        JSON_ASSERT(byte < utf8d.size());
+        JSON_ASSERT(static_cast<size_t>(byte) < utf8d.size());
         const std::uint8_t type = utf8d[byte];
 
         codep = (state != UTF8_ACCEPT)

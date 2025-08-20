@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 RealSense, Inc. All Rights Reserved.
 
 //#cmake: static!
 
@@ -25,7 +25,7 @@ using namespace librealsense;
 
 static void dummy_callback( rs2_log_severity, rs2_log_message const *, void * )
 {
-};
+}
 
 
 TEST_CASE( "rs2_log vs LOG() - internal", "[log]" )

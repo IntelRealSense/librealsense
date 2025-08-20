@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include <string>
@@ -24,6 +24,29 @@ constexpr char const * NOTIFICATION_TOPIC_NAME = "/notification";
 constexpr char const * CONTROL_TOPIC_NAME = "/control";
 constexpr char const * METADATA_TOPIC_NAME = "/metadata";
 constexpr char const * DFU_TOPIC_NAME = "/dfu";
+
+
+namespace ros2 {
+
+constexpr char const * NAMESPACE = "/realsense";  // must begin with /
+
+constexpr char const * ROOT = "rt/";
+constexpr size_t ROOT_LEN = 3;
+constexpr char const * SERVICE_REQUEST_ROOT = "rq/";
+constexpr char const * SERVICE_RESPONSE_ROOT = "rr/";
+
+constexpr char const * GET_PARAMETERS_NAME = "/get_parameters";
+constexpr char const * SET_PARAMETERS_NAME = "/set_parameters";
+constexpr char const * LIST_PARAMETERS_NAME = "/list_parameters";
+constexpr char const * DESCRIBE_PARAMETERS_NAME = "/describe_parameters";
+
+constexpr char const * REQUEST_SUFFIX = "Request";
+constexpr char const * RESPONSE_SUFFIX = "Reply";
+
+constexpr char const * DISCOVERY_INFO = "ros_discovery_info";
+constexpr char const * PARAMETER_EVENTS_NAME = "parameter_events";
+
+}  // namespace ros2
 
 
 namespace notification {

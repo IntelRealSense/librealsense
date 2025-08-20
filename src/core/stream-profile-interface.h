@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 RealSense, Inc. All Rights Reserved.
 #pragma once
 
 #include "stream-interface.h"
@@ -9,7 +9,8 @@
 #include <functional>
 #include <memory>
 #include <vector>
-#include <ostream>
+#include <iosfwd>
+#include <string>
 
 
 namespace librealsense {
@@ -29,6 +30,9 @@ public:
     virtual int get_tag() const = 0;
     virtual void tag_profile( int tag ) = 0;
 
+    virtual const char * get_name() = 0;
+    virtual void set_name( const std::string & name ) = 0;
+
     virtual std::shared_ptr< stream_profile_interface > clone() const = 0;
     virtual rs2_stream_profile * get_c_wrapper() const = 0;
     virtual void set_c_wrapper( rs2_stream_profile * wrapper ) = 0;
@@ -38,14 +42,8 @@ public:
 using stream_profiles = std::vector< std::shared_ptr< stream_profile_interface > >;
 
 
-inline std::ostream & operator<<( std::ostream & os, const stream_profiles & profiles )
-{
-    for( auto & p : profiles )
-    {
-        os << rs2_format_to_string( p->get_format() ) << " " << rs2_stream_to_string( p->get_stream_type() ) << ", ";
-    }
-    return os;
-}
+std::ostream & operator<<( std::ostream &, const std::shared_ptr< stream_profile_interface > & );
+std::ostream & operator<<( std::ostream &, const stream_profiles & );
 
 
 }  // namespace librealsense

@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 
 #include <pybind11/pybind11.h>
 
@@ -14,7 +14,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
-#include "core/options.h"   // Workaround for the missing DLL_EXPORT template
+#include <librealsense2/h/rs_option.h>
 #include "core/info.h"   // Workaround for the missing DLL_EXPORT template
 #include "../src/backend.h"
 #include <src/core/time-service.h>
@@ -102,7 +102,7 @@ PYBIND11_MODULE(NAME, m) {
                   .def_readwrite("id", &platform::extension_unit::id);
 
     py::class_<platform::command_transfer, std::shared_ptr<platform::command_transfer>> command_transfer(m, "command_transfer");
-    command_transfer.def("send_receive", &platform::command_transfer::send_receive, "data"_a, "timeout_ms"_a=5000, "require_response"_a=true);
+    command_transfer.def("send_receive", &platform::command_transfer::send_receive, "data"_a, "size"_a, "timeout_ms"_a=5000, "require_response"_a=true);
 
     py::enum_<rs2_option> option(m, "option");
     option.value("backlight_compensation", RS2_OPTION_BACKLIGHT_COMPENSATION)
@@ -176,7 +176,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("activate_pixel_invalidation", RS2_OPTION_INVALIDATION_BYPASS)
         .value("ambient_light_environment_level", RS2_OPTION_AMBIENT_LIGHT)
         .value("digital_gain", RS2_OPTION_DIGITAL_GAIN)
-        .value("sensor_resolution_mode", RS2_OPTION_SENSOR_MODE)
+        .value("sensor_resolution_mode", RS2_OPTION_SENSOR_MODE)  // Deprecated
         .value("emitter_always_on", RS2_OPTION_EMITTER_ALWAYS_ON)
         .value("thermal_compensation", RS2_OPTION_THERMAL_COMPENSATION)
         .value("host_performance", RS2_OPTION_HOST_PERFORMANCE)
@@ -199,6 +199,9 @@ PYBIND11_MODULE(NAME, m) {
         .value("gain_limit_toggle", RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE)
         .value("emitter_frequency", RS2_OPTION_EMITTER_FREQUENCY)
         .value("depth_auto_exposure_mode", RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE)
+        .value("safety_preset_active_index", RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX)
+        .value("safety_mode", RS2_OPTION_SAFETY_MODE)
+        .value("rgb_tnr_enabled", RS2_OPTION_RGB_TNR_ENABLED)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
@@ -289,11 +292,8 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<platform::hid_sensor_data> hid_sensor_data(m, "hid_sensor_data");
     hid_sensor_data.def_readwrite("x", &platform::hid_sensor_data::x)
-                   .def_property(BIND_RAW_RW_ARRAY(platform::hid_sensor_data, reserved1, char, 2))
                    .def_readwrite("y", &platform::hid_sensor_data::y)
-                   .def_property(BIND_RAW_RW_ARRAY(platform::hid_sensor_data, reserved2, char, 2))
                    .def_readwrite("z", &platform::hid_sensor_data::z)
-                   .def_property(BIND_RAW_RW_ARRAY(platform::hid_sensor_data, reserved3, char, 2))
                    .def_readwrite("ts_low", &platform::hid_sensor_data::ts_low)
                    .def_readwrite("ts_high", &platform::hid_sensor_data::ts_high);
 
@@ -474,7 +474,6 @@ PYBIND11_MODULE(NAME, m) {
 }
 
 // Workaroud for failure to export template <typename T> class recordable
-void librealsense::option::create_snapshot(std::shared_ptr<option>& snapshot) const {}
 void librealsense::info_container::create_snapshot(std::shared_ptr<librealsense::info_interface> &) const {}
 void librealsense::info_container::register_info(rs2_camera_info info, const std::string& val){}
 void librealsense::info_container::update_info(rs2_camera_info info, const std::string& val) {}
