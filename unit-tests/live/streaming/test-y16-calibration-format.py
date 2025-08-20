@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
-# Known issue in GMSL devices
+# disable GMSL until this issue is resolved on driver side RSDSO-20168
 # test:device D400* !D457 !GMSL
 # test:device each(D555)
 # This test checks streaming y16 profile

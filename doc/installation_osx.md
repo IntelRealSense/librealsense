@@ -14,7 +14,7 @@
 
   * `brew install openssl`
 
-**Note** *librealsense* requires CMake version 3.8+ that can also be obtained via the [official CMake site](https://cmake.org/download/).  
+**Note** *librealsense* requires CMake version 3.10 that can also be obtained via the [official CMake site](https://cmake.org/download/).  
 
 
 4. Generate XCode project:

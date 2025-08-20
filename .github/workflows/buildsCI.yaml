@@ -13,7 +13,6 @@ env:
   LRS_BUILD_CONFIG: Debug
   LRS_RUN_CONFIG: Release
   LRS_RUN_WITH_DEB_CONFIG: RelWithDebInfo
-  PYTHON_PATH: C:\\hostedtoolcache\\windows\\Python\\3.8.1\\x64\\python.exe
   # GH-Actions Windows VM currently supply ~14 GB available on D drive, and ~80 GB on drive C.
   # Building LRS statically with third parties is too much for drive D so we clone to drive 'D' and build on drive 'C'
   WIN_BUILD_DIR: C:/lrs_build
@@ -114,7 +113,7 @@ jobs:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
     - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 #v5
       with:
-       python-version: '3.8.1'
+       python-version: '3.9'
 
     - name: Enable Long Paths
       shell: powershell
@@ -141,7 +140,7 @@ jobs:
       run: |        
         LRS_SRC_DIR=$(pwd)
         cd ${{env.WIN_BUILD_DIR}}
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=true -DUNIT_TESTS_ARGS="--not-live --context=windows" -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=false -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true 
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=true -DUNIT_TESTS_ARGS="--not-live --context=windows" -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=false -DBUILD_PYTHON_BINDINGS=true 
 
     - name: Build
       # Build your program with the given configuration
@@ -174,7 +173,7 @@ jobs:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
     - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 #v5
       with:
-       python-version: '3.8.1'
+       python-version: '3.9'
 
     - name: Enable Long Paths
       shell: powershell
@@ -199,7 +198,7 @@ jobs:
       run: |        
         LRS_SRC_DIR=$(pwd)   
         cd ${{env.WIN_BUILD_DIR}}
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true 
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DBUILD_PYTHON_BINDINGS=true 
 
     - name: Build
       # Build your program with the given configuration
@@ -223,7 +222,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
       with:
-       python-version: '3.8.1'
+       python-version: '3.9'
 
     - name: Enable Long Paths
       shell: powershell
@@ -248,7 +247,7 @@ jobs:
       run: |        
         LRS_SRC_DIR=$(pwd)   
         cd ${{env.WIN_BUILD_DIR}}
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DENABLE_SECURITY_FLAGS=true
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DBUILD_PYTHON_BINDINGS=true -DENABLE_SECURITY_FLAGS=true
 
     - name: Build
       # Build your program with the given configuration
@@ -267,7 +266,7 @@ jobs:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4
     - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 #v5
       with:
-       python-version: '3.8.1'
+       python-version: '3.9'
 
     - name: Enable Long Paths
       shell: powershell
@@ -291,7 +290,7 @@ jobs:
       run: |   
         LRS_SRC_DIR=$(pwd)
         cd ${{env.WIN_BUILD_DIR}}
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DCHECK_FOR_UPDATES=false -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DFORCE_RSUSB_BACKEND=true -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.6" -DDOTNET_VERSION_EXAMPLES="4.6"
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 17 2022" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DCHECK_FOR_UPDATES=false -DBUILD_PYTHON_BINDINGS=true -DFORCE_RSUSB_BACKEND=true -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.6" -DDOTNET_VERSION_EXAMPLES="4.6"
 
     - name: Build
       # Build your program with the given configuration
