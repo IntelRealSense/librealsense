@@ -197,9 +197,6 @@ void eth_config::validate() const
         throw std::invalid_argument( rsutils::string::from() << "Invalid configured network mask " << configured.netmask );
     // Allowing gateway to be 0.0.0.0 (unset). Camera will only communicate in local network.
 
-    if( dhcp.timeout < 0 )
-        throw std::invalid_argument( rsutils::string::from() << "DHCP timeout cannot be negative. Current " << dhcp.timeout );
-
     if( dds.domain_id < 0 || dds.domain_id > 232 )
         throw std::invalid_argument( rsutils::string::from() << "Domain ID should be in 0-232 range. Current " << dds.domain_id );
 

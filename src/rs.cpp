@@ -4681,7 +4681,7 @@ int rs2_supports_eth_config( const rs2_device * device, rs2_error ** error ) BEG
         auto config = get_eth_config( device ); // Will throw if not supported
         return true;
     }
-    catch( std::runtime_error e )
+    catch( const std::runtime_error e )
     {
     }
 
@@ -4714,9 +4714,9 @@ HANDLE_EXCEPTIONS_AND_RETURN( , device )
 unsigned int rs2_get_link_timeout( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
 {
     auto config = get_eth_config( device );
-    return static_cast< rs2_eth_link_priority >( config.link.timeout );
+    return config.link.timeout;
 }
-HANDLE_EXCEPTIONS_AND_RETURN( RS2_LINK_PRIORITY_COUNT, device )
+HANDLE_EXCEPTIONS_AND_RETURN( 0, device )
 
 void rs2_set_link_timeout( const rs2_device * device, unsigned int timeout, rs2_error ** error ) BEGIN_API_CALL
 {
@@ -4729,9 +4729,9 @@ HANDLE_EXCEPTIONS_AND_RETURN( , device )
 unsigned int rs2_get_dds_domain( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
 {
     auto config = get_eth_config( device );
-    return static_cast< rs2_eth_link_priority >( config.dds.domain_id);
+    return config.dds.domain_id;
 }
-HANDLE_EXCEPTIONS_AND_RETURN( RS2_LINK_PRIORITY_COUNT, device )
+HANDLE_EXCEPTIONS_AND_RETURN( 0, device )
 
 void rs2_set_dds_domain( const rs2_device * device, unsigned int domain, rs2_error ** error ) BEGIN_API_CALL
 {

@@ -94,9 +94,9 @@ void rs2_set_link_timeout( const rs2_device * device, unsigned int timeout, rs2_
 unsigned int rs2_get_dds_domain( const rs2_device * device, rs2_error ** error );
 
 /**
- * Set DDS domain (0-232)
+ * Set DDS domain to use
  * \param[in] device    RealSense device
- * \param[in] timeout   Link timeout to set in milliseconds
+ * \param[in] domain    DDS domain to use (0-232)
  * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_set_dds_domain( const rs2_device * device, unsigned int domain, rs2_error ** error );
