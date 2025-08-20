@@ -70,7 +70,7 @@ rs2_eth_link_priority rs2_get_link_priority( const rs2_device * device, rs2_erro
 void rs2_set_link_priority( const rs2_device * device, rs2_eth_link_priority priority, rs2_error ** error );
 
 /**
- * Get link priority
+ * Get timeout in milliseconds before falling back to other connection type
  * \param[in] device    RealSense device
  * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return              Current link timeout in milliseconds
@@ -78,12 +78,28 @@ void rs2_set_link_priority( const rs2_device * device, rs2_eth_link_priority pri
 unsigned int rs2_get_link_timeout( const rs2_device * device, rs2_error ** error );
 
 /**
- * Set link priority
+ * Set timeout in milliseconds before falling back to other connection type
  * \param[in] device    RealSense device
  * \param[in] timeout   Link timeout to set in milliseconds
  * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_set_link_timeout( const rs2_device * device, unsigned int timeout, rs2_error ** error );
+
+/**
+ * Get current DDS domain (0-232)
+ * \param[in] device    RealSense device
+ * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return              Current link timeout in milliseconds
+ */
+unsigned int rs2_get_dds_domain( const rs2_device * device, rs2_error ** error );
+
+/**
+ * Set DDS domain (0-232)
+ * \param[in] device    RealSense device
+ * \param[in] timeout   Link timeout to set in milliseconds
+ * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_set_dds_domain( const rs2_device * device, unsigned int domain, rs2_error ** error );
 
 /**
     * Get IP address
@@ -186,6 +202,13 @@ unsigned int rs2_get_transmission_delay( const rs2_device * device, rs2_error **
     */
 void rs2_set_transmission_delay( const rs2_device * device, unsigned int delay, rs2_error ** error );
 
+/**
+ * Restores configuration to factory settings
+ * \param[in] device    RealSense device
+ * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return              Non-zero if device supports ethernet configuration, zero otherwise
+ */
+void rs2_restore_default_eth_config( const rs2_device * device, rs2_error ** error );
 
 #ifdef __cplusplus
 }

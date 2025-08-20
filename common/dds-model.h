@@ -3,8 +3,10 @@
 #pragma once
 
 #include <librealsense2/rs.hpp>
+#include <rsutils/type/ip-address.h>
 #include <imgui.h>
-#include <rsutils/type/eth-config.h>
+
+#include <string>
 
 namespace rs2
 {
@@ -14,41 +16,50 @@ namespace rs2
     {
 
     public:
-        dds_model(rs2::device dev);
+        dds_model( rs2::device dev );
 
-        void render_dds_config_window(ux_window& window, std::string& error_message);
+        void render_dds_config_window( ux_window & window, std::string & error_message );
 
         void open_dds_tool_window();
 
         void close_window() { ImGui::CloseCurrentPopup(); }
 
-        rsutils::type::eth_config get_eth_config(int curr_or_default);
-
-        void set_eth_config(rsutils::type::eth_config &new_config , std::string& error_message);
-
         bool supports_DDS();
 
 
     private:
-
-        enum priority {
+        enum priority
+        {
             ETH_FIRST,
             USB_FIRST,
             DYNAMIC
         };
 
         rs2::device _device;
+        rs2::eth_config_device _eth_device;
 
-        rsutils::type::eth_config _default_config;
-        rsutils::type::eth_config _current_config;
-        rsutils::type::eth_config _changed_config;
+        uint32_t _domain_current, _domain_to_set;
+        rs2_eth_link_priority _link_priority_current, _link_priority_to_set;
+        uint32_t _link_timeout_current, _link_timeout_to_set;
+        bool _dhcp_enabled_current, _dhcp_enabled_to_set;
+        uint8_t _dhcp_timeout_current, _dhcp_timeout_to_set;
+        rsutils::type::ip_address _ip_current, _ip_to_set;
+        rsutils::type::ip_address _netmask_current, _netmask_to_set;
+        rsutils::type::ip_address _gateway_current, _gateway_to_set;
+        uint32_t _mtu_current, _mtu_to_set;
+        uint32_t _tx_delay_current, _tx_delay_to_set;
+        uint32_t _link_speed_read_only;
 
         bool _window_open;
         bool _no_reset;
         bool _dds_supported;
 
-        void ipInputText(std::string label, rsutils::type::ip_address &ip);
-        priority classifyPriority(rsutils::type::link_priority &pr);
+        void get_eth_config();
+        void set_eth_config( std::string & error_message, bool reset_to_default = false );
+        void ipInputText( std::string label, rsutils::type::ip_address & ip );
+        priority classifyPriority( rs2_eth_link_priority pr );
         bool check_DDS_support();
+        void reset_to_current_values();
+        bool has_changed_values() const;
     };
 }

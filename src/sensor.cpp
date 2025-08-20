@@ -493,7 +493,8 @@ void log_callback_end( uint32_t fps,
         }
         catch (...)
         {
-            LOG_WARNING("Failed to add " << rs2_option_to_string(id)<< " control for " << this->get_info(RS2_CAMERA_INFO_NAME));
+            LOG_WARNING( _owner->get_info( RS2_CAMERA_INFO_NAME ) << " failed to add "
+                         << rs2_option_to_string( id ) << " control for " << this->get_info( RS2_CAMERA_INFO_NAME ) );
         }
         return res;
     }

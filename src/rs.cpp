@@ -4641,16 +4641,16 @@ constexpr static const uint32_t SET_ETH_CONFIG = 0xBA;
 constexpr static const uint32_t ETH_CONFIG_DEFAULT = 0;
 constexpr static const uint32_t ETH_CONFIG_CURRENT = 1;
 
-rsutils::type::eth_config get_eth_config( const rs2_device * device )
+rsutils::type::eth_config get_eth_config( const rs2_device * device, uint32_t type = ETH_CONFIG_CURRENT )
 {
     VALIDATE_NOT_NULL( device );
-    auto debug_interface = VALIDATE_INTERFACE( device->device, librealsense::debug_interface ); // Etherne configurastion uses HWM commands
+    auto debug_interface = VALIDATE_INTERFACE( device->device, librealsense::debug_interface ); // Ethernet configuration uses HWM commands
 
     std::string dev_name = device->device->supports_info( RS2_CAMERA_INFO_NAME ) ? device->device->get_info( RS2_CAMERA_INFO_NAME ) : "";
     if( dev_name.find( "D555" ) == std::string::npos )
         throw std::runtime_error( "Currently only D555 devices support eth_config" );
 
-    auto buffer_to_send = debug_interface->build_command( GET_ETH_CONFIG, ETH_CONFIG_CURRENT );
+    auto buffer_to_send = debug_interface->build_command( GET_ETH_CONFIG, type );
     auto ret_data = debug_interface->send_receive_raw_data( buffer_to_send );
     int32_t const & code = *reinterpret_cast< int32_t const * >( ret_data.data() );
     if( code == GET_ETH_CONFIG )  // On success opcode is reflected in the return code
@@ -4662,13 +4662,13 @@ rsutils::type::eth_config get_eth_config( const rs2_device * device )
     throw std::runtime_error( "Cannot retreive current Ethernet configuration" );
 }
 
-bool set_eth_config( const rs2_device * device, const rsutils::type::eth_config & config )
+bool set_eth_config( const rs2_device * device, const rsutils::type::eth_config & config, uint32_t type = ETH_CONFIG_CURRENT )
 {
     VALIDATE_NOT_NULL( device );
     auto debug_interface = VALIDATE_INTERFACE( device->device, librealsense::debug_interface );
 
     auto config_buffer = config.build_command();
-    auto buffer_to_send = debug_interface->build_command( SET_ETH_CONFIG, ETH_CONFIG_CURRENT, 0, 0, 0, config_buffer.data(), config_buffer.size() );
+    auto buffer_to_send = debug_interface->build_command( SET_ETH_CONFIG, type, 0, 0, 0, config_buffer.data(), config_buffer.size() );
     auto ret_data = debug_interface->send_receive_raw_data( buffer_to_send );
     int32_t const & code = *reinterpret_cast< int32_t const * >( ret_data.data() );
     return code == SET_ETH_CONFIG;  // On success opcode is reflected in the return code
@@ -4725,6 +4725,21 @@ void rs2_set_link_timeout( const rs2_device * device, unsigned int timeout, rs2_
     set_eth_config( device, config );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
+
+unsigned int rs2_get_dds_domain( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    return static_cast< rs2_eth_link_priority >( config.dds.domain_id);
+}
+HANDLE_EXCEPTIONS_AND_RETURN( RS2_LINK_PRIORITY_COUNT, device )
+
+void rs2_set_dds_domain( const rs2_device * device, unsigned int domain, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto config = get_eth_config( device );
+    config.dds.domain_id = domain;
+    set_eth_config( device, config );
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device )
 
 void rs2_get_ip_address( const rs2_device * device, rs2_ip_address configured, rs2_ip_address actual, rs2_error ** error ) BEGIN_API_CALL
 {
@@ -4820,3 +4835,10 @@ void rs2_set_transmission_delay( const rs2_device * device, unsigned int delay, 
     set_eth_config( device, config );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
+
+void rs2_restore_default_eth_config( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
+{
+    auto default_config = get_eth_config( device, ETH_CONFIG_DEFAULT );
+    set_eth_config( device, default_config, ETH_CONFIG_DEFAULT );
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device )

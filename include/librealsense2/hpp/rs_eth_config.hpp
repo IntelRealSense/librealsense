@@ -96,6 +96,27 @@ namespace rs2
         }
 
         /**
+         * Get current DDS domain (0-232)
+         */
+        unsigned int get_dds_domain() const
+        {
+            rs2_error * e = nullptr;
+            auto result = rs2_get_dds_domain( _dev.get(), &e );
+            error::handle( e );
+            return result;
+        }
+
+        /**
+         * Set DDS domain (0-232)
+         */
+        void set_dds_domain( unsigned int domain )
+        {
+            rs2_error * e = nullptr;
+            rs2_set_dds_domain( _dev.get(), domain, &e );
+            error::handle( e );
+        }
+
+        /**
          * Get current IP address
          */
         void get_ip_address( rs2_ip_address & configured_ip, rs2_ip_address & actual_ip) const
@@ -224,6 +245,16 @@ namespace rs2
         {
             rs2_error * e = nullptr;
             rs2_set_transmission_delay( _dev.get(), delay, &e );
+            error::handle( e );
+        }
+
+        /**
+         * Restores configuration to factory settings
+         */
+        void restore_defaults()
+        {
+            rs2_error * e = nullptr;
+            rs2_restore_default_eth_config( _dev.get(), &e );
             error::handle( e );
         }
     };

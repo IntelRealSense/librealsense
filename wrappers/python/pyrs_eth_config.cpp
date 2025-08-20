@@ -44,6 +44,8 @@ void init_eth_config(py::module &m) {
         .def( "set_link_priority", &rs2::eth_config_device::set_link_priority, "Set link priority", "priority"_a )
         .def( "get_link_timeout", &rs2::eth_config_device::get_link_timeout, "Get current link timeout in milliseconds" )
         .def( "set_link_timeout", &rs2::eth_config_device::set_link_timeout, "Set link timeout in milliseconds", "timeout"_a )
+        .def( "get_dds_domain", &rs2::eth_config_device::get_dds_domain, "Get current DDS domain (0-232)" )
+        .def( "set_dds_domain", &rs2::eth_config_device::set_dds_domain, "Set DDS domain (0-232)", "domain"_a )
         .def( "get_ip_address", []( const rs2::eth_config_device & self )
         {
             rs2_ip_address configured_ip, actual_ip;
@@ -94,7 +96,8 @@ void init_eth_config(py::module &m) {
         .def( "get_mtu", &rs2::eth_config_device::get_mtu, "Get MTU (Maximum Transmission Unit) in bytes" )
         .def( "set_mtu", []( const rs2::eth_config_device & self, uint32_t mtu ) { self.set_mtu( mtu ); }, "Set MTU (Maximum Transmission Unit)", "mtu"_a )
         .def( "get_transmission_delay", &rs2::eth_config_device::get_transmission_delay, "Get transmission delay in microseconds" )
-        .def( "set_transmission_delay", []( const rs2::eth_config_device & self, uint32_t delay ) { self.set_transmission_delay( delay ); }, "Set transmission delay", "delay"_a );
+        .def( "set_transmission_delay", []( const rs2::eth_config_device & self, uint32_t delay ) { self.set_transmission_delay( delay ); }, "Set transmission delay", "delay"_a )
+        .def( "restore_defaults", &rs2::eth_config_device::restore_defaults, "Restores configuration to factory settings" );
 
     // Add utility functions as module-level functions
     m.def( "supports_eth_config", []( const rs2::device & device )
