@@ -24,21 +24,21 @@ The SDK allows depth and color streaming, and provides intrinsic and extrinsic c
 
 Below are some of the many real-world applications powered by RealSense technology:
 
-Depth Sensing | Robotics | 3D Scanning |
+Robotics | Depth Sensing | 3D Scanning |
 :------------: | :----------: | :-------------: |
-<a href="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/align-expected.gif"><img src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/align-expected.gif" width="240"/></a> | <a href="https://www.intelrealsense.com/use-cases/#robotics"><img src="https://media.githubusercontent.com/media/NVIDIA-ISAAC-ROS/.github/main/resources/isaac_ros_docs/repositories_and_packages/isaac_ros_nvblox/realsense_example.gif/" width="240"/></a> | <a href="https://www.intelrealsense.com/use-cases/#3d-scanning"><img src="https://media.githubusercontent.com/media/NVIDIA-ISAAC-ROS/.github/main/resources/isaac_ros_docs/repositories_and_packages/isaac_ros_nvblox/realsense_dynamic_example.gif/" width="240"/></a>
+<a href="https://www.intelrealsense.com/use-cases/#robotics"><img src="https://media.githubusercontent.com/media/NVIDIA-ISAAC-ROS/.github/main/resources/isaac_ros_docs/repositories_and_packages/isaac_ros_nvblox/realsense_example.gif/" width="240"/></a> |<a href="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/align-expected.gif"><img src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/align-expected.gif" width="240"/></a> | <a href="https://www.intelrealsense.com/use-cases/#3d-scanning"><img src="https://media.githubusercontent.com/media/NVIDIA-ISAAC-ROS/.github/main/resources/isaac_ros_docs/repositories_and_packages/isaac_ros_nvblox/realsense_dynamic_example.gif/" width="240"/></a>
 
-Skeletal and people tracking | Drones | Facial authentication |
+Drones | Skeletal and people tracking | Facial authentication |
 :--------------------------: | :-----: | :----------------------: |
-<a href="https://realsenseai.com/case-studies/"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/GIF/SkeletalTracking.gif?raw=true" width="240"/></a> | <a href="https://realsenseai.com/case-studies/"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/GIF/drone-demo.gif?raw=true" width="240"/></a> | <a href="https://realsenseai.com/case-studies/"><img src="https://librealsense.intel.com/readme-media/face-demo.gif" width="240"/></a>
+<a href="https://realsenseai.com/case-studies/"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/GIF/drone-demo.gif?raw=true" width="240"/></a> |<a href="https://realsenseai.com/case-studies/"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/GIF/SkeletalTracking.gif?raw=true" width="240"/></a> | <a href="https://realsenseai.com/case-studies/"><img src="https://librealsense.intel.com/readme-media/face-demo.gif" width="240"/></a>
 
 
 
 ## Why RealSense?
 
-- **High-resolution depth** at close and long ranges
+- **High-resolution color and depth** at close and long ranges
 - **Open source SDK** with rich examples and wrappers (Python, ROS, C#, Unity and [more...](https://github.com/IntelRealSense/librealsense/tree/master/wrappers))
-- **Active developer community**
+- **Active developer community and defacto-standard 3D stereo camera for robotics**
 - **Cross-platform** support: Windows, Linux, macOS, Android, and Docker
 
 ## Product Line
@@ -49,9 +49,12 @@ Here are some examples of the supported models:
 
 | Product | Image | Description |
 |---------|-------|-------------|
-| [**D455**](https://realsenseai.com/stereo-depth-cameras/real-sense-depth-camera-d455/) | <img src="https://www.realsenseai.com/wp-content/uploads/2021/11/455.png" width="1000"> | The D455 is one of the D400 series, designed from feedback and knowledge gained from over 10 years of stereo camera development. |
-| [**D435f**](https://realsenseai.com/stereo-depth-with-ir-pass-filter/d435f/) | <img src="https://realsenseai.com/wp-content/uploads/2025/07/D435if-a.png" width="1000"> | The RealSense Depth Camera D435f expands our portfolio targeting the growing market of autonomous mobile robots. The D435f utilizes an IR pass filter to enhance depth noise quality and performance range in many robotic environments. |
 | [**D555 PoE**](https://realsenseai.com/ruggedized-industrial-stereo-depth/d555-poe/) | <img src="https://realsenseai.com/wp-content/uploads/2025/07/D555.png" width="1000"> | The RealSense™ Depth Camera D555 introduces Power over Ethernet (PoE) interface on chip, expanding our portfolio of USB and GMSL/FAKRA products. |
+| [**D457 GMSL/FAKRA**](https://realsenseai.com/ruggedized-industrial-stereo-depth/d457-gmsl-fakra/) | <img src="https://realsenseai.com/wp-content/uploads/2025/07/D457.png" width="1000"> | The RealSense™ Depth Camera D457 is our first GMSL/FAKRA high bandwidth stereo camera. The D457 has an IP65 grade enclosure protecting it from dust ingress and projected water. |
+| [**D455**](https://realsenseai.com/stereo-depth-cameras/real-sense-depth-camera-d455/) | <img src="https://www.realsenseai.com/wp-content/uploads/2021/11/455.png" width="1000"> | The D455 is one of the D400 series, designed from feedback and knowledge gained from over 10 years of stereo camera development. |
+| [**D435i**](https://realsenseai.com/stereo-depth-cameras/depth-camera-d435i/) | <img src="https://realsenseai.com/wp-content/uploads/2025/07/D435i.png" width="1000"> | RealSense™ depth camera D435i combines the robust depth sensing capabilities of the D435 with the addition of an inertial measurement unit (IMU). |
+| [**D405**](https://realsenseai.com/stereo-depth-cameras/stereo-depth-camera-d405/) | <img src="https://realsenseai.com/wp-content/uploads/2025/07/D-405.png" width="1000"> | The RealSense™ Depth Camera D405 is a short-range stereo camera providing sub-millimeter accuracy for your close-range computer vision needs. |
+
 
 > 🛍️ [Explore more stereo products](https://store.realsenseai.com/)
 
@@ -67,6 +70,12 @@ This is the best option if you want to plug in your camera and get started right
 3. Run the included tools:
     - RealSense Viewer: View streams, tune settings, record and playback.
     - Depth Quality Tool: Measure accuracy and fill rate.
+
+### Setup Guides - precompiled SDK
+<div align="center" style="margin: 20px 0;">
+<a href="./doc/distribution_linux.md"><img src="https://img.shields.io/badge/Ubuntu_Guide-333?style=flat&logo=ubuntu&logoColor=white" style="margin: 5px;" alt="Linux\Jetson Guide"/></a>
+<a href="./doc/distribution_windows.md"><img src="https://custom-icon-badges.demolab.com/badge/Windows_Guide-333?logo=windows11&logoColor=white" style="margin: 5px;" alt="Windows Guide"/></a>
+</div>
 
 ### 2️. Build from Source
 For a more custom installation, follow these steps to build the SDK from source.
@@ -84,15 +93,14 @@ For a more custom installation, follow these steps to build the SDK from source.
     make -j$(nproc)
     ```
 
-### Setup Guides
+### Setup Guides - build from source
 <div align="center" style="margin: 20px 0;">
-<a href="./doc/distribution_linux.md"><img src="https://img.shields.io/badge/Ubuntu_Guide-333?style=flat&logo=ubuntu&logoColor=white" style="margin: 5px;" alt="Ubuntu Guide"/></a>
-<a href="./doc/distribution_windows.md"><img src="https://custom-icon-badges.demolab.com/badge/Windows_Guide-333?logo=windows11&logoColor=white" style="margin: 5px;" alt="Windows Guide"/></a>
+<a href="./doc/installation.md"><img src="https://img.shields.io/badge/Ubuntu_Guide-333?style=flat&logo=ubuntu&logoColor=white" style="margin: 5px;" alt="Linux Guide"/></a>
+<a href="./doc/installation_jetson.md"><img src="https://img.shields.io/badge/Jetson_Guide-333?style=flat&logo=nvidia&logoColor=white" style="margin: 5px;" alt="Jetson Guide"/></a>
+<a href="./doc/installation_windows.md"><img src="https://custom-icon-badges.demolab.com/badge/Windows_Guide-333?logo=windows11&logoColor=white" style="margin: 5px;" alt="Windows Guide"/></a>
 <a href="./doc/installation_osx.md"><img src="https://img.shields.io/badge/macOS_Guide-333?style=flat&logo=apple&logoColor=white" style="margin: 5px;" alt="macOS Guide"/></a>
-<a href="./doc/android.md"><img src="https://img.shields.io/badge/Android_Guide-333?style=flat&logo=android&logoColor=white" style="margin: 5px;" alt="Android Guide"/></a>
-<a href="./scripts/Docker/readme.md"><img src="https://img.shields.io/badge/Docker_Guide-333?style=flat&logo=docker&logoColor=white" style="margin: 5px;" alt="Docker Guide"/></a>
-</div>
 
+</div>
 
 ## Python Packages
 [![pyrealsense2](https://img.shields.io/pypi/v/pyrealsense2.svg?label=pyrealsense2&logo=pypi)](https://pypi.org/project/pyrealsense2/)
@@ -116,51 +124,44 @@ Our library offers a high level API for using RealSense depth cameras (in additi
 The following snippet shows how to start streaming frames and extracting the depth value of a pixel:
 
 ```cpp
+#include <librealsense2/rs.hpp>
+#include <iostream>
 
-rs2::pipeline p; // Create a Pipeline - this serves as a top-level API for streaming and processing frames
-p.start();       // Configure and start the pipeline
+int main() {
+    rs2::pipeline p;                 // Top-level API for streaming & processing frames
+    p.start();                       // Configure and start the pipeline
 
-while (true)
-{
-    rs2::frameset frames = p.wait_for_frames();        							// Block program until frames arrive
-    rs2::depth_frame depth = frames.get_depth_frame(); 							// Try to get a frame of a depth image
-    float dist = depth.get_distance(depth.get_width()/2, depth.get_height()/2); // Query the distance from the camera to the object in the center of the image
-    std::cout << "The camera is facing an object " << dist_to_center << " meters away \r";
+    while (true) {
+        rs2::frameset frames = p.wait_for_frames();        // Block until frames arrive
+        rs2::depth_frame depth = frames.get_depth_frame(); // Get depth frame
+        if (!depth) continue;
+
+        int w = depth.get_width(), h = depth.get_height();
+        float dist = depth.get_distance(w/2, h/2);         // Distance to center pixel
+        std::cout << "The camera is facing an object " << dist << " meters away\r";
+    }
 }
 ```
-For more information on the library, please follow our [examples](./examples), and read the [documentation](./doc) to learn more.
+
+For more information on the library, please follow our [examples](./examples) or [tools](./tools/), and read the [documentation](./doc) to learn more.
 
 ## Supported Platforms
 
-### Operating Systems
+### Operating Systems and Platforms
 
-| Ubuntu | Windows | Android | macOS |
-|--------|---------|---------|-------|
-| <div align="center"><a href="https://dev.realsenseai.com/docs/compiling-librealsense-for-linux-ubuntu-guide"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/ubuntu.png?raw=true" width="40%" alt="Ubuntu" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/compiling-librealsense-for-windows-guide"><img src="https://librealsense.intel.com/readme-media/Windows_logo.svg.png" width="40%" alt="Windows" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/android-build-of-the-intel-realsense-sdk-20"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/android.png?raw=true" width="40%" alt="Android" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/macos-installation-for-intel-realsense-sdk"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/apple-dark.png?raw=true"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/apple-light.png?raw=true" width="40%" alt="macOS" /></picture></a></div> |
-
-### Platforms
-
-| Jetson | Raspberry Pi 3 | Rockchip |
-|--------|----------------|----------|
-| <div align="center"><a href="https://dev.realsenseai.com/docs/nvidia-jetson-tx2-installation"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/nvidia.png?raw=true" width="30%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/using-depth-camera-with-raspberry-pi-3"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/raspberry-pi.png?raw=true" width="25%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/firefly-rk3399-installation"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/rockchip.png?raw=true" width="60%" alt="" /></a></div>
-
-### Programming Languages
-
-| C++ | C | C# | Python | Matlab |
-|-----|---|----|--------|--------|
-| <div align="center"><a href="https://dev.realsenseai.com/docs/code-samples"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/cpp.png?raw=true" width="50%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/code-samples"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/c.png?raw=true" width="60%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/csharp-wrapper"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/c-sharp.png?raw=true" width="50%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/python2"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/python.png?raw=true" width="30%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/matlab-wrapper"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/matlab.png?raw=true" width="40%" alt="" /></a></div>
-
-### Frameworks and Wrappers
-
-| Unity | Unreal Engine | OpenCV | ROS | ROS 2 |
-|-------|---------------|--------|-----|-------|
-| <div align="center"><a href="https://dev.realsenseai.com/docs/unity-wrapper"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/unity.png?raw=true" width="30%" alt="Unity" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/unrealengine-wrapper"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/unreal-engine.png?raw=true" width="35%" alt="Unreal Engine" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/opencv-wrapper"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/OpenCV_logo.png?raw=true" width="30%" alt="OpenCV" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/ros-wrapper"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/ros-dark.png?raw=true"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/ros-light.png?raw=true" width="60%" alt="ROS" /></picture></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/ros2-wrapper"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/ros2-dark.png?raw=true"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/ROS2-light.png?raw=true" width="40%" alt="ROS 2" /></picture></a></div> |
-
-| PCL | OpenVINO | Rest API | Open3D | LabVIEW |
-|-----|----------|--------|--------|---------|
-| <div align="center"><a href="https://dev.realsenseai.com/docs/pcl-wrapper"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/pcl_logo.png?raw=true" width="30%" alt="PCL" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/openvino"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/openvino-dark.png?raw=true"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/openvino-light.png?raw=true" width="25%" alt="OpenVINO" /></picture></a></div> | <div align="center"><a href="https://github.com/IntelRealSense/librealsense/blob/development/wrappers/rest-api/README.md"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/REST_API.png?raw=true" width="35%" alt="Rest API" /></a></div>| <div align="center"><a href="https://dev.realsenseai.com/docs/open3d"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/OPEN3D.png?raw=true" width="30%" alt="Open3D" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/labview-wrapper"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/labview-dark.png?raw=true"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/labview-light.png?raw=true" width="40%" alt="LabVIEW" /></picture></a></div> |
+| Ubuntu | Windows | macOS High Sierra | Jetson | Raspberry Pi |
+|--------|---------|-------|--------|----------------|
+| <div align="center"><a href="https://dev.realsenseai.com/docs/compiling-librealsense-for-linux-ubuntu-guide"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/ubuntu.png?raw=true" width="40%" alt="Ubuntu" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/compiling-librealsense-for-windows-guide"><img src="https://librealsense.intel.com/readme-media/Windows_logo.svg.png" width="40%" alt="Windows" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/macos-installation-for-intel-realsense-sdk"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/apple-dark.png?raw=true"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/apple-light.png?raw=true" width="40%" alt="macOS" /></picture></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/nvidia-jetson-tx2-installation"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/nvidia.png?raw=true" width="40%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/using-depth-camera-with-raspberry-pi-3"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/raspberry-pi.png?raw=true" width="40%" alt="" /></a></div> 
 
 
+
+### Programming Languages and Wrappers
+
+| C++ | C | C# | Python | ROS 2 |Rest API |
+|-----|---|----|--------|-------|---------|
+| <div align="center"><a href="https://dev.realsenseai.com/docs/code-samples"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/cpp.png?raw=true" width="50%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/code-samples"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/c.png?raw=true" width="60%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/csharp-wrapper"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/c-sharp.png?raw=true" width="50%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/python2"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/python.png?raw=true" width="30%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/ros2-wrapper"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/ros2-dark.png?raw=true"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/ROS2-light.png?raw=true" width="80%" alt="ROS 2" /></picture></a></div> | <div align="center"><a href="https://github.com/IntelRealSense/librealsense/blob/development/wrappers/rest-api/README.md"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/REST_API.png?raw=true" width="50%" alt="Rest API" /></a></div>|
+
+For more platforms and wrappers look over [here](https://dev.realsenseai.com/docs/docs-get-started).
 > Full feature support varies by platform – refer to the [release notes](https://github.com/IntelRealSense/librealsense/wiki/Release-Notes) for details.
 
 ## Community & Support
