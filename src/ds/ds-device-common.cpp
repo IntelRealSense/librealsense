@@ -230,7 +230,7 @@ namespace librealsense
                     }
                     catch (const std::exception& e)
                     {
-                        LOG_DEBUG("FWB command failed during section flash retry, retry number: " << retries);
+                        LOG_DEBUG("FWB command failed during section flash retry, retry number: " << retries << " ,error: " << e.what());
                         retries++;
                         if (retries == 3)
                         {
