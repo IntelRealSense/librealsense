@@ -26,11 +26,11 @@ Below are some of the many real-world applications powered by RealSense technolo
 
 Robotics | Depth Sensing | 3D Scanning |
 :------------: | :----------: | :-------------: |
-<a href="https://www.intelrealsense.com/use-cases/#robotics"><img src="https://media.githubusercontent.com/media/NVIDIA-ISAAC-ROS/.github/main/resources/isaac_ros_docs/repositories_and_packages/isaac_ros_nvblox/realsense_example.gif/" width="240"/></a> |<a href="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/align-expected.gif"><img src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/align-expected.gif" width="240"/></a> | <a href="https://www.intelrealsense.com/use-cases/#3d-scanning"><img src="https://media.githubusercontent.com/media/NVIDIA-ISAAC-ROS/.github/main/resources/isaac_ros_docs/repositories_and_packages/isaac_ros_nvblox/realsense_dynamic_example.gif/" width="240"/></a>
+<a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/realsense_examplerealsense_example.gif" width="240"/></a> |<a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/align-expectede.gif" width="240"/></a> | <a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/realsense_dynamic_example.gif" width="240"/></a>
 
 Drones | Skeletal and people tracking | Facial authentication |
 :--------------------------: | :-----: | :----------------------: |
-<a href="https://realsenseai.com/case-studies/"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/GIF/drone-demo.gif?raw=true" width="240"/></a> |<a href="https://realsenseai.com/case-studies/"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/GIF/SkeletalTracking.gif?raw=true" width="240"/></a> | <a href="https://realsenseai.com/case-studies/"><img src="https://librealsense.intel.com/readme-media/face-demo.gif" width="240"/></a>
+<a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/drone-demo.gif" width="240"/></a> |<a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/SkeletalTracking.gif" width="240"/></a> | <a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/face-demo.gif" width="240"/></a>
 
 
 
@@ -109,19 +109,19 @@ For a more custom installation, follow these steps to build the SDK from source.
 **Which should I use?**
 - **Stable:** `pyrealsense2` — validated releases aligned with SDK tags (Recommended for most users).  
 - **Beta:** `pyrealsense2-beta` — fresher builds for early access and testing. Expect faster updates.  
-
-> Both packages import as `pyrealsense2`. Install **only one** at a time.
+> Note: until we provide a beta `apt install`, using the latest beta may require **cloning the development branch and compiling from source**.
 
 ### Install
 ```bash
 pip install pyrealsense2 # Stable
 pip install pyrealsense2-beta # Beta
 ```
+> Both packages import as `pyrealsense2`. Install **only one** at a time.
 
 ## Ready to Hack!
 
 Our library offers a high level API for using RealSense depth cameras (in addition to lower level ones).
-The following snippet shows how to start streaming frames and extracting the depth value of a pixel:
+The following C++ snippet shows how to start streaming frames and extracting the depth value of a pixel:
 
 ```cpp
 #include <librealsense2/rs.hpp>
@@ -151,7 +151,7 @@ For more information on the library, please follow our [examples](./examples) or
 
 | Ubuntu | Windows | macOS High Sierra | Jetson | Raspberry Pi |
 |--------|---------|-------|--------|----------------|
-| <div align="center"><a href="https://dev.realsenseai.com/docs/compiling-librealsense-for-linux-ubuntu-guide"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/ubuntu.png?raw=true" width="40%" alt="Ubuntu" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/compiling-librealsense-for-windows-guide"><img src="https://librealsense.intel.com/readme-media/Windows_logo.svg.png" width="40%" alt="Windows" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/macos-installation-for-intel-realsense-sdk"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/apple-dark.png?raw=true"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/apple-light.png?raw=true" width="40%" alt="macOS" /></picture></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/nvidia-jetson-tx2-installation"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/nvidia.png?raw=true" width="40%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/using-depth-camera-with-raspberry-pi-3"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/raspberry-pi.png?raw=true" width="40%" alt="" /></a></div> 
+| <div align="center"><a href="https://dev.realsenseai.com/docs/compiling-librealsense-for-linux-ubuntu-guide"><img src="https://librealsense.intel.com/readme-media/ubuntu.png" width="40%" alt="Ubuntu" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/compiling-librealsense-for-windows-guide"><img src="https://librealsense.intel.com/readme-media/Windows_logo.png" width="40%" alt="Windows" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/macos-installation-for-intel-realsense-sdk"><picture><source media="(prefers-color-scheme: dark)" srcset="https://librealsense.intel.com/readme-media/apple-dark.png"><img src="https://librealsense.intel.com/readme-media/apple-light.png" width="40%" alt="macOS" /></picture></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/nvidia-jetson-tx2-installation"><img src="https://librealsense.intel.com/readme-media/nvidia.png" width="40%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/using-depth-camera-with-raspberry-pi-3"><img src="https://librealsense.intel.com/readme-media/raspberry-pi.png" width="40%" alt="" /></a></div> 
 
 
 
@@ -159,7 +159,7 @@ For more information on the library, please follow our [examples](./examples) or
 
 | C++ | C | C# | Python | ROS 2 |Rest API |
 |-----|---|----|--------|-------|---------|
-| <div align="center"><a href="https://dev.realsenseai.com/docs/code-samples"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/cpp.png?raw=true" width="50%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/code-samples"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/c.png?raw=true" width="60%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/csharp-wrapper"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/c-sharp.png?raw=true" width="50%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/python2"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/python.png?raw=true" width="30%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/ros2-wrapper"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/ros2-dark.png?raw=true"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/ROS2-light.png?raw=true" width="80%" alt="ROS 2" /></picture></a></div> | <div align="center"><a href="https://github.com/IntelRealSense/librealsense/blob/development/wrappers/rest-api/README.md"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/REST_API.png?raw=true" width="50%" alt="Rest API" /></a></div>|
+| <div align="center"><a href="https://dev.realsenseai.com/docs/code-samples"><img src="https://librealsense.intel.com/readme-media/cpp.png" width="50%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/code-samples"><img src="https://librealsense.intel.com/readme-media/c.png" width="60%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/csharp-wrapper"><img src="https://librealsense.intel.com/readme-media/c-sharp.png" width="50%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/python2"><img src="https://librealsense.intel.com/readme-media/python.png" width="30%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/ros2-wrapper"><picture><source media="(prefers-color-scheme: dark)" srcset="https://librealsense.intel.com/readme-media/ros2-dark.png"><img src="https://librealsense.intel.com/readme-media/ROS2-light.png" width="80%" alt="ROS 2" /></picture></a></div> | <div align="center"><a href="https://github.com/IntelRealSense/librealsense/blob/development/wrappers/rest-api/README.md"><img src="https://librealsense.intel.com/readme-media/REST_API.png" width="50%" alt="Rest API" /></a></div>|
 
 For more platforms and wrappers look over [here](https://dev.realsenseai.com/docs/docs-get-started).
 > Full feature support varies by platform – refer to the [release notes](https://github.com/IntelRealSense/librealsense/wiki/Release-Notes) for details.
@@ -176,15 +176,15 @@ For more platforms and wrappers look over [here](https://dev.realsenseai.com/doc
 You can find us at
 </p>
 <p align="center">
-  <a href="https://github.com/realsenseai" target="_blank" aria-label="GitHub"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/github_light.PNG?raw=true"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/github.png?raw=true" width="32" alt="GitHub"></picture></a>
+  <a href="https://github.com/realsenseai" target="_blank" aria-label="GitHub"><picture><source media="(prefers-color-scheme: dark)" srcset="https://librealsense.intel.com/readme-media/github_light.PNG"><img src="https://librealsense.intel.com/readme-media/github.png" width="32" alt="GitHub"></picture></a>
   &nbsp;&nbsp;&nbsp;
-  <a href="https://x.com/RealSenseai" target="_blank" aria-label="X (Twitter)"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/twitter.png?raw=true" width="32" alt="X (Twitter)" /></a>
+  <a href="https://x.com/RealSenseai" target="_blank" aria-label="X (Twitter)"><img src="https://librealsense.intel.com/readme-media/twitter.png" width="32" alt="X (Twitter)" /></a>
   &nbsp;&nbsp;&nbsp;
-  <a href="https://www.youtube.com/@RealSenseai" target="_blank" aria-label="YouTube"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/social.png?raw=true" width="32" alt="YouTube" /></a>
+  <a href="https://www.youtube.com/@RealSenseai" target="_blank" aria-label="YouTube"><img src="https://librealsense.intel.com/readme-media/social.png" width="32" alt="YouTube" /></a>
   &nbsp;&nbsp;&nbsp;
-  <a href="https://www.linkedin.com/company/realsenseai?trk=similar-pages" target="_blank" aria-label="LinkedIn"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/linkedin.png?raw=true" width="32" alt="LinkedIn" /></a>
+  <a href="https://www.linkedin.com/company/realsenseai?trk=similar-pages" target="_blank" aria-label="LinkedIn"><img src="https://librealsense.intel.com/readme-media/linkedin.png" width="32" alt="LinkedIn" /></a>
   &nbsp;&nbsp;&nbsp;
-  <a href="https://realsenseai.com/" target="_blank" aria-label="Community"><img src="https://github.com/Noy-Zini/librealsense/blob/media-files/doc/img/logos/Real-sense-badge-rgb-c.png?raw=true" width="32" alt="Community" /></a>
+  <a href="https://realsenseai.com/" target="_blank" aria-label="Community"><img src="https://librealsense.intel.com/readme-media/Real-sense-badge-rgb-c.png" width="32" alt="Community" /></a>
 </p>
 
 
