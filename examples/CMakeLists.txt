@@ -11,7 +11,7 @@ set_security_flags_for_executable() # examples are executables so we want positi
 
 set( DEPENDENCIES ${LRS_TARGET} )
 if(BUILD_GRAPHICAL_EXAMPLES)
-    include(${CMAKE_SOURCE_DIR}/CMake/opengl_config.cmake)
+    include(${PROJECT_SOURCE_DIR}/CMake/opengl_config.cmake)
 else()
     if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
         find_library(log-lib log)
