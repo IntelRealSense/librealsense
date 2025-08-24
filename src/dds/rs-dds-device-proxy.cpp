@@ -173,6 +173,8 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, j.nested( "locked" ).default_value( true ) ? "YES" : "NO" );
     register_info(RS2_CAMERA_INFO_CONNECTION_TYPE, "DDS" );
 
+    eth_config_device::init( static_cast< debug_interface * >( this ) ); // Call after registering device info
+
     // Assumes dds_device initialization finished
     struct sensor_info
     {
@@ -832,6 +834,15 @@ std::vector< sensor_interface const * > dds_device_proxy::get_serializable_senso
     for( auto i = 0; i < n_sensors; ++i )
         sensors.push_back( &get_sensor( i ) );
     return sensors;
+}
+
+bool dds_device_proxy::supports_ethernet_configuration()
+{
+    std::string dev_name = get_info( RS2_CAMERA_INFO_NAME ); // Info supported, registered at constructor
+    if( dev_name.find( "D555" ) == std::string::npos ) // Currently only D555 devices support eth_config
+        return false;
+
+    return eth_config_device::supports_ethernet_configuration();
 }
 
 

@@ -63,6 +63,7 @@
 #include "composite-frame.h"
 #include "points.h"
 #include "labeled-points.h"
+#include "eth-config-device.h"
 
 #include <src/core/time-service.h>
 #include <rsutils/string/from.h>
@@ -1928,6 +1929,7 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_SERIALIZABLE          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::serializable_interface)        != nullptr;
         case RS2_EXTENSION_FW_LOGGER             : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::firmware_logger_extensions)    != nullptr;
         case RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::calibration_change_device)  != nullptr;
+        case RS2_EXTENSION_ETH_CONFIG            : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::eth_config_device )            != nullptr;
 
         default:
             return false;
@@ -4636,209 +4638,191 @@ void rs2_hw_monitor_get_opcode_string(int opcode, char* buffer, size_t buffer_si
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-constexpr static const uint32_t GET_ETH_CONFIG = 0xBB;
-constexpr static const uint32_t SET_ETH_CONFIG = 0xBA;
-constexpr static const uint32_t ETH_CONFIG_DEFAULT = 0;
-constexpr static const uint32_t ETH_CONFIG_CURRENT = 1;
-
-rsutils::type::eth_config get_eth_config( const rs2_device * device, uint32_t type = ETH_CONFIG_CURRENT )
-{
-    VALIDATE_NOT_NULL( device );
-    auto debug_interface = VALIDATE_INTERFACE( device->device, librealsense::debug_interface ); // Ethernet configuration uses HWM commands
-
-    std::string dev_name = device->device->supports_info( RS2_CAMERA_INFO_NAME ) ? device->device->get_info( RS2_CAMERA_INFO_NAME ) : "";
-    if( dev_name.find( "D555" ) == std::string::npos )
-        throw std::runtime_error( "Currently only D555 devices support eth_config" );
-
-    auto buffer_to_send = debug_interface->build_command( GET_ETH_CONFIG, type );
-    auto ret_data = debug_interface->send_receive_raw_data( buffer_to_send );
-    int32_t const & code = *reinterpret_cast< int32_t const * >( ret_data.data() );
-    if( code == GET_ETH_CONFIG )  // On success opcode is reflected in the return code
-    {
-        ret_data.erase( ret_data.begin(), ret_data.begin() + sizeof( code ) );
-        return rsutils::type::eth_config( ret_data );
-    }
-
-    throw std::runtime_error( "Cannot retreive current Ethernet configuration" );
-}
-
-bool set_eth_config( const rs2_device * device, const rsutils::type::eth_config & config, uint32_t type = ETH_CONFIG_CURRENT )
-{
-    VALIDATE_NOT_NULL( device );
-    auto debug_interface = VALIDATE_INTERFACE( device->device, librealsense::debug_interface );
-
-    auto config_buffer = config.build_command();
-    auto buffer_to_send = debug_interface->build_command( SET_ETH_CONFIG, type, 0, 0, 0, config_buffer.data(), config_buffer.size() );
-    auto ret_data = debug_interface->send_receive_raw_data( buffer_to_send );
-    int32_t const & code = *reinterpret_cast< int32_t const * >( ret_data.data() );
-    return code == SET_ETH_CONFIG;  // On success opcode is reflected in the return code
-}
-
 int rs2_supports_eth_config( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
 {
-    try
-    {
-        auto config = get_eth_config( device ); // Will throw if not supported
-        return true;
-    }
-    catch( const std::runtime_error e )
-    {
-    }
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE_NO_THROW( device->device, librealsense::eth_config_device );
+    if( eth_config )
+        return eth_config->supports_ethernet_configuration();
 
     return false;
 }
 HANDLE_EXCEPTIONS_AND_RETURN( false, device )
 
-int rs2_get_link_speed( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
+uint32_t rs2_get_link_speed( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    return config.link.speed;
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    return eth_config->get_ethernet_link_speed();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( 0, device )
 
 rs2_eth_link_priority rs2_get_link_priority( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    return static_cast< rs2_eth_link_priority >( config.link.priority );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    return static_cast< rs2_eth_link_priority >( eth_config->get_link_priority() );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( RS2_LINK_PRIORITY_COUNT, device )
 
 void rs2_set_link_priority( const rs2_device * device, rs2_eth_link_priority priority, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    config.link.priority = static_cast< rsutils::type::link_priority >( priority );
-    set_eth_config( device, config );
+
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    return eth_config->set_link_priority( static_cast< rsutils::type::link_priority >( priority ) );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
 
 unsigned int rs2_get_link_timeout( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    return config.link.timeout;
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    return eth_config->get_link_timeout();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( 0, device )
 
 void rs2_set_link_timeout( const rs2_device * device, unsigned int timeout, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    config.link.timeout = timeout;
-    set_eth_config( device, config );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    return eth_config->set_link_timeout( timeout );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
 
 unsigned int rs2_get_dds_domain( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    return config.dds.domain_id;
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    return static_cast< rs2_eth_link_priority >( eth_config->get_dds_domain_id() );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( 0, device )
 
 void rs2_set_dds_domain( const rs2_device * device, unsigned int domain, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    config.dds.domain_id = domain;
-    set_eth_config( device, config );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    return eth_config->set_dds_domain_id( domain );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device )
 
 void rs2_get_ip_address( const rs2_device * device, rs2_ip_address configured, rs2_ip_address actual, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    config.configured.ip.get_components( configured );
-    config.actual.ip.get_components( actual );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    rsutils::type::ip_address tmp_configured, tmp_actual;
+    eth_config->get_ip_address( tmp_configured, tmp_actual );
+    tmp_configured.get_components( configured );
+    tmp_actual.get_components( actual );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
 
 void rs2_set_ip_address( const rs2_device * device, const rs2_ip_address ip, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    config.configured.ip = ip;
-    set_eth_config( device, config );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    rsutils::type::ip_address tmp( ip );
+    eth_config->set_ip_address( tmp );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device )
 
 void rs2_get_netmask( const rs2_device * device, rs2_ip_address configured, rs2_ip_address actual, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    config.configured.netmask.get_components( configured );
-    config.actual.netmask.get_components( actual );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    rsutils::type::ip_address tmp_configured, tmp_actual;
+    eth_config->get_netmask( tmp_configured, tmp_actual );
+    tmp_configured.get_components( configured );
+    tmp_actual.get_components( actual );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
 
 void rs2_set_netmask( const rs2_device * device, const rs2_ip_address netmask, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    config.configured.netmask = netmask;
-    set_eth_config( device, config );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    rsutils::type::ip_address tmp( netmask );
+    eth_config->set_netmask( tmp );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
 
 void rs2_get_gateway( const rs2_device * device, rs2_ip_address configured, rs2_ip_address actual, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    config.configured.gateway.get_components( configured );
-    config.actual.gateway.get_components( actual );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    rsutils::type::ip_address tmp_configured, tmp_actual;
+    eth_config->get_gateway( tmp_configured, tmp_actual );
+    tmp_configured.get_components( configured );
+    tmp_actual.get_components( actual );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
 
 void rs2_set_gateway( const rs2_device * device, const rs2_ip_address gateway, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    config.configured.gateway = gateway;
-    set_eth_config( device, config );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    rsutils::type::ip_address tmp( gateway );
+    eth_config->set_gateway( gateway);
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
 
 void rs2_get_dhcp_config( const rs2_device * device, int * enabled, unsigned int * timeout, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    *enabled = config.dhcp.on ? 1 : 0;
-    *timeout = config.dhcp.timeout;
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    bool tmp_enabled;
+    uint8_t tmp_timeout;
+    eth_config->get_dhcp_config( tmp_enabled, tmp_timeout );
+    *enabled = tmp_enabled ? 1 : 0;
+    *timeout = tmp_timeout;
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
 
 void rs2_set_dhcp_config( const rs2_device * device, int enabled, unsigned int timeout, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    config.dhcp.on = enabled != 0;
-    config.dhcp.timeout = timeout;
-    set_eth_config( device, config );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    VALIDATE_RANGE( timeout, 0, 255 );
+    eth_config->set_dhcp_config( enabled != 0, static_cast< uint8_t >( timeout ) );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
 
 unsigned int rs2_get_mtu( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    return config.link.mtu;
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    return eth_config->get_mtu();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( 9000, device )
 
 void rs2_set_mtu( const rs2_device * device, unsigned int mtu, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    config.link.mtu = mtu;
-    set_eth_config( device, config );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    return eth_config->set_mtu( mtu );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
 
 unsigned int rs2_get_transmission_delay( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    return config.transmission_delay;
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    return eth_config->get_transmission_delay();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( 0, device )
 
 void rs2_set_transmission_delay( const rs2_device * device, unsigned int delay, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto config = get_eth_config( device );
-    config.transmission_delay = delay;
-    set_eth_config( device, config );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    return eth_config->set_transmission_delay( delay );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
 
 void rs2_restore_default_eth_config( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto default_config = get_eth_config( device, ETH_CONFIG_DEFAULT );
-    set_eth_config( device, default_config, ETH_CONFIG_DEFAULT );
+    VALIDATE_NOT_NULL( device );
+    auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
+    return eth_config->restore_defaults();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device )

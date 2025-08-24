@@ -23,10 +23,8 @@ namespace rs2
         eth_config_device( rs2::device d ) : device( d.get() )
         {
             rs2_error * e = nullptr;
-            // Ethernet configuration is supported through HWM commands, must be extensible to RS2_EXTENSION_DEBUG
-            if( rs2_is_device_extendable_to( _dev.get(), RS2_EXTENSION_DEBUG, &e ) == 0 && ! e )
-                _dev.reset();
-            else if( ! rs2_supports_eth_config( _dev.get(), &e ) && ! e )
+            bool extendable = rs2_is_device_extendable_to( _dev.get(), RS2_EXTENSION_ETH_CONFIG, &e ) && ! e;
+            if( ! extendable || ! rs2_supports_eth_config( _dev.get(), &e ) || e )
                 _dev.reset();
             error::handle( e );
         }
@@ -36,6 +34,8 @@ namespace rs2
          */
         bool supports_eth_config() const
         {
+            if( ! _dev )
+                return false; // Was reset in constructor because not supporting Ethernet configuration
             rs2_error * e = nullptr;
             auto result = rs2_supports_eth_config( _dev.get(), &e );
             error::handle( e );
@@ -45,7 +45,7 @@ namespace rs2
         /**
          * Get Ethernet link speed, 0 if not linked
          */
-        int get_link_speed() const
+        uint32_t get_link_speed() const
         {
             rs2_error * e = nullptr;
             auto result = rs2_get_link_speed( _dev.get(), &e );

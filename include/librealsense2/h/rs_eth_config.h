@@ -51,7 +51,7 @@ int rs2_supports_eth_config( const rs2_device * device, rs2_error ** error );
     * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return              Current Ethernet link speed Mbps. 0 if link is not available.
     */
-int rs2_get_link_speed( const rs2_device * device, rs2_error ** error );
+unsigned int rs2_get_link_speed( const rs2_device * device, rs2_error ** error );
 
 /**
     * Get link priority
@@ -86,17 +86,17 @@ unsigned int rs2_get_link_timeout( const rs2_device * device, rs2_error ** error
 void rs2_set_link_timeout( const rs2_device * device, unsigned int timeout, rs2_error ** error );
 
 /**
- * Get current DDS domain (0-232)
+ * Get current DDS domain id (0-232) used when connected through Ethernet
  * \param[in] device    RealSense device
  * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
- * \return              Current link timeout in milliseconds
+ * \return              Current DDS domain id used when connected through Ethernet
  */
 unsigned int rs2_get_dds_domain( const rs2_device * device, rs2_error ** error );
 
 /**
- * Set DDS domain to use
+ * Set DDS domain id to use when connected through Ethernet
  * \param[in] device    RealSense device
- * \param[in] domain    DDS domain to use (0-232)
+ * \param[in] domain    DDS domain id to use (0-232)
  * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_set_dds_domain( const rs2_device * device, unsigned int domain, rs2_error ** error );
@@ -122,7 +122,7 @@ void rs2_set_ip_address( const rs2_device * device, const rs2_ip_address ip, rs2
     * Get network mask
     * \param[in] device    RealSense device
     * \param[out] configured_netmask  Configured network mask to populate
-    * \param[out] actual_netmask      Actual network mask to populate. Might be different from configured_ip if DHCP is enabled
+    * \param[out] actual_netmask      Actual network mask to populate. Might be different from configured_netmask if DHCP is enabled
     * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
 void rs2_get_netmask( const rs2_device * device, rs2_ip_address configured_netmask, rs2_ip_address actual_netmask, rs2_error ** error );
@@ -139,7 +139,7 @@ void rs2_set_netmask( const rs2_device * device, const rs2_ip_address netmask, r
     * Get gateway address
     * \param[in] device    RealSense device
     * \param[out] configured_gateway  Configured gateway address to populate
-    * \param[out] actual_gateway      Actual gateway address to populate. Might be different from configured_ip if DHCP is enabled
+    * \param[out] actual_gateway      Actual gateway address to populate. Might be different from configured_gateway if DHCP is enabled
     * \param[out] error    If non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
 void rs2_get_gateway( const rs2_device * device, rs2_ip_address configured_gateway, rs2_ip_address actual_gateway, rs2_error ** error );
