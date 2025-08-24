@@ -248,6 +248,17 @@ namespace librealsense
             }
             return tags;
         };
+        void hardware_reset() override
+        {
+            d400_device::hardware_reset();
+            simulate_device_reconnect(this->get_device_info());
+        }
+
+        void toggle_advanced_mode(bool enable) override
+        {
+            ds_advanced_mode_base::toggle_advanced_mode(enable);
+            simulate_device_reconnect(this->get_device_info());
+        }
     };
 
 
