@@ -395,6 +395,7 @@ const char * get_string( rs2_extension value )
     CASE( SAFETY_SENSOR )
     CASE( DEPTH_MAPPING_SENSOR )
     CASE( LABELED_POINTS )
+    CASE( ETH_CONFIG )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

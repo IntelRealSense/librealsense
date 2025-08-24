@@ -12,7 +12,6 @@
 #include "../h/rs_record_playback.h"
 #include "../h/rs_sensor.h"
 #include "../h/rs_pipeline.h"
-#include "../h/rs_eth_config.h"
 
 #include <string>
 #include <vector>

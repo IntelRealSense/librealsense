@@ -22,13 +22,13 @@ dds_model::dds_model( rs2::device dev )
 {
     if( check_DDS_support() )
     {
-        get_eth_config();
-        reset_to_current_values();
+        load_eth_config_from_device();
+        reset_to_current_device_values();
         _dds_supported = true;
     }
 }
 
-void dds_model::get_eth_config()
+void dds_model::load_eth_config_from_device()
 {
     _domain_current = _eth_device.get_dds_domain();
     _link_priority_current = _eth_device.get_link_priority();
@@ -49,7 +49,7 @@ void dds_model::get_eth_config()
     _link_speed_read_only = _eth_device.get_link_speed();
 }
 
-void dds_model::set_eth_config( std::string & error_message, bool reset_to_default )
+void dds_model::save_eth_config_in_device( std::string & error_message, bool reset_to_default )
 {
     try
     {
@@ -89,21 +89,14 @@ void dds_model::set_eth_config( std::string & error_message, bool reset_to_defau
     }
 }
 
-bool dds_model::supports_DDS()
-{
-    return _dds_supported;
-}
-
-rs2::dds_model::priority dds_model::classifyPriority( rs2_eth_link_priority pr )
+rs2::dds_model::priority dds_model::classify_priority( rs2_eth_link_priority pr ) const
 {
     if( pr == RS2_LINK_PRIORITY_USB_ONLY || pr == RS2_LINK_PRIORITY_USB_FIRST )
-    {
         return priority::USB_FIRST;
-    }
-    else if( pr == RS2_LINK_PRIORITY_ETH_ONLY || pr == RS2_LINK_PRIORITY_ETH_FIRST )
-    {
+
+    if( pr == RS2_LINK_PRIORITY_ETH_ONLY || pr == RS2_LINK_PRIORITY_ETH_FIRST )
         return priority::ETH_FIRST;
-    }
+
     return priority::DYNAMIC;
 }
 
@@ -112,7 +105,7 @@ bool dds_model::check_DDS_support()
     return _eth_device.supports_eth_config();
 }
 
-void dds_model::reset_to_current_values()
+void dds_model::reset_to_current_device_values()
 {
     _domain_to_set = _domain_current;
     _link_priority_to_set = _link_priority_current;
@@ -137,7 +130,7 @@ bool dds_model::has_changed_values() const
         _mtu_to_set != _mtu_current || _tx_delay_to_set != _tx_delay_current;
 }
 
-void rs2::dds_model::ipInputText( std::string label, ip_address & ip )
+void rs2::dds_model::ip_input_text( std::string label, ip_address & ip ) const
 {
     char buffer[16];
     std::string ip_str = ip.to_string();
@@ -167,8 +160,8 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
     {
         try
         {
-            get_eth_config();
-            reset_to_current_values();
+            load_eth_config_from_device();
+            reset_to_current_device_values();
             ImGui::OpenPopup( window_name );
         }
         catch( std::exception e )
@@ -241,7 +234,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
 
         if( ImGui::CollapsingHeader( "Connection Priority" ) )
         {
-            priority connection_priority = classifyPriority( _link_priority_to_set );
+            priority connection_priority = classify_priority( _link_priority_to_set );
             ImGui::Text( "Select connection priority:" );
             ImGui::RadioButton( "Ethernet First", reinterpret_cast< int * >( &connection_priority ), 0 );
             if( static_cast< int >( connection_priority ) == 0 )
@@ -286,16 +279,16 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
                 ImGui::Text( "Static IP Address" );
                 ImGui::SameLine();
                 float textbox_align = ImGui::GetCursorPosX();
-                ipInputText( "Static IP Address", _ip_to_set );
+                ip_input_text( "Static IP Address", _ip_to_set );
                 ImGui::Text( "Subnet Mask" );
                 ImGui::SameLine();
                 ImGui::SetCursorPosX( textbox_align );
                 bool maskStylePushed = false;
-                ipInputText( "Subnet Mask", _netmask_to_set );
+                ip_input_text( "Subnet Mask", _netmask_to_set );
                 ImGui::Text( "Gateway" );
                 ImGui::SameLine();
                 ImGui::SetCursorPosX( textbox_align );
-                ipInputText( "Gateway", _gateway_to_set );
+                ip_input_text( "Gateway", _gateway_to_set );
             }
             else
             {
@@ -342,7 +335,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         ImGui::Checkbox( "No Reset after changes", &_no_reset );
         if( ImGui::Button( "Revert changes" ) )
         {
-            reset_to_current_values();
+            reset_to_current_device_values();
         }
         if( ImGui::IsItemHovered() )
         {
@@ -369,7 +362,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         ImGui::SameLine();
         if( ImGui::Button( "Factory Reset", ImVec2( button_width, 25 ) ) )
         {
-            set_eth_config( error_message, true );
+            save_eth_config_in_device( error_message, true );
             close_window();
         }
         if( ImGui::IsItemHovered() )
@@ -383,7 +376,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
             {
                 if( ImGui::ButtonEx( "Apply", ImVec2( button_width, 25 ) ) )
                 {
-                    set_eth_config( error_message );
+                    save_eth_config_in_device( error_message );
                     close_window();
                 };
             },

@@ -24,8 +24,7 @@ namespace rs2
 
         void close_window() { ImGui::CloseCurrentPopup(); }
 
-        bool supports_DDS();
-
+        bool supports_DDS() const { return _dds_supported; }
 
     private:
         enum priority
@@ -54,12 +53,12 @@ namespace rs2
         bool _no_reset;
         bool _dds_supported;
 
-        void get_eth_config();
-        void set_eth_config( std::string & error_message, bool reset_to_default = false );
-        void ipInputText( std::string label, rsutils::type::ip_address & ip );
-        priority classifyPriority( rs2_eth_link_priority pr );
+        void load_eth_config_from_device();
+        void save_eth_config_in_device( std::string & error_message, bool reset_to_default = false );
+        void ip_input_text( std::string label, rsutils::type::ip_address & ip ) const;
+        priority classify_priority( rs2_eth_link_priority pr ) const;
         bool check_DDS_support();
-        void reset_to_current_values();
+        void reset_to_current_device_values();
         bool has_changed_values() const;
     };
 }
