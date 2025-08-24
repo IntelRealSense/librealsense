@@ -26,12 +26,14 @@ namespace librealsense
          {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
          {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
          {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
+         {rs_fourcc('R','W','1','6'), RS2_FORMAT_RAW16},
          {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
     };
     std::map<rs_fourcc::value_type, rs2_stream> d400_color_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
         {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
         {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR},
+        {rs_fourcc('R','W','1','6'), RS2_STREAM_COLOR},
         {rs_fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR}
     };
