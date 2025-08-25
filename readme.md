@@ -72,35 +72,36 @@ This is the best option if you want to plug in your camera and get started right
     - Depth Quality Tool: Measure accuracy and fill rate.
 
 ### Setup Guides - precompiled SDK
-<div align="center" style="margin: 20px 0;">
+
 <a href="./doc/distribution_linux.md"><img src="https://img.shields.io/badge/Ubuntu_Guide-333?style=flat&logo=ubuntu&logoColor=white" style="margin: 5px;" alt="Linux\Jetson Guide"/></a>
 <a href="./doc/distribution_windows.md"><img src="https://custom-icon-badges.demolab.com/badge/Windows_Guide-333?logo=windows11&logoColor=white" style="margin: 5px;" alt="Windows Guide"/></a>
-</div>
+
+> **Note:** For **minor releases**, we publish Debian packages as release artifacts that you can download and install directly.
 
 ### 2️. Build from Source
 For a more custom installation, follow these steps to build the SDK from source.
 1. Clone the repository and create a build directory:
    ```bash
    git clone https://github.com/IntelRealSense/librealsense.git
+   cd librealsense
    mkdir build && cd build
    ```
 2. Run CMake to configure the build:
     ```bash
-    cmake .. -DBUILD_EXAMPLES=true
+    cmake ..
     ```
 3. Build the project:
     ```bash
-    make -j$(nproc)
+    cmake --build .
     ```
 
 ### Setup Guides - build from source
-<div align="center" style="margin: 20px 0;">
+
 <a href="./doc/installation.md"><img src="https://img.shields.io/badge/Ubuntu_Guide-333?style=flat&logo=ubuntu&logoColor=white" style="margin: 5px;" alt="Linux Guide"/></a>
 <a href="./doc/installation_jetson.md"><img src="https://img.shields.io/badge/Jetson_Guide-333?style=flat&logo=nvidia&logoColor=white" style="margin: 5px;" alt="Jetson Guide"/></a>
 <a href="./doc/installation_windows.md"><img src="https://custom-icon-badges.demolab.com/badge/Windows_Guide-333?logo=windows11&logoColor=white" style="margin: 5px;" alt="Windows Guide"/></a>
 <a href="./doc/installation_osx.md"><img src="https://img.shields.io/badge/macOS_Guide-333?style=flat&logo=apple&logoColor=white" style="margin: 5px;" alt="macOS Guide"/></a>
 
-</div>
 
 ## Python Packages
 [![pyrealsense2](https://img.shields.io/pypi/v/pyrealsense2.svg?label=pyrealsense2&logo=pypi)](https://pypi.org/project/pyrealsense2/)
@@ -109,7 +110,6 @@ For a more custom installation, follow these steps to build the SDK from source.
 **Which should I use?**
 - **Stable:** `pyrealsense2` — validated releases aligned with SDK tags (Recommended for most users).  
 - **Beta:** `pyrealsense2-beta` — fresher builds for early access and testing. Expect faster updates.  
-> Note: until we provide a beta `apt install`, using the latest beta may require **cloning the development branch and compiling from source**.
 
 ### Install
 ```bash
@@ -121,8 +121,9 @@ pip install pyrealsense2-beta # Beta
 ## Ready to Hack!
 
 Our library offers a high level API for using RealSense depth cameras (in addition to lower level ones).
-The following C++ snippet shows how to start streaming frames and extracting the depth value of a pixel:
+The following snippets show how to start streaming frames and extracting the depth value of a pixel:
 
+**C++**
 ```cpp
 #include <librealsense2/rs.hpp>
 #include <iostream>
@@ -143,6 +144,28 @@ int main() {
 }
 ```
 
+**Python**
+```python
+import pyrealsense2 as rs
+
+pipeline = rs.pipeline() # Create a pipeline
+pipeline.start() # Start streaming
+
+try:
+    while True:
+        frames = pipeline.wait_for_frames()
+        depth_frame = frames.get_depth_frame()
+        if not depth_frame:
+            continue
+
+        width, height = depth_frame.get_width(), depth_frame.get_height()
+        dist = depth_frame.get_distance(width // 2, height // 2)
+        print(f"The camera is facing an object {dist:.3f} meters away", end="\r")
+
+finally:
+    pipeline.stop() # Stop streaming
+```
+
 For more information on the library, please follow our [examples](./examples) or [tools](./tools/), and read the [documentation](./doc) to learn more.
 
 ## Supported Platforms
@@ -159,7 +182,7 @@ For more information on the library, please follow our [examples](./examples) or
 
 | C++ | C | C# | Python | ROS 2 |Rest API |
 |-----|---|----|--------|-------|---------|
-| <div align="center"><a href="https://dev.realsenseai.com/docs/code-samples"><img src="https://librealsense.intel.com/readme-media/cpp.png" width="50%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/code-samples"><img src="https://librealsense.intel.com/readme-media/c.png" width="60%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/csharp-wrapper"><img src="https://librealsense.intel.com/readme-media/c-sharp.png" width="50%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/python2"><img src="https://librealsense.intel.com/readme-media/python.png" width="30%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/ros2-wrapper"><picture><source media="(prefers-color-scheme: dark)" srcset="https://librealsense.intel.com/readme-media/ros2-dark.png"><img src="https://librealsense.intel.com/readme-media/ROS2-light.png" width="80%" alt="ROS 2" /></picture></a></div> | <div align="center"><a href="https://github.com/IntelRealSense/librealsense/blob/development/wrappers/rest-api/README.md"><img src="https://librealsense.intel.com/readme-media/REST_API.png" width="50%" alt="Rest API" /></a></div>|
+| <div align="center"><a href="https://dev.realsenseai.com/docs/code-samples"><img src="https://librealsense.intel.com/readme-media/cpp.png" width="50%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/code-samples"><img src="https://librealsense.intel.com/readme-media/c.png" width="55%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/csharp-wrapper"><img src="https://librealsense.intel.com/readme-media/c-sharp.png" width="50%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/python2"><img src="https://librealsense.intel.com/readme-media/python.png" width="30%" alt="" /></a></div> | <div align="center"><a href="https://dev.realsenseai.com/docs/ros2-wrapper"><picture><source media="(prefers-color-scheme: dark)" srcset="https://librealsense.intel.com/readme-media/ros2-dark.png"><img src="https://librealsense.intel.com/readme-media/ROS2-light.png" width="80%" alt="ROS 2" /></picture></a></div> | <div align="center"><a href="https://github.com/IntelRealSense/librealsense/blob/development/wrappers/rest-api/README.md"><img src="https://librealsense.intel.com/readme-media/REST_API.png" width="50%" alt="Rest API" /></a></div>|
 
 For more platforms and wrappers look over [here](https://dev.realsenseai.com/docs/docs-get-started).
 > Full feature support varies by platform – refer to the [release notes](https://github.com/IntelRealSense/librealsense/wiki/Release-Notes) for details.
