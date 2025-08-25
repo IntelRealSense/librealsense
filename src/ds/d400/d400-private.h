@@ -180,7 +180,7 @@ namespace librealsense
             {RS457_PID, "5.16.8.0" },
             {RS400_MIPI_RECOVERY_PID, "5.16.0.1" },
             {RS430_GMSL_PID, "5.16.8.0" },
-            {RS415_GMSL_PID, "5.17.0.2" }
+            {RS415_GMSL_PID, "5.17.1.1" }
         };
 
         std::vector<platform::uvc_device_info> filter_d400_device_by_capability(
