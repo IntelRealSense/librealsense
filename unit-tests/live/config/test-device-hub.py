@@ -28,11 +28,13 @@ test.finish()
 # -------- Disconnect detection via hardware reset --------
 test.start("device_hub: detect disconnect after hardware_reset")
 caught_once = False
+attempt = 1
 
-for attempt in range(1, MAX_TRIES + 1):
+while not caught_once and attempt <= MAX_TRIES:
     try:
         log.i(f"Attempt {attempt}/{MAX_TRIES}: issuing hardware_reset()")
         dev.hardware_reset()
+        attempt += 1
 
         # Wait until hub reports this handle as disconnected
         t = time.time()
@@ -40,9 +42,7 @@ for attempt in range(1, MAX_TRIES + 1):
             if not hub.is_connected(dev):
                 caught_once = True
                 break
-
-        if caught_once:
-            break
+            time.sleep(0.1)
 
     except:
         test.unexpected_exception()
