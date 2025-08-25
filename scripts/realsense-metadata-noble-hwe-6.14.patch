@@ -8,7 +8,7 @@ Subject: [PATCH] 123
  1 file changed, 37 insertions(+)
 
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 11b04f6f6..d3f45f333 100644
+index 11b04f6f6..69d613795 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
 @@ -3197,6 +3197,43 @@ static const struct usb_device_id uvc_ids[] = {
@@ -22,7 +22,7 @@ index 11b04f6f6..d3f45f333 100644
 +	  .idProduct		= 0x1156,
 +	  .bInterfaceClass	= USB_CLASS_VIDEO,
 +	  .bInterfaceSubClass	= 1,
-+	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
++	  .bInterfaceProtocol	= 0,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
 +	/* Intel D555 Depth Camera */
 +	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
