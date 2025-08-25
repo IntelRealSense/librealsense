@@ -147,8 +147,8 @@ namespace librealsense
             { RS455_PID,            "Intel RealSense D455" },
             { RS457_PID,            "Intel RealSense D457" },
             { RS400_MIPI_RECOVERY_PID,   "Intel RealSense D4XX MIPI Recovery"},
-            { RS430_GMSL_PID,       "Intel RealSense D430" },
-            { RS415_GMSL_PID,       "Intel RealSense D415" },
+            { RS430_GMSL_PID,       "Intel RealSense D430-GMSL" },
+            { RS415_GMSL_PID,       "Intel RealSense D415-GMSL" },
         };
 
         static std::map<uint16_t, std::string> d400_device_to_fw_min_version = {

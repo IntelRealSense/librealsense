@@ -18,7 +18,7 @@ if test.check(dev.supports(rs.camera_info.connection_type)):
     connection_type = dev.get_info(rs.camera_info.connection_type)
     camera_name = dev.get_info(rs.camera_info.name)
     if test.check(connection_type):
-        if 'D457' in camera_name:
+        if 'D457' or 'GMSL' in camera_name:
             test.check(connection_type == "GMSL")
         elif 'D555' in camera_name:
             test.check(connection_type == "DDS")

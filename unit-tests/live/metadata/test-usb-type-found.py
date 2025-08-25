@@ -2,7 +2,7 @@
 # Copyright(c) 2023 RealSense, Inc. All Rights Reserved.
 
 
-#test:device each(D400*) !D457
+#test:device each(D400*) !D457 !GMSL
 #test:device each(D500*) !D555
 
 
