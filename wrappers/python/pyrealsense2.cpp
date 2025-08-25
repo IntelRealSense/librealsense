@@ -30,6 +30,7 @@ PYBIND11_MODULE(NAME, m) {
     init_advanced_mode(m);
     init_serializable_device(m);
     init_util(m);
+    init_eth_config(m);
     
     /** rs_export.hpp **/
     py::class_<rs2::save_to_ply, rs2::filter>(m, "save_to_ply")

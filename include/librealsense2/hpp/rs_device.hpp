@@ -6,8 +6,8 @@
 
 #include "rs_types.hpp"
 #include "rs_sensor.hpp"
-#include <array>
-#include <cstring>
+#include <vector>
+#include <string>
 
 namespace rs2
 {

@@ -113,16 +113,25 @@ with test.closure("Test configuration failures"): # Failures depending on versio
         test.unreachable()
     new_config.header.version = orig_config.header.version
     
-    new_config.dhcp.timeout = -1
+    new_config.configured.ip = rsutils.ip_address( 0, 0 ,0 ,0 )
     try:
         set_eth_config( new_config )
     except ValueError as e:
-        test.check_exception( e, ValueError, "DHCP timeout cannot be negative. Current -1" )
+        test.check_exception( e, ValueError, "Invalid configured IP address 0.0.0.0" )
     else:
         test.unreachable()
-    new_config.dhcp.timeout = orig_config.dhcp.timeout
+    new_config.configured.ip = orig_config.configured.ip
+
+    new_config.configured.netmask = rsutils.ip_address( 0, 0 ,0 ,0 )
+    try:
+        set_eth_config( new_config )
+    except ValueError as e:
+        test.check_exception( e, ValueError, "Invalid configured network mask 0.0.0.0" )
+    else:
+        test.unreachable()
+    new_config.configured.netmask = orig_config.configured.netmask
     
-    # Don't set valid domain_id, it might cause DDS devices to loose connection.
+    # Don't set valid domain_id, it might cause DDS devices to loose connection (in case of reset/power loss).
     new_config.dds.domain_id = -1
     try:
         set_eth_config( new_config )
@@ -139,6 +148,24 @@ with test.closure("Test configuration failures"): # Failures depending on versio
         test.unreachable()
     new_config.dds.domain_id = orig_config.dds.domain_id
 
+with test.closure("Test python wrapper functionality"):
+    eth_device = rs.eth_config_device( dev )
+    orig_link_timeout = eth_device.get_link_timeout()
+    eth_device.set_link_timeout( orig_link_timeout * 2 )
+    updated_link_timeout = eth_device.get_link_timeout()
+    test.check( updated_link_timeout == orig_link_timeout * 2 )
+    
+    orig_ip, orig_actual_ip = eth_device.get_ip_address()
+    eth_device.set_ip_address( rs.ip_address( 127, 0, 0, 1 ) )
+    new_ip, new_actual_ip = eth_device.get_ip_address()
+    test.check( new_ip == rs.ip_address( 127, 0, 0, 1 ) )
+    
+    orig_link_priority = eth_device.get_link_priority()
+    priority_to_set = rs.link_priority.usb_first if orig_link_priority != rs.link_priority.usb_first else rs.link_priority.eth_first
+    eth_device.set_link_priority( priority_to_set )
+    new_link_priority = eth_device.get_link_priority()
+    test.check( new_link_priority == priority_to_set )
+    
 with test.closure("Restore configuration"):
     set_eth_config( orig_config )        
     

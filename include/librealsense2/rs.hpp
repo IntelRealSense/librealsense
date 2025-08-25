@@ -14,6 +14,7 @@
 #include "hpp/rs_sensor.hpp"
 #include "hpp/rs_safety_sensor.hpp"
 #include "hpp/rs_pipeline.hpp"
+#include "hpp/rs_eth_config.hpp"
 
 namespace rs2
 {
@@ -178,5 +179,6 @@ inline std::ostream & operator << (std::ostream & o, rs2_l500_visual_preset pres
 inline std::ostream & operator << (std::ostream & o, rs2_sensor_mode mode) { return o << rs2_sensor_mode_to_string(mode); }
 inline std::ostream & operator << (std::ostream & o, rs2_calibration_type mode) { return o << rs2_calibration_type_to_string(mode); }
 inline std::ostream & operator << (std::ostream & o, rs2_calibration_status mode) { return o << rs2_calibration_status_to_string(mode); }
+inline std::ostream & operator << (std::ostream & o, rs2_eth_link_priority priority) { return o << rs2_eth_link_priority_to_string(priority); }
 
 #endif // LIBREALSENSE_RS2_HPP

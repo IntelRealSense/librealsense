@@ -9,6 +9,7 @@
 #include "rsdds-serializable.h"
 #include <src/auto-calibrated-proxy.h>
 #include <src/device-calibration.h>
+#include <src/eth-config-device.h>
 
 #include <rsutils/json-fwd.h>
 #include <memory>
@@ -48,6 +49,7 @@ class dds_device_proxy
     , public dds_serializable
     , public auto_calibrated_proxy
     , public calibration_change_device
+    , public eth_config_device
 {
     std::shared_ptr< realdds::dds_device > _dds_dev;
     std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
@@ -117,8 +119,10 @@ private:
     device_interface const & get_serializable_device() const override { return *this; }
     std::vector< sensor_interface * > get_serializable_sensors() override;
     std::vector< sensor_interface const * > get_serializable_sensors() const override;
+
+    // eth_config_device
+public:
+    bool supports_ethernet_configuration() override;
 };
-
-
 
 }  // namespace librealsense

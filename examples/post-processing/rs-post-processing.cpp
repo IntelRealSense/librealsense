@@ -8,6 +8,7 @@
 #include <string>
 #include <thread>
 #include <atomic>
+#include <array>
 
 #include <imgui.h>
 #include "imgui_impl_glfw.h"

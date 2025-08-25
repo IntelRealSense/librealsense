@@ -62,7 +62,7 @@ struct eth_config
     struct dhcp_t
     {
         bool on;
-        int timeout;  // The threshold to wait valid ip when DHCP is on [s]
+        unsigned timeout;  // The threshold to wait valid ip when DHCP is on [s]
     } dhcp;
     unsigned transmission_delay; // Delay between packets [us]
 

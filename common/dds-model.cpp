@@ -4,75 +4,78 @@
 #include "dds-model.h"
 #include "device-model.h"
 #include "ux-window.h"
-#include <rsutils/json.h>
-#include <rsutils/json-config.h>
-#include <rsutils/os/special-folder.h>
-#include <rsutils/string/hexdump.h>
-#include <imgui.h>
+#include <rsutils/string/from.h>
 #include <realsense_imgui.h>
 
-#include <iostream>
-#include <fstream>
+#include <cstdio>
 
 using namespace rs2;
-using rsutils::json;
 using rsutils::type::ip_address;
-using rsutils::type::eth_config;
-using rsutils::type::link_priority;
 
-namespace rs2 {
-
-    uint32_t const GET_ETH_CONFIG = 0xBB;
-    uint32_t const SET_ETH_CONFIG = 0xBA;
-
-    int const CURRENT_VALUES = 1;
-    int const DEFAULT_VALUES = 0;
-}
 
 dds_model::dds_model( rs2::device dev )
     : _device( dev )
+    , _eth_device( _device )
     , _window_open( false )
     , _no_reset( false )
     , _dds_supported( false )
 {
     if( check_DDS_support() )
     {
-        _default_config = get_eth_config( DEFAULT_VALUES );
-        _current_config = get_eth_config( CURRENT_VALUES );
-        _changed_config = _current_config;
+        load_eth_config_from_device();
+        reset_to_current_device_values();
         _dds_supported = true;
     }
 }
 
-eth_config dds_model::get_eth_config( int curr_or_default )
+void dds_model::load_eth_config_from_device()
 {
-    rs2::debug_protocol dev( _device );
-    auto cmd = dev.build_command( GET_ETH_CONFIG, curr_or_default );
-    auto data = dev.send_and_receive_raw_data( cmd );
-    int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
-    data.erase( data.begin(), data.begin() + sizeof( code ) );
-    return eth_config( data );
+    _domain_current = _eth_device.get_dds_domain();
+    _link_priority_current = _eth_device.get_link_priority();
+    _link_timeout_current = _eth_device.get_link_timeout();
+    _eth_device.get_dhcp_config( _dhcp_enabled_current, _dhcp_timeout_current );
+
+    rs2_ip_address configured, actual;
+    _eth_device.get_ip_address( configured, actual );
+    _ip_current = configured;
+    _eth_device.get_netmask( configured, actual );
+    _netmask_current = configured;
+    _eth_device.get_gateway( configured, actual );
+    _gateway_current = configured;
+
+    _mtu_current = _eth_device.get_mtu();
+    _tx_delay_current = _eth_device.get_transmission_delay();
+
+    _link_speed_read_only = _eth_device.get_link_speed();
 }
 
-void rs2::dds_model::set_eth_config( eth_config & new_config, std::string & error_message )
+void dds_model::save_eth_config_in_device( std::string & error_message, bool reset_to_default )
 {
     try
     {
-        rs2::debug_protocol hwm( _device );
-        auto cmd = hwm.build_command( SET_ETH_CONFIG, 0, 0, 0, 0, new_config.build_command() );
-        auto data = hwm.send_and_receive_raw_data( cmd );
-        int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
-        if( data.size() != sizeof( code ) )
+        if( reset_to_default )
         {
-            error_message = rsutils::string::from() << "Failed to change: bad response size " << data.size() << ' '
-                                                    << rsutils::string::hexdump( data.data(), data.size() );
-            close_window();
+            _eth_device.restore_defaults();
         }
-        if( code != SET_ETH_CONFIG )
+        else
         {
-            error_message = rsutils::string::from() << "Failed to change: bad response " << code;
-            close_window();
+            _eth_device.set_dds_domain( _domain_to_set );
+            _eth_device.set_link_priority( _link_priority_to_set );
+            _eth_device.set_link_timeout( _link_timeout_to_set );
+            _eth_device.set_dhcp_config( _dhcp_enabled_to_set, _dhcp_timeout_to_set);
+
+            rs2_ip_address addr;
+            _ip_to_set.get_components( addr );
+            _eth_device.set_ip_address( addr);
+            _netmask_to_set.get_components( addr );
+            _eth_device.set_netmask( addr );
+            _gateway_to_set.get_components( addr );
+            _eth_device.set_gateway( addr );
+
+            _eth_device.set_mtu( _mtu_to_set );
+            _eth_device.set_transmission_delay( _tx_delay_to_set );
         }
+
         if( ! _no_reset )
         {
             close_window();
@@ -86,58 +89,48 @@ void rs2::dds_model::set_eth_config( eth_config & new_config, std::string & erro
     }
 }
 
-bool rs2::dds_model::supports_DDS()
+rs2::dds_model::priority dds_model::classify_priority( rs2_eth_link_priority pr ) const
 {
-    return _dds_supported;
-}
-
-rs2::dds_model::priority rs2::dds_model::classifyPriority( link_priority & pr )
-{
-    if( pr == link_priority::usb_only || pr == link_priority::usb_first )
-    {
+    if( pr == RS2_LINK_PRIORITY_USB_ONLY || pr == RS2_LINK_PRIORITY_USB_FIRST )
         return priority::USB_FIRST;
-    }
-    else if( pr == link_priority::eth_first || pr == link_priority::eth_only )
-    {
+
+    if( pr == RS2_LINK_PRIORITY_ETH_ONLY || pr == RS2_LINK_PRIORITY_ETH_FIRST )
         return priority::ETH_FIRST;
-    }
+
     return priority::DYNAMIC;
 }
 
 bool dds_model::check_DDS_support()
 {
-    std::string dev_name = _device.supports(RS2_CAMERA_INFO_NAME) ? _device.get_info(RS2_CAMERA_INFO_NAME) : "";
-
-    if (dev_name.find("D555") == std::string::npos)
-        return false;
-
-    if( _device.is< rs2::debug_protocol >() )
-    {
-        if( _device.supports( RS2_CAMERA_INFO_NAME ) )
-        {
-            std::string name = _device.get_info( RS2_CAMERA_INFO_NAME );
-            if( name.find( "Recovery" ) != std::string::npos )
-                return false; // Recovery devices don't support HWM.
-        }
-
-        try
-        {
-            auto dev = debug_protocol( _device );
-            auto cmd = dev.build_command( GET_ETH_CONFIG, CURRENT_VALUES );
-            auto data = dev.send_and_receive_raw_data( cmd );
-            int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
-            if( code == GET_ETH_CONFIG )
-                return true;
-        }
-        catch( ... )
-        {
-        }
-    }
-
-    return false;
+    return _eth_device.supports_eth_config();
 }
 
-void rs2::dds_model::ipInputText( std::string label, ip_address & ip )
+void dds_model::reset_to_current_device_values()
+{
+    _domain_to_set = _domain_current;
+    _link_priority_to_set = _link_priority_current;
+    _link_timeout_to_set = _link_timeout_current;
+    _dhcp_enabled_to_set = _dhcp_enabled_current;
+    _dhcp_timeout_to_set = _dhcp_timeout_current;
+
+    _ip_to_set = _ip_current;
+    _netmask_to_set = _netmask_current;
+    _gateway_to_set = _gateway_current;
+
+    _mtu_to_set = _mtu_current;
+    _tx_delay_to_set = _tx_delay_current;
+}
+
+bool dds_model::has_changed_values() const
+{
+    return _domain_to_set != _domain_current ||
+        _link_priority_to_set != _link_priority_current || _link_timeout_to_set != _link_timeout_current ||
+        _dhcp_enabled_to_set != _dhcp_enabled_current || _dhcp_timeout_to_set != _dhcp_timeout_current ||
+        _ip_to_set != _ip_current || _netmask_to_set != _netmask_current || _gateway_to_set != _gateway_current ||
+        _mtu_to_set != _mtu_current || _tx_delay_to_set != _tx_delay_current;
+}
+
+void rs2::dds_model::ip_input_text( std::string label, ip_address & ip ) const
 {
     char buffer[16];
     std::string ip_str = ip.to_string();
@@ -167,8 +160,8 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
     {
         try
         {
-            _current_config = get_eth_config( CURRENT_VALUES );
-            _changed_config = _current_config;
+            load_eth_config_from_device();
+            reset_to_current_device_values();
             ImGui::OpenPopup( window_name );
         }
         catch( std::exception e )
@@ -229,17 +222,19 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
 
         ImGui::Text( "Domain ID" );
         ImGui::SameLine();
-        if( ImGui::InputInt( "##Domain ID", &_changed_config.dds.domain_id ) )
+        int tempDomain = static_cast< int >( _domain_to_set );
+        if( ImGui::InputInt( "##Domain ID", &tempDomain ) )
         {
-            if( _changed_config.dds.domain_id < 0 )
-                _changed_config.dds.domain_id = 0;
-            else if( _changed_config.dds.domain_id > 232 )
-                _changed_config.dds.domain_id = 232;
+            if( tempDomain < 0 )
+                tempDomain = 0;
+            if( tempDomain > 232 )
+                tempDomain = 232;
+            _domain_to_set = static_cast< uint32_t >( tempDomain );
         }
 
         if( ImGui::CollapsingHeader( "Connection Priority" ) )
         {
-            priority connection_priority = classifyPriority( _changed_config.link.priority );
+            priority connection_priority = classify_priority( _link_priority_to_set );
             ImGui::Text( "Select connection priority:" );
             ImGui::RadioButton( "Ethernet First", reinterpret_cast< int * >( &connection_priority ), 0 );
             if( static_cast< int >( connection_priority ) == 0 )
@@ -248,10 +243,10 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
                 ImGui::SetCursorPosX( ImGui::GetCursorPosX() + 50 );
                 ImGui::Text( "Link Timeout (seconds)" );
                 ImGui::SameLine();
-                int tempTimeout = static_cast< int >( _changed_config.link.timeout );
+                int tempTimeout = static_cast< int >( _link_timeout_to_set );
                 if( ImGui::InputInt( "##Link Timeout (seconds)", &tempTimeout ) )
                 {
-                    _changed_config.link.timeout = static_cast< uint16_t >( std::max( 0, tempTimeout ) );
+                    _link_timeout_to_set = static_cast< uint32_t >( std::max( 0, tempTimeout ) );
                 }
             }
             ImGui::RadioButton( "USB First", reinterpret_cast< int * >( &connection_priority ), 1 );
@@ -264,47 +259,47 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
             switch( connection_priority )
             {
             case ETH_FIRST:
-                _changed_config.link.priority = link_priority::eth_first;
+                _link_priority_to_set = RS2_LINK_PRIORITY_ETH_FIRST;
                 break;
             case USB_FIRST:
-                _changed_config.link.priority = link_priority::usb_first;
+                _link_priority_to_set = RS2_LINK_PRIORITY_USB_FIRST;
                 break;
             case DYNAMIC:
-                _changed_config.link.priority
-                    = _current_config.link.speed
-                        ? link_priority::dynamic_eth_first
-                        : link_priority::dynamic_usb_first;  // If link speed is not 0 than we are connected by Ethernet
+                // If link speed is not 0 than we are connected by Ethernet
+                _link_priority_to_set = _link_speed_read_only ? RS2_LINK_PRIORITY_DYNAMIC_ETH_FIRST : RS2_LINK_PRIORITY_DYNAMIC_USB_FIRST;
                 break;
             }
         }
 
         if( ImGui::CollapsingHeader( "Network Configuration" ) )
         {
-            ImGui::Checkbox( "Enable DHCP", &_changed_config.dhcp.on );
-            if( ! _changed_config.dhcp.on )
+            ImGui::Checkbox( "Enable DHCP", &_dhcp_enabled_to_set );
+            if( ! _dhcp_enabled_to_set )
             {
                 ImGui::Text( "Static IP Address" );
                 ImGui::SameLine();
                 float textbox_align = ImGui::GetCursorPosX();
-                ipInputText( "Static IP Address", _changed_config.configured.ip );
+                ip_input_text( "Static IP Address", _ip_to_set );
                 ImGui::Text( "Subnet Mask" );
                 ImGui::SameLine();
                 ImGui::SetCursorPosX( textbox_align );
                 bool maskStylePushed = false;
-                ipInputText( "Subnet Mask", _changed_config.configured.netmask );
+                ip_input_text( "Subnet Mask", _netmask_to_set );
                 ImGui::Text( "Gateway" );
                 ImGui::SameLine();
                 ImGui::SetCursorPosX( textbox_align );
-                ipInputText( "Gateway", _changed_config.configured.gateway );
+                ip_input_text( "Gateway", _gateway_to_set );
             }
             else
             {
                 ImGui::Text( "DHCP Timeout [seconds]" );
                 ImGui::SameLine();
-                int tempTimeout = static_cast< int >( _changed_config.dhcp.timeout );
+                int tempTimeout = static_cast< int >( _dhcp_timeout_to_set );
                 if( ImGui::InputInt( "##DHCP Timeout", &tempTimeout ) )
                 {
-                    _changed_config.dhcp.timeout = static_cast< uint16_t >( std::max( 0, tempTimeout ) );
+                    if( tempTimeout > 255 )
+                        tempTimeout = 255;
+                    _dhcp_timeout_to_set = static_cast< uint8_t >( std::max( 0, tempTimeout ) );
                 }
             }
         }
@@ -313,44 +308,34 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         {
             ImGui::Text( "MTU [bytes]" );
             ImGui::SameLine();
-            int temp_mtu = static_cast< int >( _changed_config.link.mtu );
+            int temp_mtu = static_cast< int >( _mtu_to_set );
             if( ImGui::InputInt( "##MTU", &temp_mtu, 500 ) )
             {
                 if( temp_mtu < 500 )
                     temp_mtu = 500;
-                else if( temp_mtu > 9000 )
+                if( temp_mtu > 9000 )
                     temp_mtu = 9000;
-                _changed_config.link.mtu = static_cast< uint32_t >( temp_mtu );
+                _mtu_to_set = static_cast< uint32_t >( temp_mtu );
             }
 
             ImGui::Text( "Transmission Delay [us]" );
             ImGui::SameLine();
-            int temp_delay = static_cast< int >( _changed_config.transmission_delay );
+            int temp_delay = static_cast< int >( _tx_delay_to_set );
             if( ImGui::InputInt( "##Transmission Delay", &temp_delay, 3 ) )
             {
                 if( temp_delay < 0 )
                     temp_delay = 0;
-                else if( temp_delay > 144 )
+                if( temp_delay > 144 )
                     temp_delay = 144;
-                _changed_config.transmission_delay = static_cast< uint32_t >( temp_delay );
+                _tx_delay_to_set = static_cast< uint32_t >( temp_delay );
             }
         }
         
         ImGui::Separator();
         ImGui::Checkbox( "No Reset after changes", &_no_reset );
-        if( ImGui::Button( "Default values" ) )
-        {
-            _changed_config = _default_config;
-        }
-        if( ImGui::IsItemHovered() )
-        {
-            window.link_hovered();
-            RsImGui::CustomTooltip( "%s", "Use default configuration values" );
-        }
-        ImGui::SameLine();
         if( ImGui::Button( "Revert changes" ) )
         {
-            _changed_config = _current_config;
+            reset_to_current_device_values();
         }
         if( ImGui::IsItemHovered() )
         {
@@ -360,8 +345,6 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
 
         ImGui::PopItemWidth();
         ImGui::EndChild();
-
-        bool hasChanges = ( _changed_config != _current_config );
 
         ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 8 );
 
@@ -379,7 +362,7 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
         ImGui::SameLine();
         if( ImGui::Button( "Factory Reset", ImVec2( button_width, 25 ) ) )
         {
-            set_eth_config( _default_config, error_message );
+            save_eth_config_in_device( error_message, true );
             close_window();
         }
         if( ImGui::IsItemHovered() )
@@ -393,11 +376,11 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
             {
                 if( ImGui::ButtonEx( "Apply", ImVec2( button_width, 25 ) ) )
                 {
-                    set_eth_config( _changed_config, error_message );
+                    save_eth_config_in_device( error_message );
                     close_window();
                 };
             },
-            ! hasChanges );
+            ! has_changed_values() );
         if( ImGui::IsItemHovered() )
         {
             window.link_hovered();
