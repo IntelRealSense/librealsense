@@ -40,5 +40,18 @@ void init_context(py::module &m) {
         .def("unload_tracking_module", &rs2::context::unload_tracking_module); // No docstring in C++
 
     // rs2::device_hub
+    py::class_<rs2::device_hub>(m, "device_hub",
+        "Encapsulates connect/disconnect handling and waiting for devices.")
+        .def(py::init<rs2::context>(),
+            py::arg("ctx"),
+            py::keep_alive<1, 2>(),        // keep ctx alive as long as hub lives
+            "Create a device_hub bound to the given context.")
+        .def("wait_for_device",
+            &rs2::device_hub::wait_for_device,
+            "If a device is connected return it, otherwise wait until one connects.")
+        .def("is_connected",
+            &rs2::device_hub::is_connected,
+            py::arg("device"),
+            "Return True if the given device is still connected.");
     /** end rs_context.hpp **/
 }
