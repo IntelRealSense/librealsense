@@ -111,6 +111,12 @@ require_package bison
 require_package flex
 # required if kernel >=5.11
 require_package dwarves
+# required if kernel >= 6.14
+if [ $k_maj_min -ge 614 ]; then
+	require_package libdwarf-dev
+	require_package libelf-dev
+	require_package libdw-dev
+fi
 
 # Get the linux kernel and change into source tree
 if [ ! -d ${kernel_name} ]; then
