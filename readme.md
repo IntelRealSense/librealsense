@@ -1,9 +1,9 @@
 <p align="center">
 <!-- Light mode -->
-<img src="doc/img/realsense-logo-light-mode.png#gh-light-mode-only" alt="Logo for light mode" width="70%"/>
+<img src="doc/img/realsense-logo-light-mode.png#gh-light-mode-only" alt="Logo for light mode" width="60%"/>
 
 <!-- Dark mode -->
-<img src="doc/img/realsense-logo-dark-mode.png#gh-dark-mode-only" alt="Logo for dark mode" width="70%"/>
+<img src="doc/img/realsense-logo-dark-mode.png#gh-dark-mode-only" alt="Logo for dark mode" width="60%"/>
 <br><br>
 </p>
 
@@ -52,7 +52,7 @@ Here are some examples of the supported models:
 | [**D555 PoE**](https://realsenseai.com/ruggedized-industrial-stereo-depth/d555-poe/) | <img src="https://realsenseai.com/wp-content/uploads/2025/07/D555.png" width="1000"> | The RealSense™ Depth Camera D555 introduces Power over Ethernet (PoE) interface on chip, expanding our portfolio of USB and GMSL/FAKRA products. |
 | [**D457 GMSL/FAKRA**](https://realsenseai.com/ruggedized-industrial-stereo-depth/d457-gmsl-fakra/) | <img src="https://realsenseai.com/wp-content/uploads/2025/07/D457.png" width="1000"> | The RealSense™ Depth Camera D457 is our first GMSL/FAKRA high bandwidth stereo camera. The D457 has an IP65 grade enclosure protecting it from dust ingress and projected water. |
 | [**D455**](https://realsenseai.com/stereo-depth-cameras/real-sense-depth-camera-d455/) | <img src="https://www.realsenseai.com/wp-content/uploads/2021/11/455.png" width="1000"> | The D455 is one of the D400 series, designed from feedback and knowledge gained from over 10 years of stereo camera development. |
-| [**D435i**](https://realsenseai.com/stereo-depth-cameras/depth-camera-d435i/) | <img src="https://realsenseai.com/wp-content/uploads/2025/07/D435i.png" width="1000"> | RealSense™ depth camera D435i combines the robust depth sensing capabilities of the D435 with the addition of an inertial measurement unit (IMU). |
+| [**D435if**](https://realsenseai.com/stereo-depth-cameras/depth-camera-d435i/) | <img src="https://realsenseai.com/wp-content/uploads/2025/06/D435if-a.png" width="1000"> | The D435if is one of the RealSense™ depth cameras in the IR-pass filter family, expanding our portfolio for the growing robotics market. The D400f family uses an IR-pass filter to improve depth quality and extend operating range in many robotics environments.|
 | [**D405**](https://realsenseai.com/stereo-depth-cameras/stereo-depth-camera-d405/) | <img src="https://realsenseai.com/wp-content/uploads/2025/07/D-405.png" width="1000"> | The RealSense™ Depth Camera D405 is a short-range stereo camera providing sub-millimeter accuracy for your close-range computer vision needs. |
 
 
