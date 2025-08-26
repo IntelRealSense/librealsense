@@ -180,5 +180,6 @@ namespace librealsense
         std::string _name;
         std::string _product_line;
         std::string _serial_number;
+        std::string _connection_type;
     };
 }
