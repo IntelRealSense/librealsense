@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
-#test:device:jetson D457
+#test:device:jetson gmsl
 #test:device:!jetson D455
 
 import pyrealsense2 as rs
