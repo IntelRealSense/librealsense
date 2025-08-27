@@ -12,6 +12,7 @@
 #include <rsutils/os/executable-name.h>
 #include <rsutils/os/special-folder.h>
 #include <rsutils/type/eth-config.h>
+#include <rsutils/type/ip-address.h>
 
 
 #define NAME pyrsutils
@@ -173,7 +174,11 @@ PYBIND11_MODULE(NAME, m) {
         .def( "is_valid", &ip_address::is_valid )
         .def( "empty", &ip_address::empty )
         .def( "clear", &ip_address::clear )
-        .def( "__str__", &ip_address::to_string );
+        .def( "__str__", &ip_address::to_string )
+        .def( "__eq__", &ip_address::operator== )
+        .def( "__ne__", &ip_address::operator!= )
+        .def( "get_components", []( const ip_address & self, uint8_t & b0, uint8_t & b1, uint8_t & b2, uint8_t & b3 ) { self.get_components( b0, b1, b2, b3 ); }, "Get IP address components" )
+        .def( "get_components", []( const ip_address & self, uint8_t b[4] ) { self.get_components( b ); }, "Get IP address components" );
 
     using rsutils::type::ip_3;
     py::class_< ip_3 >( m, "ip_3" )

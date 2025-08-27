@@ -191,8 +191,11 @@ void eth_config::validate() const
     if( header.version != 3 && header.version != 4 )
         throw std::invalid_argument( rsutils::string::from() << "Unrecognized Eth config table version " << header.version );
 
-    if( dhcp.timeout < 0 )
-        throw std::invalid_argument( rsutils::string::from() << "DHCP timeout cannot be negative. Current " << dhcp.timeout );
+    if( ! configured.ip.is_valid() )
+        throw std::invalid_argument( rsutils::string::from() << "Invalid configured IP address " << configured.ip );
+    if( ! configured.netmask.is_valid() )
+        throw std::invalid_argument( rsutils::string::from() << "Invalid configured network mask " << configured.netmask );
+    // Allowing gateway to be 0.0.0.0 (unset). Camera will only communicate in local network.
 
     if( dds.domain_id < 0 || dds.domain_id > 232 )
         throw std::invalid_argument( rsutils::string::from() << "Domain ID should be in 0-232 range. Current " << dds.domain_id );

@@ -458,4 +458,26 @@ EXPORTS
     rs2_get_application_config
     rs2_set_application_config
     rs2_hw_monitor_get_opcode_string
-    
+
+    rs2_eth_link_priority_to_string
+    rs2_supports_eth_config
+    rs2_get_link_speed
+    rs2_get_link_priority
+    rs2_set_link_priority
+    rs2_get_link_timeout
+    rs2_set_link_timeout
+    rs2_get_dds_domain
+    rs2_set_dds_domain
+    rs2_get_ip_address
+    rs2_set_ip_address
+    rs2_get_netmask
+    rs2_set_netmask
+    rs2_get_gateway
+    rs2_set_gateway
+    rs2_get_dhcp_config
+    rs2_set_dhcp_config
+    rs2_get_mtu
+    rs2_set_mtu
+    rs2_get_transmission_delay
+    rs2_set_transmission_delay
+    rs2_restore_default_eth_config

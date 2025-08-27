@@ -53,5 +53,6 @@ add_subdirectory(motion)
 add_subdirectory(gl)
 add_subdirectory(hdr)
 add_subdirectory(on-chip-calib)
+add_subdirectory(eth-config)
 
 unset_security_flags_for_executable()

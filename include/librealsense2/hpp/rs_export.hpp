@@ -14,6 +14,8 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <array>
+
 namespace rs2
 {
     struct vec3d {

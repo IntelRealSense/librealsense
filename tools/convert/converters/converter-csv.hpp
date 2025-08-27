@@ -8,6 +8,7 @@
 #include <fstream>
 #include <map>
 #include <mutex>
+#include <array>
 #include <condition_variable>
 #include "../converter.hpp"
 
