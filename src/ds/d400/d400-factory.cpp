@@ -22,6 +22,7 @@
 #include "d400-active.h"
 #include "d400-color.h"
 #include "d400-motion.h"
+#include "d400-mipi-device.h"
 #include <src/ds/ds-thermal-monitor.h>
 #include "sync.h"
 
@@ -212,7 +213,7 @@ namespace librealsense
     class rs415_gmsl_device :
         public d400_active,
         public d400_color,
-        public ds_advanced_mode_base,
+        public d400_mipi_device,
         public firmware_logger_device
     {
     public:
@@ -222,7 +223,7 @@ namespace librealsense
             , d400_device(dev_info)
             , d400_active(dev_info)
             , d400_color(dev_info)
-            , ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor())
+            , d400_mipi_device(d400_device::_hw_monitor, get_depth_sensor())
             , firmware_logger_device(
                 dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command())
         {
@@ -248,17 +249,6 @@ namespace librealsense
             }
             return tags;
         };
-        void hardware_reset() override
-        {
-            d400_device::hardware_reset();
-            simulate_device_reconnect(this->get_device_info());
-        }
-
-        void toggle_advanced_mode(bool enable) override
-        {
-            ds_advanced_mode_base::toggle_advanced_mode(enable);
-            simulate_device_reconnect(this->get_device_info());
-        }
     };
 
 
@@ -676,7 +666,7 @@ namespace librealsense
     class rs457_device : public d400_active,
                          public d400_color,
                          public d400_motion_uvc,
-                         public ds_advanced_mode_base,
+                         public d400_mipi_device,
                          public firmware_logger_device
     {
     public:
@@ -687,7 +677,7 @@ namespace librealsense
             , d400_active( dev_info )
             , d400_color( dev_info )
             , d400_motion_uvc( dev_info )
-            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , d400_mipi_device(d400_device::_hw_monitor, get_depth_sensor())
             , firmware_logger_device(
                   dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
@@ -707,26 +697,12 @@ namespace librealsense
 
             return tags;
         };
-
-        void hardware_reset() override 
-        {
-            d400_device::hardware_reset();
-            simulate_device_reconnect(this->get_device_info());
-        }
-
-        void toggle_advanced_mode(bool enable) override
-        {
-            ds_advanced_mode_base::toggle_advanced_mode(enable);
-            simulate_device_reconnect(this->get_device_info());
-        }
-            
-
     };
 
 
     class rs430_gmsl_device : public d400_active,
                          public d400_motion_uvc,
-                         public ds_advanced_mode_base,
+                         public d400_mipi_device,
                          public firmware_logger_device
     {
     public:
@@ -736,7 +712,7 @@ namespace librealsense
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_motion_uvc( dev_info )
-            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , d400_mipi_device(d400_device::_hw_monitor, get_depth_sensor())
             , firmware_logger_device(
                   dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
@@ -754,19 +730,6 @@ namespace librealsense
 
             return tags;
         };
-
-        void hardware_reset() override
-        {
-            d400_device::hardware_reset();
-            simulate_device_reconnect(this->get_device_info());
-        }
-
-        void toggle_advanced_mode(bool enable) override
-        {
-            ds_advanced_mode_base::toggle_advanced_mode(enable);
-            simulate_device_reconnect(this->get_device_info());
-        }
-
     };
 
     // AWGCT
