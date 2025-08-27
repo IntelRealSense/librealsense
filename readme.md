@@ -26,11 +26,11 @@ Below are some of the many real-world applications powered by RealSense technolo
 
 Robotics | Depth Sensing | 3D Scanning |
 :------------: | :----------: | :-------------: |
-<a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/realsense_examplerealsense_example.gif" width="240"/></a> |<a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/align-expectede.gif" width="240"/></a> | <a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/realsense_dynamic_example.gif" width="240"/></a>
+<a href="https://realsenseai.com/case-studies/?capability_application=autonomous-mobile-robots"><img src="https://librealsense.intel.com/readme-media/realsense_examplerealsense_example.gif" width="240"/></a> |<a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/align-expectede.gif" width="240"/></a> | <a href="https://realsenseai.com/case-studies/?capability_application=autonomous-mobile-robots"><img src="https://librealsense.intel.com/readme-media/realsense_dynamic_example.gif" width="240"/></a>
 
 Drones | Skeletal and people tracking | Facial authentication |
 :--------------------------: | :-----: | :----------------------: |
-<a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/drone-demo.gif" width="240"/></a> |<a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/SkeletalTracking.gif" width="240"/></a> | <a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/face-demo.gif" width="240"/></a>
+<a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/drone-demo.gif" width="240"/></a> |<a href="https://realsenseai.com/case-studies/?capability_application=monitoring-and-tracking"><img src="https://librealsense.intel.com/readme-media/SkeletalTracking.gif" width="240"/></a> | <a href="https://realsenseai.com/case-studies/?capability_application=biometrics"><img src="https://librealsense.intel.com/readme-media/face-demo.gif" width="240"/></a>
 
 
 
@@ -52,7 +52,7 @@ Here are some examples of the supported models:
 | [**D555 PoE**](https://realsenseai.com/ruggedized-industrial-stereo-depth/d555-poe/) | <img src="https://realsenseai.com/wp-content/uploads/2025/07/D555.png" width="1000"> | The RealSense™ Depth Camera D555 introduces Power over Ethernet (PoE) interface on chip, expanding our portfolio of USB and GMSL/FAKRA products. |
 | [**D457 GMSL/FAKRA**](https://realsenseai.com/ruggedized-industrial-stereo-depth/d457-gmsl-fakra/) | <img src="https://realsenseai.com/wp-content/uploads/2025/07/D457.png" width="1000"> | The RealSense™ Depth Camera D457 is our first GMSL/FAKRA high bandwidth stereo camera. The D457 has an IP65 grade enclosure protecting it from dust ingress and projected water. |
 | [**D455**](https://realsenseai.com/stereo-depth-cameras/real-sense-depth-camera-d455/) | <img src="https://www.realsenseai.com/wp-content/uploads/2021/11/455.png" width="1000"> | The D455 is one of the D400 series, designed from feedback and knowledge gained from over 10 years of stereo camera development. |
-| [**D435if**](https://realsenseai.com/stereo-depth-cameras/depth-camera-d435i/) | <img src="https://realsenseai.com/wp-content/uploads/2025/06/D435if-a.png" width="1000"> | The D435if is one of the RealSense™ depth cameras in the IR-pass filter family, expanding our portfolio for the growing robotics market. The D400f family uses an IR-pass filter to improve depth quality and extend operating range in many robotics environments.|
+| [**D435if**](https://realsenseai.com/stereo-depth-cameras/depth-camera-d435i/) | <img src="https://realsenseai.com/wp-content/uploads/2025/06/D435if-a.png" width="1000"> | The D435if is one of [RealSense™ Depth Camera with IR pass filter family](https://realsenseai.com/stereo-depth-with-ir-pass-filter/) expanding our portfolio targeting the growing robotic market. The D400f family utilizes an IR pass filter to enhance depth quality and performance range in many robotic environments.|
 | [**D405**](https://realsenseai.com/stereo-depth-cameras/stereo-depth-camera-d405/) | <img src="https://realsenseai.com/wp-content/uploads/2025/07/D-405.png" width="1000"> | The RealSense™ Depth Camera D405 is a short-range stereo camera providing sub-millimeter accuracy for your close-range computer vision needs. |
 
 
@@ -68,8 +68,8 @@ This is the best option if you want to plug in your camera and get started right
 1. Download the latest SDK bundle from the [Releases page](https://github.com/IntelRealSense/librealsense/releases).
 2. Connect your RealSense camera.
 3. Run the included tools:
-    - RealSense Viewer: View streams, tune settings, record and playback.
-    - Depth Quality Tool: Measure accuracy and fill rate.
+    - [RealSense Viewer](./tools/realsense-viewer/): View streams, tune settings, record and playback.
+    - [Depth Quality Tool](./tools/depth-quality/): Measure accuracy and fill rate.
 
 ### Setup Guides - precompiled SDK
 
