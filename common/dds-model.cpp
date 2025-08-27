@@ -155,14 +155,15 @@ void rs2::dds_model::ip_input_text( std::string label, ip_address & ip ) const
 
 void dds_model::render_dds_config_window( ux_window & window, std::string & error_message )
 {
-    const auto window_name = "DDS Configuration";
+    std::string serial = (_device.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)) ? _device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "Unknown";
+    std::string window_name = rsutils::string::from() << "DDS Configuration" << "##" << serial;
     if( _window_open )
     {
         try
         {
             load_eth_config_from_device();
             reset_to_current_device_values();
-            ImGui::OpenPopup( window_name );
+            ImGui::OpenPopup( window_name.c_str() );
         }
         catch( std::exception e )
         {
@@ -192,13 +193,13 @@ void dds_model::render_dds_config_window( ux_window & window, std::string & erro
     ImGui::PushStyleColor( ImGuiCol_ButtonActive, button_color + 0.1f );
 
 
-    if( ImGui::BeginPopupModal( window_name, nullptr, flags ) )
+    if( ImGui::BeginPopupModal( window_name.c_str(), nullptr, flags ) )
     {
         if( error_message != "" )
             ImGui::CloseCurrentPopup();
 
         // Title
-        const char * title_message = window_name;
+        const char * title_message = "DDS Configuration";
         ImVec2 title_size = ImGui::CalcTextSize( title_message );
         float title_x = ( w - title_size.x - 10 ) / 2.0f;
         ImGui::SetCursorPos( { title_x, 10.0f } );
