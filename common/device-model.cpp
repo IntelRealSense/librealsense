@@ -1049,6 +1049,8 @@ namespace rs2
             _updates_profile );
         std::weak_ptr< notifications_model > notification_model_protected( viewer.not_model );
         const context & ctx( viewer.ctx );
+        if (check_for_device_updates_thread.joinable())
+            check_for_device_updates_thread.join();
         check_for_device_updates_thread = std::thread( [ctx,
                                                       updates_model_protected,
                                                       notification_model_protected,
