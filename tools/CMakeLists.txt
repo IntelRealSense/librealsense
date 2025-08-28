@@ -28,7 +28,7 @@ endif()
 
 if(BUILD_EXAMPLES)
     if(BUILD_GRAPHICAL_EXAMPLES)
-        include(${CMAKE_SOURCE_DIR}/CMake/opengl_config.cmake)
+        include(${PROJECT_SOURCE_DIR}/CMake/opengl_config.cmake)
         if (NOT BUILD_GLSL_EXTENSIONS)
             MESSAGE(STATUS "BUILD_GRAPHICAL_EXAMPLES explicitely depends on BUILD_GLSL_EXTENSIONS, set it ON")
             SET(BUILD_GLSL_EXTENSIONS ON)
