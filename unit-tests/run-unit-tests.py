@@ -51,6 +51,7 @@ def usage():
     print( '        --retry <#>          Retry each test <#> times (unless test specified more)' )
     print( '        --config <>          Ignore test configurations; use the one provided' )
     print( '        --device <>          Run only on the specified devices; ignore any test that does not match (implies --live)' )
+    print( '        --exclude-device <>  Exclude the specified devices from testing (space-separated list)' )
     print( '        --no-reset           Do not try to reset any devices, with or without a hub' )
     print( '        --hub-reset          If a hub is available, reset the hub itself' )
     print( '        --custom-fw-d400          If custom fw provided flash it if its different that the current fw installed' )
@@ -83,7 +84,7 @@ try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
                                           'list-tests', 'no-exceptions', 'context=', 'repeat=', 'retry=', 'config=', 'no-reset', 'hub-reset',
-                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device=', 'test-dir=','skip-regex=','custom-fw-d400='] )
+                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device=', 'exclude-device=', 'test-dir=','skip-regex=','custom-fw-d400='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -98,6 +99,7 @@ repeat = 1
 retries = 0
 forced_configurations = None
 device_set = None
+exclude_device_set = None
 no_reset = False
 hub_reset = False
 skip_disconnected = False
@@ -147,6 +149,8 @@ for opt, arg in opts:
             usage()
         only_live = True
         device_set = arg.split()
+    elif opt == '--exclude-device':
+        exclude_device_set = arg.split()
     elif opt == '--no-reset':
         no_reset = True
     elif opt == '--hub-reset':
@@ -556,6 +560,30 @@ try:
                 sns.update( included_devices )
             device_set = sns
             log.d( f'ignoring devices other than: {serial_numbers_to_string( device_set )}' )
+        #
+        if exclude_device_set is not None:
+            excluded_sns = set()  # convert the list of exclude specs to a list of serial numbers
+            ignored_list = list()
+            for spec in exclude_device_set:
+                excluded_devices = [sn for sn in devices.by_spec( spec, ignored_list )]
+                excluded_sns.update( excluded_devices )
+            
+            if excluded_sns:
+                log.d( f'excluding devices: {serial_numbers_to_string( excluded_sns )}' )
+                if device_set is not None:
+                    # Remove excluded devices from the included device set
+                    device_set = device_set - excluded_sns
+                    if not device_set:
+                        log.f( 'All specified devices were excluded; no devices left to test' )
+                    log.d( f'final device set after exclusions: {serial_numbers_to_string( device_set )}' )
+                else:
+                    # If no device_set was specified, we need to discover all devices and exclude the specified ones
+                    all_devices = set(devices.all())
+                    device_set = all_devices - excluded_sns
+                    if not device_set:
+                        log.f( 'All discovered devices were excluded; no devices left to test' )
+                    else:
+                        log.d( f'using all devices except excluded ones: {serial_numbers_to_string( device_set )}' )
         #
         log.progress()
     #
