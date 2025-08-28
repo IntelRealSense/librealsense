@@ -63,6 +63,7 @@ class Device:
         self._sn = sn
         self._dev = dev
         self._name = None
+        self._connection_type = None
         if dev.supports( rs.camera_info.name ):
             self._name = dev.get_info( rs.camera_info.name )
             if self._name.startswith( 'Intel RealSense ' ):
@@ -140,6 +141,17 @@ class Device:
     def is_dds(self):
         return self._is_dds
 
+    @property
+    def is_gmsl(self):
+        return self._connection_type == "GMSL"
+
+    @property
+    def is_usb(self):
+        return self._connection_type == "USB"
+
+    @property
+    def connection_type(self):
+        return self._connection_type
 
 def wait_until_all_ports_disabled( timeout = 5 ):
     """
