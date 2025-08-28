@@ -22,15 +22,7 @@ function DisplayNvidiaLicense {
     fi
 
     # By default referencing license agreement of JP 5.0.2
-    license_path="https://developer.download.nvidia.com/embedded/L4T/r35_Release_v1.0/Release/Tegra_Software_License_Agreement-Tegra-Linux.txt"
-
-    if [ "5.1.2" = ${patches_revison} ]; then
-        license_path="https://developer.download.nvidia.com/embedded/L4T/r35_Release_v4.1/release/Tegra_Software_License_Agreement-Tegra-Linux.txt"
-    fi
-
-    if [ "6.0" = ${patches_revison} ]; then
-        license_path="https://developer.download.nvidia.com/embedded/L4T/r36_Release_v3.0/release/Tegra_Software_License_Agreement-Tegra-Linux.txt"
-    fi
+    license_path="https://developer.download.nvidia.com/embedded/L4T/r${JETSON_L4T_RELEASE}_Release_v${JETSON_L4T_REVISION}/release/Tegra_Software_License_Agreement-Tegra-Linux.txt"
 
     echo -e "\nPlease notice: This script will download the kernel source (from nv-tegra, NVIDIA's public git repository) which is subject to the following license:\n\n${license_path}\n"
 
@@ -91,7 +83,7 @@ case ${JETSON_L4T_VERSION} in
 		PATCHES_REV="5.0.2"	# JP 5.0.2
 		KERNEL_RELEASE="5.10"
 	;;
-	"36.3")
+	"36.3" | "36.4" | "36.4.3")
 		PATCHES_REV="6.0"	# JP 6.0
 		KERNEL_RELEASE="5.15"
 	;;
@@ -135,11 +127,13 @@ echo -e "\e[32mCreate the sandbox - NVIDIA L4T source tree(s)\e[0m"
 mkdir -p ${sdk_dir}/Tegra
 TEGRA_SOURCE_SYNC_SH="source_sync.sh"
 if [ "5.0.2" = "$PATCHES_REV" ]; then
+	KBASE=./Tegra/sources/kernel/kernel-$KERNEL_RELEASE
 	TEGRA_SOURCE_SYNC_SH="source_sync_5.0.2.sh"
 fi
 if [ "6.0" = "$PATCHES_REV" ]; then
+	KBASE=./Tegra/kernel/kernel-jammy-src
 	TEGRA_SOURCE_SYNC_SH="source_sync_6.0.sh"
-	TEGRA_TAG="jetson_36.3"
+	TEGRA_TAG="jetson_$JETSON_L4T_RELEASE.$JETSON_L4T_REVISION"
 fi
 cp ./scripts/Tegra/$TEGRA_SOURCE_SYNC_SH ${sdk_dir}/Tegra
 
@@ -148,11 +142,6 @@ DisplayNvidiaLicense "$PATCHES_REV"
 
 #Download NVIDIA source, disregard errors on module tag sync
 ./Tegra/$TEGRA_SOURCE_SYNC_SH -k ${TEGRA_TAG} || true
-if [ "6.0" = "$PATCHES_REV" ]; then
-	KBASE=./Tegra/kernel/kernel-jammy-src
-else
-	KBASE=./Tegra/sources/kernel/kernel-$KERNEL_RELEASE
-fi
 
 echo ${KBASE}
 pushd ${KBASE}
