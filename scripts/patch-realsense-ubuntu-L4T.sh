@@ -61,7 +61,8 @@ if [ -f /etc/nv_tegra_release ]; then
 	JETSON_L4T_STRING=$(head -n 1 /etc/nv_tegra_release)
 	JETSON_L4T_RELEASE=$(echo $JETSON_L4T_STRING | cut -f 2 -d ' ' | grep -Po '(?<=R)[^;]+')
 	# Extract revision + trim trailing zeros to convert 32.5.0 => 32.5 to match git tags
-	JETSON_L4T_REVISION=$(echo $JETSON_L4T_STRING | cut -f 2 -d ',' | grep -Po '(?<=REVISION: )[^;]+' | sed 's/.0$//g')
+	JETSON_L4T_REVISION_LONG=$(echo $JETSON_L4T_STRING | cut -f 2 -d ',' | grep -Po '(?<=REVISION: )[^;]+')
+	JETSON_L4T_REVISION=$(echo $JETSON_L4T_REVISION_LONG | sed 's/.0$//g')
 	JETSON_L4T_VERSION=$JETSON_L4T_RELEASE.$JETSON_L4T_REVISION
 	echo -e "\e[32mJetson L4T version: ${JETSON_L4T_VERSION}\e[0m"
 else
@@ -142,7 +143,7 @@ fi
 cp ./scripts/Tegra/$TEGRA_SOURCE_SYNC_SH ${sdk_dir}/Tegra
 
 # Display NVIDIA license
-DisplayNvidiaLicense "r${JETSON_L4T_RELEASE}_Release_v${JETSON_L4T_REVISION}"
+DisplayNvidiaLicense "r${JETSON_L4T_RELEASE}_Release_v${JETSON_L4T_REVISION_LONG}"
 
 #Download NVIDIA source, disregard errors on module tag sync
 ./Tegra/$TEGRA_SOURCE_SYNC_SH -k ${TEGRA_TAG} || true
