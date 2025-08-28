@@ -12,7 +12,7 @@ con_dev=$(ls /dev/video* | wc -l)
 exec 2>&3
 
 function DisplayNvidiaLicense {
-    patches_revison=$1
+    revision=$1
 
     # verify that curl is installed
     if  ! which curl > /dev/null  ; then
@@ -22,7 +22,7 @@ function DisplayNvidiaLicense {
     fi
 
     # By default referencing license agreement of JP 5.0.2
-    license_path="https://developer.download.nvidia.com/embedded/L4T/r${JETSON_L4T_RELEASE}_Release_v${JETSON_L4T_REVISION}/release/Tegra_Software_License_Agreement-Tegra-Linux.txt"
+    license_path="https://developer.download.nvidia.com/embedded/L4T/${revision}/release/Tegra_Software_License_Agreement-Tegra-Linux.txt"
 
     echo -e "\nPlease notice: This script will download the kernel source (from nv-tegra, NVIDIA's public git repository) which is subject to the following license:\n\n${license_path}\n"
 
@@ -84,7 +84,11 @@ case ${JETSON_L4T_VERSION} in
 		KERNEL_RELEASE="5.10"
 	;;
 	"36.3" | "36.4" | "36.4.3")
-		PATCHES_REV="6.0"	# JP 6.0
+		# 36.3 --> 6.0
+		# 36.4 -> 6.1
+		# 36.4.3 --> 6.2
+		# same patch set from 6.0 onward
+		PATCHES_REV="6.0"
 		KERNEL_RELEASE="5.15"
 	;;
   *)
@@ -138,7 +142,7 @@ fi
 cp ./scripts/Tegra/$TEGRA_SOURCE_SYNC_SH ${sdk_dir}/Tegra
 
 # Display NVIDIA license
-DisplayNvidiaLicense "$PATCHES_REV"
+DisplayNvidiaLicense "r${JETSON_L4T_RELEASE}_Release_v${JETSON_L4T_REVISION}"
 
 #Download NVIDIA source, disregard errors on module tag sync
 ./Tegra/$TEGRA_SOURCE_SYNC_SH -k ${TEGRA_TAG} || true
