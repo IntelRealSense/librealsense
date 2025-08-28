@@ -4782,7 +4782,7 @@ void rs2_set_dhcp_config( const rs2_device * device, int enabled, unsigned int t
 {
     VALIDATE_NOT_NULL( device );
     auto eth_config = VALIDATE_INTERFACE( device->device, librealsense::eth_config_device );
-    VALIDATE_RANGE( timeout, 0, 255 );
+    VALIDATE_LE( timeout, 255 );
     eth_config->set_dhcp_config( enabled != 0, static_cast< uint8_t >( timeout ) );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device )
