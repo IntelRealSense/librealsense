@@ -330,7 +330,7 @@ for ((i=0; i < NSOURCES; i++)); do
 	DNLOAD=$(echo "${SOURCE_INFO_PROCESSED[i]}" | cut -f 5 -d ':')
 
 	if [ $DALL -eq 1 -o "x${DNLOAD}" == "xy" ]; then
-		DownloadAndSync "$WHAT" "${LDK_DIR}/${WHAT}" "https://${REPO}" "${TAG}" "${OPT}"
+		DownloadAndSync "$WHAT" "${LDK_DIR}/${WHAT}" "git://${REPO}" "${TAG}" "${OPT}"
 		tRET=$?
 		let GRET=GRET+tRET
 		if [ $tRET -ne 0 -a $EOE -eq 1 ]; then
