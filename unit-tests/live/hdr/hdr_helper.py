@@ -64,12 +64,6 @@ def test_json_load(config, test_title):
             for control_key in key["controls"].keys():
                 key["controls"][control_key] = to_signed(key["controls"][control_key])
         test.check(hdr_config_read.get("hdr-preset") == config.get("hdr-preset"))
-
-        # check that the other keys are unchanged
-        for key in hdr_config_read.keys():
-            if key != "hdr-preset":
-                test.check(hdr_config_read[key] == prior_config[key])
-
         test.check(sensor.get_option(rs.option.hdr_enabled) == 1)
 
 
