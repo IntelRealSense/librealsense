@@ -1,9 +1,9 @@
 <p align="center">
 <!-- Light mode -->
-<img src="doc/img/realsense-logo-light-mode.png#gh-light-mode-only" alt="Logo for light mode" width="60%"/>
+<img src="doc/img/realsense-logo-light-mode.png#gh-light-mode-only" alt="Logo for light mode" width="30%"/>
 
 <!-- Dark mode -->
-<img src="doc/img/realsense-logo-dark-mode.png#gh-dark-mode-only" alt="Logo for dark mode" width="60%"/>
+<img src="doc/img/realsense-logo-dark-mode.png#gh-dark-mode-only" alt="Logo for dark mode" width="30%"/>
 <br><br>
 </p>
 
@@ -28,7 +28,7 @@ Robotics | Depth Sensing | 3D Scanning |
 :------------: | :----------: | :-------------: |
 <a href="https://realsenseai.com/case-studies/?capability_application=autonomous-mobile-robots"><img src="https://librealsense.intel.com/readme-media/realsense_examplerealsense_example.gif" width="240"/></a> |<a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/align-expectede.gif" width="240"/></a> | <a href="https://realsenseai.com/case-studies/?capability_application=autonomous-mobile-robots"><img src="https://librealsense.intel.com/readme-media/realsense_dynamic_example.gif" width="240"/></a>
 
-Drones | Skeletal and people tracking | Facial authentication |
+Drones | Skeletal and People Tracking | Facial Authentication |
 :--------------------------: | :-----: | :----------------------: |
 <a href="https://realsenseai.com/case-studies/?q=/case-studies&"><img src="https://librealsense.intel.com/readme-media/drone-demo.gif" width="240"/></a> |<a href="https://realsenseai.com/case-studies/?capability_application=monitoring-and-tracking"><img src="https://librealsense.intel.com/readme-media/SkeletalTracking.gif" width="240"/></a> | <a href="https://realsenseai.com/case-studies/?capability_application=biometrics"><img src="https://librealsense.intel.com/readme-media/face-demo.gif" width="240"/></a>
 
