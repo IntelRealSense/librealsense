@@ -744,20 +744,36 @@ namespace rs2
             auto occup_cols = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS)); // width
             auto occup_rows = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS));    // height
 
+
+            // Using look up table to make the following operation faster
+            // Pre-computed lookup table for bit expansion
+            // Example: For byte value 0b10110001 (177)
+            // lut[177] = { 0xFF,  0x00,  0x00,  0x00,  0xFF,  0xFF,  0x00,  0xFF }
+            //              bit0   bit1   bit2   bit3   bit4   bit5   bit6   bit7
+            // Then the below line "std::memcpy(&vec[i * 8], expanded.data(), 8);"
+            // grabs 8 values at once from the LUT instead of calculating each bit one by one
+            static const std::array<std::array<uint8_t, 8>, 256> bit_expand_lut = []() {
+                std::array<std::array<uint8_t, 8>, 256> lut;
+                for (int byte_val = 0; byte_val < 256; ++byte_val) {
+                    for (int bit = 0; bit < 8; ++bit) {
+                        lut[byte_val][bit] = ((byte_val >> bit) & 1) ? 0xFF : 0;
+                    }
+                }
+                return lut;
+                }();
+
             // We want to reverse the data's bit, because AICV algo is packing each 8 cells into one byte, but in an opposite order
             // than we (and OpenGL) expect. The rightest bit (LSB) inside the packed byte from AICV algo represnts the first bit we want to draw from this byte
             // e.g. Occupancy Cells: 0 0 1 1 0 0 1 0 ---> AICV packing algo ---> bytes[i] = 01001100. The order is reversed, so we reverse it again.
             // Each byte represents 8 cells (1 bit <==> 1 cell), therefore the size is ==> rows(height) * cols(width) / 8
 
-            std::vector<uint8_t> vec;
+            std::vector<uint8_t> vec(occup_rows * occup_cols);
             uint8_t *byte_array = (uint8_t *)data;
 
             for (int i = 0; i < occup_rows * occup_cols / 8; i++)
             {
-                for (int k = 0; k < 8; k++)
-                {
-                    vec.push_back(((byte_array[i] >> k) & 1) ? 0xFF : 0);
-                }
+                const auto& expanded = bit_expand_lut[byte_array[i]];
+                std::memcpy(&vec[i * 8], expanded.data(), 8);
             }
 
             // Default alignment is 4 byte on windows, store it and work with 1 as our grid columns are not a multiple of 4
