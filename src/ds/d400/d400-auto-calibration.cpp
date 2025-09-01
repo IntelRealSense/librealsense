@@ -316,12 +316,6 @@ namespace librealsense
             if (interactive_scan_v3)
                 p4 |= (1 << 9);
 
-            if( speed == ds_calib_common::SPEED_WHITE_WALL && apply_preset )
-            {
-                preset_recover = change_preset();
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
-            }
-
             // Begin auto-calibration
             if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
             {
@@ -419,12 +413,6 @@ namespace librealsense
                 p4 |= (1 << 8);
             if (interactive_scan_v3)
                 p4 |= (1 << 9);
-
-            if( speed == ds_calib_common::SPEED_WHITE_WALL && apply_preset )
-            {
-                preset_recover = change_preset();
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
-            }
 
             if( host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start )
             {
@@ -541,12 +529,6 @@ namespace librealsense
                 p4 |= (1 << 8);
             if (interactive_scan_v3)
                 p4 |= (1 << 9);
-
-            if( speed == ds_calib_common::SPEED_WHITE_WALL && apply_preset )
-            {
-                preset_recover = change_preset();
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
-            }
 
             // Begin auto-calibration
             if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)

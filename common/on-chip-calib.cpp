@@ -30,8 +30,6 @@ namespace rs2
         if (dev.supports(RS2_CAMERA_INFO_NAME))
         {
             device_name_string = _dev.get_info( RS2_CAMERA_INFO_NAME );
-            if( val_in_range( device_name_string, { std::string( "Intel RealSense D415" ) } ) )
-                speed = 4;
         }
 
         if( dev.supports( RS2_CAMERA_INFO_CONNECTION_TYPE ) )
