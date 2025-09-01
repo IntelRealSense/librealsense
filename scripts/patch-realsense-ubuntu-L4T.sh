@@ -84,10 +84,11 @@ case ${JETSON_L4T_VERSION} in
 		PATCHES_REV="5.0.2"	# JP 5.0.2
 		KERNEL_RELEASE="5.10"
 	;;
-	"36.3" | "36.4" | "36.4.3")
+	"36.3" | "36.4" | "36.4.3" | "36.4.4")
 		# 36.3 --> 6.0
 		# 36.4 -> 6.1
 		# 36.4.3 --> 6.2
+        # 36.4.4 --> 6.2.1
 		# same patch set from 6.0 onward
 		PATCHES_REV="6.0"
 		KERNEL_RELEASE="5.15"
