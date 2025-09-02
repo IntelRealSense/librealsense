@@ -533,6 +533,22 @@ try:
         disable_dds = "dds" not in context
         devices.query( hub_reset = hub_reset, disable_dds=disable_dds ) #resets the device
         devices.map_unknown_ports()
+        # adjust context with connectivity types present (usb/gmsl/dds)
+        present = set()
+        for sn in devices.all():
+            d = devices.get(sn)
+            if not d:
+                continue
+            if d.is_usb:
+                present.add('usb')
+            if d.is_gmsl:
+                present.add('gmsl')
+            if d.is_dds:
+                present.add('dds')
+
+        for c in sorted(present):
+            if c not in context:
+                context.append(c)
         #
         # Under a development environment (i.e., without a hub), we may only have one device connected
         # or even none and want to only show a warning for live tests:
