@@ -351,7 +351,7 @@ namespace librealsense
             void set_power_state(power_state state) override;
             power_state get_power_state() const override { return _state; }
 
-            void init_xu(const extension_unit&) override {}
+            void register_xu( platform::extension_unit && xu ) override {}
             bool set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override;
             bool get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override;
             control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override;
@@ -403,6 +403,8 @@ namespace librealsense
 
             static bool get_devname_from_video_path(const std::string& real_path, std::string& devname, bool is_for_dfu = false);
 
+            std::recursive_mutex _power_lock;
+            std::atomic< int > _power_counter;
             power_state _state = D3;
             std::string _name = "";
             std::string _device_path = "";
