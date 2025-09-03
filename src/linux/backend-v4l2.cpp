@@ -1129,15 +1129,10 @@ namespace librealsense
             }
         }
 
-        void v4l_uvc_device::foreach_uvc_device(
-                std::function<void(const uvc_device_info&,
-                                   const std::string&)> action)
+        std::vector<node_info> v4l_uvc_device::get_mipi_rs_enum_nodes()
         {
-            std::vector<std::string> video_paths = get_video_paths();
-            std::vector<std::string> mipi_dfu_paths = get_mipi_dfu_paths();
-            typedef std::pair<uvc_device_info,std::string> node_info;
-            std::vector<node_info> uvc_nodes,uvc_devices;
             std::vector<node_info> mipi_rs_enum_nodes;
+
             /* Enumerate mipi nodes by links with usage of rs-enum script */
             std::vector<std::string> video_sensors = {"depth", "color", "ir", "imu"};
             const int MAX_V4L2_DEVICES = 8; // assume maximum 8 mipi devices
@@ -1205,56 +1200,14 @@ namespace librealsense
                     mipi_rs_enum_nodes.emplace_back(info, video_md_path);
                 }
             }
+            return mipi_rs_enum_nodes;
+        }
 
-            // Append mipi nodes to uvc nodes list
-            if(mipi_rs_enum_nodes.size())
-            {
-                uvc_nodes.insert(uvc_nodes.end(), mipi_rs_enum_nodes.begin(), mipi_rs_enum_nodes.end());
-            }
-
-            // Collect UVC nodes info to bundle metadata and video
-
-            for(auto&& video_path : video_paths)
-            {
-                // following line grabs video0 from "/sys/devices/.../video0" paths
-                auto name = video_path.substr(video_path.find_last_of('/') + 1);
-
-                try
-                {
-                    uvc_device_info info{};
-                    if (is_usb_device_path(video_path))
-                    {
-                        info = get_info_from_usb_device_path(video_path, name);
-                    }
-                    else if(mipi_rs_enum_nodes.empty()) //video4linux devices that are not USB devices and not previously enumerated by rs links
-                    {
-                        // filter out all posible codecs, work only with compatible driver
-                        static const std::regex rs_mipi_compatible(".vi:|ipu6");
-                        info = get_info_from_mipi_device_path(video_path, name);
-                        if (!regex_search(info.unique_id, rs_mipi_compatible)) {
-                            continue;
-                        }
-                    }
-                    else // continue as we already have mipi nodes enumerated by rs links in uvc_nodes
-                    {
-                        continue;
-                    }
-
-                    std::string dev_name;
-                    if (get_devname_from_video_path(video_path, dev_name))
-                    {
-                        uvc_nodes.emplace_back(info, dev_name);
-                    }
-                }
-                catch(const std::exception & e)
-                {
-                    LOG_INFO("Not a USB video device: " << e.what());
-                }
-            }
-
-            // Matching video and metadata nodes
+        std::vector<node_info> v4l_uvc_device::match_video_with_metadata_nodes(const std::vector<node_info>& uvc_nodes)
+        {
             // Assume uvc_nodes is already sorted according to videoXX (video0, then video1...)
             // Assume for each metadata node with index N there is a origin streaming node with index (N-1)
+            std::vector<node_info> uvc_devices;
             for (auto&& cur_node : uvc_nodes)
             {
                 try
@@ -1295,6 +1248,69 @@ namespace librealsense
                     LOG_ERROR("Failed to map meta-node "  << std::string(cur_node.first) <<", error encountered: " << e.what());
                 }
             }
+            return uvc_devices;
+        }
+
+        std::vector<node_info> v4l_uvc_device::collect_uvc_nodes(const std::vector<std::string>& video_paths, const std::vector<node_info>& mipi_rs_enum_nodes)
+        {
+            std::vector<node_info> uvc_nodes;
+            // Append mipi nodes to uvc nodes list
+            if(mipi_rs_enum_nodes.size())
+            {
+                uvc_nodes.insert(uvc_nodes.end(), mipi_rs_enum_nodes.begin(), mipi_rs_enum_nodes.end());
+            }
+            for(auto&& video_path : video_paths)
+            {
+                // following line grabs video0 from "/sys/devices/.../video0" paths
+                auto name = video_path.substr(video_path.find_last_of('/') + 1);
+
+                try
+                {
+                    uvc_device_info info{};
+                    if (is_usb_device_path(video_path))
+                    {
+                        info = get_info_from_usb_device_path(video_path, name);
+                    }
+                    else if(mipi_rs_enum_nodes.empty()) //video4linux devices that are not USB devices and not previously enumerated by rs links
+                    {
+                        // filter out all posible codecs, work only with compatible driver
+                        static const std::regex rs_mipi_compatible(".vi:|ipu6");
+                        info = get_info_from_mipi_device_path(video_path, name);
+                        if (!regex_search(info.unique_id, rs_mipi_compatible)) {
+                            continue;
+                        }
+                    }
+                    else // continue as we already have mipi nodes enumerated by rs links in uvc_nodes
+                    {
+                        continue;
+                    }
+
+                    std::string dev_name;
+                    if (get_devname_from_video_path(video_path, dev_name))
+                    {
+                        uvc_nodes.emplace_back(info, dev_name);
+                    }
+                }
+                catch(const std::exception & e)
+                {
+                    LOG_INFO("Not a USB video device: " << e.what());
+                }
+            }
+            return uvc_nodes;
+        }
+
+        void v4l_uvc_device::foreach_uvc_device(
+                std::function<void(const uvc_device_info&,
+                                   const std::string&)> action)
+        {
+            std::vector<std::string> video_paths = get_video_paths();
+            std::vector<node_info> mipi_rs_enum_nodes = get_mipi_rs_enum_nodes();
+
+            // Collect UVC nodes info to bundle metadata and video
+            std::vector<node_info> uvc_nodes = collect_uvc_nodes(video_paths, mipi_rs_enum_nodes);
+
+            // Matching video and metadata nodes
+            std::vector<node_info> uvc_devices = match_video_with_metadata_nodes(uvc_nodes);
 
             try
             {

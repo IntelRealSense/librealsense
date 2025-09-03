@@ -303,6 +303,8 @@ namespace librealsense
             double _kpi_frames_drops_pct;
         };
 
+        typedef std::pair<uvc_device_info,std::string> node_info;
+
         class v4l_uvc_device : public uvc_device, public v4l_uvc_interface
         {
         public:
@@ -402,6 +404,11 @@ namespace librealsense
             virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return nullptr;}
 
             static bool get_devname_from_video_path(const std::string& real_path, std::string& devname, bool is_for_dfu = false);
+
+
+            static std::vector<node_info> get_mipi_rs_enum_nodes();
+            static std::vector<node_info> collect_uvc_nodes(const std::vector<std::string>& video_paths, const std::vector<node_info>& mipi_rs_enum_nodes);
+            static std::vector<node_info> match_video_with_metadata_nodes(const std::vector<node_info>& uvc_nodes);
 
             power_state _state = D3;
             std::string _name = "";
