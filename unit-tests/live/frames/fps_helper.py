@@ -78,9 +78,8 @@ def generate_callbacks(sensor_profiles_dict, profile_name_fps_dict):
         profile_name = frame.profile.stream_name()
         counted_frame_number = profile_name_fps_dict[frame.profile.stream_name()] + 1  # frame number counted in test
         frame_number = frame.get_frame_number()  # the actual frame number from the metadata
-        frame_ts = frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
-        log.d(f"frame {profile_name} #{counted_frame_number} "
-              f"accepted with frame number {frame_number} and ts {frame_ts}")
+        frame_ts = frame.get_timestamp()
+        log.d(f"frame {profile_name} #{counted_frame_number} accepted with frame number {frame_number} and ts {frame_ts}")
         if count_frames:
             profile_name_fps_dict[profile_name] += 1
         log.d(f"frame {profile_name} #{counted_frame_number} callback finished")

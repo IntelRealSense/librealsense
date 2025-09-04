@@ -66,6 +66,7 @@ RS2_ENUM_HELPERS( rs2_matchers, MATCHER )
 RS2_ENUM_HELPERS( rs2_sensor_mode, SENSOR_MODE )
 RS2_ENUM_HELPERS( rs2_l500_visual_preset, L500_VISUAL_PRESET )
 RS2_ENUM_HELPERS( rs2_calibration_type, CALIBRATION_TYPE )
+RS2_ENUM_HELPERS( rs2_eth_link_priority, LINK_PRIORITY )
 RS2_ENUM_HELPERS_CUSTOMIZED( rs2_calibration_status,
                              RS2_CALIBRATION_STATUS_FIRST,
                              RS2_CALIBRATION_STATUS_LAST,
@@ -78,6 +79,10 @@ RS2_ENUM_HELPERS_CUSTOMIZED( rs2_digital_gain, RS2_DIGITAL_GAIN_HIGH, RS2_DIGITA
 RS2_ENUM_HELPERS( rs2_host_perf_mode, HOST_PERF )
 RS2_ENUM_HELPERS( rs2_emitter_frequency_mode, EMITTER_FREQUENCY )
 RS2_ENUM_HELPERS( rs2_depth_auto_exposure_mode, DEPTH_AUTO_EXPOSURE )
+RS2_ENUM_HELPERS( rs2_safety_mode, SAFETY_MODE )
+RS2_ENUM_HELPERS( rs2_d500_intercam_sync_mode, D500_INTERCAM_SYNC )
+RS2_ENUM_HELPERS( rs2_point_cloud_label, POINT_CLOUD_LABEL )
+RS2_ENUM_HELPERS( rs2_calib_location, CALIB_LOCATION )
 RS2_ENUM_HELPERS( rs2_gyro_sensitivity, GYRO_SENSITIVITY )
 
 

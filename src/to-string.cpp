@@ -59,6 +59,9 @@ const char * get_string( rs2_stream value )
     CASE( POSE )
     CASE( CONFIDENCE )
     CASE( MOTION )
+    CASE( SAFETY )
+    CASE( OCCUPANCY )
+    CASE( LABELED_POINT_CLOUD )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -81,6 +84,9 @@ char const * get_abbr_string( rs2_stream value)
     case RS2_STREAM_POSE: return "P";
     case RS2_STREAM_CONFIDENCE: return "Conf";
     case RS2_STREAM_MOTION: return "M";
+    case RS2_STREAM_SAFETY: return "S";
+    case RS2_STREAM_OCCUPANCY: return "O";
+    case RS2_STREAM_LABELED_POINT_CLOUD: return "LPC";
     default:
         assert( !is_valid( value ) );
         return "?";
@@ -235,6 +241,78 @@ const char * get_string( rs2_depth_auto_exposure_mode mode )
 #undef CASE
 }
 
+const char * get_string( rs2_safety_mode mode )
+{
+#define CASE( X ) STRCASE( SAFETY_MODE, X )
+    switch( mode )
+    {
+    CASE( RUN )
+    CASE( STANDBY )
+    CASE( SERVICE )
+    default:
+        assert( ! is_valid( mode ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
+const char * get_string( rs2_d500_intercam_sync_mode mode )
+{
+#define CASE( X ) STRCASE( D500_INTERCAM_SYNC, X )
+    switch( mode )
+    {
+        CASE( NONE )
+        CASE( RGB_MASTER )
+        CASE( PWM_MASTER )
+        CASE( EXTERNAL_MASTER )
+    default:
+        assert( ! is_valid( mode ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
+const char* get_string(rs2_point_cloud_label label)
+{
+#define CASE( X ) STRCASE( POINT_CLOUD_LABEL, X )
+    switch (label)
+    {
+        CASE(UNKNOWN)
+        CASE(UNDEFINED)
+        CASE(INVALID)
+        CASE(GROUND)
+        CASE(NEAR_GROUND)
+        CASE(OVERHEAD)
+        CASE(ABOVE_CEILING_HEIGHT)
+        CASE(GAP)
+        CASE(MASKED)
+        CASE(CLIFF)
+        CASE(OBSTACLE)
+        CASE(OBSTACLE_DANGER)
+        CASE(OBSTACLE_WARNING)
+    default:
+        assert(!is_valid(label));
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
+
+const char* get_string(rs2_calib_location calib_location)
+{
+#define CASE( X ) STRCASE( CALIB_LOCATION, X )
+    switch (calib_location)
+    {
+        CASE(EEPROM)
+        CASE(FLASH)
+        CASE(RAM)
+    default:
+        assert(!is_valid(calib_location));
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
 const char * get_string( rs2_gyro_sensitivity value )
 {
 #define CASE( X ) STRCASE( GYRO_SENSITIVITY, X )
@@ -314,6 +392,10 @@ const char * get_string( rs2_extension value )
     CASE( DEBUG_STREAM_SENSOR )
     CASE( CALIBRATION_CHANGE_DEVICE )
     CASE( ROTATION_FILTER )
+    CASE( SAFETY_SENSOR )
+    CASE( DEPTH_MAPPING_SENSOR )
+    CASE( LABELED_POINTS )
+    CASE( ETH_CONFIG )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -462,12 +544,34 @@ std::string const & get_string_( rs2_option value )
         CASE( GYRO_SENSITIVITY )
         CASE( ROTATION )
         arr[RS2_OPTION_REGION_OF_INTEREST] = "Region of Interest";
+        CASE( SAFETY_PRESET_ACTIVE_INDEX )
+        CASE( SAFETY_MODE )
+        CASE( RGB_TNR_ENABLED )
+        CASE( SAFETY_MCU_TEMPERATURE )
 #undef CASE
         return arr;
     }();
     if( value >= 0 && value < RS2_OPTION_COUNT )
         return str_array[value];
     return unknown_value_str;
+}
+
+const char * get_string( rs2_eth_link_priority value )
+{
+#define CASE( X ) STRCASE( LINK_PRIORITY, X )
+    switch( value )
+    {
+        CASE( USB_ONLY )
+        CASE( ETH_ONLY )
+        CASE( ETH_FIRST )
+        CASE( USB_FIRST )
+        CASE( DYNAMIC_ETH_FIRST )
+        CASE( DYNAMIC_USB_FIRST )
+    default:
+        assert( ! is_valid( value ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
 }
 
 std::string const & get_string( rs2_option const option )
@@ -592,6 +696,7 @@ const char * get_string( rs2_camera_info value )
     CASE( IP_ADDRESS )
     CASE( DFU_DEVICE_PATH )
     CASE( CONNECTION_TYPE )
+    CASE( SMCU_FW_VERSION )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -648,6 +753,93 @@ std::string const & get_string( rs2_frame_metadata_value value )
         CASE( SUB_PRESET_INFO )
         CASE( CALIB_INFO )
         CASE( CRC )
+        CASE( SAFETY_DEPTH_FRAME_COUNTER )
+        CASE( SAFETY_LEVEL1 )
+        CASE( SAFETY_LEVEL1_ORIGIN )
+        CASE( SAFETY_LEVEL2 )
+        CASE( SAFETY_LEVEL2_ORIGIN )
+        CASE( SAFETY_LEVEL1_VERDICT )
+        CASE( SAFETY_LEVEL2_VERDICT )
+        CASE( SAFETY_OPERATIONAL_MODE )
+        CASE( SAFETY_VISION_VERDICT )
+        CASE( SAFETY_HARA_EVENTS )
+        CASE( SAFETY_PRESET_INTEGRITY )
+        CASE( SAFETY_PRESET_ID_SELECTED )
+        CASE( SAFETY_PRESET_ID_USED )
+        CASE( SAFETY_SIP_DEGRADATION_USED )
+        CASE( SAFETY_SIP_GENERIC_METRICS_ACTIVATE )
+        CASE( SAFETY_SIP_GENERIC_METRICS_STATE )
+        CASE( SAFETY_SIP_GENERIC_METRICS_VALUE1 )
+        CASE( SAFETY_SIP_GENERIC_METRICS_VALUE2 )
+        CASE( SAFETY_SIP_GENERIC_METRICS_THRESHOLD1 )
+        CASE( SAFETY_SIP_GENERIC_METRICS_THRESHOLD2 )
+        CASE( SAFETY_ZERO_MONITORING_ENABLED )
+        CASE( SAFETY_HARA_HISTORY_MODE )
+        CASE( SAFETY_SOC_FUSA_EVENTS )
+        CASE( SAFETY_SOC_FUSA_ACTION )
+        CASE( SAFETY_SOC_L0_COUNTER )
+        CASE( SAFETY_SOC_L0_RATE )
+        CASE( SAFETY_SOC_L1_COUNTER )
+        CASE( SAFETY_SOC_L1_RATE )
+        CASE( SAFETY_SOC_GMT_STATUS )
+        CASE( SAFETY_SOC_HKR_CRITICAL_ERROR_GPIO )
+        CASE( SAFETY_SOC_MONITOR_L2_ERROR_TYPE )
+        CASE( SAFETY_SOC_MONITOR_L3_ERROR_TYPE )
+        CASE( SAFETY_SOC_SAFETY_AND_SECURITY )
+        CASE( SAFETY_DEPTH_FRAME_TIMESTAMP )
+        CASE( SAFETY_SMCU_PROCESSING_TIMESTAMP )
+        CASE( SAFETY_PIPELINE_PROPAGATION_DELAY )
+        CASE( SAFETY_SMCU_DEBUG_STATUS_BITMASK )
+        CASE( SAFETY_SMCU_DEBUG_INFO_INTERNAL_STATE )
+        CASE( SAFETY_SMCU_DEBUG_INFO_BIST_STATUS )
+        CASE( SAFETY_NON_FUSA_GPIO_OUT )
+        CASE( SAFETY_SMCU_HW_MONITOR_STATUS )
+        CASE( SAFETY_SMCU_SW_MONITOR_STATUS )
+        CASE( SAFETY_NON_FUSA_GPIO_IN )
+        CASE( SAFETY_MB_FUSA_EVENT )
+        CASE( SAFETY_MB_FUSA_ACTION )
+        CASE( SAFETY_MB_STATUS )
+        CASE( SAFETY_SMCU_LIVELINESS )
+        CASE( SAFETY_SMCU_STATE )
+        CASE( SAFETY_PRESET_ID )
+        CASE( SENSOR_ANGLE_ROLL  )
+        CASE( SENSOR_ANGLE_PITCH )
+        CASE( DIAGNOSTIC_ZONE_MEDIAN_HEIGHT )
+        CASE( FLOOR_DETECTION )
+        CASE( DIAGNOSTIC_ZONE_FILL_RATE )
+        CASE( DEPTH_FILL_RATE )
+        CASE( DEPTH_STDEV )
+        CASE( OCCUPANCY_GRID_ROWS)
+        CASE( OCCUPANCY_GRID_COLUMNS )
+        CASE( OCCUPANCY_CELL_SIZE )
+        CASE( NUMBER_OF_3D_VERTICES )
+        CASE( SAFETY_PRESET_ERROR_TYPE )
+        CASE( SAFETY_PRESET_ERROR_PARAM_1 )
+        CASE( SAFETY_PRESET_ERROR_PARAM_2 )
+        CASE( DANGER_ZONE_POINT_0_X_CORD )
+        CASE( DANGER_ZONE_POINT_0_Y_CORD )
+        CASE( DANGER_ZONE_POINT_1_X_CORD )
+        CASE( DANGER_ZONE_POINT_1_Y_CORD )
+        CASE( DANGER_ZONE_POINT_2_X_CORD )
+        CASE( DANGER_ZONE_POINT_2_Y_CORD )
+        CASE( DANGER_ZONE_POINT_3_X_CORD )
+        CASE( DANGER_ZONE_POINT_3_Y_CORD )
+        CASE( WARNING_ZONE_POINT_0_X_CORD )
+        CASE( WARNING_ZONE_POINT_0_Y_CORD )
+        CASE( WARNING_ZONE_POINT_1_X_CORD )
+        CASE( WARNING_ZONE_POINT_1_Y_CORD )
+        CASE( WARNING_ZONE_POINT_2_X_CORD )
+        CASE( WARNING_ZONE_POINT_2_Y_CORD )
+        CASE( WARNING_ZONE_POINT_3_X_CORD )
+        CASE( WARNING_ZONE_POINT_3_Y_CORD )
+        CASE( DIAGNOSTIC_ZONE_POINT_0_X_CORD )
+        CASE( DIAGNOSTIC_ZONE_POINT_0_Y_CORD )
+        CASE( DIAGNOSTIC_ZONE_POINT_1_X_CORD )
+        CASE( DIAGNOSTIC_ZONE_POINT_1_Y_CORD )
+        CASE( DIAGNOSTIC_ZONE_POINT_2_X_CORD )
+        CASE( DIAGNOSTIC_ZONE_POINT_2_Y_CORD )
+        CASE( DIAGNOSTIC_ZONE_POINT_3_X_CORD )
+        CASE( DIAGNOSTIC_ZONE_POINT_3_Y_CORD )
 #undef CASE
             return arr;
     }();
@@ -745,17 +937,17 @@ const char * get_string( rs2_l500_visual_preset value )
 #undef CASE
 }
 
-
 std::string const & get_string( rs2_option_type value )
 {
     static auto str_array = []()
     {
         std::vector< std::string > arr( RS2_OPTION_TYPE_COUNT );
 #define CASE( X ) STRARR( arr, OPTION_TYPE, X );
+        CASE( INTEGER )
         CASE( FLOAT )
         CASE( STRING )
-        CASE( INTEGER )
         CASE( BOOLEAN )
+        CASE( RECT )
 #undef CASE
             return arr;
     }();
@@ -807,4 +999,9 @@ const char * rs2_calibration_status_to_string( rs2_calibration_status status ) {
 const char * rs2_host_perf_mode_to_string( rs2_host_perf_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_depth_auto_exposure_mode_to_string( rs2_depth_auto_exposure_mode mode ) { return librealsense::get_string( mode ); }
+const char * rs2_safety_mode_to_string( rs2_safety_mode mode ) { return librealsense::get_string( mode ); }
+const char * rs2_d500_intercam_sync_mode_to_string( rs2_d500_intercam_sync_mode mode ) { return librealsense::get_string( mode ); }
+const char * rs2_point_cloud_label_to_string(rs2_point_cloud_label label) { return librealsense::get_string(label); }
+const char * rs2_calib_location_to_string(rs2_calib_location calib_location) { return librealsense::get_string(calib_location); }
 const char * rs2_gyro_sensitivity_to_string( rs2_gyro_sensitivity mode ){return librealsense::get_string( mode );}
+const char * rs2_eth_link_priority_to_string( rs2_eth_link_priority priority ){return librealsense::get_string( priority );}

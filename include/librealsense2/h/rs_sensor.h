@@ -36,6 +36,7 @@ typedef enum rs2_camera_info {
     RS2_CAMERA_INFO_IP_ADDRESS                     , /**< IP address for remote camera. */
     RS2_CAMERA_INFO_DFU_DEVICE_PATH                , /**< DFU Device node path */
     RS2_CAMERA_INFO_CONNECTION_TYPE                , /**< Connection type, for example USB, GMSL, DDS */
+    RS2_CAMERA_INFO_SMCU_FW_VERSION                , /**< Safety MCU FW Version */
     RS2_CAMERA_INFO_COUNT                            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_camera_info;
 const char* rs2_camera_info_to_string(rs2_camera_info info);
@@ -54,6 +55,9 @@ typedef enum rs2_stream
     RS2_STREAM_POSE                             , /**< 6 Degrees of Freedom pose data, calculated by RealSense device */
     RS2_STREAM_CONFIDENCE                       , /**< 4 bit per-pixel depth confidence level */
     RS2_STREAM_MOTION                           , /**< Native stream of combined motion data (incl. accel & gyro) */
+    RS2_STREAM_SAFETY                           , /**< safety info */
+    RS2_STREAM_OCCUPANCY                        , /**< occupancy info */
+    RS2_STREAM_LABELED_POINT_CLOUD              , /**< labeled point cloud stream */
     RS2_STREAM_COUNT
 } rs2_stream;
 const char* rs2_stream_to_string(rs2_stream stream);

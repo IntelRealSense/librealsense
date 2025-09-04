@@ -30,6 +30,7 @@ PYBIND11_MODULE(NAME, m) {
     init_advanced_mode(m);
     init_serializable_device(m);
     init_util(m);
+    init_eth_config(m);
     
     /** rs_export.hpp **/
     py::class_<rs2::save_to_ply, rs2::filter>(m, "save_to_ply")
@@ -60,6 +61,7 @@ PYBIND11_MODULE(NAME, m) {
     // on destruction/exit. Usually this works fine, except that here, with Python and its GIL,
     // Pybind tries to acquire the GIL when the thread state is no longer valid and we get
     // into an infinite wait.
+    // This is how the code would look like if we didn't had this issue
 #if 0
     m.def( "log_to_callback",
            []( rs2_log_severity min_severity, std::function< void( rs2_log_severity, rs2::log_message ) > callback )

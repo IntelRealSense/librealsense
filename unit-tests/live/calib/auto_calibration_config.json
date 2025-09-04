@@ -1,0 +1,12 @@
+{
+  "calib type": 0,
+  "host assistance": 1,
+  "speed": 3,
+  "average_step_count": 20,
+  "scan parameter": 0,
+  "step_count": 20,
+  "apply preset": 1,
+  "accuracy": 2,
+  "scan only": 1,
+  "interactive scan": 0  
+}

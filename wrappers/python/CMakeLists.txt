@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 
 project(RealsensePythonWrappers)
 
@@ -8,6 +8,7 @@ set(PYRS_CPP
     pyrs_advanced_mode.cpp
     pyrs_context.cpp
     pyrs_device.cpp
+    pyrs_eth_config.cpp
     pyrs_export.cpp
     pyrs_frame.cpp
     pyrs_internal.cpp
@@ -139,11 +140,11 @@ if( BUILD_LEGACY_PYBACKEND )
         PROPERTIES
             FOLDER Library/Python
         )
-    target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/include)
+    target_include_directories(pybackend2 PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
     if(${FORCE_RSUSB_BACKEND})
         if(APPLE)
-            target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/third-party/hidapi/)
+            target_include_directories(pybackend2 PRIVATE ${PROJECT_SOURCE_DIR}/third-party/hidapi/)
         endif()
     endif()
 

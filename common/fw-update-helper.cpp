@@ -287,11 +287,7 @@ namespace rs2
         invoker invoke)
     {
         // if device is MIPI device, and fw is signed - using mipi specific procedure
-        if (_is_signed
-                && (!strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD")
-                 || !strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "BBCD")
-                 || !strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCE"))
-                )
+        if (_is_signed && !strcmp(_dev.get_info(RS2_CAMERA_INFO_CONNECTION_TYPE), "GMSL"))
         {
             process_mipi();
             return;

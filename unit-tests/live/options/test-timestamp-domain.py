@@ -2,6 +2,7 @@
 # Copyright(c) 2022 RealSense, Inc. All Rights Reserved.
 
 # test:device each(D400*)
+# test:device each(D500*) !D555
 
 import time
 import pyrealsense2 as rs

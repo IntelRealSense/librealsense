@@ -8,10 +8,13 @@
 #include "sid_index.h"
 #include "rsdds-serializable.h"
 #include <src/auto-calibrated-proxy.h>
+#include <src/device-calibration.h>
+#include <src/eth-config-device.h>
 
 #include <rsutils/json-fwd.h>
 #include <memory>
 #include <vector>
+#include <set>
 
 
 namespace realdds {
@@ -45,6 +48,8 @@ class dds_device_proxy
     , public update_device_interface  // signed, recovery-mode
     , public dds_serializable
     , public auto_calibrated_proxy
+    , public calibration_change_device
+    , public eth_config_device
 {
     std::shared_ptr< realdds::dds_device > _dds_dev;
     std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
@@ -76,6 +81,16 @@ public:
 
     void hardware_reset() override;
 
+    // calibration_change_device
+public:
+    void register_calibration_change_callback( rs2_calibration_change_callback_sptr callback ) override
+    {
+        _calib_changed_callbacks.insert( callback );
+    }
+
+private:
+    std::set< rs2_calibration_change_callback_sptr > _calib_changed_callbacks;
+
     // debug_interface
 private:
     std::vector< uint8_t > send_receive_raw_data( const std::vector< uint8_t > & ) override;
@@ -104,8 +119,10 @@ private:
     device_interface const & get_serializable_device() const override { return *this; }
     std::vector< sensor_interface * > get_serializable_sensors() override;
     std::vector< sensor_interface const * > get_serializable_sensors() const override;
+
+    // eth_config_device
+public:
+    bool supports_ethernet_configuration() override;
 };
-
-
 
 }  // namespace librealsense

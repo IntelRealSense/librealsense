@@ -1,6 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2019-2024 RealSense, Inc. All Rights Reserved.
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -28,7 +28,7 @@ endif()
 
 if(BUILD_EXAMPLES)
     if(BUILD_GRAPHICAL_EXAMPLES)
-        include(${CMAKE_SOURCE_DIR}/CMake/opengl_config.cmake)
+        include(${PROJECT_SOURCE_DIR}/CMake/opengl_config.cmake)
         if (NOT BUILD_GLSL_EXTENSIONS)
             MESSAGE(STATUS "BUILD_GRAPHICAL_EXAMPLES explicitely depends on BUILD_GLSL_EXTENSIONS, set it ON")
             SET(BUILD_GLSL_EXTENSIONS ON)

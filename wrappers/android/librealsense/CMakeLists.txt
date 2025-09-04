@@ -2,7 +2,7 @@
 # documentation: https://d.android.com/studio/projects/add-native-code.html
 
 # Sets the minimum version of CMake required to build the native library.
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 
 include("../config.cmake")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${LRS_ANDROID_ROOT_DIR}/build/jniLibs/${ANDROID_ABI})

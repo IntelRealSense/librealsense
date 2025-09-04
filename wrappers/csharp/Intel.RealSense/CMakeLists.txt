@@ -1,4 +1,4 @@
-cmake_minimum_required( VERSION 3.8.0 )
+cmake_minimum_required( VERSION 3.10 )
 
 project(Intel.RealSense)
 
@@ -31,7 +31,7 @@ csharp_set_designer_cs_properties(
 
 if(BUILD_UNITY_BINDINGS)
 	string(REPLACE "/" "\\" CMAKE_BINARY_WIN_DIR ${CMAKE_BINARY_DIR})
-	string(REPLACE "/" "\\" CMAKE_SOURCE_WIN_DIR ${CMAKE_SOURCE_DIR})
+	string(REPLACE "/" "\\" CMAKE_SOURCE_WIN_DIR ${PROJECT_SOURCE_DIR})
 	file(MAKE_DIRECTORY ${CMAKE_BINARY_WIN_DIR}/wrappers)
 	if(NOT EXISTS ${CMAKE_BINARY_WIN_DIR}/wrappers/unity)
 		execute_process(COMMAND cmd "/C mklink /D ${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity ${CMAKE_SOURCE_WIN_DIR}\\wrappers\\unity")

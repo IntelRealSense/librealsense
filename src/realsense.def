@@ -80,6 +80,12 @@ EXPORTS
     rs2_get_frame_vertices
     rs2_get_frame_texture_coordinates
     rs2_get_frame_points_count
+    rs2_get_frame_labeled_vertices
+    rs2_get_frame_labeled_points_count
+    rs2_get_frame_labels
+    rs2_get_frame_labeled_points_width
+    rs2_get_frame_labeled_points_height
+    rs2_get_frame_labeled_points_bits_per_pixel
     rs2_release_frame
     rs2_keep_frame
     rs2_frame_add_ref
@@ -209,6 +215,7 @@ EXPORTS
     rs2_create_pointcloud
     rs2_create_colorizer
     rs2_create_yuy_decoder
+    rs2_create_m420_decoder
     rs2_create_threshold
     rs2_create_units_transform
     rs2_create_decimation_filter_block
@@ -438,6 +445,39 @@ EXPORTS
     rs2_transform_point_to_point
     rs2_fov
     rs2_project_color_pixel_to_depth_pixel
+
+    rs2_safety_mode_to_string
+    rs2_d500_intercam_sync_mode_to_string
+    rs2_get_safety_preset
+    rs2_set_safety_preset
+    rs2_get_safety_interface_config
+    rs2_set_safety_interface_config
+    rs2_calib_location_to_string
     rs2_get_calibration_config
     rs2_set_calibration_config
+    rs2_get_application_config
+    rs2_set_application_config
     rs2_hw_monitor_get_opcode_string
+
+    rs2_eth_link_priority_to_string
+    rs2_supports_eth_config
+    rs2_get_link_speed
+    rs2_get_link_priority
+    rs2_set_link_priority
+    rs2_get_link_timeout
+    rs2_set_link_timeout
+    rs2_get_dds_domain
+    rs2_set_dds_domain
+    rs2_get_ip_address
+    rs2_set_ip_address
+    rs2_get_netmask
+    rs2_set_netmask
+    rs2_get_gateway
+    rs2_set_gateway
+    rs2_get_dhcp_config
+    rs2_set_dhcp_config
+    rs2_get_mtu
+    rs2_set_mtu
+    rs2_get_transmission_delay
+    rs2_set_transmission_delay
+    rs2_restore_default_eth_config

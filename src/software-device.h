@@ -16,7 +16,7 @@ class software_sensor;
 class software_device : public device
 {
 public:
-    software_device( std::shared_ptr< const device_info > const & );
+    software_device( std::shared_ptr< const device_info > const &, bool device_changed_notifications = false );
     virtual ~software_device();
 
     software_sensor& add_software_sensor(const std::string& name);

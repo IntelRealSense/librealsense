@@ -30,8 +30,6 @@ namespace rs2
         if (dev.supports(RS2_CAMERA_INFO_NAME))
         {
             device_name_string = _dev.get_info( RS2_CAMERA_INFO_NAME );
-            if( val_in_range( device_name_string, { std::string( "Intel RealSense D415" ) } ) )
-                speed = 4;
         }
 
         if( dev.supports( RS2_CAMERA_INFO_CONNECTION_TYPE ) )
@@ -1515,14 +1513,14 @@ namespace rs2
             _viewer.is_3d_view = false;
 
 
-        if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH || action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
+        if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH || action == RS2_CALIB_ACTION_UVMAPPING_CALIB) // Host only calibrations
             try_start_viewer(1280, 720, fps, invoke);
         else
         {
-            if (host_assistance && action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
-                try_start_viewer(0, 0, 0, invoke);
+            if (host_assistance)
+                try_start_viewer(1280, 720, 0, invoke); // Host assistance uses HD resolution and crops in host
             else
-                try_start_viewer(256, 144, 90, invoke);
+                try_start_viewer(256, 144, 90, invoke); // Special calibration resolution using an internal cropping of full sensor resolution
         }
 
         if ( action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH )

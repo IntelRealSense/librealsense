@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 
 project(RealSensePCLColorExample)
 
@@ -10,7 +10,7 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 target_link_libraries(rs-pcl-color ${DEPENDENCIES} ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES})
 if(NOT glfw3_DIR)
-    target_include_directories(rs-pcl-color PUBLIC "${CMAKE_SOURCE_DIR}third-party/glfw/include")
+    target_include_directories(rs-pcl-color PUBLIC "${PROJECT_SOURCE_DIR}/third-party/glfw/include")
     target_link_directories(rs-pcl-color PUBLIC "${CMAKE_BINARY_DIR}/third-party/glfw/src/${CMAKE_BUILD_TYPE}")
 endif()
 

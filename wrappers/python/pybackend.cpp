@@ -199,6 +199,9 @@ PYBIND11_MODULE(NAME, m) {
         .value("gain_limit_toggle", RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE)
         .value("emitter_frequency", RS2_OPTION_EMITTER_FREQUENCY)
         .value("depth_auto_exposure_mode", RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE)
+        .value("safety_preset_active_index", RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX)
+        .value("safety_mode", RS2_OPTION_SAFETY_MODE)
+        .value("rgb_tnr_enabled", RS2_OPTION_RGB_TNR_ENABLED)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");

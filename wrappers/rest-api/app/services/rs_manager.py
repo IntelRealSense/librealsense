@@ -731,7 +731,7 @@ class RealSenseManager:
                                     motion_data = None
                                     frame_data = None
                                     for f in frames:
-                                        if f.is_motion_frame():
+                                        if f.get_profile().stream_type().name == stream_type:
                                             frame_data = f.as_motion_frame()
                                             motion_data = frame_data.get_motion_data()
 

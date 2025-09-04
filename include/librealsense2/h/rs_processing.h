@@ -54,6 +54,19 @@ rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error);
 
 /**
+* Creates M420 decoder processing block.
+* This block accepts raw M420 frames and outputs frames of other formats.
+* M420 is a standard format,see:
+*     https://www.kernel.org/doc/html/v4.10/media/uapi/v4l/pixfmt-m420.html
+* Two lines (each of length equal to width of the current resolution) of luminance are followed by
+* One line (of length width) of chrome values.
+* The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
+* best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_m420_decoder(rs2_error** error);
+
+/**
 * Creates y411 decoder processing block. This block accepts raw y411 frames and outputs frames in RGB8.
 *     https://www.fourcc.org/pixel-format/yuv-y411/
 * Y411 is disguised as NV12 to allow Linux compatibility. Both are 12bpp encodings that allow high-resolution
