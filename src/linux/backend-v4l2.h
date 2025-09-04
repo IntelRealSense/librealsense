@@ -407,6 +407,7 @@ namespace librealsense
                                                     const std::vector<std::pair <std::string, std::string>>& sys_to_dev_video_paths);
 
 
+            static bool get_major_minor_from_video_path(const std::string& video_path, unsigned int& major, unsigned int& minor);
             static std::vector<std::pair <std::string, std::string>> generate_sys_to_dev_video_paths(const std::vector<std::string>& video_paths);
             static std::vector<node_info> get_mipi_rs_enum_nodes();
             static std::vector<node_info> collect_uvc_nodes(const std::vector<std::string>& video_paths, const std::vector<node_info>& mipi_rs_enum_nodes,

@@ -560,8 +560,10 @@ namespace librealsense
             while (dirent * entry = readdir(dev_dir))
             {
                 std::string name = entry->d_name;
-                if (name.substr(0, 5) != "video")
+                if (name.compare(0, 5, "video") != 0)
+                {
                     continue;
+                }
                 std::string dev_path = "/dev/" + name;
 
                 struct stat st = {};
@@ -576,7 +578,7 @@ namespace librealsense
             return dev_videos;
         }
 
-        bool get_major_minor_from_video_path(const std::string& video_path, unsigned int& major, unsigned int& minor)
+        bool v4l_uvc_device::get_major_minor_from_video_path(const std::string& video_path, unsigned int& major, unsigned int& minor)
         {
             // dev file is in paths:
             // - /sys/class/video4linux/videoX/dev for video files
@@ -594,7 +596,6 @@ namespace librealsense
 
             std::string dev_line;
             std::getline(dev_file, dev_line);
-            major = 0, minor = 0;
             char sep = '\0';
             std::istringstream iss(dev_line);
             if (!(iss >> major >> sep >> minor) || sep != ':') {
@@ -645,8 +646,10 @@ namespace librealsense
             while (dirent * entry = readdir(dev_dir))
             {
                 std::string name = entry->d_name;
-                if (name.substr(0, 8) != "d4xx-dfu")
+                if (name.compare(0, 8, "d4xx-dfu") != 0)
+                {
                     continue;
+                }
                 std::string dev_path = "/dev/" + name;
 
                 struct stat st = {};
