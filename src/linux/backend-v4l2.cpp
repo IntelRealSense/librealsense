@@ -585,7 +585,7 @@ namespace librealsense
             // - /sys/class/d4xx-class/d4xx-dfu-30-XXXa for mipi dfu files
 
             // dev file contains major_number:minor_number
-            // while major_number is always 81 for video4linux devices and is 506 for d4xx-class devices
+            // while major_number is tipically 81 for video4linux devices and 506 for d4xx-class devices
 
             std::ifstream dev_file(video_path + "/dev");
             if (!dev_file)
@@ -599,7 +599,7 @@ namespace librealsense
             char sep = '\0';
             std::istringstream iss(dev_line);
             if (!(iss >> major >> sep >> minor) || sep != ':') {
-                LOG_ERROR("Could not read major and minor from  " + video_path + "/dev");
+                LOG_ERROR("Could not read major and minor from " + video_path + "/dev");
                 return false;
             }
             return true;
@@ -1351,7 +1351,7 @@ namespace librealsense
             }
             else if(is_mipi_rs_enum_nodes_empty) //video4linux devices that are not USB devices and not previously enumerated by rs links
             {
-                // filter out all posible codecs, work only with compatible driver
+                // filter out all possible codecs, work only with compatible driver
                 static const std::regex rs_mipi_compatible(".vi:|ipu6");
                 info = get_info_from_mipi_device_path(video_path, name);
                 if (regex_search(info.unique_id, rs_mipi_compatible)) {
