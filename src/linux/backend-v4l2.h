@@ -320,7 +320,7 @@ namespace librealsense
 
             static bool is_usb_device_path(const std::string& video_path);
 
-            static uvc_device_info get_info_from_usb_device_path(const std::string& video_path, const std::string& name);
+            static uvc_device_info get_info_from_usb_device_path(const std::string& video_path, const std::string& name, const std::vector<std::pair <std::string, std::string>>& sys_to_dev_video_paths);
 
             static uvc_device_info get_info_from_mipi_device_path(const std::string& video_path, const std::string& name);
 
@@ -403,12 +403,26 @@ namespace librealsense
             virtual inline std::shared_ptr<buffer> get_video_buffer(__u32 index) const {return _buffers[index];}
             virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return nullptr;}
 
-            static bool get_devname_from_video_path(const std::string& real_path, std::string& devname, bool is_for_dfu = false);
+            static bool get_devname_from_video_path(const std::string& real_path, std::string& devname,
+                                                    const std::vector<std::pair <std::string, std::string>>& sys_to_dev_video_paths);
 
 
+            static std::vector<std::pair <std::string, std::string>> generate_sys_to_dev_video_paths(const std::vector<std::string>& video_paths);
             static std::vector<node_info> get_mipi_rs_enum_nodes();
-            static std::vector<node_info> collect_uvc_nodes(const std::vector<std::string>& video_paths, const std::vector<node_info>& mipi_rs_enum_nodes);
+            static std::vector<node_info> collect_uvc_nodes(const std::vector<std::string>& video_paths, const std::vector<node_info>& mipi_rs_enum_nodes,
+                                                            const std::vector<std::pair <std::string, std::string>>& sys_to_dev_video_paths);
             static std::vector<node_info> match_video_with_metadata_nodes(const std::vector<node_info>& uvc_nodes);
+            static bool get_info_from_video_path(const std::string& video_path, uvc_device_info& info, bool is_mipi_rs_enum_nodes_empty,
+                                                 const std::vector<std::pair <std::string, std::string>>& sys_to_dev_video_paths);
+
+            struct path_major_minor
+            {
+                std::string path;
+                unsigned int major;
+                unsigned int minor;
+            };
+            static std::vector<path_major_minor> collect_video_path_major_minor();
+            static bool get_devname_from_mipi_dfu_path(const path_major_minor& dfu_path, std::string& dev_name);
 
             power_state _state = D3;
             std::string _name = "";

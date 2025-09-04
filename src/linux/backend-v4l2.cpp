@@ -545,62 +545,137 @@ namespace librealsense
             }
         }
 
-        bool v4l_uvc_device::get_devname_from_video_path(const std::string& video_path, std::string& dev_name, bool is_for_dfu)
+        std::vector<v4l_uvc_device::path_major_minor> v4l_uvc_device::collect_video_path_major_minor()
         {
-            // CHECK MIPI, DFU CASES!
-            std::ifstream uevent_file(video_path + "/uevent");
-            if (!uevent_file)
-            {
-                LOG_ERROR("Cannot access " + video_path + "/uevent");
-                return false;
-            }
-
-            std::string uevent_line, major_string, minor_string;
-            while (std::getline(uevent_file, uevent_line) && (major_string.empty() || minor_string.empty()))
-            {
-                if (uevent_line.find("MAJOR=") != std::string::npos)
-                {
-                    major_string = uevent_line.substr(uevent_line.find_last_of('=') + 1);
-                }
-                else if (uevent_line.find("MINOR=") != std::string::npos)
-                {
-                    minor_string = uevent_line.substr(uevent_line.find_last_of('=') + 1);
-                }
-            }
-            uevent_file.close();
-
-            if (major_string.empty() || minor_string.empty())
-            {
-                LOG_ERROR("No Major or Minor number found for " + video_path);
-                return false;
-            }
-
-            DIR * dir = opendir("/dev");
-            if (!dir)
+            // building vector of /dev/videoX files with path, major, minor
+            std::vector<path_major_minor> dev_videos;
+            DIR * dev_dir = opendir("/dev");
+            if (!dev_dir)
             {
                 LOG_ERROR("Cannot access /dev");
-                return false;
+                throw linux_backend_exception(rsutils::string::from() << "Cannot access /dev");
             }
-            while (dirent * entry = readdir(dir))
+
+            // searching for match in /dev, in means of major, minor
+            while (dirent * entry = readdir(dev_dir))
             {
                 std::string name = entry->d_name;
-                std::string path = "/dev/" + name;
+                if (name.substr(0, 5) != "video")
+                    continue;
+                std::string dev_path = "/dev/" + name;
 
                 struct stat st = {};
-                if (stat(path.c_str(), &st) < 0)
+                if (stat(dev_path.c_str(), &st) < 0)
                 {
                     continue;
                 }
+                dev_videos.push_back({dev_path, major(st.st_rdev), minor(st.st_rdev)});
+            }
+            closedir(dev_dir);
 
-                if (std::stoi(major_string) == major(st.st_rdev) && std::stoi(minor_string) == minor(st.st_rdev))
+            return dev_videos;
+        }
+
+        bool get_major_minor_from_video_path(const std::string& video_path, unsigned int& major, unsigned int& minor)
+        {
+            // dev file is in paths:
+            // - /sys/class/video4linux/videoX/dev for video files
+            // - /sys/class/d4xx-class/d4xx-dfu-30-XXXa for mipi dfu files
+
+            // dev file contains major_number:minor_number
+            // while major_number is always 81 for video4linux devices and is 506 for d4xx-class devices
+
+            std::ifstream dev_file(video_path + "/dev");
+            if (!dev_file)
+            {
+                LOG_ERROR("Cannot access " + video_path + "/dev");
+                return false;
+            }
+
+            std::string dev_line;
+            std::getline(dev_file, dev_line);
+            major = 0, minor = 0;
+            char sep = '\0';
+            std::istringstream iss(dev_line);
+            if (!(iss >> major >> sep >> minor) || sep != ':') {
+                LOG_ERROR("Could not read major and minor from  " + video_path + "/dev");
+                return false;
+            }
+            return true;
+        }
+
+        std::vector<std::pair <std::string, std::string>> v4l_uvc_device::generate_sys_to_dev_video_paths(const std::vector<std::string>& video_paths)
+        {
+            std::vector<std::pair<std::string, std::string>> sys_to_dev_video_paths;
+            // building vector of /dev/videoX files with path, major, minor
+            std::vector<path_major_minor> dev_videos = collect_video_path_major_minor();
+
+            // going over video paths like /sys/class/video4linux/videoX
+            // find their mapping in /dev/videoY
+            // above videoX and videoY are often the same, but not always - for example when working in unprivileged container
+            for(auto&& video_path : video_paths)
+            {
+                unsigned int major = 0, minor = 0;
+                if (!get_major_minor_from_video_path(video_path, major, minor))
+                    continue;
+
+                // searching for match in /dev, in means of major, minor
+                for (auto&& dev_video : dev_videos)
                 {
-                    dev_name = path;
-                    closedir(dir);
+                    if (major == dev_video.major && minor == dev_video.minor)
+                    {
+                        sys_to_dev_video_paths.push_back(std::make_pair(video_path, dev_video.path));
+                        break;
+                    }
+                }
+            }
+            return sys_to_dev_video_paths;
+        }
+
+        bool v4l_uvc_device::get_devname_from_mipi_dfu_path(const path_major_minor& dfu_path, std::string& dev_name)
+        {
+            DIR * dev_dir = opendir("/dev");
+            if (!dev_dir)
+            {
+                LOG_ERROR("Cannot access /dev");
+                throw linux_backend_exception(rsutils::string::from() << "Cannot access /dev");
+            }
+
+            // searching for match in /dev, in means of major, minor
+            while (dirent * entry = readdir(dev_dir))
+            {
+                std::string name = entry->d_name;
+                if (name.substr(0, 8) != "d4xx-dfu")
+                    continue;
+                std::string dev_path = "/dev/" + name;
+
+                struct stat st = {};
+                if (stat(dev_path.c_str(), &st) < 0)
+                {
+                    continue;
+                }
+                if (major(st.st_rdev) == dfu_path.major && minor(st.st_rdev) == dfu_path.minor)
+                {
+                    dev_name = name;
+                    closedir(dev_dir);
                     return true;
                 }
             }
-            closedir(dir);
+            closedir(dev_dir);
+            return false;
+        }
 
+        bool v4l_uvc_device::get_devname_from_video_path(const std::string& video_path, std::string& dev_name,
+                                                         const std::vector<std::pair <std::string, std::string>>& sys_to_dev_video_paths)
+        {
+            for (auto&& sys_to_dev_pair : sys_to_dev_video_paths)
+            {
+                if (sys_to_dev_pair.first == video_path)
+                {
+                    dev_name = sys_to_dev_pair.second;
+                    return true;
+                }
+            }
             return false;
         }
 
@@ -688,9 +763,15 @@ namespace librealsense
                     {
                         continue;
                     }
+                    unsigned int major = 0, minor = 0;
+                    if (!get_major_minor_from_video_path(real_path, major, minor))
+                    {
+                        continue;
+                    }
+
+                    path_major_minor dfu_path {real_path, major, minor};
                     std::string devname;
-                    bool for_dfu = true;
-                    if (get_devname_from_video_path(real_path, devname, for_dfu))
+                    if (get_devname_from_mipi_dfu_path(dfu_path, devname))
                     {
                         if (devname.empty())
                         {
@@ -748,10 +829,11 @@ namespace librealsense
             return valid_path;
         }
 
-        uvc_device_info v4l_uvc_device::get_info_from_usb_device_path(const std::string& video_path, const std::string& name)
+        uvc_device_info v4l_uvc_device::get_info_from_usb_device_path(const std::string& video_path, const std::string& name,
+                                                                      const std::vector<std::pair <std::string, std::string>>& sys_to_dev_video_paths)
         {
             std::string busnum, devnum, devpath, dev_name;
-            if (!get_devname_from_video_path(video_path, dev_name))
+            if (!get_devname_from_video_path(video_path, dev_name, sys_to_dev_video_paths))
             {
                 throw linux_backend_exception(rsutils::string::from() << "Unable to find dev_name from video_path: " << video_path);
             }
@@ -1251,7 +1333,38 @@ namespace librealsense
             return uvc_devices;
         }
 
-        std::vector<node_info> v4l_uvc_device::collect_uvc_nodes(const std::vector<std::string>& video_paths, const std::vector<node_info>& mipi_rs_enum_nodes)
+        bool v4l_uvc_device::get_info_from_video_path(const std::string& video_path, uvc_device_info& info, bool is_mipi_rs_enum_nodes_empty,
+                                                      const std::vector<std::pair <std::string, std::string>>& sys_to_dev_video_paths)
+        {
+            bool res = false;
+
+            // following line grabs video0 from "/sys/devices/.../video0" paths
+            auto name = video_path.substr(video_path.find_last_of('/') + 1);
+
+            if (is_usb_device_path(video_path))
+            {
+                info = get_info_from_usb_device_path(video_path, name, sys_to_dev_video_paths);
+                res = true;
+            }
+            else if(is_mipi_rs_enum_nodes_empty) //video4linux devices that are not USB devices and not previously enumerated by rs links
+            {
+                // filter out all posible codecs, work only with compatible driver
+                static const std::regex rs_mipi_compatible(".vi:|ipu6");
+                info = get_info_from_mipi_device_path(video_path, name);
+                if (regex_search(info.unique_id, rs_mipi_compatible)) {
+                    res = true;
+                }
+            }
+            else // continue as we already have mipi nodes enumerated by rs links in uvc_nodes
+            {
+                // empty
+            }
+            return res;
+        }
+
+        std::vector<node_info> v4l_uvc_device::collect_uvc_nodes(const std::vector<std::string>& video_paths,
+                                                                 const std::vector<node_info>& mipi_rs_enum_nodes,
+                                                                 const std::vector<std::pair <std::string, std::string>>& sys_to_dev_video_paths)
         {
             std::vector<node_info> uvc_nodes;
             // Append mipi nodes to uvc nodes list
@@ -1259,34 +1372,17 @@ namespace librealsense
             {
                 uvc_nodes.insert(uvc_nodes.end(), mipi_rs_enum_nodes.begin(), mipi_rs_enum_nodes.end());
             }
+
             for(auto&& video_path : video_paths)
             {
-                // following line grabs video0 from "/sys/devices/.../video0" paths
-                auto name = video_path.substr(video_path.find_last_of('/') + 1);
-
                 try
                 {
-                    uvc_device_info info{};
-                    if (is_usb_device_path(video_path))
-                    {
-                        info = get_info_from_usb_device_path(video_path, name);
-                    }
-                    else if(mipi_rs_enum_nodes.empty()) //video4linux devices that are not USB devices and not previously enumerated by rs links
-                    {
-                        // filter out all posible codecs, work only with compatible driver
-                        static const std::regex rs_mipi_compatible(".vi:|ipu6");
-                        info = get_info_from_mipi_device_path(video_path, name);
-                        if (!regex_search(info.unique_id, rs_mipi_compatible)) {
-                            continue;
-                        }
-                    }
-                    else // continue as we already have mipi nodes enumerated by rs links in uvc_nodes
-                    {
+                    uvc_device_info info;
+                    if (!get_info_from_video_path(video_path, info, mipi_rs_enum_nodes.empty(), sys_to_dev_video_paths))
                         continue;
-                    }
 
                     std::string dev_name;
-                    if (get_devname_from_video_path(video_path, dev_name))
+                    if (get_devname_from_video_path(video_path, dev_name, sys_to_dev_video_paths))
                     {
                         uvc_nodes.emplace_back(info, dev_name);
                     }
@@ -1304,10 +1400,11 @@ namespace librealsense
                                    const std::string&)> action)
         {
             std::vector<std::string> video_paths = get_video_paths();
+            auto sys_to_dev_video_paths = generate_sys_to_dev_video_paths(video_paths);
             std::vector<node_info> mipi_rs_enum_nodes = get_mipi_rs_enum_nodes();
 
             // Collect UVC nodes info to bundle metadata and video
-            std::vector<node_info> uvc_nodes = collect_uvc_nodes(video_paths, mipi_rs_enum_nodes);
+            std::vector<node_info> uvc_nodes = collect_uvc_nodes(video_paths, mipi_rs_enum_nodes, sys_to_dev_video_paths);
 
             // Matching video and metadata nodes
             std::vector<node_info> uvc_devices = match_video_with_metadata_nodes(uvc_nodes);
