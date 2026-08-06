@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+src-tauri/resources/realsense_api/
 
 # IDE
 .vscode/
