@@ -34,25 +34,23 @@ namespace librealsense
         _mipi.perform_dfu_write( _dfu_device_path, fw_image,
                                  static_cast< std::size_t >( fw_image_size ),
                                  update_progress_callback, estimated_seconds,
-                                 [this, update_progress_callback]() {
-                                     // Wait for the FW's own dfuMANIFEST_WAIT_RESET → dfuIDLE
-                                     // reset to complete before we send our HWRST. On the HKR
-                                     // proto, an HWRST arriving mid-manifest-reset is interpreted
-                                     // as a recovery-mode request and leaves the device in
-                                     // DFU/recovery instead of booting the new operational image.
+                                 []() {
+                                     // Wait inside perform_dfu_write's pause guards so the
+                                     // poller and options-watchers stay quiet while HKR
+                                     // completes its dfuMANIFEST_WAIT_RESET → dfuIDLE reboot.
+                                     // HWRST mid-manifest-reset is treated as a recovery
+                                     // request, so we defer it past this window.
                                      std::this_thread::sleep_for( std::chrono::seconds( 10 ) );
-                                     // Now the FW is on the new operational image — a normal
-                                     // hardware_reset kicks off simulate_device_reconnect so the
-                                     // SDK re-enumerates the device transparently.
-                                     hardware_reset();
-                                     std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
-                                     // Terminal 100% only after the post-DFU reset is done, so
-                                     // the viewer's DFU dialog transitions to the OK state at
-                                     // the moment the device is really back — not the moment
-                                     // the DFU chardev closed.
-                                     if( update_progress_callback )
-                                         update_progress_callback->on_update_progress( 1.f );
                                  } );
+
+        // Run HWRST after perform_dfu_write returns so ds_device_common::
+        // hardware_reset()'s inner options_watcher_pause_guard is not nested
+        // inside the outer one (plain-bool pause would unpause the surroundings
+        // on the inner dtor).
+        hardware_reset();
+        std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
+        if( update_progress_callback )
+            update_progress_callback->on_update_progress( 1.f );
     }
 
     void d500_mipi_device::hardware_reset() const

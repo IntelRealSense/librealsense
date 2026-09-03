@@ -4,13 +4,13 @@
 #include "ds-mipi-device.h"
 #include "ds-device-common.h"
 #include "error-handling.h"
+#include "librealsense-exception.h"
 #include "types.h"
 
 #include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <fstream>
-#include <stdexcept>
 #include <string>
 #include <thread>
 
@@ -38,7 +38,14 @@ namespace librealsense
             polling_error_handler * p;
             unsigned interval;
             bool was_active;
-            ~poller_gate() { if( p && was_active ) p->start( interval ); }
+            ~poller_gate() {
+                if( ! p || ! was_active ) return;
+                // start() spins up a dispatcher thread and can throw std::system_error;
+                // swallow it here so we never std::terminate from a destructor.
+                try { p->start( interval ); }
+                catch( const std::exception & e ) { LOG_ERROR( "polling_error_handler restart failed: " << e.what() ); }
+                catch( ... ) { LOG_ERROR( "polling_error_handler restart failed (unknown)" ); }
+            }
         };
         poller_gate _pg{ _error_poller.get(),
                          _error_poller ? _error_poller->get_polling_interval() : 0,
@@ -47,7 +54,7 @@ namespace librealsense
 
         std::ofstream fw_path_in_device( dfu_path.c_str(), std::ios::binary );
         if( ! fw_path_in_device )
-            throw std::runtime_error( "Firmware Update failed - wrong path or permissions missing: " + dfu_path );
+            throw io_exception( "Firmware Update failed - wrong path or permissions missing: " + dfu_path );
 
         // Progress + heartbeat thread; RAII joiner covers the throw path too.
         std::atomic< bool > done{ false };
@@ -74,11 +81,11 @@ namespace librealsense
 
         fw_path_in_device.write( reinterpret_cast< const char * >( fw_image ), fw_image_size );
         if( ! fw_path_in_device )
-            throw std::runtime_error( "Firmware Update failed - DFU chardev write error: " + dfu_path );
+            throw io_exception( "Firmware Update failed - DFU chardev write error: " + dfu_path );
 
         fw_path_in_device.close();
         if( ! fw_path_in_device )
-            throw std::runtime_error( "Firmware Update failed - DFU chardev flush/close error: " + dfu_path );
+            throw io_exception( "Firmware Update failed - DFU chardev flush/close error: " + dfu_path );
 
         // Stop the heartbeat here. The terminal on_update_progress(1.0f) is the
         // caller's responsibility — it must fire only after the caller's own

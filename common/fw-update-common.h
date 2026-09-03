@@ -31,16 +31,6 @@ namespace fw_update
         return pid == "BBCD" || pid == "BBDD"; // D4xx / D5xx MIPI recovery
     }
 
-    // Operational D5xx over GMSL: after DFU the HKR stays in bootloader and the
-    // d4xx driver has to be reloaded before the camera comes back. D4xx MIPI does
-    // not need this.
-    inline bool is_mipi_d5xx_device( const rs2::device & dev )
-    {
-        if( ! is_mipi_device( dev ) ) return false;
-        if( ! dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) ) return false;
-        return std::string( dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) ) == "D500";
-    }
-
     // Returns false when firmware is not compatible, true otherwise.
     // Throws if the device cannot be used as updatable.
     inline bool check_fw_compatibility( const rs2::device & dev,

@@ -333,7 +333,7 @@ namespace librealsense
         std::ofstream fw_path_in_device(_physical_port.c_str(), std::ios::binary);
         if (!fw_path_in_device)
         {
-            throw std::runtime_error("Firmware Update failed - wrong path or permissions missing");
+            throw io_exception("Firmware Update failed - wrong path or permissions missing");
             return;
         }
         while (remaining_bytes > 0)
@@ -344,8 +344,8 @@ namespace librealsense
 
             fw_path_in_device.write(reinterpret_cast<const char*>(curr_block), chunk_size);
             if (!fw_path_in_device)
-                throw std::runtime_error("Firmware Update failed - DFU chardev write error at offset "
-                                         + std::to_string(offset));
+                throw io_exception("Firmware Update failed - DFU chardev write error at offset "
+                                   + std::to_string(offset));
 
             block_number++;
             remaining_bytes -= chunk_size;
@@ -358,7 +358,7 @@ namespace librealsense
         }
         fw_path_in_device.close();
         if (!fw_path_in_device)
-            throw std::runtime_error("Firmware Update failed - DFU chardev flush/close error");
+            throw io_exception("Firmware Update failed - DFU chardev flush/close error");
         LOG_INFO("Firmware Update for MIPI device done.");
     }
 

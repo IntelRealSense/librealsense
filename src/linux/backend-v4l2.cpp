@@ -815,25 +815,52 @@ namespace librealsense
             return dfu_paths;
         }
 
-        // Read the DT `compatible` of the parent I2C client for a d4xx DFU chardev.
-        // Resolves via /sys/class/d4xx-class/<devname>/device — the driver-registered
-        // symlink to the owning i2c client — which works for both chardev naming
-        // schemes present in-tree (`d4xx-dfu-<adapter>-<addr>` and the shorter
-        // `d4xx-dfu-<index>` from rs_enum_dfu_node_path()). Returns true when any
-        // entry of the compatible list equals "realsense,d5xx". DT `compatible`
-        // is a concatenation of NUL-terminated strings, so we walk tokens rather
-        // than substring-search (avoids matching a hypothetical "realsense,d5xxfoo").
+        // True iff the string looks like a kernel i2c client id — digits, one
+        // '-', then hex. Kernel uses snprintf("%d-%04x", adapter, addr).
+        static bool is_i2c_id_shape(const std::string& s)
+        {
+            auto sep = s.find('-');
+            if (sep == std::string::npos || sep == 0 || sep + 1 >= s.size())
+                return false;
+            auto is_digit = [](char c) { return c >= '0' && c <= '9'; };
+            auto is_hex   = [](char c) {
+                return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+            };
+            return std::all_of(s.begin(), s.begin() + sep, is_digit)
+                && std::all_of(s.begin() + sep + 1, s.end(), is_hex);
+        }
+
+        // Extract the i2c client id ("<adapter>-<addr>") from a DFU chardev name.
+        // The driver names its CONFIG_OF chardev "d4xx-dfu-<adapter>-<addr>";
+        // the rs-enum path uses the shorter "d4xx-dfu-<index>" form for which
+        // per-i2c resolution is not possible. Returns "" on any non-conforming
+        // name — callers fall back accordingly.
+        static std::string dfu_devname_to_i2c_id(const std::string& dfu_devname)
+        {
+            static const std::string prefix = "d4xx-dfu-";
+            if (dfu_devname.compare(0, prefix.size(), prefix) != 0)
+                return {};
+            std::string rest = dfu_devname.substr(prefix.size());
+            return is_i2c_id_shape(rest) ? rest : std::string{};
+        }
+
+        // Read the DT `compatible` of a DFU chardev's owning i2c client via
+        // /sys/bus/i2c/devices/<adapter>-<addr>/of_node/compatible. Returns
+        // true when any entry equals "realsense,d5xx". `compatible` is a
+        // concatenation of NUL-terminated strings, so we walk tokens rather
+        // than substring-search (avoids matching "realsense,d5xxfoo").
+        // Returns false for rs-enum-style short chardev names that cannot be
+        // resolved to an i2c address.
         static bool mipi_dfu_devname_is_d5xx(const std::string& dfu_devname)
         {
-            std::string parent_link = "/sys/class/d4xx-class/" + dfu_devname + "/device";
-            char parent_real[PATH_MAX] = {0};
-            if (realpath(parent_link.c_str(), parent_real) == nullptr)
+            std::string i2c_id = dfu_devname_to_i2c_id(dfu_devname);
+            if (i2c_id.empty())
             {
-                LOG_DEBUG("MIPI DFU family detection: cannot resolve " << parent_link
-                          << ", defaulting to D4xx");
+                LOG_DEBUG("MIPI DFU family detection: cannot parse i2c id from "
+                          << dfu_devname << ", defaulting to D4xx");
                 return false;
             }
-            std::string compat_path = std::string(parent_real) + "/of_node/compatible";
+            std::string compat_path = "/sys/bus/i2c/devices/" + i2c_id + "/of_node/compatible";
             std::ifstream compat_in(compat_path, std::ios::binary);
             if (!compat_in)
             {

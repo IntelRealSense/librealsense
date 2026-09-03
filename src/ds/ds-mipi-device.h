@@ -16,12 +16,9 @@ namespace librealsense
     class ds_device_common;
     class polling_error_handler;
 
-    // Shared MIPI DFU write flow used by d400_mipi_device and d500_mipi_device.
-    // Single-shot ofstream write of the whole image: the kernel driver's
-    // ds5_dfu_device_write processes the entire DFU inside one syscall holding
-    // state->lock, so concurrent I2C on the bus is impossible. A background
-    // thread emits progress-callback ticks and a 30 s heartbeat log while the
-    // write blocks; it is joined on any exit path via RAII.
+    // Shared MIPI DFU write helper. Single-shot ofstream write of the whole
+    // image; a background thread emits progress ticks and a 30 s heartbeat log
+    // while the write blocks and is joined on any exit path via RAII.
     class ds_mipi_device
     {
     public:

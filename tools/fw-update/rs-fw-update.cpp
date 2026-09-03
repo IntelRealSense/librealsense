@@ -518,9 +518,6 @@ try
                 if (result != EXIT_SUCCESS)
                     return result;
             }
-
-            // Operational D5xx GMSL now recovers through hardware_reset(); fall
-            // through so the SDK context processes its fake device-change events.
         }
     }
 

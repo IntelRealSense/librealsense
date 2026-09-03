@@ -728,13 +728,15 @@ namespace librealsense
         register_info( RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str );
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D500");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
-        if( _is_mipi_device )
+        const std::string & dfu_path = group.uvc_devices.front().dfu_device_path;
+        // Skip update_device registration when no DFU chardev was resolved; otherwise
+        // the device advertises RS2_EXTENSION_UPDATE_DEVICE, viewer offers "Update
+        // Firmware", and it fails at the ofstream with an empty path.
+        if( _is_mipi_device && ! dfu_path.empty() )
         {
-            register_info( RS2_CAMERA_INFO_DFU_DEVICE_PATH, group.uvc_devices.front().dfu_device_path );
+            register_info( RS2_CAMERA_INFO_DFU_DEVICE_PATH, dfu_path );
             _mipi_device = std::make_unique< d500_mipi_device >(
-                group.uvc_devices.front().dfu_device_path,
-                _ds_device_common,
-                _polling_error_handler );
+                dfu_path, _ds_device_common, _polling_error_handler );
         }
 
         if (_pid == D585S_PID)
