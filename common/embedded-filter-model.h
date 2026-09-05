@@ -69,6 +69,14 @@ namespace rs2
         }
         bool is_enabled() const { return _enabled; }
 
+        // The composite option's own synced enabled field - unlike is_enabled() (which defaults
+        // true before any sync), this defaults false until the editor actually reads the device,
+        // so an unpopulated/never-drawn filter reads as disabled rather than enabled.
+        bool is_decimation_filter_dpp_enabled() const
+        {
+            return _decimation_filter_dpp_editor.initialized && _decimation_filter_dpp_editor.value.enabled != 0;
+        }
+
         bool _is_visible = true;
 
         // Optional predicate; null means always available. When false the enable toggle is
@@ -200,6 +208,11 @@ namespace rs2
         // Per-field manual-entry toggle state for the single magnitude field.
         bool _decimation_filter_dpp_magnitude_edit_mode = false;
         std::string _decimation_filter_dpp_magnitude_edit_buf;
+
+        // Magnitude range, fetched once (draw_decimation_filter_dpp_fields() used to query it on
+        // every draw call - a real device round-trip in the render loop).
+        rs2_decimation_filter_dpp_range _decimation_filter_dpp_range{};
+        bool _decimation_filter_dpp_range_initialized = false;
 
         // Same scheme as _decimation_filter_dpp_editor above, for RS2_COMPOSITE_OPTION_TEMPORAL_FILTER_DPP.
         composite_control_editor< rs2_temporal_filter_dpp_config > _temporal_filter_dpp_editor;

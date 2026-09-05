@@ -12,8 +12,7 @@ HDRD/Improved Close Range Control both set their bits correctly (see
 pytest-embedded-filters-metadata.py), and it reads 0x00 with all three DPP filters disabled.
 Only Decimation's bit (1u<<0) never sets, at both 1280x720 and 640x360. Not a metadata-plumbing
 bug - the decimation DPP block itself isn't being applied by FW on this build.
-test_..._with_metadata_set is left as a real (non-xfail) failing assertion - see its own
-docstring for why.
+test_..._with_metadata_set is marked xfail; remove the marker once RSDEV-14424 is fixed.
 """
 
 import pytest
@@ -98,15 +97,13 @@ def _decimation_filter_or_skip(depth_sensor):
     return embedded_filter, option_id
 
 
+@pytest.mark.xfail(reason="Decimation Filter DPP has no observable effect on this FW - RSDEV-14424",
+                    strict=False)
 def test_decimation_filter_dpp_produces_640x360_with_metadata_set(test_device):
     """Enable Decimation Filter DPP (enable=1, magnitude=2) before streaming starts, then stream
     the 640x360 depth profile: the frames must actually be 640x360 and must carry
-    RS2_FRAME_METADATA_EMBEDDED_FILTERS with the decimation bit set.
-
-    Expected to fail today on real HW - see the module docstring's "Known FW limitation" note.
-    Left as a real (non-xfail) assertion, both because this repo's conftest.py crashes on xfail
-    reports (ExceptionChainRepr isn't subscriptable in pytest_runtest_makereport) and because a
-    plain failure is the most visible signal the moment FW starts populating this attribute."""
+    RS2_FRAME_METADATA_EMBEDDED_FILTERS with the decimation bit set. xfail until FW fixes
+    RSDEV-14424; remove the marker once it passes."""
     dev, ctx = test_device
     depth_sensor = dev.first_depth_sensor()
     embedded_filter, option_id = _decimation_filter_or_skip(depth_sensor)

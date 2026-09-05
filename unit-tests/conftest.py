@@ -432,7 +432,9 @@ def pytest_runtest_makereport(item, call):
 
     if report.skipped:
         ensure_newline()
-        reason = report.longrepr[-1]
+        # An xfailed test reports skipped with wasxfail set and longrepr as an ExceptionChainRepr
+        # (not the (file, lineno, reason) tuple a plain pytest.skip() produces).
+        reason = report.wasxfail if getattr(report, "wasxfail", None) is not None else report.longrepr[-1]
         log.info(reason)
     # Call-phase failures are logged from pytest_runtest_call (one place for every attempt);
     # here we cover setup/teardown.

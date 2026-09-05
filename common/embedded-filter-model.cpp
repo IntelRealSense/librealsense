@@ -293,24 +293,31 @@ namespace rs2
                           : draw_decimation_filter_dpp_slider_with_arrows( id, value, min_v, max_v );
     }
 
-    // Draws the single magnitude field. Range comes live from the device
-    // (get_composite_option_range_as() below), not hardcoded - FW currently reports a fixed
-    // [2,2] (or wider on newer builds), but this editor doesn't assume that stays fixed.
+    // Draws the single magnitude field. Range is fetched once (see _decimation_filter_dpp_range)
+    // rather than on every draw call - this runs every frame the panel is open.
     bool embedded_filter_model::draw_decimation_filter_dpp_fields()
     {
         int magnitude_min = _decimation_filter_dpp_editor.value.magnitude;
         int magnitude_max = _decimation_filter_dpp_editor.value.magnitude;
-        try
+        if( ! _decimation_filter_dpp_range_initialized )
         {
-            auto range = _embedded_filter->get_composite_option_range_as< rs2_decimation_filter_dpp_range >(
-                RS2_COMPOSITE_OPTION_DECIMATION_FILTER_DPP );
-            magnitude_min = range.min.magnitude;
-            magnitude_max = range.max.magnitude;
+            try
+            {
+                _decimation_filter_dpp_range = _embedded_filter->get_composite_option_range_as< rs2_decimation_filter_dpp_range >(
+                    RS2_COMPOSITE_OPTION_DECIMATION_FILTER_DPP );
+                _decimation_filter_dpp_range_initialized = true;
+            }
+            catch( const std::exception & )
+            {
+                // Best-effort range only - fall back to a degenerate [current,current] slider
+                // rather than disrupting the rest of the editor over a failed range query. Not
+                // marked initialized, so a later frame can retry.
+            }
         }
-        catch( const std::exception & )
+        if( _decimation_filter_dpp_range_initialized )
         {
-            // Best-effort range only - fall back to a degenerate [current,current] slider rather
-            // than disrupting the rest of the editor over a failed range query.
+            magnitude_min = _decimation_filter_dpp_range.min.magnitude;
+            magnitude_max = _decimation_filter_dpp_range.max.magnitude;
         }
 
         bool any_field_active = draw_decimation_filter_dpp_manual_editable_field( "Magnitude:", "decimation_filter_dpp_magnitude",
