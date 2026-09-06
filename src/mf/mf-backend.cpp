@@ -490,11 +490,11 @@ namespace librealsense
                             // whatever exists, which is what lets a genuinely partial device
                             // through.
                             //
-                            // 8s covers the widest interface spread measured on a D585 (4.6s
-                            // cold plug, 6.5s from a premature publish to the complete one
-                            // after a firmware update) without making a real partial device
-                            // wait any longer than it has to.
-                            static constexpr auto MAX_DEFERRAL = std::chrono::seconds( 8 );
+                            // The widest interface spread measured was 6.5s, on a D585 going
+                            // from a premature publish to the complete device after a firmware
+                            // update (4.6s on a cold plug); 10s keeps a margin over that
+                            // without making a real partial device wait longer than it has to.
+                            static constexpr auto MAX_DEFERRAL = std::chrono::seconds( 10 );
                             auto const now = std::chrono::steady_clock::now();
                             auto const incomplete = incomplete_composites( curr );
                             for( auto it = _data._incomplete_since.begin(); it != _data._incomplete_since.end(); )

@@ -265,7 +265,7 @@ udev_device_watcher::udev_device_watcher( const platform::backend * backend )
             // of other devices are still reported immediately. Each device gets its own
             // budget: once that is spent we publish whatever it has, which is what lets
             // a genuinely partial device through.
-            static constexpr auto MAX_WAIT = std::chrono::seconds( 8 );
+            static constexpr auto MAX_WAIT = std::chrono::seconds( 10 );
             auto const now = std::chrono::steady_clock::now();
             auto incomplete = incomplete_devices( curr );
             for( auto it = _incomplete_since.begin(); it != _incomplete_since.end(); )
