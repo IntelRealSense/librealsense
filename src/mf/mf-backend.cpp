@@ -248,25 +248,19 @@ namespace librealsense
             return true;
         }
 
-        // Returns the unique_ids of USB composites still mid-enumeration, so an arrival
-        // can wait rather than publish a device that comes up missing sensors. The
-        // composite's device-tree children come from its USB configuration descriptor,
-        // which makes them the authoritative set to expect.
+        // Returns the unique_ids of USB composites whose IMU has not surfaced yet, so an
+        // arrival can wait rather than publish a camera that comes up without its Motion
+        // Module. The composite's device-tree children come from its USB configuration
+        // descriptor, which makes them the authoritative set to expect.
         static std::set< std::string > incomplete_composites( platform::backend_device_group const & curr )
         {
             std::set< std::string > sensor_api_uids;
             for( auto && h : curr.hid_devices )
                 sensor_api_uids.insert( h.unique_id );
 
-            // Each USB composite shows up as the PARENT of any of its MI_xx interfaces.
-            // We discover composites via the UVC entries and remember which of their
-            // interface nodes Media Foundation has already given us.
-            struct composite_info
-            {
-                std::string unique_id;
-                std::set< DEVINST > surfaced_uvc_nodes;
-            };
-            std::map< DEVINST, composite_info > composites;
+            // Each USB composite shows up as the PARENT of any of its MI_xx interfaces,
+            // so we discover composites via the UVC entries.
+            std::map< DEVINST, std::string > composites;
             for( auto && uvc : curr.uvc_devices )
             {
                 std::wstring path( uvc.device_path.begin(), uvc.device_path.end() );
@@ -276,37 +270,26 @@ namespace librealsense
                 cm_node composite = iface.get_parent();
                 if( ! composite.valid() )
                     continue;
-                composite_info & info = composites[composite.get()];
-                info.unique_id = uvc.unique_id;
-                info.surfaced_uvc_nodes.insert( iface.get() );
+                composites[composite.get()] = uvc.unique_id;
             }
 
             std::set< std::string > incomplete;
             for( auto const & entry : composites )
             {
-                composite_info const & info = entry.second;
+                std::string const & unique_id = entry.second;
                 cm_node child = cm_node( entry.first ).get_child();
                 while( child.valid() )
                 {
                     // DEVPKEY_Device_Class is the human-readable class name assigned by
                     // Windows ("Camera", "HIDClass", "Ports", ...).
-                    std::string const device_class = child.get_property( DEVPKEY_Device_Class );
-                    if( device_class == "Camera" )
-                    {
-                        if( ! info.surfaced_uvc_nodes.count( child.get() ) )
-                        {
-                            incomplete.insert( info.unique_id );
-                            break;
-                        }
-                    }
-                    else if( device_class == "HIDClass" )
+                    if( child.get_property( DEVPKEY_Device_Class ) == "HIDClass" )
                     {
                         cm_node hid_instance = child.get_child();
                         if( ! hid_instance.valid() )
                         {
                             // Nothing attached under the HID interface yet - the OS is
                             // still binding a driver to it.
-                            incomplete.insert( info.unique_id );
+                            incomplete.insert( unique_id );
                             break;
                         }
                         // Only a HID Sensor Collection surfaces through the Sensor API,
@@ -323,9 +306,9 @@ namespace librealsense
                                 break;
                             }
                         }
-                        if( is_sensor_collection && ! sensor_api_uids.count( info.unique_id ) )
+                        if( is_sensor_collection && ! sensor_api_uids.count( unique_id ) )
                         {
-                            incomplete.insert( info.unique_id );
+                            incomplete.insert( unique_id );
                             break;
                         }
                     }
