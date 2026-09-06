@@ -4,7 +4,9 @@
 #include "udev-device-watcher.h"
 
 #include <dirent.h>
+#include <limits.h>
 #include <poll.h>
+#include <stdlib.h>
 
 #include <chrono>
 #include <fstream>
@@ -56,6 +58,26 @@ namespace {
     }
 
 
+    // A HID interface is only interesting here if it carries the IMU. On Linux the IMU
+    // surfaces as an IIO sensor behind hid-sensor-hub; a button or vendor HID interface
+    // binds hid-generic and never reaches the HID backend at all, so waiting on one
+    // would hold its device back for the whole budget on every arrival.
+    bool is_sensor_hid( std::string const & iface_dir )
+    {
+        for( auto && entry : list_dir( iface_dir ) )
+        {
+            if( entry.compare( 0, 5, "0003:" ) != 0 )   // the HID device the kernel created
+                continue;
+            char resolved[PATH_MAX];
+            if( ! realpath( ( iface_dir + "/" + entry + "/driver" ).c_str(), resolved ) )
+                return true;   // created but not bound yet - still settling, so wait
+            std::string const driver = resolved;
+            return driver.substr( driver.rfind( '/' ) + 1 ) == "hid-sensor-hub";
+        }
+        return true;   // no HID device yet - still settling
+    }
+
+
     // Returns the unique_ids of USB devices still mid-enumeration, so an arrival can
     // wait rather than publish a device that comes up missing sensors. A device's sysfs
     // interfaces come from its USB configuration descriptor, which makes them the
@@ -101,7 +123,7 @@ namespace {
                         break;
                     }
                 }
-                else if( cls == "03" )   // HID - the IMU on an IMU-bearing camera
+                else if( cls == "03" && is_sensor_hid( iface ) )   // the IMU
                 {
                     if( ! hid_uids.count( uid ) )
                     {
