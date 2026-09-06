@@ -2151,8 +2151,18 @@ namespace rs2
                     break;
                 }
             }
-            if (embedded_decimation &&
-                embedded_decimation->get_filter()->get_option(RS2_OPTION_EMBEDDED_FILTER_ENABLED))
+            // The USB/composite-option Decimation filter never registers this scalar option - its
+            // enable lives in the composite struct instead, so fall back to the editor's own
+            // synced value for that case.
+            bool decimation_enabled = false;
+            if (embedded_decimation)
+            {
+                if (embedded_decimation->get_filter()->supports(RS2_OPTION_EMBEDDED_FILTER_ENABLED))
+                    decimation_enabled = embedded_decimation->get_filter()->get_option(RS2_OPTION_EMBEDDED_FILTER_ENABLED) != 0;
+                else
+                    decimation_enabled = embedded_decimation->is_decimation_filter_dpp_enabled();
+            }
+            if (decimation_enabled)
             {
                 // check if resolution is different from 640 X 360
                 int width = 0;
