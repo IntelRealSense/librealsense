@@ -845,7 +845,12 @@ namespace librealsense
                 }
             }
 
-            if ((val_in_range(_pid, { RS455_PID, RS457_PID })) && (_fw_version >= firmware_version("5.12.11.0")))
+            // D455 drives the thermal loop over its depth XU control, D457 over the HWM TC_CMD
+            // opcode - gated on the last major release rather than the D455 XU baseline.
+            const bool thermal_compensation_supported
+                = ( _pid == RS455_PID && _fw_version >= firmware_version( "5.12.11.0" ) )
+               || ( _pid == RS457_PID && _fw_version >= firmware_version( "5.17.0.10" ) );
+            if( thermal_compensation_supported )
             {
                 std::shared_ptr< option > thermal_compensation_toggle;
                 if( _is_mipi_device )
