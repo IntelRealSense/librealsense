@@ -52,10 +52,9 @@ namespace librealsense
         if( ! hwm )
             throw wrong_api_call_sequence_exception( "hw monitor is not available for thermal compensation" );
 
-        const int tc_switch = 5;  // TC_CMD sub-command selecting the thermal loop on/off switch
         try
         {
-            command cmd( ds::TC_CMD, tc_switch, value > 0 ? 1 : 0 );
+            command cmd( ds::TC_CMD, ds::TC_CMD_SWITCH, value > 0 ? 1 : 0 );
             hwm->send( cmd );
         }
         catch( const std::exception & e )

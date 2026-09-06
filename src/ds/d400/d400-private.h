@@ -171,6 +171,10 @@ namespace librealsense
             AE_ACCEL_PARAMS    = 0x95, // Get/Set Accelerated AE tuning parameters, FW >= 5.17.3.20
         };
 
+        // TC_CMD param1 selecting the thermal loop on/off switch. The other sub-commands write the
+        // calibration T0 values and flash the table, so the selector must be explicit.
+        const uint8_t TC_CMD_SWITCH = 5;
+
         inline std::string d400_fw_cmd2str(const d400_fw_cmd state)
         {
             switch (state)
