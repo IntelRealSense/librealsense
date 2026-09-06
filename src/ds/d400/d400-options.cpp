@@ -38,6 +38,34 @@ namespace librealsense
         return option_range{ -40, 125, 0, 0 };
     }
 
+    thermal_compensation_option_mipi::thermal_compensation_option_mipi( std::shared_ptr< hw_monitor > hwm )
+        : _hw_monitor( hwm )
+    {}
+
+    void thermal_compensation_option_mipi::set( float value )
+    {
+        if( value < 0 )
+            throw invalid_value_exception( "Invalid input for thermal compensation toggle: " + std::to_string( value ) );
+
+        auto hwm = _hw_monitor.lock();
+        if( ! hwm )
+            throw wrong_api_call_sequence_exception( "hw monitor is not available for thermal compensation" );
+
+        const int tc_switch = 5;  // TC_CMD sub-command selecting the thermal loop on/off switch
+        try
+        {
+            command cmd( ds::TC_CMD, tc_switch, value > 0 ? 1 : 0 );
+            hwm->send( cmd );
+        }
+        catch( ... )
+        {
+            throw wrong_api_call_sequence_exception( "hw monitor command for setting thermal compensation failed" );
+        }
+
+        _value = value > 0 ? 1.f : 0.f;
+        _recording_function( *this );
+    }
+
     projector_temperature_option_mipi::projector_temperature_option_mipi(std::shared_ptr<hw_monitor> hwm, rs2_option opt)
         : _hw_monitor(hwm), _option(opt)
     {}

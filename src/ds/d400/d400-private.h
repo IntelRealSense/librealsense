@@ -165,6 +165,7 @@ namespace librealsense
             CALIBRECALC        = 0x51, // Calibration recalc and update on the fly
             SETINTCALNEW       = 0x62, // Set Internal sub calibration table (new format)
             ASIC_TEMP_MIPI     = 0x7A, // get ASIC temperature - with mipi device
+            TC_CMD             = 0x84, // Thermal compensation command, param1 selects the sub-command
             GETAELIMITS        = 0x89, // Auto Exp/Gain Limit command FW version >= 5.13.0.200
             SETAELIMITS        = 0x8A, // Auto Exp/Gain Limit command FW version >= 5.13.0.200
             AE_ACCEL_PARAMS    = 0x95, // Get/Set Accelerated AE tuning parameters, FW >= 5.17.3.20
