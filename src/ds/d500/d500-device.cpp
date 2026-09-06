@@ -665,15 +665,16 @@ namespace librealsense
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_LED_POWER, make_attribute_parser(&md_depth_control::ledPower, md_depth_control_attributes::led_power_attribute, md_prop_offset));
 
         // Post-processing filters applied bitmask - only where the DPP composite-option filters
-        // themselves are registered, and gated behind the same FW versions those filters use
-        // (make_always_enabled_param_parser has no flags-bit check, so an older FW without this
-        // field would otherwise report it as supported and hand back garbage bytes).
+        // themselves are registered, and gated behind the highest FW version any of the three
+        // filters that can set a bit here requires (make_always_enabled_param_parser has no
+        // flags-bit check, so an older FW without this field would otherwise report it as
+        // supported and hand back garbage bytes). On D555, Decimation/Temporal register at
+        // 7.58.39807.10573 but HDRD needs 7.58.45911.14188 (see d500-factory.cpp's rs555_device) -
+        // the higher of the two applies here too, so this PID currently needs no special case.
         bool registers_dpp_filters = d5x5_family_pids.count( _pid )
             || _pid == ds::D585_LEGACY_PID
             || ( _pid == ds::D555_PID && ! _is_mipi_device );
-        auto dpp_filters_min_fw = ( _pid == ds::D555_PID )
-            ? firmware_version( "7.58.39807.10573" )
-            : firmware_version( "7.58.45911.14188" );
+        auto dpp_filters_min_fw = firmware_version( "7.58.45911.14188" );
         if( registers_dpp_filters && _fw_version >= dpp_filters_min_fw )
         {
             depth_sensor.register_metadata(RS2_FRAME_METADATA_EMBEDDED_FILTERS, make_always_enabled_param_parser(&md_depth_control::embedded_filters, md_prop_offset));

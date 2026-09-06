@@ -488,7 +488,7 @@ namespace librealsense
 
             // Improved Close Range Control composite option - D555 only, same FW gate as
             // above. Formerly the scalar "Improved Close Range Depth" (now retired).
-            if( d500_device::_fw_version >= firmware_version( "7.58.39807.10573" ) )
+            if( d500_device::_fw_version >= firmware_version( "7.58.45911.14188" ) )
             {
                 register_feature( std::make_shared< hdrd_filter_feature >(
                     dynamic_cast< d500_depth_sensor & >( depth_sensor ) ) );

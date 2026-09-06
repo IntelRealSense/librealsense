@@ -19,6 +19,7 @@ pytestmark = [
     pytest.mark.device_each("D555"),
     pytest.mark.device_each("D585"),
     pytest.mark.device_exclude("D585S"),
+    pytest.mark.device_type_exclude("DDS"),  # USB-only: these filters need a uvc_sensor raw endpoint
 ]
 
 STREAM_WIDTH, STREAM_HEIGHT = 640, 360
