@@ -11,7 +11,12 @@
 #include <src/platform/uvc-option.h>
 #include <src/metadata-parser.h>
 #include <src/ds/ds-color-common.h>
+#include <src/ds/ds-timestamp.h>
 #include <src/firmware-version.h>
+#include <src/backend.h>
+#include <src/platform/platform-utils.h>
+
+#include <cstring>
 
 #include <rsutils/type/fourcc.h>
 using rs_fourcc = rsutils::type::fourcc;
@@ -76,9 +81,7 @@ namespace librealsense
         register_color_extrinsics();
         register_color_metadata();
         register_ae_policy_option();
-#if defined(_WIN32)
-        register_color_options();
-#endif
+        register_color_options( dev_info );
     }
 
     // Both rules below only bite once a color stream shares the depth sensor's imagers.
@@ -170,15 +173,21 @@ namespace librealsense
                                                                                           false ) ); // Not settable while streaming
     }
 
-#if defined(_WIN32)
-    void d500_dual_color::register_color_options()
+    // D585 2C dual-color topology: on the depth-function UVC interface, the RGB streams' PU chain
+    // is UVC entity 0x07 and, on Windows, KS topology node 6.
+    constexpr uint8_t D585_2C_RGB_PU_UNIT_ID  = 0x07;
+    constexpr int     D585_2C_RGB_PU_KS_NODE = 6;
+
+    void d500_dual_color::register_color_options( std::shared_ptr< const d500_info > const & dev_info )
     {
-        // The dual-color UVC function contains Depth and RGB processing units. Windows' aggregate
-        // IAMVideoProcAmp binds to the first (Depth) PU, so RGB controls must address its topology node directly.
-        static const platform::processing_unit rgb_pu = { 0, 0x07, 6 };
+        // Route RGB controls via the RGB PU: node-based routing on WMF, a dedicated raw sensor on V4L2.
+        static const platform::processing_unit rgb_pu = { 0, D585_2C_RGB_PU_UNIT_ID, D585_2C_RGB_PU_KS_NODE };
+
+        auto raw_ep = pick_rgb_pu_raw_endpoint( dev_info, rgb_pu );
+        if( ! raw_ep )
+            return;  // discovery failed on this backend; leave the options unregistered rather than expose broken ones
 
         auto & color_ep = get_depth_sensor();
-        auto raw_ep = get_raw_depth_sensor();
         auto make_rgb_option = [raw_ep](rs2_option option)
         {
             return std::make_shared<uvc_pu_option>(raw_ep, option, rgb_pu);
@@ -212,7 +221,66 @@ namespace librealsense
             RS2_OPTION_WHITE_BALANCE,
             std::make_shared<auto_disabling_control>(white_balance, auto_white_balance));
     }
+
+    std::shared_ptr< uvc_sensor > d500_dual_color::pick_rgb_pu_raw_endpoint(
+        std::shared_ptr< const d500_info > const & dev_info,
+        const platform::processing_unit & rgb_pu )
+    {
+#if defined(_WIN32)
+        // WMF: any depth-function pin resolves to the same IMFMediaSource and node routing picks the PU.
+        return get_raw_depth_sensor();
+#else
+        // V4L2: each /dev/videoN's fd only exposes its own PU chain's CIDs; probe MI-0 siblings to find
+        // the one whose fd hosts the RGB PU. Skip the depth pin - the multi_pins depth sensor already
+        // holds it and opening a second fd there just adds startup latency.
+        std::string depth_path;
+        try { depth_path = get_depth_sensor().get_info( RS2_CAMERA_INFO_PHYSICAL_PORT ); }
+        catch( ... ) {}
+
+        for( auto & info : filter_by_mi( dev_info->get_group().uvc_devices, 0 ) )
+        {
+            if( ! depth_path.empty() && info.device_path == depth_path )
+                continue;
+
+            std::shared_ptr< platform::uvc_device > uvc_dev;
+            try { uvc_dev = get_backend()->create_uvc_device( info ); }
+            catch( ... ) { continue; }
+            if( ! uvc_dev )
+                continue;
+
+            auto candidate = std::make_shared< uvc_sensor >(
+                "Raw RGB PU Sensor", uvc_dev,
+                std::make_unique< ds_timestamp_reader >(), this );
+            try
+            {
+                auto r = candidate->invoke_powered( [ & rgb_pu ]( platform::uvc_device & dev )
+                {
+                    return dev.get_pu_range( rgb_pu, RS2_OPTION_BRIGHTNESS );
+                } );
+                // v4l_uvc_device::get_pu_range returns an all-zero range for unknown CIDs instead of
+                // throwing - reject that fallback shape. Read via memcpy to stay strict-aliasing clean.
+                if( r.max.size() >= sizeof( int32_t ) && r.min.size() >= sizeof( int32_t ) )
+                {
+                    int32_t r_min = 0, r_max = 0;
+                    std::memcpy( &r_min, r.min.data(), sizeof( int32_t ) );
+                    std::memcpy( &r_max, r.max.data(), sizeof( int32_t ) );
+                    if( r_min != 0 || r_max != 0 )
+                    {
+                        _raw_rgb_ep = candidate;
+                        return _raw_rgb_ep;
+                    }
+                }
+            }
+            catch( ... )
+            {
+                // this pin doesn't recognize the CID - try the next
+            }
+        }
+
+        LOG_WARNING( "Dual-color RGB PU pin not found on MI 0; RGB controls will not be registered" );
+        return nullptr;
 #endif
+    }
 
     void d500_dual_color::register_color_metadata()
     {

@@ -23,6 +23,12 @@ namespace librealsense
     protected:
         std::shared_ptr< stream_interface > _color_stream_1;
         std::shared_ptr< stream_interface > _color_stream_2;
+        // Raw endpoint tied specifically to the pin whose fd hosts the RGB Processing Unit.
+        // Only populated when discovery finds a distinct RGB pin (e.g. Linux V4L2, where each
+        // /dev/videoN's fd exposes only its own PU chain's CIDs). Left null on backends where
+        // any pin resolves to the same source (e.g. WMF), in which case the RGB controls
+        // register against the aggregate depth raw endpoint and rely on node-based routing.
+        std::shared_ptr< uvc_sensor > _raw_rgb_ep;
 
     private:
         // Stream-combination rules for the shared imagers, registered as validators at construction.
@@ -32,9 +38,10 @@ namespace librealsense
         void register_color_extrinsics();
         void register_color_metadata();
         void register_ae_policy_option();
-#if defined(_WIN32)
-        void register_color_options();
-#endif
+        void register_color_options( std::shared_ptr< const d500_info > const & dev_info );
+        std::shared_ptr< uvc_sensor > pick_rgb_pu_raw_endpoint(
+            std::shared_ptr< const d500_info > const & dev_info,
+            const platform::processing_unit & rgb_pu );
 
         // Stream-id resolver: route color pins (NV12/M420/YUY2) to Color 1 / Color 2 streams
         static void resolve_color_stream( const std::vector< platform::stream_profile > & all,
