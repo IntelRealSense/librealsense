@@ -43,6 +43,19 @@ namespace rs2
                 r = 0;
         }
 
+        // Wire-correct, documented-default payload - no device read. header.ctl_id/param_count
+        // are fixed by the protocol (not device state, never differ between units); the payload
+        // defaults are this struct's own documented values (rs_decimation_filter_dpp.h).
+        rs2_decimation_filter_dpp_config default_decimation_filter_dpp_config()
+        {
+            rs2_decimation_filter_dpp_config v{};
+            v.header.version = DPP_HEADER_CURRENT_VERSION;
+            v.header.ctl_id = 0x0001;
+            v.header.param_count = 2;
+            v.magnitude = 2;
+            return v;
+        }
+
         // Same scheme as print_decimation_filter_dpp_config() above, for
         // RS2_COMPOSITE_OPTION_TEMPORAL_FILTER_DPP.
         void print_temporal_filter_dpp_config( const rs2_temporal_filter_dpp_config & v )
@@ -66,6 +79,19 @@ namespace rs2
         {
             for( auto & r : v.reserved )
                 r = 0;
+        }
+
+        // Same rationale as default_decimation_filter_dpp_config() above.
+        rs2_temporal_filter_dpp_config default_temporal_filter_dpp_config()
+        {
+            rs2_temporal_filter_dpp_config v{};
+            v.header.version = DPP_HEADER_CURRENT_VERSION;
+            v.header.ctl_id = 0x0002;
+            v.header.param_count = 4;
+            v.smooth_alpha = 400;
+            v.smooth_delta = 20;
+            v.persistency_index = 3;
+            return v;
         }
 
         // Same scheme as print_decimation_filter_dpp_config() above, for
@@ -100,6 +126,22 @@ namespace rs2
             // on GET (pre-design-review firmware, or simply unused memory) - without this, every
             // later auto-commit/enable-toggle would echo that non-zero value straight back on SET.
             v.reserved[0] = 0;
+        }
+
+        // Same rationale as default_decimation_filter_dpp_config() above.
+        rs2_hdrd_control default_hdrd_control()
+        {
+            rs2_hdrd_control v{};
+            v.header.version = DPP_HEADER_CURRENT_VERSION;
+            v.header.ctl_id = 0x0008;
+            v.header.param_count = 7;
+            v.filter_type = 0;
+            v.downscale_ratio = 1;
+            v.shift_mode = 0;
+            v.shift_pixels = 126;
+            v.threshold_mode = 0;
+            v.threshold_mm = 0;
+            return v;
         }
     }
 
@@ -358,9 +400,7 @@ namespace rs2
             {
                 try
                 {
-                    auto range = _embedded_filter->get_composite_option_range_as< rs2_decimation_filter_dpp_range >( id );
-                    _decimation_filter_dpp_editor.value = range.def;
-                    sanitize_decimation_filter_dpp_config( _decimation_filter_dpp_editor.value );
+                    _decimation_filter_dpp_editor.value = default_decimation_filter_dpp_config();
                     _decimation_filter_dpp_editor.touch();
                     _decimation_filter_dpp_editor.finalize();
                 }
@@ -588,9 +628,7 @@ namespace rs2
             {
                 try
                 {
-                    auto range = _embedded_filter->get_composite_option_range_as< rs2_temporal_filter_dpp_range >( id );
-                    _temporal_filter_dpp_editor.value = range.def;
-                    sanitize_temporal_filter_dpp_config( _temporal_filter_dpp_editor.value );
+                    _temporal_filter_dpp_editor.value = default_temporal_filter_dpp_config();
                     _temporal_filter_dpp_editor.touch();
                     _temporal_filter_dpp_editor.finalize();
                 }
@@ -896,9 +934,7 @@ namespace rs2
             {
                 try
                 {
-                    auto range = _embedded_filter->get_composite_option_range_as< rs2_hdrd_control_range >( id );
-                    _hdrd_editor.value = range.def;
-                    sanitize_hdrd_control( _hdrd_editor.value );
+                    _hdrd_editor.value = default_hdrd_control();
                     _hdrd_editor.touch();
                     _hdrd_editor.finalize();
                 }
@@ -1033,24 +1069,20 @@ namespace rs2
     void embedded_filter_model::embedded_filter_enable_disable(bool actual, std::string * error_message)
     {
         // Composite-only embedded filters register no RS2_OPTION_EMBEDDED_FILTER_ENABLED scalar
-        // option - route the toggle through the composite option's own `enable` field instead,
-        // read-modify-write so the other fields go back as last reported, not zero-initialized.
-        // The device itself also rejects this SET while Depth/IR is streaming for Decimation -
-        // that rejection surfaces via the caught exception below like any other, no
-        // special-casing needed here.
+        // option - route the toggle through the composite option's own `enable` field instead.
+        // Never read-modify-write: the payload is seeded from a hardcoded, wire-correct default
+        // (never a device GET) the first time this editor is touched, then every toggle after
+        // that reuses and blind-SETs the in-memory value, changing only `enabled`. The device
+        // itself also rejects this SET while Depth/IR is streaming for Decimation - that
+        // rejection surfaces via the caught exception below like any other, no special-casing
+        // needed here.
         if( _embedded_filter->supports_composite_option( RS2_COMPOSITE_OPTION_DECIMATION_FILTER_DPP ) )
         {
             try
             {
-                // Only re-read if we don't already have a live-tracked value - once we do, it
-                // already mirrors every write made, so a fresh GET is a needless second XU
-                // transaction that roughly doubles the toggle's response time.
                 if( ! _decimation_filter_dpp_editor.initialized )
                 {
-                    _decimation_filter_dpp_editor.value = _embedded_filter->get_composite_option_as< rs2_decimation_filter_dpp_config >(
-                        RS2_COMPOSITE_OPTION_DECIMATION_FILTER_DPP );
-                    sanitize_decimation_filter_dpp_config( _decimation_filter_dpp_editor.value );
-                    print_decimation_filter_dpp_config( _decimation_filter_dpp_editor.value );
+                    _decimation_filter_dpp_editor.value = default_decimation_filter_dpp_config();
                     _decimation_filter_dpp_editor.initialized = true;
                 }
                 _decimation_filter_dpp_editor.value.enabled = actual ? 1 : 0;
@@ -1075,10 +1107,7 @@ namespace rs2
             {
                 if( ! _temporal_filter_dpp_editor.initialized )
                 {
-                    _temporal_filter_dpp_editor.value = _embedded_filter->get_composite_option_as< rs2_temporal_filter_dpp_config >(
-                        RS2_COMPOSITE_OPTION_TEMPORAL_FILTER_DPP );
-                    sanitize_temporal_filter_dpp_config( _temporal_filter_dpp_editor.value );
-                    print_temporal_filter_dpp_config( _temporal_filter_dpp_editor.value );
+                    _temporal_filter_dpp_editor.value = default_temporal_filter_dpp_config();
                     _temporal_filter_dpp_editor.initialized = true;
                 }
                 _temporal_filter_dpp_editor.value.enabled = actual ? 1 : 0;
@@ -1100,10 +1129,7 @@ namespace rs2
             {
                 if( ! _hdrd_editor.initialized )
                 {
-                    _hdrd_editor.value = _embedded_filter->get_composite_option_as< rs2_hdrd_control >(
-                        RS2_COMPOSITE_OPTION_HDRD_CONTROL );
-                    sanitize_hdrd_control( _hdrd_editor.value );
-                    print_hdrd_control( _hdrd_editor.value );
+                    _hdrd_editor.value = default_hdrd_control();
                     _hdrd_editor.initialized = true;
                 }
                 _hdrd_editor.value.enable = actual ? 1 : 0;
