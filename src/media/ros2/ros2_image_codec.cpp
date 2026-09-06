@@ -102,6 +102,14 @@ namespace librealsense
             if (width > 0x7FFFFFFFu || height > 0x7FFFFFFFu)
                 throw invalid_value_exception("image dimensions exceed the PNG limit");
 
+            // The scanline pass reads width * bpp bytes per row, with rows stride apart: a frame
+            // whose stride is narrower than its own format demands would be read out of bounds
+            const size_t bpp = layout.bytes_per_channel * layout.num_channels;
+            if (stride < width * bpp)
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "frame stride (" << stride << ") is too small for "
+                                               << width << " pixels of " << bpp << " bytes" );
+
             // allocation retried on failure rather than caching a permanently-null compressor
             static thread_local std::unique_ptr<libdeflate_compressor, void(*)(libdeflate_compressor*)>
                 compressor(nullptr, libdeflate_free_compressor);
