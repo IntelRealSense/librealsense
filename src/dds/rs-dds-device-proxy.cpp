@@ -364,8 +364,10 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             {
                 auto & source_profiles = sensor_proxy->_formats_converter.get_source_profiles_from_target( profile );
                 if( source_profiles.size() != 1 )
-                    LOG_ERROR( "More than one source profile available for [" << profile << "]: " << source_profiles );
-                auto source_profile = source_profiles[0];
+                    LOG_ERROR( source_profiles.size() << " source profiles available for [" << profile
+                                                      << "]: " << source_profiles );
+                if( ! source_profiles.empty() )
+                    source_profile = source_profiles[0];
             }
 
             sid_index type_and_index( source_profile->get_stream_type(), source_profile->get_stream_index() );
