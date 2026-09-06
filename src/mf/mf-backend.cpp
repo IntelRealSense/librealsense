@@ -354,6 +354,7 @@ namespace librealsense
                 _data._stopped = false;
                 _data._changed = false;
                 _data._incomplete_since.clear();
+                _data._warned_incomplete.clear();
                 _data._removed_instance_ids.clear();
                 _callback = std::move(callback);
                 _last = backend_device_group( _backend->query_uvc_devices(),
@@ -391,6 +392,7 @@ namespace librealsense
                 // composite that never finishes binding is waited on once, not forever
                 // (see incomplete_composites).
                 std::map< std::string, std::chrono::steady_clock::time_point > _incomplete_since;
+                std::set< std::string > _warned_incomplete;
                 // Device interfaces Windows reported removed since the last callback. Only
                 // touched from the watcher thread, which is also the one pumping messages.
                 std::set< std::string > _removed_instance_ids;
@@ -500,7 +502,10 @@ namespace librealsense
                                 if( incomplete.count( it->first ) )
                                     ++it;
                                 else
+                                {
+                                    _data._warned_incomplete.erase( it->first );
                                     it = _data._incomplete_since.erase( it );
+                                }
                             }
                             bool may_defer = false;
                             for( auto && unique_id : incomplete )
@@ -508,6 +513,14 @@ namespace librealsense
                                 auto inserted = _data._incomplete_since.emplace( unique_id, now );
                                 if( now - inserted.first->second < MAX_DEFERRAL )
                                     may_defer = true;
+                                else if( _data._warned_incomplete.insert( unique_id ).second )
+                                    // Publishing it anyway is what lets a genuinely partial device
+                                    // through, but it also means a device that needed longer comes up
+                                    // missing sensors - so say so rather than let it look normal.
+                                    LOG_WARNING( unique_id << " still incomplete after "
+                                                 << std::chrono::duration_cast< std::chrono::seconds >(
+                                                        now - inserted.first->second ).count()
+                                                 << "s; publishing it as-is" );
                             }
                             if( may_defer )
                             {

@@ -269,14 +269,26 @@ udev_device_watcher::udev_device_watcher( const platform::backend * backend )
                 if( incomplete.count( it->first ) )
                     ++it;
                 else
+                {
+                    _warned_incomplete.erase( it->first );
                     it = _incomplete_since.erase( it );
+                }
             }
             bool waiting = false;
             for( auto && uid : incomplete )
             {
                 auto inserted = _incomplete_since.emplace( uid, now );
                 if( now - inserted.first->second >= MAX_WAIT )
-                    continue;   // waited long enough; let it through as-is
+                {
+                    // Publishing it anyway is what lets a genuinely partial device through,
+                    // but it also means a device that needed longer comes up missing sensors
+                    // - so say so rather than let it look like a normal arrival.
+                    if( _warned_incomplete.insert( uid ).second )
+                        LOG_WARNING( "[udev] " << uid << " still incomplete after "
+                                     << std::chrono::duration_cast< std::chrono::seconds >( now - inserted.first->second ).count()
+                                     << "s; publishing it as-is" );
+                    continue;
+                }
                 LOG_DEBUG( "[udev] " << uid << " still enumerating; holding it back" );
                 auto held = [&uid]( auto const & device ) { return device.unique_id == uid; };
                 curr.uvc_devices.erase( std::remove_if( curr.uvc_devices.begin(), curr.uvc_devices.end(), held ),
