@@ -39,12 +39,13 @@ namespace librealsense
     }
 
     thermal_compensation_option_mipi::thermal_compensation_option_mipi( std::shared_ptr< hw_monitor > hwm )
-        : _hw_monitor( hwm )
+        : bool_option( true )
+        , _hw_monitor( hwm )
     {}
 
     void thermal_compensation_option_mipi::set( float value )
     {
-        if( value < 0 )
+        if( ! is_valid( value ) )
             throw invalid_value_exception( "Invalid input for thermal compensation toggle: " + std::to_string( value ) );
 
         auto hwm = _hw_monitor.lock();
@@ -57,12 +58,13 @@ namespace librealsense
             command cmd( ds::TC_CMD, tc_switch, value > 0 ? 1 : 0 );
             hwm->send( cmd );
         }
-        catch( ... )
+        catch( const std::exception & e )
         {
-            throw wrong_api_call_sequence_exception( "hw monitor command for setting thermal compensation failed" );
+            throw wrong_api_call_sequence_exception(
+                std::string( "hw monitor command for setting thermal compensation failed: " ) + e.what() );
         }
 
-        _value = value > 0 ? 1.f : 0.f;
+        bool_option::set( value );
         _recording_function( *this );
     }
 

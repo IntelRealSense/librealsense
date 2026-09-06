@@ -35,29 +35,19 @@ namespace librealsense
     };
 
     // MIPI has no XU transport for the thermal loop toggle, so it is driven by the TC_CMD HWM
-    // opcode. The command is write-only, hence the last set value is cached for query.
-    class thermal_compensation_option_mipi : public option
+    // opcode. The command is write-only, hence query() returns the last value set - defaulting to
+    // on, as FW enables the loop by default on D45x.
+    class thermal_compensation_option_mipi : public bool_option
     {
     public:
         explicit thermal_compensation_option_mipi( std::shared_ptr< hw_monitor > hwm );
 
         void set( float value ) override;
-        float query() const override { return _value; }
-
-        option_range get_range() const override { return { 0.f, 1.f, 1.f, 1.f }; }
-        bool is_enabled() const override { return true; }
 
         const char * get_description() const override { return "Toggle Thermal Compensation Mechanism"; }
 
-        void enable_recording( std::function< void( const option & ) > record_action ) override
-        {
-            _recording_function = record_action;
-        }
-
     private:
         std::weak_ptr< hw_monitor > _hw_monitor;
-        float _value = 1.f;  // FW enables the loop by default on D45x
-        std::function< void( const option & ) > _recording_function = []( const option & ) {};
     };
 
     class projector_temperature_option_mipi : public readonly_option
