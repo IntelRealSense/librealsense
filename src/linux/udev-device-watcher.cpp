@@ -111,7 +111,11 @@ namespace {
                     continue;
                 std::string const iface = dir + "/" + entry;
                 std::string const cls = read_first_line( iface + "/bInterfaceClass" );
-                if( cls == "0e" )   // video
+                // Only a VideoControl interface (subclass 01) gets a /dev/video node -
+                // uvcvideo registers the node against it and its VideoStreaming siblings
+                // (subclass 02) never get one of their own, so requiring a node for those
+                // would hold every camera back until its budget ran out.
+                if( cls == "0e" && read_first_line( iface + "/bInterfaceSubClass" ) == "01" )
                 {
                     bool surfaced = false;
                     for( auto && node : list_dir( iface + "/video4linux" ) )
