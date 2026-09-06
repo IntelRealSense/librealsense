@@ -431,14 +431,6 @@ namespace librealsense
                     {
                         if( _data._changed && _data._timer.has_expired() )
                         {
-                            auto changed = []( platform::backend_device_group const & from,
-                                               platform::backend_device_group const & to )
-                            {
-                                return list_changed( from.uvc_devices, to.uvc_devices )
-                                    || list_changed( from.usb_devices, to.usb_devices )
-                                    || list_changed( from.hid_devices, to.hid_devices );
-                            };
-
                             // Removals first, computed from what we already know: the
                             // notification names the interface and _last says which device
                             // owned it, so no enumeration is needed. That matters - a full
@@ -529,7 +521,9 @@ namespace librealsense
                             }
                             else
                             {
-                                if( changed( _last, curr ) )
+                                if( list_changed( _last.uvc_devices, curr.uvc_devices )
+                                    || list_changed( _last.usb_devices, curr.usb_devices )
+                                    || list_changed( _last.hid_devices, curr.hid_devices ) )
                                 {
                                     _callback( _last, curr );
                                     _last = curr;
