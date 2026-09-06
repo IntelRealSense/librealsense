@@ -156,7 +156,8 @@ namespace librealsense
 
     stream_profiles d500_object_detection_sensor::init_stream_profiles()
     {
-        // TODO - check if needed. Registers extrinsics, but not sure it is needed for the OD stream, which is not a physical stream.
+        // No extrinsics registered for this stream: FW reports detections as color-frame pixels,
+        // so it has no pose of its own and nothing transforms through it.
         auto results = synthetic_sensor::init_stream_profiles();
         for( auto p : results )
         {
