@@ -157,5 +157,8 @@ def test_color_only_high_fps_accepted(depth_sensor, fps):
     if color1 is None:
         pytest.skip( f"Device publishes no color profile at {fps} FPS" )
     color2 = pick( depth_sensor, rs.stream.color, 2, fps, (color1.width(), color1.height()) )
+    if color2 is None:
+        # A lone color stream cannot trip the same-rate rule, so it would prove nothing here.
+        pytest.skip( f"Device publishes no second color profile at {fps} FPS on Color 1's resolution" )
 
-    open_and_close( depth_sensor, [color1, color2] if color2 else [color1] )
+    open_and_close( depth_sensor, [color1, color2] )
