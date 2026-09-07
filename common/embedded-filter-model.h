@@ -77,6 +77,19 @@ namespace rs2
             return _decimation_filter_dpp_editor.initialized && _decimation_filter_dpp_editor.value.enabled != 0;
         }
 
+        // Seeds the cache above straight from the device, so is_decimation_filter_dpp_enabled() is
+        // right from the first frame instead of only once the editor has been drawn. Idempotent -
+        // ensure_initialized() no-ops after a successful read, and a failure leaves it unread.
+        void sync_decimation_filter_dpp_state( std::string & error_message )
+        {
+            if( ! _embedded_filter
+                || _embedded_filter->get_type() != RS2_EMBEDDED_FILTER_TYPE_DECIMATION
+                || ! _embedded_filter->supports_composite_option( RS2_COMPOSITE_OPTION_DECIMATION_FILTER_DPP ) )
+                return;
+            _decimation_filter_dpp_editor.ensure_initialized(
+                _embedded_filter, RS2_COMPOSITE_OPTION_DECIMATION_FILTER_DPP, error_message );
+        }
+
         bool _is_visible = true;
 
         // Optional predicate; null means always available. When false the enable toggle is
