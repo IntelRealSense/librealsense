@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <memory>
+#include <functional>
 #include "hw_monitor_extended_buffers.h"
 
 #include "core/debug.h"
@@ -53,10 +54,6 @@ namespace librealsense
         embedded_filters get_supported_embedded_filters() const override { return _embedded_filters; }
         void add_embedded_filter( std::shared_ptr< embedded_filter_interface > filter ) { _embedded_filters.push_back( filter ); }
 
-        // Throws if a color stream in 'requests' cannot start now. Dual-color: color shares this sensor
-        // and close-range works on depth only, so color is blocked while close-range is enabled.
-        void color_stream_allowed_or_throw( const stream_profiles & requests ) const;
-
         // Streams contributed by feature mixins (e.g. dual-color) that this sensor physically carries. They are
         // assigned to matching profiles (by stream type + index) during init_stream_profiles.
         void add_stream( std::shared_ptr< stream_interface > stream ) { _extra_streams.push_back( stream ); }
@@ -91,6 +88,20 @@ namespace librealsense
     public:
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& all_device_infos);
+
+        // Adds a rule that vetoes stream combinations this device cannot run: feature mixins register
+        // their hardware's restrictions at construction, and each throws when a request violates it.
+        void add_stream_combination_validator( std::function< void( const stream_profiles & ) > validator )
+        {
+            _stream_combination_validators.push_back( std::move( validator ) );
+        }
+
+        // Throws if the profiles cannot stream together. A device with no registered rule allows everything.
+        void stream_combination_allowed_or_throw( const stream_profiles & requests ) const
+        {
+            for( auto & validator : _stream_combination_validators )
+                validator( requests );
+        }
 
         synthetic_sensor& get_depth_sensor()
         {
@@ -179,6 +190,7 @@ namespace librealsense
         bool _is_symmetrization_enabled = true;
         bool _is_mipi_device = false;
 
+        std::vector< std::function< void( const stream_profiles & ) > > _stream_combination_validators;
         // Populated in init() only when _is_mipi_device is true.
         std::unique_ptr< d500_mipi_device > _mipi_device;
     };
