@@ -125,16 +125,22 @@ int lockf(int fd, int cmd, off_t length)
 
 namespace librealsense
 {
+    // D5xx product line. The D400 and D500 families share this backend and the d4xx kernel driver,
+    // but not their depth-XU selector tables - see v4l_mipi_logic::xu_to_cid().
+    static bool is_d5xx_product_line( uint16_t pid )
+    {
+        return ( pid == 0x0B56 )                      // D555
+            || ( pid == 0x0B6A ) || ( pid == 0x0B6B ) // D585 legacy / D585S
+            || ( pid >= 0x0C01 && pid <= 0x0C08 );    // D535 / D585 2C+3C
+    }
+
     // The UVC interface carrying the D5xx mapping streams (occupancy / labeled point
     // cloud): MI 13 on D585S, MI 11 on every other D5xx. Their payload is a self-sized
     // MAP1 frame rather than an image, which both the fourcc split and the frame-size
     // validation below have to account for.
     static bool is_d5xx_mapping_interface( uint16_t pid, uint16_t mi )
     {
-        const bool d5xx = ( pid == 0x0B56 )                      // D555
-                       || ( pid == 0x0B6A ) || ( pid == 0x0B6B ) // D585 legacy / D585S
-                       || ( pid >= 0x0C01 && pid <= 0x0C08 );    // D535 / D585 2C+3C
-        if( ! d5xx )
+        if( ! is_d5xx_product_line( pid ) )
             return false;
         return ( pid == 0x0B6B || pid == 0x0B6A ) ? ( mi == 13 ) : ( mi == 11 );
     }
@@ -2805,7 +2811,7 @@ namespace librealsense
 
         bool v4l_mipi_device::set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size)
         {
-            v4l2_ext_control xctrl{v4l_mipi_logic::xu_to_cid(xu,control), uint32_t(size), 0, 0};
+            v4l2_ext_control xctrl{v4l_mipi_logic::xu_to_cid(xu,control,is_d5xx_product_line(_info.pid)), uint32_t(size), 0, 0};
             switch (size)
             {
                 case 1: xctrl.value   = *(reinterpret_cast<const uint8_t*>(data)); break;
@@ -2837,7 +2843,7 @@ namespace librealsense
 
         bool v4l_mipi_device::get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const
         {
-            v4l2_ext_control xctrl{v4l_mipi_logic::xu_to_cid(xu,control), uint32_t(size), 0, 0};
+            v4l2_ext_control xctrl{v4l_mipi_logic::xu_to_cid(xu,control,is_d5xx_product_line(_info.pid)), uint32_t(size), 0, 0};
             xctrl.p_u8 = data;
 
             v4l2_ext_controls ext {xctrl.id & 0xffff0000, 1, 0, 0, 0, &xctrl};
@@ -2874,7 +2880,7 @@ namespace librealsense
         control_range v4l_mipi_device::get_xu_range(const extension_unit& xu, uint8_t control, int len) const
         {
             v4l2_query_ext_ctrl xctrl_query{};
-            xctrl_query.id = v4l_mipi_logic::xu_to_cid(xu,control);
+            xctrl_query.id = v4l_mipi_logic::xu_to_cid(xu,control,is_d5xx_product_line(_info.pid));
 
             if(0 > ioctl(_fd,VIDIOC_QUERY_EXT_CTRL,&xctrl_query)){
                 throw linux_backend_exception(rsutils::string::from() << "xioctl(VIDIOC_QUERY_EXT_CTRL) failed, errno=" << errno);

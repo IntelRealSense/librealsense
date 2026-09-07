@@ -140,22 +140,22 @@ namespace librealsense
         {
             ds_advanced_mode_base::initialize_advanced_mode( this );
 
-            // Decimation Filter DPP composite option - USB-only, alongside the DDS-connected
+            // Decimation Filter DPP composite option - USB-only, skipped on MIPI, alongside the DDS-connected
             // path's own independent scalar-option decimation filter.
-            if( d500_device::_fw_version >= firmware_version( "7.58.45911.14188" ) )
+            if( ! _is_mipi_device && d500_device::_fw_version >= firmware_version( "7.58.45911.14188" ) )
                 register_feature( std::make_shared< decimation_filter_feature >(
                         dynamic_cast< d500_depth_sensor & >( get_depth_sensor() ) ) );
 
-            // Temporal Filter DPP composite option - reuses the same FW gate as Decimation
+            // Temporal Filter DPP composite option - reuses the same FW/MIPI gate as Decimation
             // above (same protocol family, introduced together on this SKU).
-            if( d500_device::_fw_version >= firmware_version( "7.58.45911.14188" ) )
+            if( ! _is_mipi_device && d500_device::_fw_version >= firmware_version( "7.58.45911.14188" ) )
                 register_feature( std::make_shared< temporal_filter_feature >(
                         dynamic_cast< d500_depth_sensor & >( get_depth_sensor() ) ) );
 
-            // Improved Close Range Control composite option - USB toggle, formerly the
-            // scalar "Improved Close Range Depth". Gated on FW: older firmware still speaks the
-            // old scalar-only semantics at this same XU control id (0x14).
-            if( d500_device::_fw_version >= firmware_version( "7.58.45911.14188" ) )
+            // Improved Close Range Control composite option - USB toggle, formerly the scalar "Improved
+            // Close Range Depth". Skipped on MIPI (the driver publishes it as minz_configuration, without
+            // the dpp_header written here); FW-gated for the older scalar-only semantics at this same id.
+            if( ! _is_mipi_device && d500_device::_fw_version >= firmware_version( "7.58.45911.14188" ) )
                 register_feature( std::make_shared< hdrd_filter_feature >(
                         dynamic_cast< d500_depth_sensor & >( get_depth_sensor() ) ) );
 
