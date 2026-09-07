@@ -154,8 +154,9 @@ namespace librealsense
 
     void d500_depth_sensor::open( const stream_profiles & requests )
     {
-        if( _owner )
-            _owner->stream_combination_allowed_or_throw( requests );
+        if( ! _owner )
+            throw std::runtime_error( "d500_depth_sensor has no owner device" );
+        _owner->stream_combination_allowed_or_throw( requests );
 
         group_multiple_fw_calls(*this, [&]() {
             _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
