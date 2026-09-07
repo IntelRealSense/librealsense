@@ -45,9 +45,6 @@ namespace librealsense
 
     void thermal_compensation_option_mipi::set( float value )
     {
-        if( ! is_valid( value ) )
-            throw invalid_value_exception( "Invalid input for thermal compensation toggle: " + std::to_string( value ) );
-
         auto hwm = _hw_monitor.lock();
         if( ! hwm )
             throw wrong_api_call_sequence_exception( "hw monitor is not available for thermal compensation" );
