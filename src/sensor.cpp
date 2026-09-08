@@ -294,6 +294,7 @@ void log_callback_end( uint32_t fps,
         int const rows = semi_planar_420 ? height * 3 / 2 : height;
         int const padded_bytes_in_width = ( bytes_in_width + 63 ) & ~63;
         std::vector<uint8_t> pixels;
+        pixels.reserve( size_t( rows ) * bytes_in_width );  // one allocation instead of the insert loop's growth
         for (int j = 0; j < rows; ++j)
         {
             int start_index = j * padded_bytes_in_width;
