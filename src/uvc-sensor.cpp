@@ -13,6 +13,7 @@
 #include <src/metadata-parser.h>
 #include <src/core/time-service.h>
 #include <src/core/frame-continuation.h>
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
@@ -322,9 +323,12 @@ void uvc_sensor::open( const stream_profiles & requests )
                         // when the resolution's width is not aligned to 64
                         else if( align64 )
                         {
-                            std::vector< uint8_t > pixels = align_width_to_64( width, height, bpp, (uint8_t *)f.pixels );
-                            assert( expected_size == sizeof( uint8_t ) * pixels.size() );
-                            memcpy( (void *)fh->get_frame_data(), pixels.data(), expected_size );
+                            std::vector< uint8_t > pixels = align_width_to_64(
+                                width, height, bpp, req_profile_base->get_format(), (uint8_t *)f.pixels );
+                            // Clamp rather than trust the layout: a short repack would otherwise read past the buffer
+                            if( pixels.size() < expected_size )
+                                LOG_ERROR( "Realigned frame is " << pixels.size() << " bytes, expected " << expected_size );
+                            memcpy( (void *)fh->get_frame_data(), pixels.data(), std::min( expected_size, pixels.size() ) );
                         }
                         else
                         {
