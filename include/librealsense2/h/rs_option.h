@@ -142,6 +142,7 @@ extern "C" {
         RS2_OPTION_DETECTION_DISTANCE, /**< Enable firmware calculation of per-detection distance (meters) on the object-detection stream */
         RS2_OPTION_SENSORS_CONFIG_MODE, /**< D5x5: 0 = dedicated color sensor (3C), 1 = dual RGB (2C). Requires a hardware_reset after setting; the device then re-enumerates under the new PID. */
         RS2_OPTION_DUAL_RGB_RECTIFICATION, /**< D585 2C: enable/disable firmware rectification of the dual-RGB pair (pre-stream only) */
+        RS2_OPTION_EMITTER_MODE, /**< Emitter mode, mutually exclusive values: Off, On, Always On (constant laser), On Off (alternating per frame) */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -330,6 +331,17 @@ extern "C" {
         RS2_COLORED_IR_AUTO_EXPOSURE_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_colored_ir_auto_exposure_mode;
     const char* rs2_colored_ir_auto_exposure_mode_to_string( rs2_colored_ir_auto_exposure_mode mode );
+
+    /** \brief values for RS2_OPTION_EMITTER_MODE option. */
+    typedef enum rs2_emitter_mode
+    {
+        RS2_EMITTER_MODE_OFF = 0,  /**< Emitter disabled */
+        RS2_EMITTER_MODE_ON = 1,  /**< Emitter enabled */
+        RS2_EMITTER_MODE_ALWAYS_ON = 2,  /**< Laser on constantly, rather than only while the sensor is exposing */
+        RS2_EMITTER_MODE_ON_OFF = 3,  /**< Emitter state alternates every frame */
+        RS2_EMITTER_MODE_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    } rs2_emitter_mode;
+    const char* rs2_emitter_mode_to_string( rs2_emitter_mode mode );
 
     /** \brief values for RS2_OPTION_SAFETY_MODE option. */
     typedef enum rs2_safety_mode

@@ -70,6 +70,7 @@ void init_c_files(py::module &m) {
     BIND_ENUM_CUSTOM(m, rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST, "Calibration callback status for use in device_calibration.trigger_device_calibration")
     BIND_ENUM(m, rs2_d500_intercam_sync_mode, RS2_D500_INTERCAM_SYNC_COUNT, "For D500: intercamera synchronization mode")
     BIND_ENUM(m, rs2_colored_ir_auto_exposure_mode, RS2_COLORED_IR_AUTO_EXPOSURE_COUNT, "For colored-IR devices: how auto exposure is arbitrated between the color and depth pipelines")
+    BIND_ENUM(m, rs2_emitter_mode, RS2_EMITTER_MODE_COUNT, "Values for the emitter mode option")
 
     /** rs_types.h **/
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics", "Video stream intrinsics.");
