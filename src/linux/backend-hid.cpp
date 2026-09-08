@@ -492,6 +492,8 @@ namespace librealsense
             if (_is_capturing)
                 return;
 
+            // Drop reports retained in the IIO kfifo during HID enumeration.
+            clear_buffer();
             set_power(true);
             std::ostringstream iio_read_device_path;
             iio_read_device_path << "/dev/" << IIO_DEVICE_PREFIX << _iio_device_number;
