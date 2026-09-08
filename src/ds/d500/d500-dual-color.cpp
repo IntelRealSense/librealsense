@@ -16,6 +16,7 @@
 #include <rsutils/type/fourcc.h>
 using rs_fourcc = rsutils::type::fourcc;
 
+#include <algorithm>
 #include <set>
 
 
@@ -69,10 +70,84 @@ namespace librealsense
         d500_depth.add_stream( _color_stream_1 );
         d500_depth.add_stream( _color_stream_2 );
 
+        add_stream_combination_validator( [this]( const stream_profiles & requests ) { close_range_allowed_or_throw( requests ); } );
+        add_stream_combination_validator( [this]( const stream_profiles & requests ) { frame_rates_allowed_or_throw( requests ); } );
+
         register_color_extrinsics();
         register_color_metadata();
         register_ae_policy_option();
     }
+
+    // Both rules below only bite once a color stream shares the depth sensor's imagers.
+    static bool color_requested( const stream_profiles & requests )
+    {
+        return std::any_of( requests.begin(), requests.end(), []( auto & p )
+                            { return p && p->get_stream_type() == RS2_STREAM_COLOR; } );
+    }
+
+    static bool depth_or_ir_requested( const stream_profiles & requests )
+    {
+        return std::any_of( requests.begin(), requests.end(), []( auto & p )
+                            { return p && ( p->get_stream_type() == RS2_STREAM_DEPTH || p->get_stream_type() == RS2_STREAM_INFRARED ); } );
+    }
+
+    // Close range works on depth only, so it cannot be enabled while a color stream starts.
+    void d500_dual_color::close_range_allowed_or_throw( const stream_profiles & requests ) const
+    {
+        if( ! color_requested( requests ) )
+            return;
+
+        // get_depth_sensor() has no const overload, and this rule only reads the filter's state.
+        auto & depth_sensor = dynamic_cast< const d500_depth_sensor & >( const_cast< d500_dual_color * >( this )->get_depth_sensor() );
+        for( auto & f : depth_sensor.get_supported_embedded_filters() )
+            if( f && f->get_type() == RS2_EMBEDDED_FILTER_TYPE_CLOSE_RANGE
+                && f->supports_option( RS2_OPTION_EMBEDDED_FILTER_ENABLED )
+                && f->get_option( RS2_OPTION_EMBEDDED_FILTER_ENABLED ).query() != 0.f )
+                throw wrong_api_call_sequence_exception(
+                    "Color streams cannot be activated while Improved Close Range Depth is enabled" );
+    }
+
+    // Produce a friendly stream name to the user, e.g. "Depth" / "Color 1"
+    static std::string stream_name( const stream_profile_interface & profile )
+    {
+        std::string name = get_string( profile.get_stream_type() );
+        if( profile.get_stream_index() )
+            name += " " + std::to_string( profile.get_stream_index() );
+        return name;
+    }
+
+    // Resolutions may differ freely, but a frame-rate mismatch silently starves the streams - both
+    // between the two color pins and between color and depth/IR.
+    void d500_dual_color::frame_rates_allowed_or_throw( const stream_profiles & requests ) const
+    {
+        if( ! color_requested( requests ) )
+            return;
+
+        // Depth/IR and color run off the same imagers, so together they cap at 45 FPS - the enumerated
+        // 60 and 90 FPS profiles stream only when each runs without the other.
+        static const uint32_t MAX_COMBINED_FPS = 45;
+
+        bool const with_depth_or_ir = depth_or_ir_requested( requests );
+
+        stream_profile_interface * first = nullptr;
+        for( auto & p : requests )
+        {
+            if( ! p )
+                continue;
+            if( with_depth_or_ir && p->get_framerate() > MAX_COMBINED_FPS )
+                throw wrong_api_call_sequence_exception( rsutils::string::from()
+                    << "Depth/Infrared and Color cannot stream together at 60 or 90 FPS ("
+                    << stream_name( *p ) << " requested " << p->get_framerate() << " FPS)" );
+            if( ! first )
+                first = p.get();
+            else if( p->get_framerate() != first->get_framerate() )
+                throw wrong_api_call_sequence_exception( rsutils::string::from()
+                    << "All streams must share one frame rate while color is streaming ("
+                    << stream_name( *first ) << " requested " << first->get_framerate() << " FPS, "
+                    << stream_name( *p ) << " requested " << p->get_framerate() << " FPS)" );
+        }
+    }
+
     void d500_dual_color::register_ae_policy_option()
     {
         if( _fw_version < firmware_version( "7.58.45946.14332" ) )
