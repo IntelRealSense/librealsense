@@ -20,7 +20,7 @@ std::string object_type_to_string( object_type type );
 
 struct object_in_frame
 {
-    rs2::rect normalized_color_bbox, normalized_depth_bbox;
+    rs2::rect normalized_color_bbox;
     std::string name;
     float mean_depth;
     float metadata_depth;         // distance reported by the detection model (meters); 0 if unavailable
@@ -28,11 +28,10 @@ struct object_in_frame
     size_t id;
     object_type type = object_type::other;
 
-    object_in_frame( size_t _id, std::string const & _name, rs2::rect _bbox_color, rs2::rect _bbox_depth, float _depth,
+    object_in_frame( size_t _id, std::string const & _name, rs2::rect _bbox_color, float _depth,
                      float _metadata_depth, int _score,
                      object_type _type = object_type::other )
         : normalized_color_bbox( _bbox_color )
-        , normalized_depth_bbox( _bbox_depth )
         , name( _name )
         , mean_depth( _depth )
         , metadata_depth( _metadata_depth )
