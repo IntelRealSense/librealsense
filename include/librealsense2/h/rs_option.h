@@ -332,6 +332,17 @@ extern "C" {
     } rs2_colored_ir_auto_exposure_mode;
     const char* rs2_colored_ir_auto_exposure_mode_to_string( rs2_colored_ir_auto_exposure_mode mode );
 
+    /** \brief values for RS2_OPTION_EMITTER_MODE option. */
+    typedef enum rs2_emitter_mode
+    {
+        RS2_EMITTER_MODE_OFF = 0,  /**< Emitter disabled */
+        RS2_EMITTER_MODE_ON = 1,  /**< Emitter enabled */
+        RS2_EMITTER_MODE_ALWAYS_ON = 2,  /**< Laser on constantly, rather than only while the sensor is exposing */
+        RS2_EMITTER_MODE_ON_OFF = 3,  /**< Emitter state alternates every frame */
+        RS2_EMITTER_MODE_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    } rs2_emitter_mode;
+    const char* rs2_emitter_mode_to_string( rs2_emitter_mode mode );
+
     /** \brief values for RS2_OPTION_SAFETY_MODE option. */
     typedef enum rs2_safety_mode
     {
