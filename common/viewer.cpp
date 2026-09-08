@@ -2163,7 +2163,8 @@ namespace rs2
                 }
             }
 
-            //switch( stream_mv.profile.stream_type() )
+            // Detection overlays only make sense on the color stream; bbox coords are in color-frame space.
+            if( stream_mv.profile.stream_type() == RS2_STREAM_COLOR )
             {
                 static std::vector< std::pair< ImColor, bool > > colors =
                 {
@@ -2237,10 +2238,7 @@ namespace rs2
 
                 for( object_in_frame & object : *p_objects )
                 {
-                    rect const & normalized_bbox = stream_mv.profile.stream_type() == RS2_STREAM_DEPTH
-                        ? object.normalized_depth_bbox
-                        : object.normalized_color_bbox;
-                    rect const unbbox = normalized_bbox.unnormalize( stream_rect );
+                    rect const unbbox = object.normalized_color_bbox.unnormalize( stream_rect );
                     rect bbox = unbbox.grow( 10, 5 );  // Allow more text, and easier identification of the face
 
                     float a = 0.75f;
