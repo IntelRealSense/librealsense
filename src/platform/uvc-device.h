@@ -52,6 +52,12 @@ struct extension_unit
     guid id;
 };
 
+// Sentinel node value meaning "use the backend's default/aggregate processing unit"
+// (WMF: the aggregate IAMVideoProcAmp on the media source; V4L2: forwards to the non-PU
+// transport). KS topology node ids start at 0, so 0 is a legal PU node and cannot be the
+// sentinel; -1 is unambiguous.
+constexpr int DEFAULT_PU_NODE = -1;
+
 // subdevice and node are assigned by the host driver; unit is the UVC firmware entity ID
 struct processing_unit
 {

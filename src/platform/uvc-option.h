@@ -20,8 +20,7 @@ class uvc_pu_option : public option
     const std::map< float, std::string > _description_per_value;
     std::function< void( const option & ) > _record = []( const option & ) {};
     rsutils::lazy< option_range > _range;
-    platform::processing_unit _pu = { 0, 0, 0 };
-    bool _use_processing_unit = false;
+    platform::processing_unit _pu = { 0, 0, platform::DEFAULT_PU_NODE };
 
     void initialize_range();
 

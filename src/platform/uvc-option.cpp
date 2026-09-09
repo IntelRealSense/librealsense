@@ -38,7 +38,6 @@ uvc_pu_option::uvc_pu_option( const std::weak_ptr< uvc_sensor > & ep,
     , _id( id )
     , _description_per_value( description_per_value )
     , _pu( pu )
-    , _use_processing_unit( true )
 {
     initialize_range();
 }
@@ -54,9 +53,7 @@ void uvc_pu_option::initialize_range()
 
         auto uvc_range = ep->invoke_powered( [this]( platform::uvc_device & dev )
             {
-                if( _use_processing_unit )
-                    return dev.get_pu_range( _pu, _id );
-                return dev.get_pu_range( _id );
+                return dev.get_pu_range( _pu, _id );
             });
 
         if (uvc_range.min.size() < sizeof(int32_t)) return option_range{ 0,0,1,0 };
@@ -81,13 +78,10 @@ void uvc_pu_option::set(float value)
     ep->invoke_powered(
         [this, value](platform::uvc_device& dev)
         {
-            auto const success = _use_processing_unit
-                ? dev.set_pu( _pu, _id, static_cast< int32_t >( value ) )
-                : dev.set_pu( _id, static_cast< int32_t >( value ) );
-            if( ! success )
-            throw invalid_value_exception( rsutils::string::from()
-                                           << "set_pu(id=" << std::to_string( _id ) << ") failed!"
-                                           << " Last Error: " << strerror( errno ) );
+            if( ! dev.set_pu( _pu, _id, static_cast< int32_t >( value ) ) )
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "set_pu(id=" << std::to_string( _id ) << ") failed!"
+                                               << " Last Error: " << strerror( errno ) );
             _record(*this);
         });
 }
@@ -102,10 +96,7 @@ float uvc_pu_option::query() const
         [this](platform::uvc_device& dev)
         {
             int32_t value = 0;
-            auto const success = _use_processing_unit
-                ? dev.get_pu( _pu, _id, value )
-                : dev.get_pu( _id, value );
-            if( ! success )
+            if( ! dev.get_pu( _pu, _id, value ) )
                 throw invalid_value_exception( rsutils::string::from()
                                                << "get_pu(id=" << std::to_string( _id ) << ") failed!"
                                                << " Last Error: " << strerror( errno ) );

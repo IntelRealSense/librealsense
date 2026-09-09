@@ -257,8 +257,7 @@ namespace librealsense
                 {
                     return dev.get_pu_range( rgb_pu, RS2_OPTION_BRIGHTNESS );
                 } );
-                // v4l_uvc_device::get_pu_range returns an all-zero range for unknown CIDs instead of
-                // throwing - reject that fallback shape. Read via memcpy to stay strict-aliasing clean.
+                // v4l_uvc_device::get_pu_range returns an all-zero range for unknown CIDs instead of throwing - reject that fallback shape.
                 if( r.max.size() >= sizeof( int32_t ) && r.min.size() >= sizeof( int32_t ) )
                 {
                     int32_t r_min = 0, r_max = 0;

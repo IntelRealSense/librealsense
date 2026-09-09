@@ -23,11 +23,8 @@ namespace librealsense
     protected:
         std::shared_ptr< stream_interface > _color_stream_1;
         std::shared_ptr< stream_interface > _color_stream_2;
-        // Raw endpoint tied specifically to the pin whose fd hosts the RGB Processing Unit.
-        // Only populated when discovery finds a distinct RGB pin (e.g. Linux V4L2, where each
-        // /dev/videoN's fd exposes only its own PU chain's CIDs). Left null on backends where
-        // any pin resolves to the same source (e.g. WMF), in which case the RGB controls
-        // register against the aggregate depth raw endpoint and rely on node-based routing.
+        // Endpoint bound to the pin that hosts the RGB PU. Null when the backend routes by
+        // topology node instead (WMF) - RGB options then use the depth raw endpoint.
         std::shared_ptr< uvc_sensor > _raw_rgb_ep;
 
     private:

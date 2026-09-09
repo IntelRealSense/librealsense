@@ -99,8 +99,7 @@ namespace librealsense
 
             std::string get_device_location() const override { return _location; }
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
-            IAMVideoProcAmp* get_video_proc() const;
-            CComPtr< IAMVideoProcAmp > get_video_proc( int node ) const;
+            CComPtr< IAMVideoProcAmp > get_video_proc( int node = platform::DEFAULT_PU_NODE ) const;
             IAMCameraControl* get_camera_control() const;
 
         private:
@@ -131,8 +130,9 @@ namespace librealsense
             CComPtr<IMFAttributes>                  _reader_attrs = nullptr;
 
             CComPtr<IAMCameraControl>               _camera_control = nullptr;
-            CComPtr<IAMVideoProcAmp>                _video_proc = nullptr;
             mutable std::mutex _video_procs_mtx;
+            // Keyed by KS topology node; the sentinel DEFAULT_PU_NODE holds the aggregate
+            // IAMVideoProcAmp obtained from IMFMediaSource for backends with a single PU.
             mutable std::unordered_map<int, CComPtr<IAMVideoProcAmp>> _video_procs;
             std::unordered_map<int, CComPtr<IKsControl>>      _ks_controls;
 

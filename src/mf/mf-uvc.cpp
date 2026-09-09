@@ -518,6 +518,11 @@ namespace librealsense
 
         bool wmf_uvc_device::get_pu(rs2_option opt, int32_t& value) const
         {
+            return get_pu( processing_unit{ 0, 0, DEFAULT_PU_NODE }, opt, value );
+        }
+
+        bool wmf_uvc_device::get_pu(const processing_unit& unit, rs2_option opt, int32_t& value) const
+        {
             long val = 0, flags = 0;
             if ((opt == RS2_OPTION_EXPOSURE) || (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE))
             {
@@ -534,7 +539,7 @@ namespace librealsense
             {
                 if (opt == pu.option)
                 {
-                    auto hr = get_video_proc()->Get(pu.property, &val, &flags);
+                    auto hr = get_video_proc(unit.node)->Get(pu.property, &val, &flags);
                     if (hr == DEVICE_NOT_READY_ERROR)
                         return false;
 
@@ -563,26 +568,12 @@ namespace librealsense
             throw std::runtime_error( rsutils::string::from() << "Unsupported control - " << opt );
         }
 
-        bool wmf_uvc_device::get_pu(const processing_unit& unit, rs2_option opt, int32_t& value) const
+        bool wmf_uvc_device::set_pu(rs2_option opt, int value)
         {
-            long val = 0, flags = 0;
-            for (auto & pu : pu_controls)
-            {
-                if (opt == pu.option)
-                {
-                    auto hr = get_video_proc(unit.node)->Get(pu.property, &val, &flags);
-                    if (hr == DEVICE_NOT_READY_ERROR)
-                        return false;
-
-                    value = pu.enable_auto ? (flags == VideoProcAmp_Flags_Auto) : val;
-                    CHECK_HR(hr);
-                    return true;
-                }
-            }
-            return get_pu(opt, value);
+            return set_pu( processing_unit{ 0, 0, DEFAULT_PU_NODE }, opt, value );
         }
 
-        bool wmf_uvc_device::set_pu(rs2_option opt, int value)
+        bool wmf_uvc_device::set_pu(const processing_unit& unit, rs2_option opt, int value)
         {
             if (opt == RS2_OPTION_EXPOSURE)
             {
@@ -612,11 +603,12 @@ namespace librealsense
             {
                 if (opt == pu.option)
                 {
+                    auto video_proc = get_video_proc(unit.node);
                     if (pu.enable_auto)
                     {
                         if (value)
                         {
-                            auto hr = get_video_proc()->Set(pu.property, 0, VideoProcAmp_Flags_Auto);
+                            auto hr = video_proc->Set(pu.property, 0, VideoProcAmp_Flags_Auto);
                             if (hr == DEVICE_NOT_READY_ERROR)
                                 return false;
 
@@ -625,13 +617,13 @@ namespace librealsense
                         else
                         {
                             long min, max, step, def, caps;
-                            auto hr = get_video_proc()->GetRange(pu.property, &min, &max, &step, &def, &caps);
+                            auto hr = video_proc->GetRange(pu.property, &min, &max, &step, &def, &caps);
                             if (hr == DEVICE_NOT_READY_ERROR)
                                 return false;
 
                             CHECK_HR(hr);
 
-                            hr = get_video_proc()->Set(pu.property, def, VideoProcAmp_Flags_Manual);
+                            hr = video_proc->Set(pu.property, def, VideoProcAmp_Flags_Manual);
                             if (hr == DEVICE_NOT_READY_ERROR)
                                 return false;
 
@@ -640,7 +632,7 @@ namespace librealsense
                     }
                     else
                     {
-                        auto hr = get_video_proc()->Set(pu.property, value, VideoProcAmp_Flags_Manual);
+                        auto hr = video_proc->Set(pu.property, value, VideoProcAmp_Flags_Manual);
 
                         // We found 2 cases when we want to return false and let the backend retry mechanism call another set command.
                         // DEVICE_NOT_READY_ERROR: Can be return if the device is busy, not a real error.
@@ -703,55 +695,12 @@ namespace librealsense
             throw std::runtime_error( rsutils::string::from() << "Unsupported control - " << opt );
         }
 
-        bool wmf_uvc_device::set_pu(const processing_unit& unit, rs2_option opt, int value)
+        control_range wmf_uvc_device::get_pu_range(rs2_option opt) const
         {
-            for (auto & pu : pu_controls)
-            {
-                if (opt != pu.option)
-                    continue;
-
-                auto video_proc = get_video_proc(unit.node);
-                if (pu.enable_auto)
-                {
-                    if (value)
-                    {
-                        auto hr = video_proc->Set(pu.property, 0, VideoProcAmp_Flags_Auto);
-                        if( hr == DEVICE_NOT_READY_ERROR || hr == SEMAPHORE_TIMEOUT_ERROR )
-                            return false;
-                        CHECK_HR(hr);
-                    }
-                    else
-                    {
-                        long min, max, step, def, caps;
-                        auto hr = video_proc->GetRange(pu.property, &min, &max, &step, &def, &caps);
-                        if( hr == DEVICE_NOT_READY_ERROR || hr == SEMAPHORE_TIMEOUT_ERROR )
-                            return false;
-                        CHECK_HR(hr);
-
-                        hr = video_proc->Set(pu.property, def, VideoProcAmp_Flags_Manual);
-                        if( hr == DEVICE_NOT_READY_ERROR || hr == SEMAPHORE_TIMEOUT_ERROR )
-                            return false;
-                        CHECK_HR(hr);
-                    }
-                }
-                else
-                {
-                    auto hr = video_proc->Set(pu.property, value, VideoProcAmp_Flags_Manual);
-                    if( hr == DEVICE_NOT_READY_ERROR || hr == SEMAPHORE_TIMEOUT_ERROR )
-                    {
-                        if( hr == SEMAPHORE_TIMEOUT_ERROR )
-                            LOG_DEBUG( "set_pu returned error code: "
-                                       << rsutils::hresult::hr_to_string( hr ) );
-                        return false;
-                    }
-                    CHECK_HR(hr);
-                }
-                return true;
-            }
-            return set_pu(opt, value);
+            return get_pu_range( processing_unit{ 0, 0, DEFAULT_PU_NODE }, opt );
         }
 
-        control_range wmf_uvc_device::get_pu_range(rs2_option opt) const
+        control_range wmf_uvc_device::get_pu_range(const processing_unit& unit, rs2_option opt) const
         {
             if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE ||
                 opt == RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
@@ -773,7 +722,7 @@ namespace librealsense
             {
                 if (opt == pu.option)
                 {
-                    CHECK_HR(get_video_proc()->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                    CHECK_HR(get_video_proc(unit.node)->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                     control_range result(minVal, maxVal, steppingDelta, defVal);
                     return result;
                 }
@@ -788,25 +737,6 @@ namespace librealsense
                 }
             }
             throw std::runtime_error("unsupported control");
-        }
-
-        control_range wmf_uvc_device::get_pu_range(const processing_unit& unit, rs2_option opt) const
-        {
-            if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE ||
-                opt == RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
-                return control_range(0, 1, 1, 1);
-
-            long min = 0, max = 0, step = 0, def = 0, caps = 0;
-            for (auto & pu : pu_controls)
-            {
-                if (opt == pu.option)
-                {
-                    CHECK_HR(get_video_proc(unit.node)->GetRange(
-                        pu.property, &min, &max, &step, &def, &caps));
-                    return control_range(min, max, step, def);
-                }
-            }
-            return get_pu_range(opt);
         }
 
         void wmf_uvc_device::foreach_uvc_device(enumeration_callback action)
@@ -1011,7 +941,6 @@ namespace librealsense
 
             // Release any stale COM pointers from a previously failed set_d0() or set_d3()
             safe_release(_camera_control);
-            safe_release(_video_proc);
             {
                 std::lock_guard< std::mutex > lk( _video_procs_mtx );
                 _video_procs.clear();
@@ -1027,11 +956,20 @@ namespace librealsense
             CHECK_HR(MFCreateDeviceSource(_device_attrs, &_source));
             LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl), reinterpret_cast<void **>(&_camera_control)));
             // The IAMVideoProcAmp interface adjusts the qualities of an incoming video signal, such as brightness,
-            // contrast, hue, saturation, gamma, and sharpness.
-            auto hr = _source->QueryInterface( __uuidof( IAMVideoProcAmp ), reinterpret_cast< void ** >( &_video_proc ) );
-            // E_NOINTERFACE is expected... especially when no video camera
-            if( hr != E_NOINTERFACE )
-                LOG_HR_STR( "QueryInterface(IAMVideoProcAmp)", hr );
+            // contrast, hue, saturation, gamma, and sharpness. Cache it under DEFAULT_PU_NODE so the aggregate and
+            // any per-topology-node instances share one map (and one clear site in set_d3).
+            {
+                CComPtr< IAMVideoProcAmp > video_proc;
+                auto hr = _source->QueryInterface( __uuidof( IAMVideoProcAmp ), reinterpret_cast< void ** >( &video_proc ) );
+                // E_NOINTERFACE is expected... especially when no video camera
+                if( hr != E_NOINTERFACE )
+                    LOG_HR_STR( "QueryInterface(IAMVideoProcAmp)", hr );
+                if( video_proc.p )
+                {
+                    std::lock_guard< std::mutex > lk( _video_procs_mtx );
+                    _video_procs.emplace( DEFAULT_PU_NODE, video_proc );
+                }
+            }
 
             //enable reader
             CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
@@ -1042,7 +980,6 @@ namespace librealsense
         void wmf_uvc_device::set_d3()
         {
             safe_release(_camera_control);
-            safe_release(_video_proc);
             {
                 std::lock_guard< std::mutex > lk( _video_procs_mtx );
                 _video_procs.clear();
@@ -1292,19 +1229,10 @@ namespace librealsense
             _frame_callbacks.push_back(callback);
         }
 
-        IAMVideoProcAmp* wmf_uvc_device::get_video_proc() const
-        {
-            if (get_power_state() != D0)
-                throw std::runtime_error("Device must be powered to query video_proc!");
-            if (!_video_proc.p)
-                throw std::runtime_error("The device does not support adjusting the qualities of an incoming video signal, such as brightness, contrast, hue, saturation, gamma, and sharpness.");
-            return _video_proc.p;
-        }
-
         CComPtr< IAMVideoProcAmp > wmf_uvc_device::get_video_proc( int node ) const
         {
             if (get_power_state() != D0)
-                throw std::runtime_error("Device must be powered to query a processing-unit node!");
+                throw std::runtime_error("Device must be powered to query video_proc!");
 
             // Guard both the cache read and the lazy insert. Callers receive a CComPtr copy that keeps
             // the interface alive even if a concurrent set_d3() clears the cache mid-use.
@@ -1312,6 +1240,11 @@ namespace librealsense
             auto const found = _video_procs.find(node);
             if (found != _video_procs.end())
                 return found->second;
+
+            // DEFAULT_PU_NODE is the aggregate IAMVideoProcAmp; set_d0 populates it eagerly. Absence here
+            // means the device did not expose the interface at all.
+            if (node == DEFAULT_PU_NODE)
+                throw std::runtime_error("The device does not support adjusting the qualities of an incoming video signal, such as brightness, contrast, hue, saturation, gamma, and sharpness.");
 
             CComPtr<IKsTopologyInfo> topology = nullptr;
             CHECK_HR(_source->QueryInterface(__uuidof(IKsTopologyInfo),
