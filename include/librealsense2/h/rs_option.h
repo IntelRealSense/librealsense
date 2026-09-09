@@ -247,6 +247,7 @@ extern "C" {
         RS2_RS400_VISUAL_PRESET_HIGH_DENSITY,
         RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY,
         RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN,
+        RS2_RS400_VISUAL_PRESET_EDGE_ENHANCEMENT,
         RS2_RS400_VISUAL_PRESET_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_rs400_visual_preset;
     const char* rs2_rs400_visual_preset_to_string(rs2_rs400_visual_preset preset);
