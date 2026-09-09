@@ -4,6 +4,7 @@
 import pytest
 import pyrealsense2 as rs
 from pytest_check import check
+from rspy.snippets import is_dds_dev
 import time
 import logging
 log = logging.getLogger(__name__)
@@ -105,10 +106,13 @@ def test_emitter_on_off_blocked_while_always_on(test_device):
         depth_sensor.set_option(rs.option.emitter_always_on, 1)
         time.sleep(0.1)  # laser/emitter is physical: let it settle before the next read/set
 
-        try:
+        if is_dds_dev(dev):
+            # no gated_option over DDS: the firmware itself rejects the contradictory value
+            with pytest.raises(RuntimeError, match="Option value error"):
+                depth_sensor.set_option(rs.option.emitter_on_off, 1)
+        else:
+            # the native path drops the set inside gated_option, without raising
             depth_sensor.set_option(rs.option.emitter_on_off, 1)
-        except RuntimeError as e:
-            log.info("emitter on/off set refused while emitter always on is enabled: %s", e)
         time.sleep(0.1)  # laser/emitter is physical: let it settle before the next read/set
         check.equal(depth_sensor.get_option(rs.option.emitter_on_off), 0.0)
 
