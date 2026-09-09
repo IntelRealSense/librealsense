@@ -678,12 +678,12 @@ namespace rs2
 
             // Range popover (right-click the ruler button). ImGui associates the
             // popup with the most-recently-submitted item, so it targets the button.
-            const std::string popup_id = "##ColorMapRulerPopup";
+            static const char* const popup_id = "##ColorMapRulerPopup";
             if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
             {
-                ImGui::OpenPopup(popup_id.c_str());
+                ImGui::OpenPopup(popup_id);
             }
-            if (ImGui::BeginPopup(popup_id.c_str()))
+            if (ImGui::BeginPopup(popup_id))
             {
                 ImGui::TextUnformatted("Depth ruler range");
                 ImGui::Separator();
