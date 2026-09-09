@@ -30,13 +30,18 @@ namespace rs2
             int mode_val = config_file::instance().get_or_default(
                 configurations::viewer::ruler_range_mode,
                 static_cast<int>(ruler_range_mode::auto_dynamic));
-            if (mode_val < 0 || mode_val > 2) mode_val = 0;
+            if (mode_val < static_cast<int>(ruler_range_mode::auto_dynamic) ||
+                mode_val > static_cast<int>(ruler_range_mode::fixed_user))
+            {
+                mode_val = static_cast<int>(ruler_range_mode::auto_dynamic);
+            }
             ruler_mode = static_cast<ruler_range_mode>(mode_val);
             ruler_fixed_min = config_file::instance().get_or_default(
                 configurations::viewer::ruler_fixed_min, 0.f);
             ruler_fixed_max = config_file::instance().get_or_default(
                 configurations::viewer::ruler_fixed_max, 4.f);
-            if (ruler_fixed_max <= ruler_fixed_min) ruler_fixed_max = ruler_fixed_min + 0.1f;
+            if (ruler_fixed_max <= ruler_fixed_min + k_min_ruler_gap)
+                ruler_fixed_max = ruler_fixed_min + k_min_ruler_gap;
         }
         show_stream_details = config_file::instance().get_or_default(
             configurations::viewer::show_stream_details, false);
@@ -643,7 +648,6 @@ namespace rs2
         if (RS2_STREAM_DEPTH == profile.stream_type())
         {
             label = rsutils::string::from() << textual_icons::bar_chart << "##Color map";
-            const bool ruler_was_shown = show_map_ruler;
             if (show_map_ruler)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
@@ -675,7 +679,6 @@ namespace rs2
             // Range popover (right-click the ruler button). ImGui associates the
             // popup with the most-recently-submitted item, so it targets the button.
             const std::string popup_id = "##ColorMapRulerPopup";
-            (void)ruler_was_shown;
             if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
             {
                 ImGui::OpenPopup(popup_id.c_str());
@@ -713,8 +716,8 @@ namespace rs2
                 if (range_changed)
                 {
                     if (ruler_fixed_min < 0.f) ruler_fixed_min = 0.f;
-                    if (ruler_fixed_max <= ruler_fixed_min)
-                        ruler_fixed_max = ruler_fixed_min + 0.1f;
+                    if (ruler_fixed_max <= ruler_fixed_min + k_min_ruler_gap)
+                        ruler_fixed_max = ruler_fixed_min + k_min_ruler_gap;
                     config_file::instance().set(configurations::viewer::ruler_fixed_min, ruler_fixed_min);
                     config_file::instance().set(configurations::viewer::ruler_fixed_max, ruler_fixed_max);
                     ruler_state.initialized = false;

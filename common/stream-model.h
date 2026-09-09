@@ -38,6 +38,10 @@ namespace rs2
         fixed_user   = 2,   // user-typed min/max
     };
 
+    // Minimum span (m) between user-typed min and max in fixed_user mode.
+    // Enforced by both the load path, the popover, and calculate_ruler_bounds.
+    static constexpr float k_min_ruler_gap = 0.1f;
+
     struct depth_ruler_state
     {
         // EMA-smoothed data-driven bounds (raw percentile values feed this).

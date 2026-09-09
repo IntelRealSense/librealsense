@@ -1829,17 +1829,23 @@ namespace rs2
     }
 
     namespace {
-        // Nice-step ladder: pick the tick spacing for a given displayed range so
-        // labels come out round (0.05/0.10/0.25/... instead of 0.37, 0.74, ...).
+        // The one nice-step ladder. Both the snap grid (nice_step_for_range,
+        // used by the bounds smoothing) and the tick-label picker in
+        // draw_color_ruler iterate this same array — extending it changes both.
+        static constexpr float k_step_ladder[] = {
+            0.05f, 0.10f, 0.25f, 0.5f, 1.f, 2.f, 5.f, 10.f, 20.f, 50.f, 100.f
+        };
+
+        // Snap grid: coarsest step that keeps ~≤10 grid cells across the range.
+        // Verified to match the previous hardcoded thresholds through 20 m; beyond
+        // that, extrapolates sensibly (100 m → 10 m step instead of the old 5 m).
         float nice_step_for_range(float range)
         {
-            if (range <= 0.5f) return 0.05f;
-            if (range <= 1.0f) return 0.10f;
-            if (range <= 2.0f) return 0.25f;
-            if (range <= 5.0f) return 0.50f;
-            if (range <= 10.f) return 1.0f;
-            if (range <= 20.f) return 2.0f;
-            return 5.0f;
+            for (float s : k_step_ladder)
+            {
+                if (range <= s * 10.f) return s;
+            }
+            return k_step_ladder[sizeof(k_step_ladder)/sizeof(k_step_ladder[0]) - 1];
         }
 
         // p in [0,1]. Modifies the vector via nth_element — cheap and avoids a full sort.
@@ -1939,16 +1945,13 @@ namespace rs2
         const float x_ruler_val = right_x_colored_ruler + 4.0f;
         const auto  font_size   = ImGui::GetFontSize();
 
-        static constexpr float step_ladder[] = {
-            0.05f, 0.10f, 0.25f, 0.5f, 1.f, 2.f, 5.f, 10.f, 20.f, 50.f, 100.f
-        };
         auto tick_count = [ruler_min, ruler_max](float s) {
             const float first = std::ceil(ruler_min / s - 1e-4f) * s;
             if (first > ruler_max + 1e-4f) return 0;
             return static_cast<int>(std::floor((ruler_max + 1e-4f - first) / s)) + 1;
         };
-        float draw_step = step_ladder[sizeof(step_ladder)/sizeof(step_ladder[0]) - 1];
-        for (float s : step_ladder)
+        float draw_step = k_step_ladder[sizeof(k_step_ladder)/sizeof(k_step_ladder[0]) - 1];
+        for (float s : k_step_ladder)
         {
             if (tick_count(s) <= 5) { draw_step = s; break; }
         }
@@ -2034,7 +2037,7 @@ namespace rs2
     }
 
     viewer_model::ruler_bounds viewer_model::calculate_ruler_bounds(
-        const std::vector<float>& distances, stream_model& s_model) const
+        std::vector<float> distances, stream_model& s_model)
     {
         assert(!distances.empty());
 
@@ -2051,7 +2054,7 @@ namespace rs2
         if (s_model.ruler_mode == ruler_range_mode::fixed_user)
         {
             float lo = std::max(0.f, s_model.ruler_fixed_min);
-            float hi = std::max(lo + 0.05f, s_model.ruler_fixed_max);
+            float hi = std::max(lo + k_min_ruler_gap, s_model.ruler_fixed_max);
             s_model.ruler_state.snapped_min = lo;
             s_model.ruler_state.snapped_max = hi;
             s_model.ruler_state.smoothed_min = lo;
@@ -2060,13 +2063,14 @@ namespace rs2
             return { lo, hi };
         }
 
-        // 2) Auto: percentile-driven raw bounds with a bit of headroom, robust to
-        //    a few far outliers (a single stray pixel at 8 m shouldn't pin the ruler).
-        auto copy = distances;
-        float raw_lo = percentile(copy, 0.05f);
-        float raw_hi = percentile(copy, 0.95f);
-        raw_lo = std::max(0.f, raw_lo - 0.05f * std::max(raw_hi - raw_lo, 0.05f));
-        raw_hi = raw_hi + 0.05f * std::max(raw_hi - raw_lo, 0.05f);
+        // 2) Auto: percentile-driven raw bounds with symmetric 5% headroom on
+        //    each side. Cache the span before mutating either endpoint — else
+        //    the second line's headroom would ride the already-shrunk raw_lo.
+        float raw_lo = percentile(distances, 0.05f);
+        float raw_hi = percentile(distances, 0.95f);
+        const float span = std::max(raw_hi - raw_lo, 0.05f);
+        raw_lo = std::max(0.f, raw_lo - 0.05f * span);
+        raw_hi = raw_hi + 0.05f * span;
         if (raw_hi <= raw_lo) raw_hi = raw_lo + 0.05f;
 
         // 3) Asymmetric EMA hysteresis. "Expand" (max moves up, min moves down)
@@ -2470,7 +2474,8 @@ namespace rs2
 
                     if (!distances.empty())
                     {
-                        auto bounds = calculate_ruler_bounds(distances, streams[stream]);
+                        auto bounds = calculate_ruler_bounds(std::move(distances),
+                                                             streams[stream]);
                         draw_color_ruler(active_mouse, streams[stream], stream_rect,
                                          rgb_per_distance_vec, bounds, depth_units);
                     }

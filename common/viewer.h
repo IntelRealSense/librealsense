@@ -275,8 +275,11 @@ namespace rs2
                               std::vector<rgb_per_distance> rgb_per_distance_vec,
                               const ruler_bounds& bounds,
                               const std::string& ruler_units);
-        ruler_bounds calculate_ruler_bounds(const std::vector<float>& distances,
-                                            stream_model& s_model) const;
+        // Takes distances by value so the caller can std::move — nth_element
+        // partitions in place, avoiding a per-frame copy. Not const: updates
+        // the ruler smoothing state that lives on s_model.
+        ruler_bounds calculate_ruler_bounds(std::vector<float> distances,
+                                            stream_model& s_model);
 
         void set_export_popup(ImFont* large_font, ImFont* font, rect stream_rect, std::string& error_message, config_file& temp_cfg);
         void init_depth_uid(int& selected_depth_source, std::vector<std::string>& depth_sources_str, std::vector<int>& depth_sources);
