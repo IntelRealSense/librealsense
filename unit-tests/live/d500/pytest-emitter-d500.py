@@ -123,8 +123,9 @@ def test_emitter_on_off_blocked_while_always_on(test_device):
         time.sleep(0.1)  # laser/emitter is physical: let it settle before the next read/set
         check.equal(depth_sensor.get_option(rs.option.emitter_on_off), 1.0)
     finally:
-        # always on first: while it is enabled an emitter on/off set is refused, which over DDS
-        # raises and would mask the real failure
+        # emitter on/off 0 is accepted whatever emitter always on is, so clearing it first makes
+        # the restore safe from either entry state; any other order can hit the interlock
+        depth_sensor.set_option(rs.option.emitter_on_off, 0)
         depth_sensor.set_option(rs.option.emitter_always_on, original_always_on)
         depth_sensor.set_option(rs.option.emitter_on_off, original_on_off)
         pipe.stop()
