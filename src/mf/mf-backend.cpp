@@ -297,15 +297,20 @@ namespace librealsense
                         // interfaces - vendor-defined controls on unrelated cameras, for
                         // instance - never appear there, so waiting on them would defer
                         // every device on the machine.
+                        //
+                        // The whole subtree is searched, not just the interface's immediate
+                        // children: a driver stack that inserts a HID-compliant-device node
+                        // between the interface and its collections would otherwise hide the
+                        // Sensor node and silently skip the wait.
                         bool is_sensor_collection = false;
-                        for( cm_node node = hid_instance; node.valid(); node = node.get_sibling() )
-                        {
-                            if( node.get_property( DEVPKEY_Device_Class ) == "Sensor" )
+                        child.foreach_node(
+                            [&]( cm_node node, size_t )
                             {
+                                if( node.get_property( DEVPKEY_Device_Class ) != "Sensor" )
+                                    return true;
                                 is_sensor_collection = true;
-                                break;
-                            }
-                        }
+                                return false;
+                            } );
                         if( is_sensor_collection && ! sensor_api_uids.count( unique_id ) )
                         {
                             incomplete.insert( unique_id );
@@ -457,13 +462,13 @@ namespace librealsense
                             platform::backend_device_group curr( uvc_devices, usb_devices, hid_devices );
 
                             // Arrivals, on the other hand, wait: a composite still growing
-                            // camera/HID interfaces is not ready to be published, so re-arm
-                            // the debounce and look again on the next tick. Each composite
-                            // gets its own budget, so one that advertises an interface it
-                            // never binds delays us once instead of blocking every later
-                            // event on the machine - and once the budget is spent we publish
-                            // whatever exists, which is what lets a genuinely partial device
-                            // through.
+                            // camera/HID interfaces is not ready to be published, so it is
+                            // dropped from this snapshot and looked at again on the next tick.
+                            // Only that composite is held - everything else in the same tick
+                            // publishes immediately, so one camera mid-enumeration never
+                            // delays another. Each composite gets its own budget, and once
+                            // that is spent it is published with whatever exists, which is
+                            // what lets a genuinely partial device through.
                             //
                             // The widest interface spread measured was 6.5s, on a D585 going
                             // from a premature publish to the complete device after a firmware
@@ -482,37 +487,55 @@ namespace librealsense
                                     it = _data._incomplete_since.erase( it );
                                 }
                             }
-                            bool may_defer = false;
+                            // Only an arrival is ever held back. A composite we have already
+                            // published stays published even if it looks incomplete for a tick -
+                            // the Sensor API drops entries transiently, and retracting a live
+                            // device would surface as a spurious removal followed by a re-add.
+                            std::set< std::string > already_published;
+                            for( auto && uvc : _last.uvc_devices )
+                                already_published.insert( uvc.unique_id );
+
+                            bool holding = false;
                             for( auto && unique_id : incomplete )
                             {
+                                if( already_published.count( unique_id ) )
+                                    continue;
                                 auto inserted = _data._incomplete_since.emplace( unique_id, now );
-                                if( now - inserted.first->second < MAX_DEFERRAL )
-                                    may_defer = true;
-                                else if( _data._warned_incomplete.insert( unique_id ).second )
+                                if( now - inserted.first->second >= MAX_DEFERRAL )
+                                {
                                     // Publishing it anyway is what lets a genuinely partial device
                                     // through, but it also means a device that needed longer comes up
                                     // missing sensors - so say so rather than let it look normal.
-                                    LOG_WARNING( unique_id << " still incomplete after "
-                                                 << std::chrono::duration_cast< std::chrono::seconds >(
-                                                        now - inserted.first->second ).count()
-                                                 << "s; publishing it as-is" );
-                            }
-                            if( may_defer )
-                            {
-                                _data._timer.start();
-                                // Don't publish yet; fall through to sleep.
-                            }
-                            else
-                            {
-                                if( list_changed( _last.uvc_devices, curr.uvc_devices )
-                                    || list_changed( _last.usb_devices, curr.usb_devices )
-                                    || list_changed( _last.hid_devices, curr.hid_devices ) )
-                                {
-                                    _callback( _last, curr );
-                                    _last = curr;
+                                    if( _data._warned_incomplete.insert( unique_id ).second )
+                                        LOG_WARNING( unique_id << " still incomplete after "
+                                                     << std::chrono::duration_cast< std::chrono::seconds >(
+                                                            now - inserted.first->second ).count()
+                                                     << "s; publishing it as-is" );
+                                    continue;
                                 }
-                                _data._changed = false;
+                                auto held = [&unique_id]( auto const & device )
+                                { return device.unique_id == unique_id; };
+                                curr.uvc_devices.erase( std::remove_if( curr.uvc_devices.begin(),
+                                                                        curr.uvc_devices.end(), held ),
+                                                        curr.uvc_devices.end() );
+                                curr.hid_devices.erase( std::remove_if( curr.hid_devices.begin(),
+                                                                        curr.hid_devices.end(), held ),
+                                                        curr.hid_devices.end() );
+                                holding = true;
                             }
+
+                            if( list_changed( _last.uvc_devices, curr.uvc_devices )
+                                || list_changed( _last.usb_devices, curr.usb_devices )
+                                || list_changed( _last.hid_devices, curr.hid_devices ) )
+                            {
+                                _callback( _last, curr );
+                                _last = curr;
+                            }
+                            // Keep checking while something is held back, or its arrival
+                            // would never be reported.
+                            _data._changed = holding;
+                            if( holding )
+                                _data._timer.start();
                         }
                         // Yield CPU resources, as this is required for connect/disconnect events only
                         std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
