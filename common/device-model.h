@@ -139,6 +139,9 @@ namespace rs2
             static const char* log_severity{ "viewer_model.log_severity" };
             static const char* post_processing{ "viewer_model.post_processing" };
             static const char* show_map_ruler{ "viewer_model.show_map_ruler" };
+            static const char* ruler_range_mode{ "viewer_model.ruler_range_mode" };
+            static const char* ruler_fixed_min{ "viewer_model.ruler_fixed_min" };
+            static const char* ruler_fixed_max{ "viewer_model.ruler_fixed_max" };
             static const char* show_stream_details{ "viewer_model.show_stream_details" };
             static const char* metric_system{ "viewer_model.metric_system" };
             static const char* shading_mode{ "viewer_model.shading_mode" };

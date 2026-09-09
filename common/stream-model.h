@@ -31,6 +31,26 @@ namespace rs2
 
     bool draw_combo_box(const std::string& id, const std::vector<std::string>& device_names, int& new_index);
 
+    enum class ruler_range_mode : int
+    {
+        auto_dynamic = 0,   // percentile-driven, hysteresis-smoothed
+        fixed_4m     = 1,   // legacy 0..4 m behavior
+        fixed_user   = 2,   // user-typed min/max
+    };
+
+    struct depth_ruler_state
+    {
+        // EMA-smoothed data-driven bounds (raw percentile values feed this).
+        float smoothed_min = 0.f;
+        float smoothed_max = 4.f;
+        // Currently-displayed nice-step-snapped bounds. Only refreshed when
+        // the smoothed value moves past a symmetric deadband away from these,
+        // so the ruler doesn't oscillate at a step boundary.
+        float snapped_min = 0.f;
+        float snapped_max = 4.f;
+        bool  initialized = false;
+    };
+
     class stream_model
     {
     public:
@@ -103,6 +123,10 @@ namespace rs2
         rect curr_info_rect{};
         temporal_event _stream_not_alive;
         bool show_map_ruler = true;
+        ruler_range_mode ruler_mode = ruler_range_mode::auto_dynamic;
+        float ruler_fixed_min = 0.f;
+        float ruler_fixed_max = 4.f;
+        depth_ruler_state ruler_state;
         bool show_metadata = false;
         bool show_safety_zones_2d = true;
 

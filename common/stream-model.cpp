@@ -26,6 +26,18 @@ namespace rs2
     {
         show_map_ruler = config_file::instance().get_or_default(
             configurations::viewer::show_map_ruler, true);
+        {
+            int mode_val = config_file::instance().get_or_default(
+                configurations::viewer::ruler_range_mode,
+                static_cast<int>(ruler_range_mode::auto_dynamic));
+            if (mode_val < 0 || mode_val > 2) mode_val = 0;
+            ruler_mode = static_cast<ruler_range_mode>(mode_val);
+            ruler_fixed_min = config_file::instance().get_or_default(
+                configurations::viewer::ruler_fixed_min, 0.f);
+            ruler_fixed_max = config_file::instance().get_or_default(
+                configurations::viewer::ruler_fixed_max, 4.f);
+            if (ruler_fixed_max <= ruler_fixed_min) ruler_fixed_max = ruler_fixed_min + 0.1f;
+        }
         show_stream_details = config_file::instance().get_or_default(
             configurations::viewer::show_stream_details, false);
         show_safety_zones_2d = config_file::instance().get_or_default(
@@ -631,6 +643,7 @@ namespace rs2
         if (RS2_STREAM_DEPTH == profile.stream_type())
         {
             label = rsutils::string::from() << textual_icons::bar_chart << "##Color map";
+            const bool ruler_was_shown = show_map_ruler;
             if (show_map_ruler)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
@@ -642,7 +655,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    RsImGui::CustomTooltip("Hide color map ruler");
+                    RsImGui::CustomTooltip("Hide color map ruler (right-click for range options)");
                 }
                 ImGui::PopStyleColor(2);
             }
@@ -655,9 +668,60 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    RsImGui::CustomTooltip("Show color map ruler");
+                    RsImGui::CustomTooltip("Show color map ruler (right-click for range options)");
                 }
             }
+
+            // Range popover (right-click the ruler button). ImGui associates the
+            // popup with the most-recently-submitted item, so it targets the button.
+            const std::string popup_id = "##ColorMapRulerPopup";
+            (void)ruler_was_shown;
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+            {
+                ImGui::OpenPopup(popup_id.c_str());
+            }
+            if (ImGui::BeginPopup(popup_id.c_str()))
+            {
+                ImGui::TextUnformatted("Depth ruler range");
+                ImGui::Separator();
+                int mode_i = static_cast<int>(ruler_mode);
+                bool mode_changed = false;
+                mode_changed |= ImGui::RadioButton("Auto (adaptive)##rulerAuto",  &mode_i, 0);
+                if (ImGui::IsItemHovered())
+                    RsImGui::CustomTooltip("Percentile-driven, smoothed across frames");
+                mode_changed |= ImGui::RadioButton("Fixed 0-4 m (legacy)##rulerLegacy", &mode_i, 1);
+                mode_changed |= ImGui::RadioButton("Fixed custom range##rulerCustom", &mode_i, 2);
+
+                if (mode_changed)
+                {
+                    ruler_mode = static_cast<ruler_range_mode>(mode_i);
+                    config_file::instance().set(configurations::viewer::ruler_range_mode, mode_i);
+                    ruler_state.initialized = false; // re-seed on next frame
+                }
+
+                const bool custom_enabled = (ruler_mode == ruler_range_mode::fixed_user);
+                if (!custom_enabled) ImGui::BeginDisabled();
+                ImGui::PushItemWidth(90);
+                bool range_changed = false;
+                range_changed |= ImGui::DragFloat("min (m)##rulerFixedMin",
+                                                  &ruler_fixed_min, 0.05f, 0.f, 100.f, "%.2f");
+                range_changed |= ImGui::DragFloat("max (m)##rulerFixedMax",
+                                                  &ruler_fixed_max, 0.05f, 0.f, 100.f, "%.2f");
+                ImGui::PopItemWidth();
+                if (!custom_enabled) ImGui::EndDisabled();
+
+                if (range_changed)
+                {
+                    if (ruler_fixed_min < 0.f) ruler_fixed_min = 0.f;
+                    if (ruler_fixed_max <= ruler_fixed_min)
+                        ruler_fixed_max = ruler_fixed_min + 0.1f;
+                    config_file::instance().set(configurations::viewer::ruler_fixed_min, ruler_fixed_min);
+                    config_file::instance().set(configurations::viewer::ruler_fixed_max, ruler_fixed_max);
+                    ruler_state.initialized = false;
+                }
+                ImGui::EndPopup();
+            }
+
             ImGui::SameLine();
         }
 
