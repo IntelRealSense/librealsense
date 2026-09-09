@@ -54,6 +54,8 @@ namespace librealsense
             static constexpr uint32_t RS_CAMERA_CID_HWMC                    = ( RS_CAMERA_CID_BASE + 0x20 );
             static constexpr uint32_t RS_CAMERA_CID_READOUT_SHAPING         = ( RS_CAMERA_CID_BASE + 0x22 );
             static constexpr uint32_t RS_CAMERA_CID_AE_MODE                 = ( RS_CAMERA_CID_BASE + 0x23 );
+            static constexpr uint32_t RS_CAMERA_CID_DEVICE_MODE             = ( RS_CAMERA_CID_BASE + 0x24 ); // Dual RGB (2C) vs dedicated color sensor (3C)
+            static constexpr uint32_t RS_CAMERA_CID_2C_AE_POLICY            = ( RS_CAMERA_CID_BASE + 0x25 );
 
             static constexpr uint8_t GVD_VALID_OPCODE = 0x10;
 
@@ -76,7 +78,15 @@ namespace librealsense
             static constexpr uint8_t RS_PVT_TEMPERATURE                 = 0x15;
             static constexpr uint8_t RS_PROJECTOR_TEMPERATURE           = 0x16;
             static constexpr uint8_t RS_OHM_TEMPERATURE                 = 0x17;
+            static constexpr uint8_t RS_COLORED_IR_AE_POLICY            = 0x19; // d500_xu_id::COLORED_IR_AE_POLICY
             static constexpr uint8_t RS_EXTERNAL_SYNC_D500              = 0x1A; // d500_xu_id::EXTERNAL_SYNC_MODE
+
+            // D500-only selectors that collide with a different D400 control at the same number.
+            static constexpr uint8_t RS_ALIGN_DEPTH           = 0x10; // vs RS_EMITTER_FREQUENCY
+            static constexpr uint8_t RS_DECIMATION_FILTER_DPP = 0x11; // vs RS_DEPTH_AUTO_EXPOSURE_MODE
+            static constexpr uint8_t RS_DUAL_RGB_MODE         = 0x12; // vs RS_EXTERNAL_SYNC
+            static constexpr uint8_t RS_TEMPORAL_FILTER_DPP   = 0x13; // vs RS_READOUT_SHAPING
+            static constexpr uint8_t RS_HDRD_CONTROL          = 0x14; // D500 only, no D400 counterpart
 
             bool is_auto_exposure_control( uint8_t control )
             {
@@ -294,11 +304,31 @@ namespace librealsense
                 }
             }
 
-            // MIPI controls map - temporal solution to bypass backend interface with actual codes
-            uint32_t xu_to_cid( const extension_unit & xu, uint8_t control )
+            // MIPI controls map - temporal solution to bypass backend interface with actual codes.
+            // The two families reuse selector numbers for different controls, so the ones they
+            // disagree on are split on `is_d5xx` - see the D500 block below.
+            uint32_t xu_to_cid( const extension_unit & xu, uint8_t control, bool is_d5xx )
             {
                 if( 0 == xu.subdevice )
                 {
+                    if( is_d5xx )
+                    {
+                        switch( control )
+                        {
+                        case RS_DUAL_RGB_MODE: return RS_CAMERA_CID_DEVICE_MODE;
+                        case RS_COLORED_IR_AE_POLICY: return RS_CAMERA_CID_2C_AE_POLICY;
+                        // Selectors the D400 table below maps to something else entirely, and which have
+                        // no MIPI equivalent yet: ALIGN_DEPTH, and the decimation / temporal / close-range
+                        // DPP composites the driver splits into its own scalar CIDs.
+                        case RS_ALIGN_DEPTH:
+                        case RS_DECIMATION_FILTER_DPP:
+                        case RS_TEMPORAL_FILTER_DPP:
+                        case RS_HDRD_CONTROL:
+                            throw linux_backend_exception( rsutils::string::from() << "no v4l2 mipi cid for D500 XU depth control " << std::dec << int( control ) );
+                        default: break;  // the rest are common to both families
+                        }
+                    }
+
                     switch( control )
                     {
                     case RS_HWMONITOR: return RS_CAMERA_CID_HWMC;

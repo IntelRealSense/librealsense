@@ -76,6 +76,56 @@ namespace librealsense
         register_color_extrinsics();
         register_color_metadata();
         register_ae_policy_option();
+        register_color_options();
+    }
+
+    // A control the endpoint does not publish comes back as a degenerate range on MIPI and throws over
+    // USB; either way registering it would only add a dead control.
+    static bool is_control_available( const option & opt, rs2_option id )
+    {
+        try
+        {
+            auto range = opt.get_range();
+            return range.min != range.max;
+        }
+        catch( const std::exception & e )
+        {
+            LOG_WARNING( "Dual RGB color control " << id << " not available: " << e.what() );
+            return false;
+        }
+    }
+
+    void d500_dual_color::register_color_options()
+    {
+        // Both RGB cameras ride the depth sensor, so their controls come off the depth endpoint too.
+        // Only the ones without a depth counterpart are exposed - exposure/gain/auto-exposure stay the
+        // depth ones, arbitrated by the AE policy above.
+        auto raw_depth_sensor = get_raw_depth_sensor();
+        auto & depth_sensor = get_depth_sensor();
+        for( auto id : { RS2_OPTION_BRIGHTNESS, RS2_OPTION_CONTRAST, RS2_OPTION_HUE, RS2_OPTION_SATURATION,
+                         RS2_OPTION_SHARPNESS, RS2_OPTION_GAMMA, RS2_OPTION_POWER_LINE_FREQUENCY,
+                         RS2_OPTION_BACKLIGHT_COMPENSATION } )
+        {
+            auto pu = std::make_shared< uvc_pu_option >( raw_depth_sensor, id );
+            if( is_control_available( *pu, id ) )
+                depth_sensor.register_option( id, pu );
+        }
+
+        auto white_balance = std::make_shared< uvc_pu_option >( raw_depth_sensor, RS2_OPTION_WHITE_BALANCE );
+        if( is_control_available( *white_balance, RS2_OPTION_WHITE_BALANCE ) )
+        {
+            // Guarded on its own: without auto white balance the manual control is still worth having,
+            // just not wrapped in the auto-disabling proxy.
+            auto auto_white_balance = std::make_shared< uvc_pu_option >( raw_depth_sensor, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE );
+            if( is_control_available( *auto_white_balance, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE ) )
+            {
+                depth_sensor.register_option( RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, auto_white_balance );
+                depth_sensor.register_option( RS2_OPTION_WHITE_BALANCE,
+                                              std::make_shared< auto_disabling_control >( white_balance, auto_white_balance ) );
+            }
+            else
+                depth_sensor.register_option( RS2_OPTION_WHITE_BALANCE, white_balance );
+        }
     }
 
     // Both rules below only bite once a color stream shares the depth sensor's imagers.

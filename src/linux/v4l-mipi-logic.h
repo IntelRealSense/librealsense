@@ -19,7 +19,8 @@ namespace librealsense
         namespace v4l_mipi_logic
         {
             // Translate a USB like XU (subdevice, selector) to its V4L2 control id. Throws on an unmapped selector.
-            uint32_t xu_to_cid( const extension_unit & xu, uint8_t control );
+            // The families reuse selector numbers for different controls, so `is_d5xx` picks the right table.
+            uint32_t xu_to_cid( const extension_unit & xu, uint8_t control, bool is_d5xx );
 
             // Translate an rs2_option (processing-unit control) to its V4L2 control id. Throws on an unmapped option.
             uint32_t option_to_cid( rs2_option option );
