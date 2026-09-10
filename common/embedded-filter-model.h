@@ -37,10 +37,13 @@ namespace rs2
             bool* options_invalidated,
             std::string& error_message );
 
-        void draw_options( viewer_model & viewer,
-                           bool update_read_only_options,
-                           bool is_streaming,
-                           std::string & error_message );
+        // The options this filter draws, in map order - all but the enable option, which is
+        // this filter's own toggle beside its name
+        std::vector< option_model * > drawable_options();
+
+        // The composite options, which have no option_model of their own: the two hardcoded
+        // editors below plus read-only metadata for the rest. Drawn as the section's content.
+        void draw_composite_options( std::string & error_message );
 
         // Hardcoded editor for RS2_COMPOSITE_OPTION_DECIMATION_FILTER_DPP specifically. There is
         // no generic per-field composite-option editor (would need per-struct schema knowledge
@@ -89,8 +92,6 @@ namespace rs2
             _decimation_filter_dpp_editor.ensure_initialized(
                 _embedded_filter, RS2_COMPOSITE_OPTION_DECIMATION_FILTER_DPP, error_message );
         }
-
-        bool _is_visible = true;
 
         // Optional predicate; null means always available. When false the enable toggle is
         // grayed out. Set by the owner for filters with runtime constraints (e.g. close range,
