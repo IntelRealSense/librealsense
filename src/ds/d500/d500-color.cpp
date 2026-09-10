@@ -72,8 +72,25 @@ namespace librealsense
         };
 
         _color_extrinsic = std::make_shared< rsutils::lazy< rs2_extrinsics > >(
-            [this]() { return from_pose( get_d500_color_stream_extrinsic( *_color_calib_table_raw ) ); } );
+            [this]() -> rs2_extrinsics
+            {
+                // Device-aligned depth is already expressed in the color optical frame
+                if( _aligned_depth_option && _aligned_depth_option->is_aligned() )
+                    return identity_matrix();
+                return from_pose( get_d500_color_stream_extrinsic( *_color_calib_table_raw ) );
+            } );
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
+        if( _aligned_depth_option )
+        {
+            // The option holds the observer for as long as it lives, so keep the sensor out of it
+            std::weak_ptr< rsutils::lazy< rs2_extrinsics > > extrinsic = _color_extrinsic;
+            _aligned_depth_option->add_observer(
+                [extrinsic]( bool )
+                {
+                    if( auto lazy = extrinsic.lock() )
+                        lazy->reset();
+                } );
+        }
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
         std::vector<platform::uvc_device_info> color_devs_info;

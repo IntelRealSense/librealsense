@@ -659,6 +659,10 @@ bool option_model::draw_checkbox( notifications_model & model,
 
     bool bool_value = value_as_float() > 0.f;
 
+    // Read-only options are not interactive - a slider draws itself as a progress bar, a checkbox greys out
+    if( read_only )
+        ImGui::BeginDisabled();
+
     if( ImGui::Checkbox( label.c_str(), &bool_value ) )
     {
         checkbox_was_clicked = true;
@@ -667,7 +671,14 @@ bool option_model::draw_checkbox( notifications_model & model,
 
         write_value( bool_value ? 1.f : 0.f, error_message );
     }
-    if( ImGui::IsItemHovered() && description )
+
+    // Read the hover before ending the disabled block, and allow it there so the tooltip still shows
+    bool const hovered = ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled );
+
+    if( read_only )
+        ImGui::EndDisabled();
+
+    if( hovered && description )
     {
         RsImGui::CustomTooltip( "%s", description );
     }
