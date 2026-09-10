@@ -500,16 +500,16 @@ namespace librealsense
                             {
                                 if( already_published.count( unique_id ) )
                                     continue;
-                                auto inserted = _data._incomplete_since.emplace( unique_id, now );
-                                if( now - inserted.first->second >= MAX_DEFERRAL )
+                                auto const inserted = _data._incomplete_since.emplace( unique_id, now );
+                                auto const waited = now - inserted.first->second;
+                                if( ! inserted.second && waited >= MAX_DEFERRAL )
                                 {
                                     // Publishing it anyway is what lets a genuinely partial device
                                     // through, but it also means a device that needed longer comes up
                                     // missing sensors - so say so rather than let it look normal.
                                     if( _data._warned_incomplete.insert( unique_id ).second )
                                         LOG_WARNING( unique_id << " still incomplete after "
-                                                     << std::chrono::duration_cast< std::chrono::seconds >(
-                                                            now - inserted.first->second ).count()
+                                                     << std::chrono::duration_cast< std::chrono::seconds >( waited ).count()
                                                      << "s; publishing it as-is" );
                                     continue;
                                 }
