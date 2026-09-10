@@ -850,61 +850,73 @@ namespace rs2
     }
 
 
-    bool device_model::draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message, bool is_streaming)
+    bool device_model::draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message,
+        bool is_streaming, std::vector<std::function<void()>>& draw_later)
     {
         bool was_set = false;
 
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
 
-        auto is_advanced_mode = dev.is<advanced_mode>();
-        if (is_advanced_mode && ImGui::TreeNode("Advanced Controls"))
+        if (dev.is<advanced_mode>())
         {
+            std::string dev_name = dev.supports(RS2_CAMERA_INFO_NAME) ? dev.get_info(RS2_CAMERA_INFO_NAME) : "";
+            bool ae_setpoint_unsupported = (dev_name.find("D457") != std::string::npos) || _is_d500_device;
+
+            control_section root("Advanced Controls", "Advanced Controls");
+            root.gap_above = false;
             try
             {
                 auto advanced = dev.as<advanced_mode>();
                 if (advanced.is_enabled())
                 {
-                    std::string dev_name = dev.supports(RS2_CAMERA_INFO_NAME) ? dev.get_info(RS2_CAMERA_INFO_NAME) : "";
-                    bool ae_setpoint_unsupported = (dev_name.find("D457") != std::string::npos) || _is_d500_device;
-
-                    draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls, was_set, error_message, ae_setpoint_unsupported);
+                    // Read on the way in, not while building: a collapsed section must not pay for
+                    // a bulk read of controls nobody is looking at
+                    root.on_open = [this, advanced]() mutable
+                    { refresh_advanced_mode_controls( advanced, amc, get_curr_advanced_controls ); };
+                    build_advanced_mode_sections(root, advanced, amc, was_set, ae_setpoint_unsupported);
                 }
                 else
                 {
-                    if( _is_d500_device )  // D500 cannot toggle Advanced Mode
+                    // What this section has to say when advanced mode is off
+                    root.content = [this, &view, &window, &error_message, is_streaming](control_draw_context &)
                     {
-                        ImGui::TextColored( redish, "Device FW does not support advanced mode" );
-                    }
-                    else if (is_streaming)
-                    {
-                        ImGui::TextColored( redish, "Advanced mode cannot be enabled\nwhen streaming" );
-                    }
-                    else
-                    {
-                        ImGui::TextColored( redish, "Device is not in advanced mode" );
-                        std::string button_text = rsutils::string::from() << "Turn on Advanced Mode" << "##" << id;
-                        static bool show_yes_no_modal = false;
-                        if (ImGui::Button(button_text.c_str(), ImVec2{ 226, 0 }))
+                        if( _is_d500_device )  // D500 cannot toggle Advanced Mode
                         {
-                            show_yes_no_modal = true;
+                            ImGui::TextColored( redish, "Device FW does not support advanced mode" );
                         }
-                        if (ImGui::IsItemHovered())
+                        else if (is_streaming)
                         {
-                            RsImGui::CustomTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
+                            ImGui::TextColored( redish, "Advanced mode cannot be enabled\nwhen streaming" );
                         }
-                        if (show_yes_no_modal)
+                        else
                         {
-                            show_yes_no_modal = prompt_toggle_advanced_mode(true, "\t\tAre you sure you want to turn on Advanced Mode?\t\t", restarting_device_info, view, window, error_message);
+                            ImGui::TextColored( redish, "Device is not in advanced mode" );
+                            std::string button_text = rsutils::string::from() << "Turn on Advanced Mode" << "##" << id;
+                            static bool show_yes_no_modal = false;
+                            if (ImGui::Button(button_text.c_str(), ImVec2{ 226, 0 }))
+                            {
+                                show_yes_no_modal = true;
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                RsImGui::CustomTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
+                            }
+                            if (show_yes_no_modal)
+                            {
+                                show_yes_no_modal = prompt_toggle_advanced_mode(true, "\t\tAre you sure you want to turn on Advanced Mode?\t\t", restarting_device_info, view, window, error_message);
+                            }
                         }
-                    }
+                    };
                 }
+
+                control_draw_context ctx{ view, *view.not_model, error_message, window, draw_later,
+                                          0.f, false, is_streaming };
+                root.draw(ctx);
             }
             catch (const std::exception& ex)
             {
                 error_message = ex.what();
             }
-
-            ImGui::TreePop();
         }
 
         ImGui::PopStyleColor();
@@ -2860,7 +2872,7 @@ namespace rs2
                 }
                 if (dev.is<advanced_mode>() && sub->s->is<depth_sensor>())
                 {
-                    if (draw_advanced_controls(viewer, window, error_message, is_streaming))
+                    if (draw_advanced_controls(viewer, window, error_message, is_streaming, draw_later))
                     {
                         sub->_options_invalidated = true;
                         selected_file_preset.clear();
