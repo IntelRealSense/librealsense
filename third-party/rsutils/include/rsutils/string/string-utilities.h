@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <cmath> // std::isfinite
+#include <limits> // std::numeric_limits
 
 namespace rsutils {
 namespace string {
