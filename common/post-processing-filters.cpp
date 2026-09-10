@@ -120,6 +120,15 @@ static rs2::frame find_stream( rs2::frameset const & set, rs2::stream_profile co
             found = f;
     } );
 
+    // Color can arrive on the infrared pin (D405, D435), which is what get_color_frame() falls back to
+    if( ! found && profile.stream_type() == RS2_STREAM_COLOR )
+        set.foreach_rs( [&]( rs2::frame const & f ) {
+            if( ! found && f.get_profile().stream_type() == RS2_STREAM_INFRARED
+                && f.get_profile().stream_index() == profile.stream_index()
+                && f.get_profile().format() == RS2_FORMAT_RGB8 )
+                found = f;
+        } );
+
     return found ? found : set.first_or_default( profile.stream_type() );
 }
 

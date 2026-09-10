@@ -175,7 +175,8 @@ dds_guid const & dds_device::guid() const
 
 size_t dds_device::number_of_streams() const
 {
-    return _impl->_streams.size();
+    // Same list foreach_stream walks. _streams map can hold a placeholder for a stream whose options arrived before its header
+    return _impl->_stream_order.size();
 }
 
 size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< dds_stream > stream ) > fn ) const

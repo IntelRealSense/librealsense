@@ -2774,8 +2774,8 @@ namespace rs2
                     sub->draw_stream_selection(error_message);
 
                 static const std::vector<rs2_option> drawing_order = serialize ?
-                    std::vector<rs2_option>{                           RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE, RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE }
-                : std::vector<rs2_option>{ RS2_OPTION_VISUAL_PRESET, RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE, RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE };
+                    std::vector<rs2_option>{                           RS2_OPTION_ENABLE_ALIGNED_DEPTH, RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE, RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE }
+                : std::vector<rs2_option>{ RS2_OPTION_VISUAL_PRESET, RS2_OPTION_ENABLE_ALIGNED_DEPTH, RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE, RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE };
 
                 for (auto& opt : drawing_order)
                 {

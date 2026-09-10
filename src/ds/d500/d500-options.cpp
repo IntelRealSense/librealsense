@@ -165,7 +165,7 @@ namespace librealsense
         bool_option::set( value );
     }
 
-    d500_align_depth_option::d500_align_depth_option( const std::weak_ptr< uvc_sensor > & raw_ep )
+    d500_enable_aligned_depth_option::d500_enable_aligned_depth_option( const std::weak_ptr< uvc_sensor > & raw_ep )
         : uvc_xu_option< uint8_t >( raw_ep,
                                     ds::depth_xu,
                                     ds::d500_xu_id::ALIGN_DEPTH,
@@ -176,30 +176,33 @@ namespace librealsense
     {
     }
 
-    void d500_align_depth_option::set( float value )
+    void d500_enable_aligned_depth_option::set( float value )
     {
         auto sensor = _sensor.lock();
         if( sensor && sensor->is_opened() )
             throw wrong_api_call_sequence_exception( "Align Depth cannot be changed while the sensor is open!" );
 
         uvc_xu_option< uint8_t >::set( value );
-        update( value != 0.f );
+
+        // Read back rather than cache what we asked for (in case of failure). The cache is what is_aligned() reports
+        // so it has to be what the firmware ended up with.
+        update( uvc_xu_option< uint8_t >::query() != 0.f );
     }
 
-    float d500_align_depth_option::query() const
+    float d500_enable_aligned_depth_option::query() const
     {
-        auto value = uvc_xu_option< uint8_t >::query();
-        update( value != 0.f );
-        return value;
+        // cache is updated by set(), not here, so the intrinsics hot path stays free of FW round trips and of observer side effects
+        return uvc_xu_option< uint8_t >::query();
     }
 
-    bool d500_align_depth_option::is_read_only() const
+    bool d500_enable_aligned_depth_option::is_read_only() const
     {
         auto sensor = _sensor.lock();
         return sensor && sensor->is_opened();
     }
 
-    void d500_align_depth_option::update( bool aligned ) const
+    // Called from set() and the constructor only, so the observers run on the caller's thread with no frame or extrinsics work in flight
+    void d500_enable_aligned_depth_option::update( bool aligned ) const
     {
         if( _aligned.exchange( aligned ) == aligned )
             return;

@@ -616,7 +616,7 @@ std::string const & get_string_( rs2_option value )
         CASE( SENSORS_CONFIG_MODE )
         CASE( DUAL_RGB_RECTIFICATION )
         CASE( EMITTER_MODE )
-        CASE( ALIGN_DEPTH )
+        CASE( ENABLE_ALIGNED_DEPTH )
 #undef CASE
         return arr;
     }();

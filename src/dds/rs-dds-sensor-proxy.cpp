@@ -872,10 +872,28 @@ public:
 };
 
 
+namespace {
+
+// WORKAROUND: Remove once the firmware ships the new name.
+// Options are matched to rs2_option by name, and the firmware still publishes this one under its former name.
+// Only the match is translated - the option keeps the device's name, which is what set/query-option carry.
+std::string const & sdk_option_name( std::string const & device_name )
+{
+    static std::map< std::string, std::string > const renamed = {
+        { "Align Depth", "Enable Aligned Depth" },
+    };
+
+    auto it = renamed.find( device_name );
+    return it != renamed.end() ? it->second : device_name;
+}
+
+}  // namespace
+
+
 void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option )
 {
     bool const ok_if_there = true;
-    auto option_id = options_registry::register_option_by_name( option->get_name(), ok_if_there );
+    auto option_id = options_registry::register_option_by_name( sdk_option_name( option->get_name() ), ok_if_there );
 
     if( ! is_valid( option_id ) )
     {
@@ -895,10 +913,6 @@ void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option
         option,
         [=]( json value )
         {
-            // The option registers/unregisters the aligned-depth topic, so it is locked once the sensor is open
-            if( RS2_OPTION_ALIGN_DEPTH == option_id && is_opened() )
-                throw wrong_api_call_sequence_exception( "Align Depth cannot be changed while the sensor is open!" );
-
             // Send the new value to the remote device; the local value gets cached automatically as part of the reply
             _dev->set_option_value( option, std::move( value ) );
         },
@@ -913,6 +927,11 @@ void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option
             //    return _dev->query_option_value( option );
             // Then we may have get a null even when is_enabled() returned true!
         } );
+
+    // Aligned depth adds and removes a topic, which the device will not do mid-stream
+    if( RS2_OPTION_ENABLE_ALIGNED_DEPTH == option_id )
+        opt->set_locked_predicate( [this]() { return is_streaming(); } );
+
     register_option( option_id, opt );
     _options_watcher.register_option( option_id, opt );
 

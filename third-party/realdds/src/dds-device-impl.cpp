@@ -889,10 +889,6 @@ void dds_device::impl::on_stream_header( json const & j, dds_sample const & samp
 
 #undef TYPE2STREAM
 
-    // Streams are indexed in the order the device declares them, so remember it: the map above is sorted by
-    // name, which would hand index 0 to whichever of two same-type streams happens to sort first
-    _stream_order.push_back( stream );
-
     if( j.at( topics::notification::stream_header::key::metadata_enabled ).get< bool >() )
     {
         create_metadata_reader();
@@ -910,6 +906,9 @@ void dds_device::impl::on_stream_header( json const & j, dds_sample const & samp
         DDS_THROW( runtime_error,
                    "failed to instantiate stream type '" << stream_type << "' (instead, got '" << stream->type_string()
                                                          << "')" );
+    // Streams are indexed in the order the device declares them, so remember it. _streams is sorted by name, and would return
+    // index 0 to whichever of two same-type streams happens to sort first. Save now that the header is fully handled.
+    _stream_order.push_back( stream );
     _stream_header_received[stream_name] = true;
     std::string expected_streams = _n_streams_expected == 0 ? "unknown" : std::to_string( _n_streams_expected );
     LOG_DEBUG( "[" << debug_name() << "] ... stream " << _streams.size() << "/" << expected_streams << " '" << stream_name

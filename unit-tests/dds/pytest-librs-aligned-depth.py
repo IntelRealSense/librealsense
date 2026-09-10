@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 
 pytestmark = [
     pytest.mark.dds,
-    pytest.mark.flaky( reruns=2 ),
 ]
 
 # A device that publishes aligned depth on its own topic, alongside the raw depth one. Both carry the
@@ -179,11 +178,11 @@ else:
     #############################################################################################
     #
     def test_option_maps_to_align_depth(device):
-        """The firmware option name resolves to RS2_OPTION_ALIGN_DEPTH rather than a by-name option."""
+        """The firmware's old option name still resolves to RS2_OPTION_ENABLE_ALIGNED_DEPTH, not a by-name option."""
         sensor, _ = depth_profiles( device )
-        assert sensor.supports( rs.option.align_depth )
-        check.equal( sensor.get_option( rs.option.align_depth ), 0 )
-        option_range = sensor.get_option_range( rs.option.align_depth )
+        assert sensor.supports( rs.option.enable_aligned_depth )
+        check.equal( sensor.get_option( rs.option.enable_aligned_depth ), 0 )
+        option_range = sensor.get_option_range( rs.option.enable_aligned_depth )
         check.equal( ( option_range.min, option_range.max, option_range.default ), ( 0, 1, 0 ) )
 
     #############################################################################################

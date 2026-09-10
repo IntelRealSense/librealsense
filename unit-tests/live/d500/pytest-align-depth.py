@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 
 pytestmark = [
     pytest.mark.device_each("D500*"),
+    pytest.mark.device_exclude("D585S"),  # no device-side alignment on this model
 ]
 
 
@@ -22,7 +23,7 @@ def depth_sensor(test_device):
     """The depth sensor, with aligned depth restored to off when the test ends."""
     dev, _ = test_device
     sensor = dev.first_depth_sensor()
-    if not sensor.supports(rs.option.align_depth):
+    if not sensor.supports(rs.option.enable_aligned_depth):
         pytest.skip("device-side aligned depth is not supported by this firmware")
     set_align_depth(sensor, 0)  # each test starts from raw depth, whatever the previous one left behind
     yield sensor
@@ -33,7 +34,7 @@ def depth_sensor(test_device):
 
 
 def set_align_depth(sensor, value):
-    sensor.set_option(rs.option.align_depth, value)
+    sensor.set_option(rs.option.enable_aligned_depth, value)
     time.sleep(MODE_SETTLE_TIME)
 
 
@@ -65,14 +66,14 @@ def grab_frame(sensor, profile):
 
 def test_option_defaults(depth_sensor):
     """Aligned depth is off by default and settable while the sensor is closed."""
-    option_range = depth_sensor.get_option_range(rs.option.align_depth)
+    option_range = depth_sensor.get_option_range(rs.option.enable_aligned_depth)
     check.equal(option_range.min, 0)
     check.equal(option_range.default, 0)
-    check.is_false(depth_sensor.is_option_read_only(rs.option.align_depth))
-    check.equal(depth_sensor.get_option(rs.option.align_depth), 0)
+    check.is_false(depth_sensor.is_option_read_only(rs.option.enable_aligned_depth))
+    check.equal(depth_sensor.get_option(rs.option.enable_aligned_depth), 0)
 
     set_align_depth(depth_sensor, 1)
-    check.equal(depth_sensor.get_option(rs.option.align_depth), 1)
+    check.equal(depth_sensor.get_option(rs.option.enable_aligned_depth), 1)
 
 
 def test_profile_invariance(depth_sensor):
@@ -122,6 +123,48 @@ def test_intrinsics_follow_the_color_model(test_device, depth_sensor):
 
 
 @pytest.mark.device_type_exclude("DDS")
+def test_intrinsics_scale_to_the_depth_resolution(test_device, depth_sensor):
+    """The color model is scaled and cropped to the depth dimensions, which the matching-resolution
+    test above never exercises. Both models come from the same color table by scale + centered crop,
+    so for a color and a depth profile of equal aspect ratio the relation is exact:
+        k = depth_width / color_width,  fx = k * fx_color,  ppx = k * (ppx_color + 0.5) - 0.5
+    """
+    dev, _ = test_device
+    colors = {}
+    for p in color_profiles(dev):  # one profile per resolution is enough - intrinsics do not vary by format
+        colors.setdefault((p.width(), p.height()), p)
+    if not colors:
+        pytest.skip("device has no dedicated color sensor")
+
+    depths = {}
+    for p in depth_sensor.profiles:
+        if p.stream_type() == rs.stream.depth and p.stream_name() == "Depth":
+            v = p.as_video_stream_profile()
+            depths.setdefault((v.width(), v.height()), v)
+
+    # Same aspect ratio, different resolution - that is where the crop math has to hold
+    pairs = [(c, d) for (cw, ch), c in colors.items() for (dw, dh), d in depths.items()
+             if (dw, dh) != (cw, ch) and cw * dh == ch * dw]
+    if not pairs:
+        pytest.skip("no color and depth profiles of equal aspect ratio and differing resolution")
+
+    set_align_depth(depth_sensor, 1)
+    try:
+        for color, depth in pairs:
+            ci = color.get_intrinsics()
+            di = depth.get_intrinsics()
+            k = depth.width() / color.width()
+            log.info("color %dx%d -> aligned depth %dx%d (k=%.4f)",
+                     color.width(), color.height(), depth.width(), depth.height(), k)
+            check.almost_equal(di.fx, k * ci.fx, abs=0.01)
+            check.almost_equal(di.fy, k * ci.fy, abs=0.01)
+            check.almost_equal(di.ppx, k * (ci.ppx + 0.5) - 0.5, abs=0.01)
+            check.almost_equal(di.ppy, k * (ci.ppy + 0.5) - 0.5, abs=0.01)
+    finally:
+        set_align_depth(depth_sensor, 0)
+
+
+@pytest.mark.device_type_exclude("DDS")
 def test_extrinsics_to_color_are_identity(test_device, depth_sensor):
     """Aligned depth is already expressed in the color optical frame."""
     dev, _ = test_device
@@ -145,7 +188,7 @@ def test_rejected_while_streaming(depth_sensor):
     try:
         queue.wait_for_frame(MAX_TIME_TO_WAIT_FOR_FRAMES * 1000)
         with pytest.raises(RuntimeError):
-            depth_sensor.set_option(rs.option.align_depth, 1)
+            depth_sensor.set_option(rs.option.enable_aligned_depth, 1)
     finally:
         depth_sensor.stop()
         depth_sensor.close()
