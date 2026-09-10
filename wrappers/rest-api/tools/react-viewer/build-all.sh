@@ -58,7 +58,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 
 REST_API_OUTPUT="$PROJECT_ROOT/build/rest-api-dist"
 REST_API_WORK="$PROJECT_ROOT/build/rest-api-work"
-TAURI_RESOURCES="$PROJECT_ROOT/build/tauri-resources"
+TAURI_RESOURCES="$SCRIPT_DIR/src-tauri/resources"
 CARGO_TARGET="$PROJECT_ROOT/build/tauri-target"
 
 echo "============================================================"
@@ -103,9 +103,6 @@ info "Copying FastAPI bundle to Tauri staging resources..."
 mkdir -p "$TAURI_RESOURCES"
 rm -rf "$TAURI_RESOURCES/realsense_api"
 cp -r "$REST_API_OUTPUT/realsense_api" "$TAURI_RESOURCES/"
-
-# Clean any legacy in-source copy to keep the source tree tidy
-rm -rf "$SCRIPT_DIR/src-tauri/resources/realsense_api"
 ok "FastAPI bundle staged"
 
 # Step 2: Build React UI
@@ -119,6 +116,10 @@ fi
 step2_start=$(date +%s)
 (
     cd "$SCRIPT_DIR"
+    if [ ! -d node_modules ]; then
+        info "node_modules missing; running npm ci..."
+        npm ci
+    fi
     npm run build
 )
 step2_end=$(date +%s)

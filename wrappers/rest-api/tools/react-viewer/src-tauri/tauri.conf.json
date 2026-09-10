@@ -42,7 +42,7 @@
         "signingIdentity": null
       },
       "resources": [
-        "../../../../../build/tauri-resources/realsense_api"
+        "resources/realsense_api/**/*"
       ],
       "shortDescription": "RealSense Viewer",
       "targets": "all",
