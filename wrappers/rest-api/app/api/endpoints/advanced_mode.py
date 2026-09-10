@@ -3,9 +3,11 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from typing import Dict, List
 import logging
 from starlette.concurrency import run_in_threadpool
 
+from app.models.option import OptionInfo, OptionUpdate
 from app.services.rs_manager import RealSenseManager, RealSenseError
 from app.api.dependencies import get_realsense_manager
 
@@ -45,3 +47,36 @@ async def set_advanced_mode(
     except Exception:
         logging.exception("Unexpected error toggling advanced mode for %s", device_id)
         raise HTTPException(status_code=500, detail="Unexpected error while toggling advanced mode")
+
+
+@router.get("/controls/", response_model=Dict[str, List[OptionInfo]])
+async def get_advanced_controls(
+    device_id: str,
+    rs_manager: RealSenseManager = Depends(get_realsense_manager),
+):
+    """Every RS400 advanced-mode control, keyed by group. Requires advanced mode enabled."""
+    try:
+        return await run_in_threadpool(rs_manager.get_advanced_controls, device_id)
+    except RealSenseError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception:
+        logging.exception("Unexpected error reading advanced controls for %s", device_id)
+        raise HTTPException(status_code=500, detail="Unexpected error while reading advanced controls")
+
+
+@router.put("/controls/{group}/{field}/", response_model=OptionInfo)
+async def set_advanced_control(
+    device_id: str,
+    group: str,
+    field: str,
+    body: OptionUpdate,
+    rs_manager: RealSenseManager = Depends(get_realsense_manager),
+):
+    """Set one advanced control; returns it as the device reports it afterwards."""
+    try:
+        return await run_in_threadpool(rs_manager.set_advanced_control, device_id, group, field, body.value)
+    except RealSenseError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception:
+        logging.exception("Unexpected error writing advanced controls for %s", device_id)
+        raise HTTPException(status_code=500, detail="Unexpected error while writing advanced controls")

@@ -7,13 +7,13 @@ import struct
 import threading
 import time
 import logging
-from collections import deque
+from collections import defaultdict, deque
 from typing import Callable, Deque, Dict, List, Optional, Any, Tuple, Set
 import pyrealsense2 as rs
 import numpy as np
 import cv2
 from app.core.errors import RealSenseError
-from app.services import advanced_mode
+from app.services import advanced_mode, options
 from app.models.device import Device, DeviceInfo
 from app.models.sensor import Sensor, SensorInfo, SupportedStreamProfile
 from app.models.option import Option, OptionInfo
@@ -126,7 +126,7 @@ class RealSenseManager:
         self.processing_blocks: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
         # One colorizer per device so depth-visualization options (color scheme,
         # min/max distance, histogram eq) set on it affect the streamed depth image.
-        self.colorizers: Dict[str, "rs.colorizer"] = {}
+        self.colorizers: Dict[str, "rs.colorizer"] = defaultdict(rs.colorizer)
         self.sensor_metadata_queues: Dict[str, Dict[str, List[Dict]]] = {}
         # Per-sensor rs.frame_queue objects: device_id -> sensor_id -> rs.frame_queue
         self.sensor_rs_queues: Dict[str, Dict[str, Any]] = {}
@@ -885,14 +885,14 @@ class RealSenseManager:
                 stream_profiles_list.append(stream_profile)
 
             # Get options
-            options = self.get_sensor_options(device_id, sensor_id)
+            sensor_options = self.get_sensor_options(device_id, sensor_id)
 
             sensor_info = SensorInfo(
                 sensor_id=sensor_id,
                 name=name,
                 type=sensor_type,
                 supported_stream_profiles=stream_profiles_list,  # Use correct field name
-                options=options,
+                options=sensor_options,
             )
 
             sensors.append(sensor_info)
@@ -907,232 +907,20 @@ class RealSenseManager:
                 return sensor
         raise RealSenseError(status_code=404, detail=f"Sensor {sensor_id} not found")
 
-    # Options exposed by processing blocks that are plumbing, not user controls.
-    _HIDDEN_BLOCK_OPTIONS = {
-        "frames_queue_size", "stream_filter", "stream_format_filter",
-        "stream_index_filter", "noise_estimation", "region_of_interest",
-    }
-
-    def _get_or_create_colorizer(self, device_id: str) -> "rs.colorizer":
-        """Return the device's cached colorizer, creating it on first use."""
-        colorizer = self.colorizers.get(device_id)
-        if colorizer is None:
-            colorizer = rs.colorizer()
-            self.colorizers[device_id] = colorizer
-        return colorizer
-
-    @staticmethod
-    def _get_advanced_mode(dev):
-        """Return an rs400_advanced_mode wrapper for the device, or None if unsupported."""
+    def _find_sensor(self, device_id: str, sensor_id: str):
+        """Resolve a sensor by its "<serial>-sensor-<index>" id."""
+        dev = self._require_device(device_id)
         try:
-            return rs.rs400_advanced_mode(dev)
-        except Exception:
-            return None
-
-    @staticmethod
-    def _enum_value_descriptions(obj, opt, rng):
-        """Return {value: description} when an option is a full enum, else None.
-
-        Mirrors the legacy viewer's is_enum: integer range with step 1 where EVERY
-        value carries a description. Early-exits on the first value without one (so a
-        slider like exposure bails immediately) and skips wide ranges to avoid a
-        pathological number of probes.
-        """
-        if rng.step != 1.0 or rng.min != int(rng.min) or rng.max != int(rng.max):
-            return None
-        # Not every option-bearing object exposes the description API (older
-        # pyrealsense2, processing blocks). Missing it just means "no enum" - it must
-        # not take down the whole option list.
-        describe = getattr(obj, "get_option_value_description", None)
-        if describe is None:
-            return None
-        lo, hi = int(rng.min), int(rng.max)
-        if hi - lo > 256:
-            return None
-        descs = {}
-        for val in range(lo, hi + 1):
-            try:
-                desc = describe(opt, float(val))
-            except Exception:
-                desc = None
-            if not desc:
-                return None
-            descs[str(val)] = desc
-        return descs or None
+            index = int(sensor_id.split("-")[-1])
+        except ValueError:
+            raise RealSenseError(status_code=404, detail=f"Invalid sensor ID format: {sensor_id}")
+        if index < 0 or index >= len(dev.sensors):
+            raise RealSenseError(status_code=404, detail=f"Sensor {sensor_id} not found")
+        return dev.sensors[index]
 
     def get_sensor_options(self, device_id: str, sensor_id: str) -> List[OptionInfo]:
         """Get all options for a sensor"""
-        if device_id not in self.devices:
-            self.refresh_devices()
-            if device_id not in self.devices:
-                raise RealSenseError(
-                    status_code=404, detail=f"Device {device_id} not found"
-                )
-
-        dev = self.devices[device_id]
-
-        # Parse sensor index from sensor_id
-        try:
-            sensor_index = int(sensor_id.split("-")[-1])
-            if sensor_index < 0 or sensor_index >= len(dev.sensors):
-                raise RealSenseError(
-                    status_code=404, detail=f"Sensor {sensor_id} not found"
-                )
-        except (ValueError, IndexError):
-            raise RealSenseError(
-                status_code=404, detail=f"Invalid sensor ID format: {sensor_id}"
-            )
-
-        sensor = dev.sensors[sensor_index]
-        options = []
-        
-        # 1. Add native sensor options (Basic Controls)
-        for option in sensor.get_supported_options():
-            try:
-                opt_name = option.name
-                current_value = sensor.get_option(option)
-                option_range = sensor.get_option_range(option)
-
-                option_info = OptionInfo(
-                    option_id=opt_name,
-                    name=opt_name.replace("_", " ").title(),
-                    description=sensor.get_option_description(option),
-                    current_value=current_value,
-                    default_value=option_range.default,
-                    min_value=option_range.min,
-                    max_value=option_range.max,
-                    step=option_range.step,
-                    read_only=sensor.is_option_read_only(option),
-                    category="Basic Controls",
-                    # Enum native options (e.g. Visual Preset) → dropdown in the UI.
-                    value_descriptions=self._enum_value_descriptions(sensor, option, option_range),
-                )
-                options.append(option_info)
-            except RuntimeError as e:
-                # Skip options that can't be read
-                pass
-
-        # 2. Add post-processing filter options
-        filters = self._get_or_create_processing_blocks(device_id, sensor_id, sensor)
-        for filter_info in filters:
-            filter_obj = filter_info["filter"]
-            filter_name = filter_info["name"]
-            # Use URL-safe name for option_id (replace spaces with underscores)
-            safe_filter_name = filter_name.replace(" ", "_")
-            is_enabled = filter_info["enabled"]
-            
-            # Add enable/disable toggle for the filter
-            options.append(OptionInfo(
-                option_id=f"PP_{safe_filter_name}_Enabled",
-                name=f"{filter_name}",
-                description=f"Enable/Disable {filter_name}",
-                current_value=1.0 if is_enabled else 0.0,
-                default_value=filter_info["default_enabled"],
-                min_value=0.0,
-                max_value=1.0,
-                step=1.0,
-                read_only=False,
-                category="Post-Processing",
-                filter_name=filter_name,
-            ))
-            
-            # Add filter-specific options (excluding hidden plumbing options)
-            for opt in filter_obj.get_supported_options():
-                try:
-                    opt_name = opt.name
-                    # Skip hidden options (same as legacy viewer)
-                    if opt_name in self._HIDDEN_BLOCK_OPTIONS:
-                        continue
-                        
-                    current_value = filter_obj.get_option(opt)
-                    option_range = filter_obj.get_option_range(opt)
-                    opt_description = filter_obj.get_option_description(opt)
-                    
-                    # For holes_fill option, use description as display name (matches legacy viewer)
-                    # This is because holes_fill has different meanings per filter:
-                    # - Spatial: "Holes filling mode"
-                    # - Temporal: "Persistency mode"  
-                    # - Hole Filling: "Hole Filling mode"
-                    if opt_name == 'holes_fill':
-                        display_name = opt_description
-                    else:
-                        display_name = opt_name.replace('_', ' ').title()
-                    
-                    # Check for enum-type options (step of 1, integer range)
-                    # and collect value descriptions if available
-                    value_descs = None
-                    if option_range.step == 1.0 and option_range.min == int(option_range.min) and option_range.max == int(option_range.max):
-                        # Might be an enum, try to get value descriptions
-                        descs = {}
-                        for val in range(int(option_range.min), int(option_range.max) + 1):
-                            try:
-                                desc = filter_obj.get_option_value_description(opt, float(val))
-                                if desc:
-                                    descs[str(val)] = desc
-                            except RuntimeError:
-                                pass
-                        if descs:
-                            value_descs = descs
-                    
-                    options.append(OptionInfo(
-                        option_id=f"PP_{safe_filter_name}_{opt_name}",
-                        name=display_name,
-                        description=opt_description,
-                        current_value=current_value,
-                        default_value=option_range.default,
-                        min_value=option_range.min,
-                        max_value=option_range.max,
-                        step=option_range.step,
-                        read_only=filter_obj.is_option_read_only(opt),
-                        category="Post-Processing",
-                        filter_name=filter_name,
-                        value_descriptions=value_descs,
-                    ))
-                except RuntimeError:
-                    pass
-
-        # 3. Depth Visualization (colorizer) — only on the depth sensor
-        try:
-            is_depth_sensor = any(
-                p.stream_type() == rs.stream.depth for p in sensor.get_stream_profiles()
-            )
-        except RuntimeError:
-            is_depth_sensor = False
-        if is_depth_sensor:
-            colorizer = self._get_or_create_colorizer(device_id)
-            for opt in colorizer.get_supported_options():
-                try:
-                    opt_name = opt.name
-                    if opt_name in self._HIDDEN_BLOCK_OPTIONS:
-                        continue
-                    rng = colorizer.get_option_range(opt)
-                    options.append(OptionInfo(
-                        option_id=f"VIZ_{opt_name}",
-                        name=opt_name.replace("_", " ").title(),
-                        description=colorizer.get_option_description(opt),
-                        current_value=colorizer.get_option(opt),
-                        default_value=rng.default,
-                        min_value=rng.min,
-                        max_value=rng.max,
-                        step=rng.step,
-                        read_only=colorizer.is_option_read_only(opt),
-                        category="Depth Visualization",
-                        value_descriptions=self._enum_value_descriptions(colorizer, opt, rng),
-                    ))
-                except RuntimeError:
-                    pass
-
-            # 4. RS400 Advanced Controls (only when advanced mode is enabled)
-            am = self._get_advanced_mode(dev)
-            if am is not None:
-                try:
-                    if am.is_enabled():
-                        dev_name = dev.get_info(rs.camera_info.name) if dev.supports(rs.camera_info.name) else ""
-                        options.extend(advanced_mode.build_advanced_options(am, skip_ae="D457" in dev_name))
-                except Exception:
-                    pass
-
-        return options
+        return options.all_options(self._find_sensor(device_id, sensor_id))
 
     def _get_or_create_processing_blocks(self, device_id: str, sensor_id: str, sensor) -> List[Dict[str, Any]]:
         """Get or create post-processing filter blocks for a sensor.
@@ -1171,209 +959,96 @@ class RealSenseManager:
         
         return self.processing_blocks[device_id][sensor_id]
 
-    def _set_colorizer_option(self, device_id: str, option_id: str, value: Any) -> bool:
-        """Set a colorizer (Depth Visualization) option; option_id is 'VIZ_<opt_name>'."""
-        colorizer = self._get_or_create_colorizer(device_id)
-        opt_name = option_id[len("VIZ_"):]
-        for opt in colorizer.get_supported_options():
-            if opt.name == opt_name:
-                rng = colorizer.get_option_range(opt)
-                v = max(rng.min, min(rng.max, float(value)))
-                colorizer.set_option(opt, v)
-                return True
-        raise RealSenseError(
-            status_code=404, detail=f"Depth visualization option {option_id} not found"
-        )
+    def get_sensor_filters(self, device_id: str, sensor_id: str) -> Dict[str, Any]:
+        """The sensor's post-processing filters, keyed by filter name.
 
-    def get_advanced_mode_status(self, device_id: str) -> Dict[str, Any]:
-        """Return {supported, enabled} for RS400 advanced mode."""
+        Keyed rather than flat because filters share option names - holes_fill exists on
+        Spatial, Temporal and Hole Filling with a different meaning on each.
+        """
+        sensor = self._find_sensor(device_id, sensor_id)
+        filters = {}
+        for filter_info in self._get_or_create_processing_blocks(device_id, sensor_id, sensor):
+            filters[filter_info["name"]] = {
+                "enabled": filter_info["enabled"],
+                "default_enabled": bool(filter_info["default_enabled"]),
+                "options": options.all_options(filter_info["filter"]),
+            }
+        return filters
+
+    def _filters_by_name(self, device_id: str, sensor_id: str) -> Dict[str, Dict[str, Any]]:
+        sensor = self._find_sensor(device_id, sensor_id)
+        return {f["name"]: f for f in self._get_or_create_processing_blocks(device_id, sensor_id, sensor)}
+
+    def set_filter_option(
+        self, device_id: str, sensor_id: str, filter_name: str, field: str, value: float
+    ) -> OptionInfo:
+        """Set one option on one filter of the sensor's chain."""
+        filters = self._filters_by_name(device_id, sensor_id)
+        return options.set_option(filters[filter_name]["filter"], field, value)
+
+    def set_filter_enabled(
+        self, device_id: str, sensor_id: str, filter_name: str, enabled: float
+    ) -> None:
+        """Bypass or apply one filter of the sensor."""
+        self._filters_by_name(device_id, sensor_id)[filter_name]["enabled"] = bool(enabled)
+
+    def get_colorizer_options(self, device_id: str) -> List[OptionInfo]:
+        """The device colorizer's controls."""
+        self._require_device(device_id)
+        return options.all_options(self.colorizers[device_id])
+
+    def set_colorizer_option(self, device_id: str, field: str, value: float) -> OptionInfo:
+        """Set one colorizer option."""
+        self._require_device(device_id)
+        return options.set_option(self.colorizers[device_id], field, value)
+
+    def _require_device(self, device_id: str):
         if device_id not in self.devices:
             self.refresh_devices()
         dev = self.devices.get(device_id)
         if dev is None:
             raise RealSenseError(status_code=404, detail=f"Device {device_id} not found")
-        am = self._get_advanced_mode(dev)
-        if am is None:
-            return {"device_id": device_id, "supported": False, "enabled": False}
-        try:
-            return {"device_id": device_id, "supported": True, "enabled": bool(am.is_enabled())}
-        except Exception:
-            return {"device_id": device_id, "supported": False, "enabled": False}
+        return dev
 
-    def set_advanced_mode(self, device_id: str, enable: bool) -> Dict[str, Any]:
+    def get_advanced_mode_status(self, device_id: str) -> Dict[str, bool]:
+        """Whether the device supports RS400 advanced mode, and whether it is on."""
+        return advanced_mode.status(self._require_device(device_id))
+
+    def set_advanced_mode(self, device_id: str, enable: bool) -> Dict[str, bool]:
         """Enable/disable advanced mode. This RESTARTS the device; wait for it to return."""
-        if device_id not in self.devices:
-            self.refresh_devices()
-        dev = self.devices.get(device_id)
-        if dev is None:
-            raise RealSenseError(status_code=404, detail=f"Device {device_id} not found")
-        am = self._get_advanced_mode(dev)
-        if am is None:
-            raise RealSenseError(status_code=400, detail="Advanced mode not supported on this device")
-        try:
-            am.toggle_advanced_mode(bool(enable))
-        except Exception as e:
-            raise RealSenseError(status_code=500, detail=f"Failed to toggle advanced mode: {e}")
-        # Device re-enumerates after the toggle — re-resolve it before returning.
+        advanced_mode.toggle(self._require_device(device_id), enable)
+        # Re-resolve the re-enumerated device, then report what it says rather than what
+        # was asked for.
         self._refresh_until_device_returns(device_id)
-        return {"device_id": device_id, "supported": True, "enabled": bool(enable)}
+        return self.get_advanced_mode_status(device_id)
+
+    def get_advanced_controls(self, device_id: str) -> Dict[str, List[OptionInfo]]:
+        return advanced_mode.controls(self._require_device(device_id))
+
+    def set_advanced_control(self, device_id: str, group: str, field: str, value: float) -> OptionInfo:
+        return advanced_mode.set_control(self._require_device(device_id), group, field, value)
 
     def get_sensor_option(
         self, device_id: str, sensor_id: str, option_id: str
     ) -> OptionInfo:
         """Get a specific option for a sensor"""
-        options = self.get_sensor_options(device_id, sensor_id)
-        for option in options:
+        for option in self.get_sensor_options(device_id, sensor_id):
             if option.option_id == option_id:
                 return option
         raise RealSenseError(status_code=404, detail=f"Option {option_id} not found")
 
     def set_sensor_option(
         self, device_id: str, sensor_id: str, option_id: str, value: Any
-    ) -> bool:
-        """Set an option value for a sensor"""
-        if device_id not in self.devices:
-            self.refresh_devices()
-            if device_id not in self.devices:
-                raise RealSenseError(
-                    status_code=404, detail=f"Device {device_id} not found"
-                )
+    ) -> OptionInfo:
+        """Set one option of a sensor.
 
-        dev = self.devices[device_id]
-
-        # Parse sensor index from sensor_id
-        try:
-            sensor_index = int(sensor_id.split("-")[-1])
-            if sensor_index < 0 or sensor_index >= len(dev.sensors):
-                raise RealSenseError(
-                    status_code=404, detail=f"Sensor {sensor_id} not found"
-                )
-        except (ValueError, IndexError):
-            raise RealSenseError(
-                status_code=404, detail=f"Invalid sensor ID format: {sensor_id}"
-            )
-
-        sensor = dev.sensors[sensor_index]
-
-        # Check if this is a post-processing filter option (starts with "PP_")
-        if option_id.startswith("PP_"):
-            return self._set_filter_option(device_id, sensor_id, sensor, option_id, value)
-
-        # Depth-visualization (colorizer) option
-        if option_id.startswith("VIZ_"):
-            return self._set_colorizer_option(device_id, option_id, value)
-
-        # RS400 advanced-mode control
-        if option_id.startswith("ADV_"):
-            am = self._get_advanced_mode(dev)
-            if am is None:
-                raise RealSenseError(status_code=400, detail="Advanced mode not supported on this device")
-            # The advanced-mode getters/setters throw when advanced mode is off, which would
-            # surface as an opaque 500. A client can only get here with a stale option list
-            # (they are published only while enabled), so say what is actually wrong.
-            try:
-                enabled = bool(am.is_enabled())
-            except Exception:
-                enabled = False
-            if not enabled:
-                raise RealSenseError(status_code=400, detail="Advanced mode is disabled on this device")
-            return advanced_mode.set_advanced_option(am, option_id, value)
-
-        # Find the option by name (case-insensitive comparison)
-        # Match against both raw option name and display name
-        option_value = None
-        supported_options = list(sensor.get_supported_options())
-        option_id_lower = option_id.lower().replace(" ", "_")  # Normalize spaces to underscores
-        
-        for option in supported_options:
-            opt_name_lower = option.name.lower()
-            # Match by raw name or by normalized display name
-            if opt_name_lower == option_id_lower or opt_name_lower == option_id.lower():
-                option_value = option
-                break
-
-        if option_value is None:
-            # Provide helpful error with available options
-            available_names = [opt.name for opt in supported_options]
-            raise RealSenseError(
-                status_code=404, 
-                detail=f"Option '{option_id}' not found. Available options: {', '.join(available_names)}"
-            )
-
-        # Check value range (only for numeric values)
-        option_range = sensor.get_option_range(option_value)
-        
-        # Convert boolean to float (RealSense uses 0/1 for booleans)
-        if isinstance(value, bool):
-            value = 1.0 if value else 0.0
-        
-        # Ensure value is numeric for range check
-        try:
-            numeric_value = float(value)
-            if numeric_value < option_range.min or numeric_value > option_range.max:
-                raise RealSenseError(
-                    status_code=400,
-                    detail=f"Value {value} is out of range [{option_range.min}, {option_range.max}] for option {option_id}",
-                )
-            value = numeric_value
-        except (ValueError, TypeError):
-            # Non-numeric value, skip range check
-            pass
-
-        # Set the option value
-        try:
-            sensor.set_option(option_value, value)
-            return True
-        except RuntimeError as e:
-            raise RealSenseError(
-                status_code=500, detail=f"Failed to set option: {str(e)}"
-            )
-
-    def _set_filter_option(self, device_id: str, sensor_id: str, sensor, option_id: str, value: Any) -> bool:
-        """Set a post-processing filter option.
-        
-        option_id format: PP_{SafeFilterName}_Enabled or PP_{SafeFilterName}_{OptionName}
-        where SafeFilterName has spaces replaced with underscores.
+        The option is matched by its SDK name or by a display label of it, since the
+        chatbot proposes settings by the name the user sees ("Laser Power").
         """
-        filters = self._get_or_create_processing_blocks(device_id, sensor_id, sensor)
-        
-        # Find the filter by matching URL-safe name
-        target_filter = None
-        remaining_option = None
-        
-        for filter_info in filters:
-            filter_name = filter_info["name"]
-            # Use URL-safe name for matching (spaces replaced with underscores)
-            safe_filter_name = filter_name.replace(" ", "_")
-            prefix = f"PP_{safe_filter_name}_"
-            if option_id.startswith(prefix):
-                target_filter = filter_info
-                remaining_option = option_id[len(prefix):]
-                break
-        
-        if target_filter is None:
-            raise RealSenseError(status_code=404, detail=f"Filter not found for option: {option_id}")
-        
-        # Handle enable/disable toggle
-        if remaining_option == "Enabled":
-            target_filter["enabled"] = bool(value) if isinstance(value, bool) else float(value) > 0
-            logging.info(f"[PP] Filter '{target_filter['name']}' enabled={target_filter['enabled']}")
-            return True
-        
-        # Handle filter-specific option
-        filter_obj = target_filter["filter"]
-        for opt in filter_obj.get_supported_options():
-            if opt.name == remaining_option:
-                try:
-                    # Convert boolean to float
-                    if isinstance(value, bool):
-                        value = 1.0 if value else 0.0
-                    filter_obj.set_option(opt, float(value))
-                    return True
-                except RuntimeError as e:
-                    raise RealSenseError(status_code=500, detail=f"Failed to set filter option: {str(e)}")
-        
-        raise RealSenseError(status_code=404, detail=f"Filter option not found: {remaining_option}")
+        sensor = self._find_sensor(device_id, sensor_id)
+        wanted = {option_id.lower(), option_id.lower().replace(" ", "_")}
+        name = next(o.name for o in sensor.get_supported_options() if o.name.lower() in wanted)
+        return options.set_option(sensor, name, value)
 
     def _apply_depth_filters(self, device_id: str, frame: rs.depth_frame) -> rs.depth_frame:
         """Apply enabled post-processing filters to a depth frame.
@@ -1395,7 +1070,7 @@ class RealSenseManager:
             return frame
         
         filters = self.processing_blocks[device_id].get(depth_sensor_id, [])
-        
+
         # Quick check: if no filters are enabled, return early
         if not any(f["enabled"] for f in filters):
             return frame
@@ -2149,7 +1824,7 @@ class RealSenseManager:
                 stream_mappings[active_stream] = (rs_stream, ir_index)
         
         # Cached per-device colorizer so Depth Visualization options apply live
-        colorizer = self._get_or_create_colorizer(device_id)
+        colorizer = self.colorizers[device_id]
 
         try:
             while device_id in self.pipelines:
@@ -2621,7 +2296,7 @@ class RealSenseManager:
         """
         logging.info(f"[SENSOR] Frame collection thread started for {device_id}/{sensor_id} streams: {stream_types}")
 
-        colorizer = self._get_or_create_colorizer(device_id)
+        colorizer = self.colorizers[device_id]
 
         try:
             while True:
