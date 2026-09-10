@@ -90,8 +90,6 @@ namespace rs2
                 _embedded_filter, RS2_COMPOSITE_OPTION_DECIMATION_FILTER_DPP, error_message );
         }
 
-        bool _is_visible = true;
-
         // Optional predicate; null means always available. When false the enable toggle is
         // grayed out. Set by the owner for filters with runtime constraints (e.g. close range,
         // depth-only, must be off while color streams).
