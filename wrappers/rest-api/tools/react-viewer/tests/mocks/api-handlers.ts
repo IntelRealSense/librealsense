@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import { mockDeviceList, mockDevice } from './fixtures/devices'
-import { mockSensors, mockDepthOptions, mockColorOptions, mockMotionOptions } from './fixtures/sensors'
+import { mockSensors, mockDepthOptions, mockColorOptions, mockMotionOptions, mockFilters } from './fixtures/sensors'
 
 const API_BASE = '/api/v1'
 
@@ -49,11 +49,47 @@ export const handlers = [
     return HttpResponse.json(options)
   }),
 
-  // Set sensor option
-  http.put(`${API_BASE}/devices/:deviceId/sensors/:sensorId/options/:optionId`, async ({ request }) => {
-    const body = await request.json() as any
-    return HttpResponse.json({ success: true, value: body.value })
+  // Set sensor option; answers it as the device now holds it, as every control write does
+  http.put(`${API_BASE}/devices/:deviceId/sensors/:sensorId/options/:optionId`, async ({ params, request }) => {
+    const body = await request.json() as { value: number }
+    return HttpResponse.json({ option_id: params.optionId, current_value: body.value, read_only: false })
   }),
+
+  // Post-processing filters, keyed by name; only the depth sensor has any
+  http.get(`${API_BASE}/devices/:deviceId/sensors/:sensorId/filters/`, ({ params }) => {
+    const sensorId = params.sensorId as string
+    return HttpResponse.json(sensorId.endsWith('sensor-0') ? mockFilters : {})
+  }),
+
+  // Bypass or apply one filter; answers the state it now holds
+  http.put(
+    `${API_BASE}/devices/:deviceId/sensors/:sensorId/filters/:filterName/enabled/`,
+    async ({ params, request }) => {
+      const body = await request.json() as { value: boolean }
+      return HttpResponse.json({ name: params.filterName, enabled: body.value })
+    }
+  ),
+
+  // Device-level controls: a list to read, one option at a time to write
+  http.get(`${API_BASE}/devices/:deviceId/colorizer/`, () => HttpResponse.json([])),
+  http.put(`${API_BASE}/devices/:deviceId/colorizer/:field/`, async ({ params, request }) => {
+    const body = await request.json() as { value: number }
+    return HttpResponse.json({
+      option_id: params.field, current_value: body.value,
+      default_value: body.value, min_value: 0, max_value: 100, read_only: false,
+    })
+  }),
+  http.get(`${API_BASE}/devices/:deviceId/advanced_mode/controls/`, () => HttpResponse.json({})),
+  http.put(
+    `${API_BASE}/devices/:deviceId/advanced_mode/controls/:group/:field/`,
+    async ({ params, request }) => {
+      const body = await request.json() as { value: number }
+      return HttpResponse.json({
+        option_id: params.field, current_value: body.value,
+        default_value: body.value, min_value: 0, max_value: 100, read_only: false,
+      })
+    }
+  ),
 
   // Get depth range
   http.get(`${API_BASE}/devices/:deviceId/stream/depth-range`, () => {

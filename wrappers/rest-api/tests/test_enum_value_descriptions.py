@@ -2,69 +2,51 @@
 # Copyright(c) 2026 RealSense, Inc. All Rights Reserved.
 
 from collections import namedtuple
-from app.services.rs_manager import RealSenseManager
+from app.services import options
 
 Range = namedtuple("Range", ["min", "max", "step", "default"])
 
 
 class _FakeObj:
-    """Stand-in for an rs sensor/filter: maps int value -> description."""
+    """Stand-in for an rs sensor/filter: maps int value -> description, None if unlabelled."""
     def __init__(self, descs):
         self._descs = descs
+        self.probes = 0
 
     def get_option_value_description(self, opt, val):
-        d = self._descs.get(int(val))
-        if d is None:
-            raise RuntimeError("no description")
-        return d
+        self.probes += 1
+        return self._descs.get(int(val))
 
 
-_harvest = RealSenseManager._enum_value_descriptions
+_harvest = options._value_descriptions
 
 
-def test_full_enum_returns_all_descriptions():
+def test_reports_a_label_for_every_value():
     obj = _FakeObj({0: "Custom", 1: "Default", 2: "Hand", 3: "High Accuracy"})
-    rng = Range(0, 3, 1.0, 0)
-    assert _harvest(obj, object(), rng) == {"0": "Custom", "1": "Default", "2": "Hand", "3": "High Accuracy"}
+    assert _harvest(obj, object(), Range(0, 3, 1.0, 0)) == {
+        "0": "Custom", "1": "Default", "2": "Hand", "3": "High Accuracy"
+    }
 
 
-def test_partial_enum_returns_none_early_exit():
-    # value 2 has no description -> not a real enum
+def test_reports_the_labels_it_found_when_they_run_out():
+    # The viewer decides what a partial set means; the backend does not discard it.
     obj = _FakeObj({0: "Off", 1: "On"})
-    rng = Range(0, 2, 1.0, 0)
-    assert _harvest(obj, object(), rng) is None
+    assert _harvest(obj, object(), Range(0, 2, 1.0, 0)) == {"0": "Off", "1": "On"}
 
 
-def test_wide_range_is_capped_not_probed():
-    obj = _FakeObj({})  # would raise if probed
-    rng = Range(1, 165000, 1.0, 8500)
-    assert _harvest(obj, object(), rng) is None
+def test_unlabelled_option_stops_at_the_first_value():
+    obj = _FakeObj({})  # a slider: exposure-sized range, no labels at all
+    assert _harvest(obj, object(), Range(1, 165000, 1.0, 8500)) == {}
+    assert obj.probes == 1
 
 
-def test_non_integer_step_is_not_enum():
+def test_non_integer_step_is_not_probed():
     obj = _FakeObj({0: "a"})
-    rng = Range(0.0, 1.0, 0.1, 0.0)
-    assert _harvest(obj, object(), rng) is None
+    assert _harvest(obj, object(), Range(0.0, 1.0, 0.1, 0.0)) is None
+    assert obj.probes == 0
 
 
-def test_non_integer_bounds_is_not_enum():
+def test_non_integer_bounds_is_not_probed():
     obj = _FakeObj({0: "a"})
-    rng = Range(0.5, 3.5, 1.0, 0.5)
-    assert _harvest(obj, object(), rng) is None
-
-
-def test_object_without_the_description_api_is_not_enum():
-    # Older pyrealsense2 builds (and processing blocks) lack the method entirely.
-    # It must read as "no enum", not blow up the caller's whole option list.
-    class _NoDescribe:
-        pass
-
-    assert _harvest(_NoDescribe(), object(), Range(0, 3, 1.0, 0)) is None
-
-
-def test_description_probe_error_is_not_enum():
-    class _Boom:
-        def get_option_value_description(self, opt, val):
-            raise ValueError("not a RuntimeError")
-
-    assert _harvest(_Boom(), object(), Range(0, 3, 1.0, 0)) is None
+    assert _harvest(obj, object(), Range(0.5, 3.5, 1.0, 0.5)) is None
+    assert obj.probes == 0

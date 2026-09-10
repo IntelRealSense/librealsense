@@ -2,116 +2,146 @@
 # Copyright(c) 2026 RealSense, Inc. All Rights Reserved.
 
 import pytest
-from app.services.advanced_mode import build_advanced_options, set_advanced_option
-from app.services.rs_manager import RealSenseManager
-from app.core.errors import RealSenseError
+from app.services import advanced_mode
 
 
 class _Struct:
-    def __init__(self, **kw):
-        self.__dict__.update(kw)
+    """Stands in for a control group: a mapping view over its fields, like the bindings."""
+    def __init__(self, **fields):
+        self._fields = fields
+
+    def keys(self):
+        return list(self._fields)
+
+    def __getitem__(self, field):
+        return self._fields[field]
+
+    def __setitem__(self, field, value):
+        current = self._fields[field]
+        self._fields[field] = int(round(value)) if isinstance(current, int) else float(value)
 
 
 class _FakeAM:
-    """Exposes only depth_control (int) + color_control (bool-like int) groups.
-    Other GROUPS getters are absent -> getattr raises -> build skips them."""
-    def __init__(self):
+    """Three groups: depth_control and ae_control have ranges, hdad reports its value for
+    all three modes, as firmware does for a group whose min/max it does not report."""
+    def __init__(self, enabled=True):
+        self._enabled = enabled
         self.written = {}
+        self.groups = {
+            "depth_control": [_Struct(deepSeaSecondPeakThreshold=325),
+                              _Struct(deepSeaSecondPeakThreshold=0),
+                              _Struct(deepSeaSecondPeakThreshold=1023)],
+            "ae_control": [_Struct(meanIntensitySetPoint=1000),
+                           _Struct(meanIntensitySetPoint=0),
+                           _Struct(meanIntensitySetPoint=4095)],
+            "hdad": [_Struct(lambdaAD=800.0), _Struct(lambdaAD=800.0), _Struct(lambdaAD=800.0)],
+        }
 
-    def get_depth_control(self, mode):
-        return _Struct(deepSeaSecondPeakThreshold={0: 325, 1: 0, 2: 1023}[mode])
+    def is_enabled(self):
+        return self._enabled
 
-    def set_depth_control(self, s):
-        self.written["depth_control"] = s.deepSeaSecondPeakThreshold
+    def get_all_controls(self):
+        return _FakeControls(self)
 
-    def get_color_control(self, mode):
-        return _Struct(disableSADColor={0: 0, 1: 0, 2: 1}[mode])
+    # mapping view over the groups: am[group] reads mode 0, am[group, mode] any mode,
+    # am[group] = struct writes it
+    def __getitem__(self, key):
+        group, mode = key if isinstance(key, tuple) else (key, 0)
+        return self.groups[group][mode]
 
-    def set_color_control(self, s):
-        self.written["color_control"] = s.disableSADColor
-
-    def get_hdad(self, mode):
-        # current works, but ranges (mode 1/2) are unsupported on this device
-        if mode != 0:
-            raise RuntimeError("error code=-6")
-        return _Struct(lambdaAD=800.0)
-
-    def set_hdad(self, s):
-        self.written["hdad"] = s.lambdaAD
-
-
-def test_build_flattens_group_field_with_range():
-    opts = {o.option_id: o for o in build_advanced_options(_FakeAM())}
-    o = opts["ADV_depth_control_deepSeaSecondPeakThreshold"]
-    assert o.category == "Advanced Controls"
-    assert o.filter_name == "Depth Control"
-    assert o.name == "Deep Sea Second Peak Threshold"
-    assert (o.current_value, o.min_value, o.max_value, o.step) == (325.0, 0.0, 1023.0, 1.0)
+    def __setitem__(self, group, values):
+        self.written[group] = values
+        self.groups[group][0] = values
 
 
-def test_bool_field_is_min0_max1_step1():
-    opts = {o.option_id: o for o in build_advanced_options(_FakeAM())}
-    o = opts["ADV_color_control_disableSADColor"]
-    assert (o.min_value, o.max_value, o.step) == (0.0, 1.0, 1.0)  # frontend renders as checkbox
+class _FakeControls:
+    """What get_all_controls() answers: every group, each as [values, mins, maxes]."""
+    def __init__(self, am):
+        self._am = am
+
+    def keys(self):
+        return list(self._am.groups)
+
+    def __getitem__(self, group):
+        return self._am.groups[group]
 
 
-def test_set_patches_field_and_coerces_int():
-    am = _FakeAM()
-    assert set_advanced_option(am, "ADV_depth_control_deepSeaSecondPeakThreshold", 500.4) is True
-    assert am.written["depth_control"] == 500  # int-coerced
-
-
-def test_field_without_range_is_still_exposed():
-    # HDAD supports current value but not min/max -> still shown, ranges None
-    opts = {o.option_id: o for o in build_advanced_options(_FakeAM())}
-    o = opts["ADV_hdad_lambdaAD"]
-    assert o.current_value == 800.0
-    assert o.min_value is None and o.max_value is None and o.step is None
-
-
-def test_unknown_option_raises_404():
-    with pytest.raises(RealSenseError) as exc:
-        set_advanced_option(_FakeAM(), "ADV_depth_control_nope", 1)
-    assert exc.value.status_code == 404
+class _Unsupported:
+    """The wrapper for a device without advanced mode: asking it raises."""
+    def is_enabled(self):
+        raise RuntimeError("Device does not support advanced mode")
 
 
 class _FakeDevice:
-    sensors = [object()]
+    def __init__(self, name="RealSense D455"):
+        self._name = name
+
+    def supports(self, _info):
+        return True
+
+    def get_info(self, _info):
+        return self._name
 
 
-def _mgr_with_advanced_mode(am):
-    """A manager whose only wired-up piece is advanced-mode lookup on device 'dev'."""
-    mgr = RealSenseManager.__new__(RealSenseManager)  # bypass __init__ (no rs.context)
-    mgr.devices = {"dev": _FakeDevice()}
-    mgr._get_advanced_mode = staticmethod(lambda _dev: am)
-    return mgr
+@pytest.fixture
+def device_for(monkeypatch):
+    """Hand the service our fake wrapper for whatever device it is given."""
+    def install(am, name="RealSense D455"):
+        monkeypatch.setattr(advanced_mode.rs, "rs400_advanced_mode", lambda _dev: am)
+        return _FakeDevice(name)
+    return install
 
 
-def test_set_adv_option_while_disabled_raises_400():
+def _by_field(groups):
+    return {o.option_id: o for opts in groups.values() for o in opts}
+
+
+def test_reports_a_field_with_its_range(device_for):
+    groups = advanced_mode.controls(device_for(_FakeAM()))
+    assert "deepSeaSecondPeakThreshold" in {o.option_id for o in groups["depth_control"]}
+    o = _by_field(groups)["deepSeaSecondPeakThreshold"]
+    assert (o.current_value, o.min_value, o.max_value, o.step) == (325, 0, 1023, 1)
+
+
+def test_field_without_range_reports_value_for_min_and_max(device_for):
+    o = _by_field(advanced_mode.controls(device_for(_FakeAM())))["lambdaAD"]
+    assert (o.current_value, o.min_value, o.max_value) == (800.0, 800.0, 800.0)
+    assert o.step is None  # a float field states no step
+
+
+def test_reports_every_group_the_device_has(device_for):
+    # Which of them are worth drawing - the AE setpoint is blocked on D457 and D500 - is
+    # the viewer's call, so nothing is left out here.
+    for name in ("RealSense D455", "RealSense D457", "RealSense D555"):
+        assert set(advanced_mode.controls(device_for(_FakeAM(), name))) == {
+            "depth_control", "ae_control", "hdad"
+        }
+
+
+def test_set_patches_the_field_and_writes_its_group_back(device_for):
     am = _FakeAM()
-    am.is_enabled = lambda: False
-    with pytest.raises(RealSenseError) as exc:
-        _mgr_with_advanced_mode(am).set_sensor_option(
-            "dev", "sensor-0", "ADV_depth_control_deepSeaSecondPeakThreshold", 500
-        )
-    assert exc.value.status_code == 400
-    assert "disabled" in exc.value.detail
-    assert am.written == {}  # never reached the SDK
+    applied = advanced_mode.set_control(
+        device_for(am), "depth_control", "deepSeaSecondPeakThreshold", 500.4
+    )
+    assert am.written["depth_control"]["deepSeaSecondPeakThreshold"] == 500  # int-coerced
+    assert (applied.option_id, applied.current_value) == ("deepSeaSecondPeakThreshold", 500)
 
 
-def test_set_adv_option_when_unsupported_raises_400():
-    with pytest.raises(RealSenseError) as exc:
-        _mgr_with_advanced_mode(None).set_sensor_option(
-            "dev", "sensor-0", "ADV_depth_control_deepSeaSecondPeakThreshold", 500
-        )
-    assert exc.value.status_code == 400
-    assert "not supported" in exc.value.detail
+def test_set_unknown_field_raises(device_for):
+    with pytest.raises(KeyError):
+        advanced_mode.set_control(device_for(_FakeAM()), "depth_control", "nope", 1)
 
 
-def test_set_adv_option_when_enabled_writes_through():
-    am = _FakeAM()
-    am.is_enabled = lambda: True
-    assert _mgr_with_advanced_mode(am).set_sensor_option(
-        "dev", "sensor-0", "ADV_depth_control_deepSeaSecondPeakThreshold", 500
-    ) is True
-    assert am.written["depth_control"] == 500
+def test_set_unknown_group_raises(device_for):
+    with pytest.raises(KeyError):
+        advanced_mode.set_control(device_for(_FakeAM()), "nope", "deepSeaSecondPeakThreshold", 1)
+
+
+def test_status_reports_supported_and_enabled(device_for):
+    assert advanced_mode.status(device_for(_FakeAM())) == {"supported": True, "enabled": True}
+    assert advanced_mode.status(device_for(_FakeAM(enabled=False))) == {
+        "supported": True, "enabled": False
+    }
+    assert advanced_mode.status(device_for(_Unsupported())) == {
+        "supported": False, "enabled": False
+    }

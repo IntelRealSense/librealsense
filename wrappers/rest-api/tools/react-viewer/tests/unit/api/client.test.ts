@@ -90,38 +90,21 @@ describe('API Client', () => {
     })
   })
 
-  describe('getOptions', () => {
-    it('fetches options for a sensor', async () => {
-      const options = await apiClient.getOptions(mockDevice.device_id, mockDevice.device_id + '-sensor-0')
-      
-      expect(options).toHaveLength(mockDepthOptions.length)
-    })
-
-    it('returns option properties correctly', async () => {
-      const options = await apiClient.getOptions(mockDevice.device_id, mockDevice.device_id + '-sensor-0')
-      const exposureOption = options.find((o: any) => o.option_id === 'exposure')
-      
-      expect(exposureOption).toBeDefined()
-      expect(exposureOption.name).toBe('Exposure')
-      expect(exposureOption.current_value).toBe(8500)
-      expect(exposureOption.min_value).toBe(1)
-      expect(exposureOption.max_value).toBe(165000)
-    })
-
-    it('returns post-processing filter options with category', async () => {
-      const options = await apiClient.getOptions(mockDevice.device_id, mockDevice.device_id + '-sensor-0')
-      const ppOptions = options.filter((o: any) => o.category === 'Post-Processing')
-      
-      expect(ppOptions.length).toBeGreaterThan(0)
-      expect(ppOptions[0].filter_name).toBeDefined()
+  describe('getSensorFilters', () => {
+    it('answers the filter chain, keyed by filter name', async () => {
+      const filters = await apiClient.getSensorFilters(mockDevice.device_id, mockDevice.device_id + '-sensor-0')
+      expect(Object.keys(filters).length).toBeGreaterThan(0)
+      expect(filters['Decimation Filter'].options[0].option_id).toBe('filter_magnitude')
     })
   })
 
-  describe('setOption', () => {
-    it('sets an option value', async () => {
-      const result = await apiClient.setOption(mockDevice.device_id, 'sensor-0', 'exposure', 10000)
-      
-      expect(result.success).toBe(true)
+  describe('setControl', () => {
+    it('answers the option as the device now holds it', async () => {
+      const result = await apiClient.setControl(
+        mockDevice.device_id, 'sensors/sensor-0/options', 'exposure', 10000
+      )
+
+      expect(result).toMatchObject({ option_id: 'exposure', current_value: 10000 })
     })
   })
 

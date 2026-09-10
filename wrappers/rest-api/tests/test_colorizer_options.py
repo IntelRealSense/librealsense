@@ -23,30 +23,53 @@ class _FakeColorizer:
     def get_option_range(self, opt):
         return Range(0, 9, 1, 0) if opt.name == "color_scheme" else Range(0.0, 16.0, 0.1, 0.0)
 
+    def get_option(self, opt):
+        return self.written.get(opt.name, 0.0)
+
+    def get_option_description(self, opt):
+        return f"{opt.name} description"
+
+    def get_option_value_description(self, opt, val):
+        return None
+
+    def is_option_read_only(self, opt):
+        return False
+
     def set_option(self, opt, v):
+        rng = self.get_option_range(opt)
+        if not rng.min <= v <= rng.max:  # as the SDK does, rather than moving the value
+            raise RuntimeError(f"value {v} is out of range [{rng.min}, {rng.max}]")
         self.written[opt.name] = v
 
 
 def _mgr_with_colorizer():
     mgr = RealSenseManager.__new__(RealSenseManager)  # bypass __init__ (no rs.context)
     mgr.colorizers = {"dev": _FakeColorizer()}
+    mgr.devices = {"dev": object()}  # the colorizer rides a device, so one has to exist
     return mgr
 
 
-def test_set_colorizer_option_routes_and_coerces():
+def test_get_colorizer_options_reports_ranges():
+    opts = {o.option_id: o for o in _mgr_with_colorizer().get_colorizer_options("dev")}
+    assert (opts["color_scheme"].min_value, opts["color_scheme"].max_value) == (0, 9)
+    assert opts["min_distance"].step == 0.1
+
+
+def test_set_colorizer_option_writes_and_returns_applied():
     mgr = _mgr_with_colorizer()
-    assert mgr._set_colorizer_option("dev", "VIZ_color_scheme", 3) is True
+    applied = mgr.set_colorizer_option("dev", "color_scheme", 3)
     assert mgr.colorizers["dev"].written["color_scheme"] == 3.0
+    assert applied.current_value == 3.0
 
 
-def test_set_colorizer_option_clamps_to_range():
+def test_set_colorizer_option_out_of_range_is_left_to_the_device():
     mgr = _mgr_with_colorizer()
-    mgr._set_colorizer_option("dev", "VIZ_min_distance", 999)
-    assert mgr.colorizers["dev"].written["min_distance"] == 16.0
+    with pytest.raises(RuntimeError):  # the SDK's own rejection, not translated here
+        mgr.set_colorizer_option("dev", "min_distance", 999)
+    assert "min_distance" not in mgr.colorizers["dev"].written
 
 
-def test_set_colorizer_option_unknown_raises_404():
+def test_set_colorizer_option_unknown_raises():
     mgr = _mgr_with_colorizer()
-    with pytest.raises(RealSenseError) as exc:
-        mgr._set_colorizer_option("dev", "VIZ_nope", 1)
-    assert exc.value.status_code == 404
+    with pytest.raises(StopIteration):
+        mgr.set_colorizer_option("dev", "nope", 1)
