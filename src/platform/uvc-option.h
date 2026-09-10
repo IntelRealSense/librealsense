@@ -20,6 +20,9 @@ class uvc_pu_option : public option
     const std::map< float, std::string > _description_per_value;
     std::function< void( const option & ) > _record = []( const option & ) {};
     rsutils::lazy< option_range > _range;
+    platform::processing_unit _pu = { 0, 0, platform::DEFAULT_PU_NODE };
+
+    void initialize_range();
 
 public:
     void set( float value ) override;
@@ -33,6 +36,15 @@ public:
     uvc_pu_option( const std::weak_ptr< uvc_sensor > & ep, rs2_option id );
 
     uvc_pu_option( const std::weak_ptr < uvc_sensor > & ep, rs2_option id,
+                   const std::map< float, std::string > & description_per_value );
+
+    uvc_pu_option( const std::weak_ptr< uvc_sensor > & ep,
+                   rs2_option id,
+                   platform::processing_unit pu );
+
+    uvc_pu_option( const std::weak_ptr< uvc_sensor > & ep,
+                   rs2_option id,
+                   platform::processing_unit pu,
                    const std::map< float, std::string > & description_per_value );
 
     const char * get_description() const override;
