@@ -278,18 +278,28 @@ udev_device_watcher::udev_device_watcher( const platform::backend * backend )
                     it = _incomplete_since.erase( it );
                 }
             }
+            // A device already published stays published even if sysfs looks incomplete
+            // for a tick: retracting a live device would surface as a spurious removal
+            // followed by a re-add.
+            std::set< std::string > already_published;
+            for( auto && uvc : _devices_data.uvc_devices )
+                already_published.insert( uvc.unique_id );
+
             bool waiting = false;
             for( auto && uid : incomplete )
             {
-                auto inserted = _incomplete_since.emplace( uid, now );
-                if( now - inserted.first->second >= MAX_WAIT )
+                if( already_published.count( uid ) )
+                    continue;
+                auto const inserted = _incomplete_since.emplace( uid, now );
+                auto const waited = now - inserted.first->second;
+                if( ! inserted.second && waited >= MAX_WAIT )
                 {
                     // Publishing it anyway is what lets a genuinely partial device through,
                     // but it also means a device that needed longer comes up missing sensors
                     // - so say so rather than let it look like a normal arrival.
                     if( _warned_incomplete.insert( uid ).second )
                         LOG_WARNING( "[udev] " << uid << " still incomplete after "
-                                     << std::chrono::duration_cast< std::chrono::seconds >( now - inserted.first->second ).count()
+                                     << std::chrono::duration_cast< std::chrono::seconds >( waited ).count()
                                      << "s; publishing it as-is" );
                     continue;
                 }
