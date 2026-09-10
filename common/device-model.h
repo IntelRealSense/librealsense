@@ -327,7 +327,7 @@ namespace rs2
 
         int draw_playback_panel(ux_window& window, ImFont* font, viewer_model& view);
         bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message,
-            bool is_streaming, std::vector<std::function<void()>>& draw_later);
+            bool is_streaming, std::string const & filter, std::vector<std::function<void()>>& draw_later);
         void draw_controls(float panel_width, float panel_height,
             ux_window& window,
             std::string& error_message,

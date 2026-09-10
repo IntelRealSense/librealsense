@@ -6,6 +6,8 @@
 #include "control-model.h"
 
 #include <imgui.h>
+#include <algorithm>
+#include <cctype>
 
 #include <functional>
 #include <memory>
@@ -14,21 +16,38 @@
 
 namespace rs2
 {
-    // A titled group of controls, and of nested groups. A group with nothing to show is not
-    // drawn at all, its heading included.
+    // Case-insensitive substring test. The needle is already lowercase; the haystack is compared
+    // a character at a time rather than lowercased into a copy, because every control name is
+    // tested on every frame the search box has text in it.
+    inline bool contains_ci( std::string const & haystack, std::string const & lowercase_needle )
+    {
+        if( lowercase_needle.empty() )
+            return true;
+        return std::search( haystack.begin(), haystack.end(),
+                            lowercase_needle.begin(), lowercase_needle.end(),
+                            []( char h, char n )
+                            { return (char)std::tolower( (unsigned char)h ) == n; } )
+            != haystack.end();
+    }
+
+    // A titled group of controls, and of nested groups. A group with nothing to show under the
+    // current search is not drawn at all, its heading included.
     class control_section
     {
     public:
-        // title is what the user reads; label is what ImGui gets, "##id" included
-        control_section( std::string title, std::string label )
+        // title is what the user reads and what the search matches; label is what ImGui gets,
+        // "##id" included. searchable_title is false for the container headings - Controls,
+        // Post-Processing, Embedded-Filters, Advanced Controls - which name no control.
+        control_section( std::string title, std::string label, bool searchable_title = true )
             : _title( std::move( title ) ), _label( std::move( label ) )
+            , _searchable_title( searchable_title )
         {
         }
 
         void add( std::unique_ptr< control_model > control ) { _controls.push_back( std::move( control ) ); }
         // Sections are held by pointer: the controls inside one keep a reference to it, and a
         // vector of sections would move them out from under those references as it grows
-        control_section & add_section( std::string title, std::string label );
+        control_section & add_section( std::string title, std::string label, bool searchable_title = true );
 
         // Drawn deferred, at the panel's right edge, from the position this heading was drawn at
         std::function< void( ImVec2 ) > toggle;
@@ -36,7 +55,8 @@ namespace rs2
         // what they changed - the ctx.changed it reads covers those controls and nothing else
         std::function< void() > on_open;
         std::function< void( control_draw_context & ) > on_close;
-        // A section with something to say beyond its controls
+        // A section with something to say beyond its controls - shown when nothing is being
+        // searched for, or when the search found this section by its own name
         std::function< void( control_draw_context & ) > content;
         // Air above the heading, as the filter blocks have always had it; the denser lists opt out
         bool gap_above = true;
@@ -44,11 +64,13 @@ namespace rs2
         std::string const & title() const { return _title; }
         // Nothing to draw: no controls of its own, nothing to say, and no non-empty section under it
         bool empty() const;
+        bool matches( std::string const & filter ) const;
         void draw( control_draw_context & );
 
     private:
         std::string _title;
         std::string _label;
+        bool _searchable_title;
         std::vector< std::unique_ptr< control_model > > _controls;
         std::vector< std::unique_ptr< control_section > > _sections;
     };

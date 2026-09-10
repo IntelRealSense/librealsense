@@ -25,11 +25,12 @@ namespace rs2
         float windows_width = 0.f;
         bool update_read_only_options = false;
         bool is_streaming = false;
+        std::string filter;      // lowercase; empty shows everything
         bool changed = false;    // set by anything the user touched
     };
 
-    // One drawable control. name() is what the user reads, so it never carries the "##id"
-    // suffix ImGui needs.
+    // One drawable control. name() is what the user reads and what the search matches, so it
+    // never carries the "##id" suffix ImGui needs.
     class control_model
     {
     public:

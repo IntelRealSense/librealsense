@@ -164,7 +164,7 @@ namespace rs2
         std::shared_ptr< atomic_objects_in_frame > detected_objects;
 
         std::map< rs2_option, option_model > options_metadata;
-        std::string options_filter;  // live search text filtering the Controls option list by name
+        std::string options_filter;  // live search text filtering this sensor's controls by name
         std::vector<std::string> resolutions;
         std::map<int, std::vector<std::string>> fpses_per_stream;
         std::vector<std::string> shared_fpses;
