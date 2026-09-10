@@ -1828,17 +1828,51 @@ namespace rs2
         }
     }
 
+    namespace {
+        // The one nice-step ladder. Both the snap grid (nice_step_for_range,
+        // used by the bounds smoothing) and the tick-label picker in
+        // draw_color_ruler iterate this same array — extending it changes both.
+        static constexpr float k_step_ladder[] = {
+            0.05f, 0.10f, 0.25f, 0.5f, 1.f, 2.f, 5.f, 10.f, 20.f, 50.f, 100.f
+        };
+
+        // Snap grid: coarsest step that keeps ~≤10 grid cells across the range.
+        // Verified to match the previous hardcoded thresholds through 20 m; beyond
+        // that, extrapolates sensibly (100 m → 10 m step instead of the old 5 m).
+        float nice_step_for_range(float range)
+        {
+            for (float s : k_step_ladder)
+            {
+                if (range <= s * 10.f) return s;
+            }
+            return k_step_ladder[sizeof(k_step_ladder)/sizeof(k_step_ladder[0]) - 1];
+        }
+
+        // p in [0,1]. Modifies the vector via nth_element — cheap and avoids a full sort.
+        float percentile(std::vector<float>& v, float p)
+        {
+            if (v.empty()) return 0.f;
+            if (p < 0.f) p = 0.f;
+            if (p > 1.f) p = 1.f;
+            size_t idx = static_cast<size_t>(p * (v.size() - 1));
+            std::nth_element(v.begin(), v.begin() + idx, v.end());
+            return v[idx];
+        }
+    }
+
     void viewer_model::draw_color_ruler(const mouse_info& mouse,
                                         const stream_model& s_model,
                                         const rect& stream_rect,
                                         std::vector<rgb_per_distance> rgb_per_distance_vec,
-                                        float ruler_length,
+                                        const ruler_bounds& bounds,
                                         const std::string& ruler_units)
     {
-        if (rgb_per_distance_vec.empty() || (ruler_length <= 0.f))
+        const float ruler_min = bounds.min;
+        const float ruler_max = bounds.max;
+        const float ruler_range = ruler_max - ruler_min;
+        if (rgb_per_distance_vec.empty() || (ruler_range <= 0.f))
             return;
 
-        ruler_length = std::ceil(ruler_length);
         std::sort(rgb_per_distance_vec.begin(), rgb_per_distance_vec.end(), [](const rgb_per_distance& a,
             const rgb_per_distance& b) {
             return a.depth_val < b.depth_val;
@@ -1866,12 +1900,10 @@ namespace rs2
         const auto left_x_colored_ruler = stream_width - left_x_colored_ruler_offset;
         const auto right_x_colored_ruler = stream_width - (left_x_colored_ruler_offset - colored_ruler_width);
         assert((bottom_y_ruler - top_y_ruler) != 0.f);
-        const auto ratio = (bottom_y_ruler - top_y_ruler) / ruler_length;
+        // px per meter for depth->y mapping (independent of ruler start offset).
+        const auto ratio = (bottom_y_ruler - top_y_ruler) / ruler_range;
 
-        // Draw numbered ruler
-        float y_ruler_val = top_y_ruler;
         static const auto numbered_ruler_width = 20.f;
-
         const auto right_x_numbered_ruler = right_x_colored_ruler + numbered_ruler_width;
         static const auto hovered_numbered_ruler_opac = 0.8f;
         static const auto unhovered_numbered_ruler_opac = 0.6f;
@@ -1889,7 +1921,7 @@ namespace rs2
             std::stringstream ss;
             auto relative_mouse_y = ImGui::GetMousePos().y - top_y_ruler;
             auto y = (bottom_y_ruler - top_y_ruler) - relative_mouse_y;
-            ss << std::fixed << std::setprecision(2) << (y / ratio) << ruler_units;
+            ss << std::fixed << std::setprecision(2) << (ruler_min + y / ratio) << ruler_units;
             RsImGui::CustomTooltip("%s", ss.str().c_str());
             colored_ruler_opac = 1.f;
             numbered_ruler_background_opac = hovered_numbered_ruler_opac;
@@ -1906,26 +1938,46 @@ namespace rs2
         glVertex2f(right_x_colored_ruler, bottom_y_ruler);
         glEnd();
 
-
+        // Numbered ruler: labels sit only on nice-step multiples that fall inside
+        // the bar. No forced min/max — a range whose ends aren't on the step grid
+        // (e.g. min=0.15, max=2.5 with step=1) shows "1" and "2" and nothing else,
+        // never duplicating a tick label as a rounded-off endpoint. Cap at 5 ticks.
         const float x_ruler_val = right_x_colored_ruler + 4.0f;
-        ImGui::SetCursorScreenPos({ x_ruler_val, y_ruler_val });
-        const auto font_size = ImGui::GetFontSize();
-        ImGui::TextUnformatted(std::to_string(static_cast<int>(ruler_length)).c_str());
-        const auto skip_numbers = ((ruler_length / 10.f) - 1.f);
-        auto to_skip = (skip_numbers < 0.f)?0.f: skip_numbers;
-        for (int i = static_cast<int>(ruler_length - 1); i > 0; --i)
-        {
-            y_ruler_val += ((bottom_y_ruler - top_y_ruler) / ruler_length);
-            ImGui::SetCursorScreenPos({ x_ruler_val, y_ruler_val - font_size / 2 });
-            if (((to_skip--) > 0))
-                continue;
+        const auto  font_size   = ImGui::GetFontSize();
 
-            ImGui::TextUnformatted(std::to_string(i).c_str());
-            to_skip = skip_numbers;
+        auto tick_count = [ruler_min, ruler_max](float s) {
+            const float first = std::ceil(ruler_min / s - 1e-4f) * s;
+            if (first > ruler_max + 1e-4f) return 0;
+            return static_cast<int>(std::floor((ruler_max + 1e-4f - first) / s)) + 1;
+        };
+        float draw_step = k_step_ladder[sizeof(k_step_ladder)/sizeof(k_step_ladder[0]) - 1];
+        for (float s : k_step_ladder)
+        {
+            if (tick_count(s) <= 5) { draw_step = s; break; }
         }
-        y_ruler_val += ((bottom_y_ruler - top_y_ruler) / ruler_length);
-        ImGui::SetCursorScreenPos({ x_ruler_val, y_ruler_val - font_size });
-        ImGui::Text("0");
+
+        // Decimals: minimum that still faithfully represents every step multiple.
+        const int decimals = (draw_step >= 1.f  - 1e-4f) ? 0
+                           : (draw_step >= 0.1f - 1e-4f) ? 1
+                                                        : 2;
+        auto fmt_label = [decimals](float v) {
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(decimals) << v;
+            return ss.str();
+        };
+
+        const float first_tick = std::ceil(ruler_min / draw_step - 1e-4f) * draw_step;
+        for (float v = first_tick; v <= ruler_max + 1e-4f; v += draw_step)
+        {
+            const float y = bottom_y_ruler - (v - ruler_min) * ratio;
+            if (y < top_y_ruler || y > bottom_y_ruler) continue;
+            // Keep the label glyph inside the bar even for ticks flush at either edge.
+            float ly = y - font_size / 2.f;
+            if (ly < top_y_ruler)                ly = top_y_ruler;
+            if (ly > bottom_y_ruler - font_size) ly = bottom_y_ruler - font_size;
+            ImGui::SetCursorScreenPos({ x_ruler_val, ly });
+            ImGui::TextUnformatted(fmt_label(v).c_str());
+        }
 
         auto total_depth_scale = rgb_per_distance_vec.back().depth_val - rgb_per_distance_vec.front().depth_val;
         static const auto sensitivity_factor = 0.01f;
@@ -1954,9 +2006,12 @@ namespace rs2
             last_depth_value = curr_depth;
             last_index = i;
 
-            auto y = bottom_y_ruler - ((rgb_per_distance_vec[i].depth_val) * ratio);
-            if ((i == (rgb_per_distance_vec.size() - 1)) || (std::ceil(curr_depth) > ruler_length))
-                y = top_y_ruler;
+            // Map depth into the [top_y_ruler, bottom_y_ruler] strip, clipping any
+            // pixels that fall outside the current [ruler_min, ruler_max] window.
+            float y = bottom_y_ruler - (curr_depth - ruler_min) * ratio;
+            if (y < top_y_ruler)    y = top_y_ruler;
+            if (y > bottom_y_ruler) y = bottom_y_ruler;
+            if (i == (rgb_per_distance_vec.size() - 1)) y = top_y_ruler;
 
             glColor4f(rgb_per_distance_vec[i].rgb_val.r / 255.f,
                       rgb_per_distance_vec[i].rgb_val.g / 255.f,
@@ -1981,23 +2036,97 @@ namespace rs2
         glEnd();
     }
 
-    float viewer_model::calculate_ruler_max_distance(const std::vector<float>& distances) const
+    viewer_model::ruler_bounds viewer_model::calculate_ruler_bounds(
+        std::vector<float> distances, stream_model& s_model)
     {
         assert(!distances.empty());
 
-        float mean = std::accumulate(distances.begin(),
-            distances.end(), 0.0f) / distances.size();
-
-        float e = 0;
-        float inverse = 1.f / distances.size();
-        for (auto elem : distances)
+        // 1) User override / legacy modes short-circuit the data-driven path.
+        if (s_model.ruler_mode == ruler_range_mode::fixed_4m)
         {
-            e += static_cast<float>(pow(elem - mean, 2));
+            s_model.ruler_state.snapped_min = 0.f;
+            s_model.ruler_state.snapped_max = 4.f;
+            s_model.ruler_state.smoothed_min = 0.f;
+            s_model.ruler_state.smoothed_max = 4.f;
+            s_model.ruler_state.initialized = true;
+            return { 0.f, 4.f };
+        }
+        if (s_model.ruler_mode == ruler_range_mode::fixed_user)
+        {
+            float lo = std::max(0.f, s_model.ruler_fixed_min);
+            float hi = std::max(lo + k_min_ruler_gap, s_model.ruler_fixed_max);
+            s_model.ruler_state.snapped_min = lo;
+            s_model.ruler_state.snapped_max = hi;
+            s_model.ruler_state.smoothed_min = lo;
+            s_model.ruler_state.smoothed_max = hi;
+            s_model.ruler_state.initialized = true;
+            return { lo, hi };
         }
 
-        auto standard_deviation = sqrt(inverse * e);
-        static const auto length_jump = 4.f;
-        return std::ceil((mean + 1.5f * standard_deviation) / length_jump) * length_jump;
+        // 2) Auto: percentile-driven raw bounds with symmetric 5% headroom on
+        //    each side. Cache the span before mutating either endpoint — else
+        //    the second line's headroom would ride the already-shrunk raw_lo.
+        float raw_lo = percentile(distances, 0.05f);
+        float raw_hi = percentile(distances, 0.95f);
+        const float span = std::max(raw_hi - raw_lo, 0.05f);
+        raw_lo = std::max(0.f, raw_lo - 0.05f * span);
+        raw_hi = raw_hi + 0.05f * span;
+        if (raw_hi <= raw_lo) raw_hi = raw_lo + 0.05f;
+
+        // 3) Asymmetric EMA hysteresis. "Expand" (max moves up, min moves down)
+        //    tracks fast so the ruler grows immediately when a farther object
+        //    appears; "contract" tracks slowly so a brief close-up doesn't
+        //    collapse the ruler. Attack/release, the same trick a compressor uses.
+        auto& st = s_model.ruler_state;
+        constexpr float alpha_fast = 0.25f;   // ~4-frame attack
+        constexpr float alpha_slow = 0.03f;   // ~30-frame release (~1 s @ 30 fps)
+
+        auto ema = [](float& state, float target, float alpha_expand, float alpha_contract, bool max_edge)
+        {
+            const bool expanding = max_edge ? (target > state) : (target < state);
+            const float a = expanding ? alpha_expand : alpha_contract;
+            state = (1.f - a) * state + a * target;
+        };
+
+        if (!st.initialized)
+        {
+            st.smoothed_min = raw_lo;
+            st.smoothed_max = raw_hi;
+            float step0 = nice_step_for_range(std::max(0.05f, st.smoothed_max - st.smoothed_min));
+            st.snapped_min = std::max(0.f, std::floor(st.smoothed_min / step0) * step0);
+            st.snapped_max = std::ceil(st.smoothed_max / step0) * step0;
+            if (st.snapped_max <= st.snapped_min) st.snapped_max = st.snapped_min + step0;
+            st.initialized = true;
+            return { st.snapped_min, st.snapped_max };
+        }
+        ema(st.smoothed_max, raw_hi, alpha_fast, alpha_slow, /*max_edge=*/true);
+        ema(st.smoothed_min, raw_lo, alpha_fast, alpha_slow, /*max_edge=*/false);
+
+        // 4) Asymmetric deadband: expand at ½·step (snap up quickly when needed),
+        //    contract only at 1½·step (three times harder to shrink than grow),
+        //    so a bound sitting near a tick edge doesn't ping-pong.
+        const float cur_range = std::max(0.05f, st.snapped_max - st.snapped_min);
+        const float cur_step  = nice_step_for_range(cur_range);
+
+        auto needs_resnap = [cur_step](float snapped, float smoothed, bool max_edge)
+        {
+            const float diff = smoothed - snapped;
+            const bool expanding = max_edge ? (diff > 0.f) : (diff < 0.f);
+            const float threshold = expanding ? 0.5f * cur_step : 1.5f * cur_step;
+            return std::fabs(diff) > threshold;
+        };
+        const bool re_snap = needs_resnap(st.snapped_max, st.smoothed_max, true)
+                          || needs_resnap(st.snapped_min, st.smoothed_min, false);
+
+        if (re_snap)
+        {
+            const float new_range = std::max(0.05f, st.smoothed_max - st.smoothed_min);
+            const float step      = nice_step_for_range(new_range);
+            st.snapped_min = std::max(0.f, std::floor(st.smoothed_min / step) * step);
+            st.snapped_max = std::ceil(st.smoothed_max / step) * step;
+            if (st.snapped_max <= st.snapped_min) st.snapped_max = st.snapped_min + step;
+        }
+        return { st.snapped_min, st.snapped_max };
     }
 
     void viewer_model::render_2d_view(const rect& view_rect,
@@ -2315,7 +2444,6 @@ namespace rs2
                 if(RS2_FORMAT_RGB8 == textured_frame.get_profile().format())
                 {
                     static const std::string depth_units = "m";
-                    float ruler_length = 0.f;
                     auto depth_vid_profile = stream_mv.profile.as<video_stream_profile>();
                     auto depth_width = depth_vid_profile.width();
                     auto depth_height = depth_vid_profile.height();
@@ -2344,8 +2472,10 @@ namespace rs2
 
                     if (!distances.empty())
                     {
-                        ruler_length = calculate_ruler_max_distance(distances);
-                        draw_color_ruler(active_mouse, streams[stream], stream_rect, rgb_per_distance_vec, ruler_length, depth_units);
+                        auto bounds = calculate_ruler_bounds(std::move(distances),
+                                                             streams[stream]);
+                        draw_color_ruler(active_mouse, streams[stream], stream_rect,
+                                         rgb_per_distance_vec, bounds, depth_units);
                     }
                 }
             }
