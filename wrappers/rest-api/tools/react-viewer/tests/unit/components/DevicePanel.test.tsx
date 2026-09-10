@@ -324,39 +324,117 @@ describe('DevicePanel', () => {
     })
   })
 
+  describe('Advanced Mode', () => {
+    const withAdvancedMode = (overrides: Partial<ReturnType<typeof createMockDeviceState>> = {}) => {
+      const device = createMockDevice()
+      const ds = createMockDeviceState(device, {
+        isActive: true,
+        advancedMode: { supported: true, enabled: false },
+        ...overrides,
+      })
+      return { device, ds }
+    }
+
+    const openMenu = async () =>
+      userEvent.click(await screen.findByTitle('Device actions'))
+
+    it('hides the toggle on devices that do not support advanced mode', async () => {
+      const { device, ds } = withAdvancedMode({ advancedMode: { supported: false, enabled: false } })
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+
+      await openMenu()
+      expect(screen.queryByRole('button', { name: /Advanced Mode/ })).not.toBeInTheDocument()
+    })
+
+    it('toggles without a confirmation prompt', async () => {
+      const toggleAdvancedMode = vi.fn().mockResolvedValue(undefined)
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+      useAppStore.setState({ toggleAdvancedMode })
+      const { device, ds } = withAdvancedMode()
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+
+      await openMenu()
+      await userEvent.click(screen.getByRole('button', { name: 'Enable Advanced Mode' }))
+
+      expect(confirmSpy).not.toHaveBeenCalled()
+      expect(toggleAdvancedMode).toHaveBeenCalledWith(device.device_id, true)
+      confirmSpy.mockRestore()
+    })
+
+    it('disables the toggle while streaming, as the C++ viewer does', async () => {
+      const toggleAdvancedMode = vi.fn().mockResolvedValue(undefined)
+      useAppStore.setState({ toggleAdvancedMode })
+      const { device, ds } = withAdvancedMode({ isStreaming: true })
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+
+      await openMenu()
+      const item = screen.getByRole('button', { name: 'Enable Advanced Mode' })
+      expect(item).toBeDisabled()
+
+      await userEvent.click(item)
+      expect(toggleAdvancedMode).not.toHaveBeenCalled()
+    })
+
+    it('offers to disable once advanced mode is on', async () => {
+      const toggleAdvancedMode = vi.fn().mockResolvedValue(undefined)
+      useAppStore.setState({ toggleAdvancedMode })
+      const { device, ds } = withAdvancedMode({ advancedMode: { supported: true, enabled: true } })
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+
+      await openMenu()
+      await userEvent.click(screen.getByRole('button', { name: 'Disable Advanced Mode' }))
+      expect(toggleAdvancedMode).toHaveBeenCalledWith(device.device_id, false)
+    })
+  })
+
   describe('Control Search', () => {
-    function renderWithControls(overrides: {
+    // The search covers one sensor's controls and lives inside its panel, so the sensor
+    // has to be expanded before there is a box to type in.
+    async function renderWithControls(overrides: {
       options?: ReturnType<typeof createMockOption>[]
-      setOption?: ReturnType<typeof vi.fn>
+      setControl?: ReturnType<typeof vi.fn>
     } = {}) {
       const device = createMockDevice()
       const sensor = createMockSensor({ sensor_id: 'sensor-a', name: 'Stereo Module' })
       const options = overrides.options ?? [
-        createMockOption({ option_id: 'Exposure', name: 'Exposure', category: 'Basic Controls' }),
-        createMockOption({ option_id: 'Gain', name: 'Gain', category: 'Basic Controls' }),
-        createMockOption({ option_id: 'Laser_Power', name: 'Laser Power', category: 'Basic Controls' }),
+        createMockOption({ option_id: 'Exposure', name: 'Exposure' }),
+        createMockOption({ option_id: 'Gain', name: 'Gain' }),
+        createMockOption({ option_id: 'Laser_Power', name: 'Laser Power' }),
       ]
       const deviceState = createMockDeviceState(device, {
         isActive: true,
         sensors: [sensor],
-        options: { 'sensor-a': options },
+        controls: {
+          'sensors/sensor-a/options': {
+            section: 'Controls', sensorId: 'sensor-a', name: '', options,
+          },
+        },
       })
       render(<DevicePanel />, {
         initialStoreState: {
           devices: [device],
           deviceStates: { [device.device_id]: deviceState },
-          ...(overrides.setOption ? { setOption: overrides.setOption } : {}),
+          ...(overrides.setControl ? { setControl: overrides.setControl } : {}),
         },
       })
+      await userEvent.click(screen.getByText('Stereo Module'))
     }
 
-    it('renders the control search box for an active device', () => {
-      renderWithControls()
+    it('renders the control search box for an active device', async () => {
+      await renderWithControls()
       expect(screen.getByPlaceholderText('Search controls…')).toBeInTheDocument()
     })
 
     it('filters to matching controls and auto-expands, hiding non-matches', async () => {
-      renderWithControls()
+      await renderWithControls()
       await userEvent.type(screen.getByPlaceholderText('Search controls…'), 'gain')
 
       await waitFor(() => expect(screen.getByText('Gain')).toBeInTheDocument())
@@ -365,7 +443,7 @@ describe('DevicePanel', () => {
     })
 
     it('matches a control name mid-word, case-insensitively', async () => {
-      renderWithControls()
+      await renderWithControls()
       await userEvent.type(screen.getByPlaceholderText('Search controls…'), 'POWER')
 
       await waitFor(() => expect(screen.getByText('Laser Power')).toBeInTheDocument())
@@ -373,7 +451,7 @@ describe('DevicePanel', () => {
     })
 
     it('shows no results for a term that appears in no control label', async () => {
-      renderWithControls()
+      await renderWithControls()
       await userEvent.type(screen.getByPlaceholderText('Search controls…'), 'option')
 
       await waitFor(() => expect(screen.getByText(/No controls match/)).toBeInTheDocument())
@@ -382,16 +460,16 @@ describe('DevicePanel', () => {
     })
 
     it('restores every option of a category, including ones the search hides', async () => {
-      const setOption = vi.fn().mockResolvedValue(undefined)
-      renderWithControls({
-        setOption,
+      const setControl = vi.fn().mockResolvedValue(undefined)
+      await renderWithControls({
+        setControl,
         options: [
           createMockOption({
-            option_id: 'Exposure', name: 'Exposure', category: 'Basic Controls',
+            option_id: 'Exposure', name: 'Exposure',
             current_value: 100, default_value: 50,
           }),
           createMockOption({
-            option_id: 'Gain', name: 'Gain', category: 'Basic Controls',
+            option_id: 'Gain', name: 'Gain',
             current_value: 32, default_value: 16,
           }),
         ],
@@ -399,15 +477,15 @@ describe('DevicePanel', () => {
       await userEvent.type(screen.getByPlaceholderText('Search controls…'), 'gain')
       await waitFor(() => expect(screen.getByText('Gain')).toBeInTheDocument())
 
-      await userEvent.click(screen.getByTitle('Restore Basic Controls to defaults'))
+      await userEvent.click(screen.getByTitle('Restore Controls to defaults'))
 
-      await waitFor(() => expect(setOption).toHaveBeenCalledTimes(2))
-      expect(setOption).toHaveBeenCalledWith('test-device-1', 'sensor-a', 'Exposure', 50)
-      expect(setOption).toHaveBeenCalledWith('test-device-1', 'sensor-a', 'Gain', 16)
+      await waitFor(() => expect(setControl).toHaveBeenCalledTimes(2))
+      expect(setControl).toHaveBeenCalledWith('test-device-1', 'sensors/sensor-a/options', 'Exposure', 50)
+      expect(setControl).toHaveBeenCalledWith('test-device-1', 'sensors/sensor-a/options', 'Gain', 16)
     })
 
-    it('shows a no-match message and clears back to collapsed on X', async () => {
-      renderWithControls()
+    it('shows a no-match message and collapses the section again on X', async () => {
+      await renderWithControls()
       const input = screen.getByPlaceholderText('Search controls…')
       await userEvent.type(input, 'zzzqqq')
 
@@ -415,8 +493,24 @@ describe('DevicePanel', () => {
 
       await userEvent.click(screen.getByTitle('Clear search'))
       expect(screen.queryByText(/No controls match/)).not.toBeInTheDocument()
-      // back to idle: controls collapsed, options not rendered
+      // The search force-opened the Controls section; clearing it returns the section to
+      // the state the user left it in, which is closed.
       expect(screen.queryByText('Exposure')).not.toBeInTheDocument()
+    })
+
+    // Firmware reports no range for some advanced-mode groups, so a flag in one arrives
+    // as min == max == its value rather than as 0..1. It is still a flag.
+    it('draws a whole-numbered control that cannot leave 0..1 as a checkbox', async () => {
+      await renderWithControls({
+        options: [createMockOption({
+          option_id: 'ignoreSAD', current_value: 0, default_value: 0,
+          min_value: 0, max_value: 0, step: 1,
+        })],
+      })
+      await userEvent.type(screen.getByPlaceholderText('Search controls…'), 'ignore')
+
+      await waitFor(() => expect(screen.getByText('Ignore SAD')).toBeInTheDocument())
+      expect(screen.getByRole('checkbox')).toBeInTheDocument()
     })
   })
 })

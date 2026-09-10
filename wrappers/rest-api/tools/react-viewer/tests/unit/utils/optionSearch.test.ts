@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { filterOptions } from '@/utils/optionSearch'
+import { searchGroup } from '@/utils/optionSearch'
+import type { ControlGroup } from '@/api/types'
 import { createMockOption } from '../../utils/test-utils'
 
 const exposure = createMockOption({ option_id: 'Exposure', name: 'Exposure', category: 'Basic Controls' })
@@ -24,20 +25,23 @@ const syncMode = createMockOption({
 
 const all = [exposure, gain, laser, ppSpatial]
 
-describe('filterOptions', () => {
+const groupOf = (options = all, name = ''): ControlGroup =>
+  ({ section: 'Controls', sensorId: 'sensor-0', name, options })
+
+describe('searchGroup', () => {
   it('returns all options unchanged for an empty query', () => {
-    expect(filterOptions(all, '')).toEqual(all)
-    expect(filterOptions(all, '   ')).toEqual(all)
+    expect(searchGroup(groupOf(), '')).toEqual(all)
+    expect(searchGroup(groupOf(), '   ')).toEqual(all)
   })
 
   it('matches by substring of the name, case-insensitively', () => {
-    const r = filterOptions(all, 'GAI')
+    const r = searchGroup(groupOf(), 'GAI')
     expect(r).toContain(gain)
     expect(r).not.toContain(exposure)
   })
 
   it('does not match a control merely because its description mentions the term', () => {
-    const r = filterOptions([laser, syncMode], 'laser')
+    const r = searchGroup(groupOf([laser, syncMode]), 'laser')
     expect(r).toContain(laser)
     expect(r).not.toContain(syncMode)
   })
@@ -45,23 +49,27 @@ describe('filterOptions', () => {
   it('never returns a control without the typed term in its labels', () => {
     // "option" appears in option ids but in no name/category/filter name, so it
     // must return nothing rather than loose fuzzy hits.
-    expect(filterOptions(all, 'option')).toHaveLength(0)
-    expect(filterOptions(all, 'zzzqqq')).toHaveLength(0)
+    expect(searchGroup(groupOf(), 'option')).toBeNull()
+    expect(searchGroup(groupOf(), 'zzzqqq')).toBeNull()
   })
 
   it('does not tolerate typos (only what the user can see matches)', () => {
-    expect(filterOptions(all, 'expsure')).toHaveLength(0)
+    expect(searchGroup(groupOf(), 'expsure')).toBeNull()
   })
 
   it('surfaces post-processing params via their filter name (spatial)', () => {
-    const r = filterOptions(all, 'spatial')
+    const r = searchGroup(groupOf(), 'spatial')
     expect(r).toContain(ppSpatial)
     expect(r).not.toContain(gain)
   })
 
   it('preserves original array order among matches', () => {
-    const r = filterOptions(all, 'a') // Gain, Laser Power, Filter Magnitude
+    const r = searchGroup(groupOf(), 'a')! // Gain, Laser Power, Filter Magnitude
     const idx = r.map(o => all.indexOf(o))
     expect(idx).toEqual([...idx].sort((a, b) => a - b))
+  })
+
+  it('keeps every option of a group its own name matched', () => {
+    expect(searchGroup(groupOf(all, 'depth_table'), 'depth table')).toEqual(all)
   })
 })

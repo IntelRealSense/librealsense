@@ -13,6 +13,28 @@ export interface DeviceInfo {
   metadata_enabled?: boolean | null
 }
 
+/** Display label for an SDK name: "deepSeaMedianThreshold" -> "Deep Sea Median Threshold". */
+export function optionLabel(id: string): string {
+  return id
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/**
+ * Options that are plumbing rather than controls - the set the legacy viewer hides in
+ * viewer_model::hide_common_options(). What to draw is the viewer's call, so everything
+ * the API reports passes through here.
+ */
+const HIDDEN_OPTIONS = [
+  'frames_queue_size', 'stream_filter', 'stream_format_filter', 'stream_index_filter',
+  'noise_estimation', 'region_of_interest', 'readout_shaping', 'sensors_config_mode',
+]
+
+export function visibleOptions(options: OptionInfo[]): OptionInfo[] {
+  return options.filter((o) => !HIDDEN_OPTIONS.includes(o.option_id.toLowerCase()))
+}
+
 export type FirmwareStatus = 'up_to_date' | 'outdated' | 'unknown'
 
 /** Numeric compare of dotted firmware versions. */
@@ -35,6 +57,12 @@ export interface FirmwareState {
   last_error?: string | null
 }
 
+// Wire shape of GET/POST /devices/{id}/advanced_mode/
+export interface AdvancedModeStatus {
+  supported: boolean
+  enabled: boolean
+}
+
 export interface SensorInfo {
   sensor_id: string
   name: string
@@ -52,18 +80,43 @@ export interface SupportedStreamProfile {
 
 export interface OptionInfo {
   option_id: string
-  name: string
   description?: string
   current_value: number | boolean | string
   default_value: number | boolean | string
-  min_value?: number
-  max_value?: number
+  min_value: number
+  max_value: number
   step?: number
   units?: string
   read_only: boolean
-  category: string
-  filter_name?: string  // For post-processing filter options
   value_descriptions?: Record<string, string>  // For enum-type options: {value: description}
+}
+
+// A sensor's post-processing filters, keyed by name. Filters share option names
+// (holes_fill lives on three of them), so the key is what tells those controls apart.
+export type SensorFilters = Record<string, {
+  enabled: boolean
+  default_enabled: boolean
+  options: OptionInfo[]
+}>
+
+/** Advanced-mode controls, keyed by the control group that owns them. */
+export type AdvancedControls = Record<string, OptionInfo[]>
+
+/** The panels the viewer draws, in the order the C++ viewer uses (device-model.cpp). */
+export const SECTIONS = ['Controls', 'Advanced Controls', 'Depth Visualization', 'Post-Processing'] as const
+
+/**
+ * One list of controls with one endpoint behind it, keyed by that endpoint's path under
+ * the device: the four control sources differ only in their path, not in their shape.
+ */
+export interface ControlGroup {
+  section: typeof SECTIONS[number]
+  sensorId: string    // the sensor it is drawn under, which for a device-level group
+                      // (the colorizer, advanced mode) is the depth sensor
+  name: string        // '' when the section draws its controls without a subheader
+  enabled?: boolean   // filters only: whether the frame passes through it
+  default_enabled?: boolean
+  options: OptionInfo[]
 }
 
 export interface StreamConfig {
@@ -155,8 +208,16 @@ export interface SensorConfig {
 export interface DeviceState {
   device: DeviceInfo
   firmware?: FirmwareState
+  advancedMode?: AdvancedModeStatus
+  // Every control the device shows, keyed by the endpoint that writes it.
+  controls: Record<string, ControlGroup>
+  /**
+   * Whether each sensor runs its post-processing at all, keyed by sensor_id, on unless
+   * set. Neither the SDK nor the API has such a switch - it is the viewer's, as in the
+   * legacy one (subdevice-model.h), and it leaves the per-filter choices alone.
+   */
+  postProcessing?: Record<string, boolean>
   sensors: SensorInfo[]
-  options: Record<string, OptionInfo[]> // keyed by sensor_id
   streamConfigs: StreamConfig[]
   sensorConfigs: Record<string, SensorConfig> // Per-sensor resolution/FPS, keyed by sensor_id
   isStreaming: boolean

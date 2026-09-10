@@ -1,7 +1,11 @@
 import axios, { AxiosInstance } from 'axios'
 import { socketService } from './socket'
+import { visibleOptions } from './types'
 import type {
+  AdvancedControls,
+  AdvancedModeStatus,
   DeviceInfo,
+  SensorFilters,
   SensorInfo,
   OptionInfo,
   WebRTCOffer,
@@ -101,6 +105,55 @@ class ApiClient {
     await this.client.post(`/devices/${deviceId}/hw_reset/`)
   }
 
+  async getAdvancedMode(deviceId: string): Promise<AdvancedModeStatus> {
+    const response = await this.client.get(`/devices/${deviceId}/advanced_mode/`)
+    return response.data
+  }
+
+  async setAdvancedMode(deviceId: string, enable: boolean): Promise<AdvancedModeStatus> {
+    const response = await this.client.post(`/devices/${deviceId}/advanced_mode/`, { enable })
+    return response.data
+  }
+
+  async getAdvancedControls(deviceId: string): Promise<AdvancedControls> {
+    const response = await this.client.get(`/devices/${deviceId}/advanced_mode/controls/`)
+    return response.data
+  }
+
+  /**
+   * Write one control and get it back as the device now holds it. `key` is the group's
+   * path under the device (`colorizer`, `advanced_mode/controls/depth_table`,
+   * `sensors/<id>/filters/Spatial Filter`), which is all that separates the four sources.
+   */
+  async setControl(
+    deviceId: string,
+    key: string,
+    field: string,
+    value: number | boolean | string
+  ): Promise<OptionInfo> {
+    const response = await this.client.put(`/devices/${deviceId}/${key}/${field}/`, { value })
+    return response.data
+  }
+
+  /** Bypass or apply one post-processing filter; `key` is the filter's own path. */
+  async setFilterEnabled(deviceId: string, key: string, enabled: boolean): Promise<void> {
+    await this.client.put(`/devices/${deviceId}/${key}/enabled/`, { value: enabled })
+  }
+
+  async getSensorFilters(deviceId: string, sensorId: string): Promise<SensorFilters> {
+    const response = await this.client.get<SensorFilters>(
+      `/devices/${deviceId}/sensors/${sensorId}/filters/`
+    )
+    return Object.fromEntries(
+      Object.entries(response.data).map(([name, f]) => [name, { ...f, options: visibleOptions(f.options) }])
+    )
+  }
+
+  async getColorizerOptions(deviceId: string): Promise<OptionInfo[]> {
+    const response = await this.client.get(`/devices/${deviceId}/colorizer/`)
+    return visibleOptions(response.data)
+  }
+
   async updateFirmwareFromFile(
     deviceId: string,
     file: File
@@ -130,29 +183,7 @@ class ApiClient {
 
   async getSensors(deviceId: string): Promise<SensorInfo[]> {
     const response = await this.client.get<SensorInfo[]>(`/devices/${deviceId}/sensors/`)
-    return response.data
-  }
-
-  // ============ Options ============
-
-  async getOptions(deviceId: string, sensorId: string): Promise<OptionInfo[]> {
-    const response = await this.client.get<OptionInfo[]>(
-      `/devices/${deviceId}/sensors/${sensorId}/options/`
-    )
-    return response.data
-  }
-
-  async setOption(
-    deviceId: string,
-    sensorId: string,
-    optionId: string,
-    value: number | boolean | string
-  ): Promise<{ success: boolean }> {
-    const response = await this.client.put<{ success: boolean }>(
-      `/devices/${deviceId}/sensors/${sensorId}/options/${optionId}/`,
-      { value }
-    )
-    return response.data
+    return response.data.map((s) => ({ ...s, options: visibleOptions(s.options) }))
   }
 
   async getDepthAtPixel(

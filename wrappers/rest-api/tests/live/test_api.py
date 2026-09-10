@@ -121,8 +121,8 @@ class TestRealSenseAPIIntegration:
         test_value = max(min_val, min(max_val, test_value))
 
         try:
-            success = real_rs_manager.set_sensor_option(device_id, sensor_id, option_id, test_value)
-            assert success == True
+            applied = real_rs_manager.set_sensor_option(device_id, sensor_id, option_id, test_value)
+            assert applied.option_id == option_id
 
             updated_option = real_rs_manager.get_sensor_option(device_id, sensor_id, option_id)
 
@@ -183,11 +183,11 @@ class TestRealSenseAPIIntegration:
         assert len(options) > 0
 
         option = options[0]
-        for key in ("option_id", "name", "current_value", "min_value", "max_value"):
+        for key in ("option_id", "current_value", "min_value", "max_value"):
             assert key in option
 
         option_id = option["option_id"]
-        response = client.get(f"/api/v1/devices/{device_id}/sensors/{sensor_id}/options/{option_id}")
+        response = client.get(f"/api/v1/devices/{device_id}/sensors/{sensor_id}/options/{option_id}/")
         assert response.status_code == 200
         assert response.json()["option_id"] == option_id
 

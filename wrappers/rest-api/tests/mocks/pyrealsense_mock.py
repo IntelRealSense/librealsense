@@ -198,6 +198,9 @@ class sensor:
     def get_option_description(self, option_type):
         return f"Description for {option_type}"
 
+    def get_option_value_description(self, option_type, value):
+        return None  # no per-value labels, as for any non-enum option
+
     def is_option_read_only(self, option_type):
         return option_type in self._option_read_only
 

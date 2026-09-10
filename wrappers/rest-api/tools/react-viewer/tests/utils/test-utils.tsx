@@ -46,7 +46,7 @@ export function createMockDeviceState(device: DeviceInfo, overrides: Partial<Dev
   return {
     device,
     sensors: [],
-    options: {},
+    controls: {},
     streamConfigs: [],
     sensorConfigs: {},
     isActive: false,
@@ -67,13 +67,12 @@ export function createMockSensor(overrides: Partial<SensorInfo> = {}): SensorInf
   return {
     sensor_id: 'test-device-1-sensor-0',
     name: 'Stereo Module',
-    profiles: [
+    supported_stream_profiles: [
       {
         stream_type: 'depth',
-        format: 'Z16',
-        width: 640,
-        height: 480,
-        framerate: 30,
+        resolutions: [[640, 480]],
+        fps: [30],
+        formats: ['Z16'],
       },
     ],
     is_streaming: false,
@@ -87,7 +86,6 @@ export function createMockSensor(overrides: Partial<SensorInfo> = {}): SensorInf
 export function createMockOption(overrides: Partial<OptionInfo> = {}): OptionInfo {
   return {
     option_id: 'exposure',
-    name: 'Exposure',
     description: 'Depth Exposure (usec)',
     current_value: 8500,
     default_value: 8500,
@@ -95,7 +93,6 @@ export function createMockOption(overrides: Partial<OptionInfo> = {}): OptionInf
     max_value: 165000,
     step: 1,
     read_only: false,
-    category: 'General',
     ...overrides,
   }
 }
