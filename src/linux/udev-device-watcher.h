@@ -10,6 +10,11 @@
 
 #include <libudev.h>
 
+#include <chrono>
+#include <map>
+#include <set>
+#include <string>
+
 
 namespace librealsense {
 
@@ -28,6 +33,10 @@ class udev_device_watcher : public librealsense::platform::device_watcher
     struct udev_monitor * _udev_monitor;
     int _udev_monitor_fd;
     bool _changed = false;
+    // When each still-enumerating device was first seen that way, so one that never
+    // finishes is held back once rather than forever (see incomplete_devices).
+    std::map< std::string, std::chrono::steady_clock::time_point > _incomplete_since;
+    std::set< std::string > _warned_incomplete;
 
 public:
     udev_device_watcher( platform::backend const * );

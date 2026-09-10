@@ -3,8 +3,14 @@
 
 #include "udev-device-watcher.h"
 
+#include <dirent.h>
+#include <limits.h>
 #include <poll.h>
+#include <stdlib.h>
 
+#include <chrono>
+#include <fstream>
+#include <set>
 #include <string>
 #include <exception>
 
@@ -13,6 +19,126 @@ using std::runtime_error;
 
 
 namespace {
+
+    // Devices are keyed by "busnum-devpath-devnum" (see backend-v4l2.cpp), and sysfs
+    // names the same device "busnum-devpath" - so drop the trailing devnum.
+    std::string usb_sysfs_dir( std::string const & unique_id )
+    {
+        auto last = unique_id.rfind( '-' );
+        if( last == std::string::npos )
+            return {};
+        return "/sys/bus/usb/devices/" + unique_id.substr( 0, last );
+    }
+
+
+    std::string read_first_line( std::string const & path )
+    {
+        std::ifstream f( path );
+        std::string line;
+        std::getline( f, line );
+        return line;
+    }
+
+
+    // Names of the entries directly under a directory, or empty if it can't be read.
+    std::vector< std::string > list_dir( std::string const & path )
+    {
+        std::vector< std::string > names;
+        if( DIR * dir = opendir( path.c_str() ) )
+        {
+            while( struct dirent * e = readdir( dir ) )
+            {
+                std::string name = e->d_name;
+                if( name != "." && name != ".." )
+                    names.push_back( std::move( name ) );
+            }
+            closedir( dir );
+        }
+        return names;
+    }
+
+
+    // A HID interface is only interesting here if it carries the IMU. On Linux the IMU
+    // surfaces as an IIO sensor behind hid-sensor-hub; a button or vendor HID interface
+    // binds hid-generic and never reaches the HID backend at all, so waiting on one
+    // would hold its device back for the whole budget on every arrival.
+    bool is_sensor_hid( std::string const & iface_dir )
+    {
+        for( auto && entry : list_dir( iface_dir ) )
+        {
+            if( entry.compare( 0, 5, "0003:" ) != 0 )   // the HID device the kernel created
+                continue;
+            char resolved[PATH_MAX];
+            if( ! realpath( ( iface_dir + "/" + entry + "/driver" ).c_str(), resolved ) )
+                return true;   // created but not bound yet - still settling, so wait
+            std::string const driver = resolved;
+            return driver.substr( driver.rfind( '/' ) + 1 ) == "hid-sensor-hub";
+        }
+        return true;   // no HID device yet - still settling
+    }
+
+
+    // Returns the unique_ids of USB devices still mid-enumeration, so an arrival can
+    // wait rather than publish a device that comes up missing sensors. A device's sysfs
+    // interfaces come from its USB configuration descriptor, which makes them the
+    // authoritative set to expect: every video interface should have surfaced a
+    // /dev/video node the backend can see, and every HID interface should have surfaced
+    // through the HID backend.
+    std::set< std::string > incomplete_devices( librealsense::platform::backend_device_group const & curr )
+    {
+        std::set< std::string > uvc_nodes;    // /dev/videoN the backend enumerated
+        std::set< std::string > uids;
+        for( auto && uvc : curr.uvc_devices )
+        {
+            uvc_nodes.insert( uvc.id );
+            uids.insert( uvc.unique_id );
+        }
+        std::set< std::string > hid_uids;
+        for( auto && hid : curr.hid_devices )
+            hid_uids.insert( hid.unique_id );
+
+        std::set< std::string > incomplete;
+        for( auto && uid : uids )
+        {
+            std::string const dir = usb_sysfs_dir( uid );
+            if( dir.empty() )
+                continue;
+            std::string const bus_dev = dir.substr( dir.rfind( '/' ) + 1 );
+            for( auto && entry : list_dir( dir ) )
+            {
+                // Interface directories are named "<busnum-devpath>:<config>.<iface>"
+                if( entry.compare( 0, bus_dev.size(), bus_dev ) != 0 || entry.find( ':' ) == std::string::npos )
+                    continue;
+                std::string const iface = dir + "/" + entry;
+                std::string const cls = read_first_line( iface + "/bInterfaceClass" );
+                // Only a VideoControl interface (subclass 01) gets a /dev/video node -
+                // uvcvideo registers the node against it and its VideoStreaming siblings
+                // (subclass 02) never get one of their own, so requiring a node for those
+                // would hold every camera back until its budget ran out.
+                if( cls == "0e" && read_first_line( iface + "/bInterfaceSubClass" ) == "01" )
+                {
+                    bool surfaced = false;
+                    for( auto && node : list_dir( iface + "/video4linux" ) )
+                        if( uvc_nodes.count( "/dev/" + node ) )
+                            surfaced = true;
+                    if( ! surfaced )
+                    {
+                        incomplete.insert( uid );
+                        break;
+                    }
+                }
+                else if( cls == "03" && is_sensor_hid( iface ) )   // the IMU
+                {
+                    if( ! hid_uids.count( uid ) )
+                    {
+                        incomplete.insert( uid );
+                        break;
+                    }
+                }
+            }
+        }
+        return incomplete;
+    }
 
 
     void foreach_device_prop( struct udev_device * udev_dev,
@@ -133,6 +259,59 @@ udev_device_watcher::udev_device_watcher( const platform::backend * backend )
             platform::backend_device_group curr( _backend->query_uvc_devices(),
                                                  _backend->query_usb_devices(),
                                                  _backend->query_hid_devices() );
+
+            // A device whose interfaces are still appearing is held back rather than
+            // published missing sensors - it simply isn't in the group yet, so removals
+            // of other devices are still reported immediately. Each device gets its own
+            // budget: once that is spent we publish whatever it has, which is what lets
+            // a genuinely partial device through.
+            static constexpr auto MAX_WAIT = std::chrono::seconds( 10 );
+            auto const now = std::chrono::steady_clock::now();
+            auto incomplete = incomplete_devices( curr );
+            for( auto it = _incomplete_since.begin(); it != _incomplete_since.end(); )
+            {
+                if( incomplete.count( it->first ) )
+                    ++it;
+                else
+                {
+                    _warned_incomplete.erase( it->first );
+                    it = _incomplete_since.erase( it );
+                }
+            }
+            // A device already published stays published even if sysfs looks incomplete
+            // for a tick: retracting a live device would surface as a spurious removal
+            // followed by a re-add.
+            std::set< std::string > already_published;
+            for( auto && uvc : _devices_data.uvc_devices )
+                already_published.insert( uvc.unique_id );
+
+            bool waiting = false;
+            for( auto && uid : incomplete )
+            {
+                if( already_published.count( uid ) )
+                    continue;
+                auto const inserted = _incomplete_since.emplace( uid, now );
+                auto const waited = now - inserted.first->second;
+                if( ! inserted.second && waited >= MAX_WAIT )
+                {
+                    // Publishing it anyway is what lets a genuinely partial device through,
+                    // but it also means a device that needed longer comes up missing sensors
+                    // - so say so rather than let it look like a normal arrival.
+                    if( _warned_incomplete.insert( uid ).second )
+                        LOG_WARNING( "[udev] " << uid << " still incomplete after "
+                                     << std::chrono::duration_cast< std::chrono::seconds >( waited ).count()
+                                     << "s; publishing it as-is" );
+                    continue;
+                }
+                LOG_DEBUG( "[udev] " << uid << " still enumerating; holding it back" );
+                auto held = [&uid]( auto const & device ) { return device.unique_id == uid; };
+                curr.uvc_devices.erase( std::remove_if( curr.uvc_devices.begin(), curr.uvc_devices.end(), held ),
+                                        curr.uvc_devices.end() );
+                curr.hid_devices.erase( std::remove_if( curr.hid_devices.begin(), curr.hid_devices.end(), held ),
+                                        curr.hid_devices.end() );
+                waiting = true;
+            }
+
             if( list_changed( _devices_data.uvc_devices, curr.uvc_devices )
                 || list_changed( _devices_data.usb_devices, curr.usb_devices )
                 || list_changed( _devices_data.hid_devices, curr.hid_devices ) )
@@ -143,7 +322,9 @@ udev_device_watcher::udev_device_watcher( const platform::backend * backend )
                     _callback( _devices_data, curr );
                 _devices_data = curr;
             }
-            _changed = false;
+            // Keep checking while something is being held back, or its arrival would
+            // never be reported.
+            _changed = waiting;
         }
     }, "udev-device-watcher" )
 {
