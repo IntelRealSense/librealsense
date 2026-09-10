@@ -4,12 +4,40 @@ Copyright(c) 2017 RealSense, Inc. All Rights Reserved. */
 #include "pyrealsense2.h"
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/hpp/rs_serializable_device.hpp>
+#include <cmath>
 
 // Each control group in STAdvancedModeControls is an array, which python sees as a list
 template< typename T, size_t N >
 static std::vector< T > to_list( T const ( & a )[N] )
 {
     return std::vector< T >( a, a + N );
+}
+
+static void bind_as_mapping( py::object cls, bool writable = true )
+{
+    cls.attr( "keys" ) = py::cpp_function(
+        []( py::object self ) {
+            auto property_type = py::module_::import( "builtins" ).attr( "property" );
+            py::list names;
+            for( auto item : self.attr( "__class__" ).attr( "__dict__" ).cast< py::dict >() )
+                if( py::isinstance( item.second, property_type ) )
+                    names.append( item.first );
+            return names;
+        },
+        py::is_method( cls ) );
+    cls.attr( "__getitem__" ) = py::cpp_function(
+        []( py::object self, std::string const & key ) { return self.attr( key.c_str() ); },
+        py::is_method( cls ) );
+    if( ! writable )
+        return;
+    // An int field will not take a float, so round rather than fail.
+    cls.attr( "__setitem__" ) = py::cpp_function(
+        []( py::object self, std::string const & key, py::object value ) {
+            if( py::isinstance< py::int_ >( self.attr( key.c_str() ) ) )
+                value = py::int_( long( std::lround( value.cast< double >() ) ) );
+            self.attr( key.c_str() ) = value;
+        },
+        py::is_method( cls ) );
 }
 
 void init_advanced_mode(py::module &m) {
@@ -232,17 +260,27 @@ void init_advanced_mode(py::module &m) {
     py::class_< STAdvancedModeControls > advanced_controls( m, "STAdvancedModeControls" );
     advanced_controls.def_property_readonly( "depth_control", []( STAdvancedModeControls const & self ) { return to_list( self.depth_control ); } );
     advanced_controls.def_property_readonly( "rsm", []( STAdvancedModeControls const & self ) { return to_list( self.rsm ); } );
-    advanced_controls.def_property_readonly( "rsvc", []( STAdvancedModeControls const & self ) { return to_list( self.rsvc ); } );
+    advanced_controls.def_property_readonly( "rau_support_vector_control", []( STAdvancedModeControls const & self ) { return to_list( self.rsvc ); } );
     advanced_controls.def_property_readonly( "color_control", []( STAdvancedModeControls const & self ) { return to_list( self.color_control ); } );
-    advanced_controls.def_property_readonly( "rctc", []( STAdvancedModeControls const & self ) { return to_list( self.rctc ); } );
-    advanced_controls.def_property_readonly( "sctc", []( STAdvancedModeControls const & self ) { return to_list( self.sctc ); } );
-    advanced_controls.def_property_readonly( "spc", []( STAdvancedModeControls const & self ) { return to_list( self.spc ); } );
+    advanced_controls.def_property_readonly( "rau_thresholds_control", []( STAdvancedModeControls const & self ) { return to_list( self.rctc ); } );
+    advanced_controls.def_property_readonly( "slo_color_thresholds_control", []( STAdvancedModeControls const & self ) { return to_list( self.sctc ); } );
+    advanced_controls.def_property_readonly( "slo_penalty_control", []( STAdvancedModeControls const & self ) { return to_list( self.spc ); } );
     advanced_controls.def_property_readonly( "hdad", []( STAdvancedModeControls const & self ) { return to_list( self.hdad ); } );
-    advanced_controls.def_property_readonly( "cc", []( STAdvancedModeControls const & self ) { return to_list( self.cc ); } );
+    advanced_controls.def_property_readonly( "color_correction", []( STAdvancedModeControls const & self ) { return to_list( self.cc ); } );
     advanced_controls.def_property_readonly( "depth_table", []( STAdvancedModeControls const & self ) { return to_list( self.depth_table ); } );
-    advanced_controls.def_property_readonly( "ae", []( STAdvancedModeControls const & self ) { return to_list( self.ae ); } );
+    advanced_controls.def_property_readonly( "ae_control", []( STAdvancedModeControls const & self ) { return to_list( self.ae ); } );
     advanced_controls.def_property_readonly( "census", []( STAdvancedModeControls const & self ) { return to_list( self.census ); } );
     advanced_controls.def_property_readonly( "amp_factor", []( STAdvancedModeControls const & self ) { return to_list( self.amp_factor ); } );
+
+    for( auto cls : { py::object( _STDepthControlGroup ), py::object( _STRsm ),
+                      py::object( _STRauSupportVectorControl ), py::object( _STColorControl ),
+                      py::object( _STRauColorThresholdsControl ), py::object( _STSloColorThresholdsControl ),
+                      py::object( _STSloPenaltyControl ), py::object( _STHdad ), py::object( _STColorCorrection ),
+                      py::object( _STDepthTableControl ), py::object( _STAEControl ), py::object( _STCensusRadius ),
+                      py::object( _STAFactor ) } )
+        bind_as_mapping( cls );
+
+    bind_as_mapping( advanced_controls, false );
 
     py::class_<rs400::advanced_mode> rs400_advanced_mode(m, "rs400_advanced_mode");
     rs400_advanced_mode.def(py::init<rs2::device>(), "device"_a)
@@ -278,6 +316,37 @@ void init_advanced_mode(py::module &m) {
              "Read every control group and mode at once, in a single bulk operation")
         .def("serialize_json", &rs400::advanced_mode::serialize_json)
         .def("load_json", &rs400::advanced_mode::load_json, "json_content"_a);
+
+    // Groups are named after the get_/set_ pairs above: am[group] reads and writes the
+    // current values, am[group, 1] the minimums and am[group, 2] the maximums.
+    rs400_advanced_mode.attr( "keys" ) = py::cpp_function(
+        []( py::object self ) {
+            py::list names;
+            for( auto item : self.attr( "__class__" ).attr( "__dict__" ).cast< py::dict >() )
+            {
+                auto name = item.first.cast< std::string >();
+                if( name.rfind( "get_", 0 ) == 0 && py::hasattr( self, ( "set_" + name.substr( 4 ) ).c_str() ) )
+                    names.append( name.substr( 4 ) );
+            }
+            return names;
+        },
+        py::is_method( rs400_advanced_mode ) );
+    rs400_advanced_mode.attr( "__getitem__" ) = py::cpp_function(
+        []( py::object self, py::object key ) {
+            if( py::isinstance< py::tuple >( key ) )
+            {
+                auto group_and_mode = key.cast< py::tuple >();
+                auto group = group_and_mode[0].cast< std::string >();
+                return self.attr( ( "get_" + group ).c_str() )( group_and_mode[1] );
+            }
+            return self.attr( ( "get_" + key.cast< std::string >() ).c_str() )( 0 );
+        },
+        py::is_method( rs400_advanced_mode ) );
+    rs400_advanced_mode.attr( "__setitem__" ) = py::cpp_function(
+        []( py::object self, std::string const & group, py::object values ) {
+            self.attr( ( "set_" + group ).c_str() )( values );
+        },
+        py::is_method( rs400_advanced_mode ) );
 }
 
 void init_serializable_device(py::module& m) {
