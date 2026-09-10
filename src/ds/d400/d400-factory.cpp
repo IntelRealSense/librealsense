@@ -735,7 +735,8 @@ namespace librealsense
                          public d400_color,
                          public d400_motion_uvc,
                          public d400_mipi_device,
-                         public firmware_logger_device
+                         public firmware_logger_device,
+                         public ds_thermal_tracking
     {
     public:
         rs457_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
@@ -747,6 +748,7 @@ namespace librealsense
             , d400_motion_uvc( dev_info )
             , d400_mipi_device()
             , firmware_logger_device( dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , ds_thermal_tracking( d400_device::_thermal_monitor )
         {
         }
 

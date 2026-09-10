@@ -9,7 +9,8 @@ log = logging.getLogger(__name__)
 pytestmark = [
     pytest.mark.device_each("D555"),
     pytest.mark.device_each("D585"),
-    pytest.mark.device_exclude("D585S"),  # not registered on the safety-certified D585S (see d500-factory.cpp)
+    pytest.mark.device_exclude("D585S"),
+    pytest.mark.device_type_exclude("DDS"),  # USB-only: hdrd_filter_feature needs a uvc_sensor raw endpoint
 ]
 
 

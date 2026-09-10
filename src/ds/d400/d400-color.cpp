@@ -290,7 +290,7 @@ namespace librealsense
             _ds_color_common->register_standard_options();
 
             // Register for tracking of thermal compensation changes
-            if (val_in_range(_pid, { ds::RS455_PID }))
+            if (val_in_range(_pid, { ds::RS455_PID, ds::RS457_PID }))
             {
                 if (_thermal_monitor)
                     _thermal_monitor->add_observer([&](float) {

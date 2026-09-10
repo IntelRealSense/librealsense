@@ -19,11 +19,16 @@ namespace librealsense
     public:
         d500_dual_color( std::shared_ptr< const d500_info > const & dev_info );
 
+
     protected:
         std::shared_ptr< stream_interface > _color_stream_1;
         std::shared_ptr< stream_interface > _color_stream_2;
 
     private:
+        // Stream-combination rules for the shared imagers, registered as validators at construction.
+        void close_range_allowed_or_throw( const stream_profiles & requests ) const;
+        void frame_rates_allowed_or_throw( const stream_profiles & requests ) const;
+
         void register_color_extrinsics();
         void register_color_metadata();
         void register_ae_policy_option();

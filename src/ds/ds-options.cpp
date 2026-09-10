@@ -760,7 +760,7 @@ namespace librealsense
 
     void thermal_compensation::set(float value)
     {
-        if (value < 0)
+        if (value != 0 && value != 1)
             throw invalid_value_exception("Invalid input for thermal compensation toggle: " + std::to_string(value));
 
         _thermal_toggle->set(value);

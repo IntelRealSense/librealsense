@@ -829,6 +829,73 @@ namespace librealsense
             return dfu_paths;
         }
 
+        // True iff the string looks like a kernel i2c client id — digits, one
+        // '-', then hex. Kernel uses snprintf("%d-%04x", adapter, addr).
+        static bool is_i2c_id_shape(const std::string& s)
+        {
+            auto sep = s.find('-');
+            if (sep == std::string::npos || sep == 0 || sep + 1 >= s.size())
+                return false;
+            auto is_digit = [](char c) { return c >= '0' && c <= '9'; };
+            auto is_hex   = [](char c) {
+                return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+            };
+            return std::all_of(s.begin(), s.begin() + sep, is_digit)
+                && std::all_of(s.begin() + sep + 1, s.end(), is_hex);
+        }
+
+        // Extract the i2c client id ("<adapter>-<addr>") from a DFU chardev name.
+        // The driver names its CONFIG_OF chardev "d4xx-dfu-<adapter>-<addr>";
+        // the rs-enum path uses the shorter "d4xx-dfu-<index>" form for which
+        // per-i2c resolution is not possible. Returns "" on any non-conforming
+        // name — callers fall back accordingly.
+        static std::string dfu_devname_to_i2c_id(const std::string& dfu_devname)
+        {
+            static const std::string prefix = "d4xx-dfu-";
+            if (dfu_devname.compare(0, prefix.size(), prefix) != 0)
+                return {};
+            std::string rest = dfu_devname.substr(prefix.size());
+            return is_i2c_id_shape(rest) ? rest : std::string{};
+        }
+
+        // Read the DT `compatible` of a DFU chardev's owning i2c client via
+        // /sys/bus/i2c/devices/<adapter>-<addr>/of_node/compatible. Returns
+        // true when any entry equals "realsense,d5xx". `compatible` is a
+        // concatenation of NUL-terminated strings, so we walk tokens rather
+        // than substring-search (avoids matching "realsense,d5xxfoo").
+        // Returns false for rs-enum-style short chardev names that cannot be
+        // resolved to an i2c address.
+        static bool mipi_dfu_devname_is_d5xx(const std::string& dfu_devname)
+        {
+            std::string i2c_id = dfu_devname_to_i2c_id(dfu_devname);
+            if (i2c_id.empty())
+            {
+                LOG_DEBUG("MIPI DFU family detection: cannot parse i2c id from "
+                          << dfu_devname << ", defaulting to D4xx");
+                return false;
+            }
+            std::string compat_path = "/sys/bus/i2c/devices/" + i2c_id + "/of_node/compatible";
+            std::ifstream compat_in(compat_path, std::ios::binary);
+            if (!compat_in)
+            {
+                LOG_DEBUG("MIPI DFU family detection: cannot open " << compat_path
+                          << ", defaulting to D4xx");
+                return false;
+            }
+            std::string compat((std::istreambuf_iterator<char>(compat_in)), std::istreambuf_iterator<char>());
+            static const std::string target = "realsense,d5xx";
+            for (size_t pos = 0; pos < compat.size(); )
+            {
+                size_t end = compat.find('\0', pos);
+                if (end == std::string::npos)
+                    end = compat.size();
+                if (compat.compare(pos, end - pos, target) == 0)
+                    return true;
+                pos = end + 1;
+            }
+            return false;
+        }
+
         void v4l_mipi_device::foreach_mipi_device(
                 std::function<void(const mipi_device_info&,
                                    const std::string&)> action)
@@ -854,8 +921,11 @@ namespace librealsense
                 if (dfu_ver.find("recovery") == std::string::npos)
                     continue;
                 mipi_device_info info{};
-                info.pid = 0xbbcd; // D400 MIPI recovery device ID
-                info.vid = 0x8086; // D400 Intel VID
+                // The DFU chardev read format is identical for D4xx and D5xx in recovery
+                // ("DFU info: recovery: <serial>"); derive the family from the DT compatible.
+                const bool is_d5xx = mipi_dfu_devname_is_d5xx(*it);
+                info.pid = is_d5xx ? 0xbbdd : 0xbbcd;   // D500_MIPI_RECOVERY_PID / RS400_MIPI_RECOVERY_PID
+                info.vid = is_d5xx ? 0x38e5 : 0x8086;   // VID_REALSENSE_CAMERA (D5xx) / VID_INTEL_CAMERA (D4xx)
                 info.id = *it;
                 info.device_path = mipi_dfu_path;
                 info.unique_id = *it;

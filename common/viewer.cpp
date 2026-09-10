@@ -2163,7 +2163,8 @@ namespace rs2
                 }
             }
 
-            //switch( stream_mv.profile.stream_type() )
+            // Detection overlays only make sense on the color stream; bbox coords are in color-frame space.
+            if( stream_mv.profile.stream_type() == RS2_STREAM_COLOR )
             {
                 static std::vector< std::pair< ImColor, bool > > colors =
                 {
@@ -2237,10 +2238,7 @@ namespace rs2
 
                 for( object_in_frame & object : *p_objects )
                 {
-                    rect const & normalized_bbox = stream_mv.profile.stream_type() == RS2_STREAM_DEPTH
-                        ? object.normalized_depth_bbox
-                        : object.normalized_color_bbox;
-                    rect const unbbox = normalized_bbox.unnormalize( stream_rect );
+                    rect const unbbox = object.normalized_color_bbox.unnormalize( stream_rect );
                     rect bbox = unbbox.grow( 10, 5 );  // Allow more text, and easier identification of the face
 
                     float a = 0.75f;
@@ -4095,20 +4093,6 @@ namespace rs2
                                       float( det.bottom_right_y - det.top_left_y ) };
                 rs2::rect normalized_color_bbox = color_bbox.normalize( color_frame_rect );
 
-                // depth_bbox_full: simple resolution scaling of the color bbox.
-                // COM runs within this region for a stable, deterministic depth measurement.
-                // The depth-view dot position is corrected for sensor parallax separately
-                // by projecting the single COM pixel through rs2_project_color_pixel_to_depth_pixel.
-                float const depth_scale_x = float( depth_intrin.width  ) / float( color_intrin.width  );
-                float const depth_scale_y = float( depth_intrin.height ) / float( color_intrin.height );
-                // depth_bbox_full: unclipped scaled bbox, kept for the ROI intersection below.
-                // Clipping only affects the actual ROI sampled.
-                rs2::rect depth_bbox_full{
-                    color_bbox.x * depth_scale_x, color_bbox.y * depth_scale_y,
-                    color_bbox.w * depth_scale_x, color_bbox.h * depth_scale_y };
-                rs2::rect depth_bbox = depth_bbox_full.intersection( depth_frame_rect );
-                rs2::rect normalized_depth_bbox = depth_bbox.normalize( depth_frame_rect );
-
                 float const hkr_depth_m = det.depth;
                 float viewer_depth_m = 0.f;
 
@@ -4124,6 +4108,12 @@ namespace rs2
                         com::center_of_mass_calculator::create_depth_8u( com_raw, com_depth8u );
                         depth8u_ready = true;
                     }
+                    // COM ROI: scale the color bbox to depth resolution, clipped to the frame.
+                    float const depth_scale_x = float( depth_intrin.width  ) / float( color_intrin.width  );
+                    float const depth_scale_y = float( depth_intrin.height ) / float( color_intrin.height );
+                    rs2::rect depth_bbox = rs2::rect{
+                        color_bbox.x * depth_scale_x, color_bbox.y * depth_scale_y,
+                        color_bbox.w * depth_scale_x, color_bbox.h * depth_scale_y }.intersection( depth_frame_rect );
                     int const com_x = (int)depth_bbox.x;
                     int const com_y = (int)depth_bbox.y;
                     com::rect  com_bbox{ com_x, com_y,
@@ -4163,7 +4153,7 @@ namespace rs2
                 float const mean_depth = hkr_depth_m > 0.f ? hkr_depth_m : viewer_depth_m;
 
                 std::string name = object_type_to_string( static_cast< object_type >( det.class_id ) );
-                new_objects.emplace_back( obj_id++, name, normalized_color_bbox, normalized_depth_bbox, mean_depth,
+                new_objects.emplace_back( obj_id++, name, normalized_color_bbox, mean_depth,
                                           hkr_depth_m, det.score,
                                           static_cast< object_type >( det.class_id ) );
             }

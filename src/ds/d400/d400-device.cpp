@@ -845,10 +845,19 @@ namespace librealsense
                 }
             }
 
-            if ((val_in_range(_pid, { RS455_PID })) && (_fw_version >= firmware_version("5.12.11.0")))
+            // D455 drives the thermal loop over its depth XU control, D457 over the HWM TC_CMD
+            // opcode - gated on the last major release rather than the D455 XU baseline.
+            const bool thermal_compensation_supported
+                = ( _pid == RS455_PID && _fw_version >= firmware_version( "5.12.11.0" ) )
+               || ( _pid == RS457_PID && _fw_version >= firmware_version( "5.17.0.10" ) );
+            if( thermal_compensation_supported )
             {
-                auto thermal_compensation_toggle = std::make_shared<protected_xu_option<uint8_t>>( raw_depth_sensor, depth_xu,
-                    ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
+                std::shared_ptr< option > thermal_compensation_toggle;
+                if( _is_mipi_device )
+                    thermal_compensation_toggle = std::make_shared< thermal_compensation_option_mipi >( _hw_monitor );
+                else
+                    thermal_compensation_toggle = std::make_shared<protected_xu_option<uint8_t>>( raw_depth_sensor, depth_xu,
+                        ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
 
                 auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);
 

@@ -18,12 +18,14 @@ domain = rs.timestamp_domain.hardware_clock       # For either depth/color
 fps_c = fps_d = 60
 w = 640
 h = 480
-bpp = 2  # bytes
+bpp_d = 2  # bytes, Z16
+bpp_c = 4  # bytes, RGBA8
 #
 # Set by init() or playback() -- don't set these unless you know what you're doing!
 #
 gap_c = gap_d = 0
-pixels = None
+pixels_d = None
+pixels_c = None
 device = None
 depth_sensor = None
 color_sensor = None
@@ -52,8 +54,9 @@ def init( syncer_matcher = rs.matchers.default ):
     gap_d = 1000 / fps_d
     gap_c = 1000 / fps_c
     #
-    global pixels, w, h
-    pixels = bytearray( b'\x00' * ( w * h * 2 ))  # Dummy data
+    global pixels_d, pixels_c, w, h
+    pixels_d = bytearray( b'\x00' * ( w * h * bpp_d ))  # Dummy data
+    pixels_c = bytearray( b'\x00' * ( w * h * bpp_c ))
     #
     global device
     device = rs.software_device()
@@ -69,7 +72,7 @@ def init( syncer_matcher = rs.matchers.default ):
     depth_stream.uid = 0
     depth_stream.width = 640
     depth_stream.height = 480
-    depth_stream.bpp = 2
+    depth_stream.bpp = bpp_d
     depth_stream.fmt = rs.format.z16
     depth_stream.fps = fps_d
     #
@@ -81,7 +84,7 @@ def init( syncer_matcher = rs.matchers.default ):
     color_stream.uid = 1
     color_stream.width = 640
     color_stream.height = 480
-    color_stream.bpp = 2
+    color_stream.bpp = bpp_c
     color_stream.fmt = rs.format.rgba8
     color_stream.fps = fps_c
     #
@@ -191,11 +194,11 @@ def generate_depth_frame( frame_number, timestamp, next_expected=None ):
     if playback_status is not None:
         raise RuntimeError( "cannot generate frames when playing back" )
     #
-    global depth_profile, domain, pixels, depth_sensor, w, bpp
+    global depth_profile, domain, pixels_d, depth_sensor, w, bpp_d
     depth_frame = rs.software_video_frame()
-    depth_frame.pixels = pixels
-    depth_frame.stride = w * bpp
-    depth_frame.bpp = bpp
+    depth_frame.pixels = pixels_d
+    depth_frame.stride = w * bpp_d
+    depth_frame.bpp = bpp_d
     depth_frame.frame_number = frame_number
     depth_frame.timestamp = timestamp
     depth_frame.domain = domain
@@ -217,11 +220,11 @@ def generate_color_frame( frame_number, timestamp, next_expected=None ):
     if playback_status is not None:
         raise RuntimeError( "cannot generate frames when playing back" )
     #
-    global color_profile, domain, pixels, color_sensor, w, bpp
+    global color_profile, domain, pixels_c, color_sensor, w, bpp_c
     color_frame = rs.software_video_frame()
-    color_frame.pixels = pixels
-    color_frame.stride = w * bpp
-    color_frame.bpp = bpp
+    color_frame.pixels = pixels_c
+    color_frame.stride = w * bpp_c
+    color_frame.bpp = bpp_c
     color_frame.frame_number = frame_number
     color_frame.timestamp = timestamp
     color_frame.domain = domain

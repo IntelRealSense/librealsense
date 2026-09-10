@@ -278,18 +278,10 @@ private:
                 cv::Rect const & loc = face->get_location();
                 rs2::rect bbox { float( loc.x ), float( loc.y ), float( loc.width ), float( loc.height ) };
                 rs2::rect normalized_color_bbox = bbox.normalize( rs2::rect { 0, 0, float(color_intrin.width), float(color_intrin.height) } );
-                rs2::rect normalized_depth_bbox = normalized_color_bbox;
-                if( df )
-                {
-                    cv::Rect const & depth_loc = face->get_depth_location();
-                    rs2::rect depth_bbox { float( depth_loc.x ), float( depth_loc.y ), float( depth_loc.width ), float( depth_loc.height ) };
-                    normalized_depth_bbox = depth_bbox.normalize( rs2::rect { 0, 0, float( df.get_width() ), float( df.get_height() ) } );
-                }
                 objects.emplace_back(
                     face->get_id(),
                     object_type_to_string( object_type::face ),
                     normalized_color_bbox,
-                    normalized_depth_bbox,
                     face->get_depth(),
                     0.f,           // metadata_depth — not provided by face detection
                     0,             // score — not provided by face detection

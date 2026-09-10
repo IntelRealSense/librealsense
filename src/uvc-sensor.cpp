@@ -11,8 +11,10 @@
 #include "platform/uvc-option.h"
 #include "platform/stream-profile-impl.h"
 #include <src/metadata-parser.h>
+#include <rsutils/string/from.h>
 #include <src/core/time-service.h>
 #include <src/core/frame-continuation.h>
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
@@ -124,6 +126,18 @@ void uvc_sensor::verify_supported_requests( const stream_profiles & requests ) c
     {
         throw( std::runtime_error(
             "Wrong configuration requested - GYRO and ACCEL streams' fps to be equal for this device" ) );
+    }
+
+    // A backend pin holds one configuration at a time, so two requests on the same pin can never coexist.
+    std::map< uint32_t, std::shared_ptr< stream_profile_interface > > requests_per_pin;
+    for( auto && req : requests )
+    {
+        auto && req_base = std::dynamic_pointer_cast< stream_profile_base >( req );
+        auto inserted = requests_per_pin.emplace( req_base->get_backend_profile().pin_index, req );
+        if( ! inserted.second )
+            throw std::runtime_error( rsutils::string::from()
+                                      << "Wrong configuration requested - " << inserted.first->second << " and " << req
+                                      << " are served by the same hardware endpoint and cannot stream together" );
     }
 }
 
@@ -322,9 +336,12 @@ void uvc_sensor::open( const stream_profiles & requests )
                         // when the resolution's width is not aligned to 64
                         else if( align64 )
                         {
-                            std::vector< uint8_t > pixels = align_width_to_64( width, height, bpp, (uint8_t *)f.pixels );
-                            assert( expected_size == sizeof( uint8_t ) * pixels.size() );
-                            memcpy( (void *)fh->get_frame_data(), pixels.data(), expected_size );
+                            std::vector< uint8_t > pixels = align_width_to_64(
+                                width, height, bpp, req_profile_base->get_format(), (uint8_t *)f.pixels );
+                            // Clamp rather than trust the layout: a short repack would otherwise read past the buffer
+                            if( pixels.size() < expected_size )
+                                LOG_ERROR( "Realigned frame is " << pixels.size() << " bytes, expected " << expected_size );
+                            memcpy( (void *)fh->get_frame_data(), pixels.data(), std::min( expected_size, pixels.size() ) );
                         }
                         else
                         {
