@@ -414,6 +414,10 @@ namespace librealsense
         case ds::RS460_PID:
             preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN);
             break;
+        case ds::RS435_RGB_PID:
+        case ds::RS435I_PID:
+            preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_EDGE_ENHANCEMENT);
+            break;
         default:
             preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY);
         }

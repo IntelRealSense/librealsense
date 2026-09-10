@@ -223,6 +223,9 @@ namespace librealsense
         case RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY:
             mid_density( p );
             break;
+        case RS2_RS400_VISUAL_PRESET_EDGE_ENHANCEMENT:
+            edge_enhancement( p );
+            break;
         case RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN: {
             if( ! _dev->supports_feature( remove_ir_pattern_feature::ID ) )
                 throw invalid_value_exception( "apply_preset(...) failed! The device does not support remove IR pattern feature" );
