@@ -4,6 +4,7 @@
 import pytest
 import pyrealsense2 as rs
 from pytest_check import check
+from rspy.snippets import is_dds_dev
 import time
 import logging
 log = logging.getLogger(__name__)
@@ -12,6 +13,17 @@ pytestmark = [
     pytest.mark.device_each("D500*"),
     pytest.mark.device_exclude("D585S"),  # safety owns the projector: no emitter on/off, always on only in service mode
 ]
+
+
+def _start_depth_pipe(dev, ctx):
+    # Pin the device: the context can hold other cameras, so an unpinned config resolves to
+    # whichever device enumerates first and we would stream (and time out on) the wrong one.
+    pipe = rs.pipeline(ctx)
+    cfg = rs.config()
+    cfg.enable_device(dev.get_info(rs.camera_info.serial_number))
+    cfg.enable_stream(rs.stream.depth)
+    pipe.start(cfg)
+    return pipe
 
 
 def test_emitter_on_off_set_get(test_device):
@@ -23,10 +35,7 @@ def test_emitter_on_off_set_get(test_device):
 
     emitter_mode = rs.frame_metadata_value.frame_emitter_mode
     # emitter on/off is a per-frame streaming control; toggle it while streaming
-    pipe = rs.pipeline(ctx)
-    cfg = rs.config()
-    cfg.enable_stream(rs.stream.depth)
-    pipe.start(cfg)
+    pipe = _start_depth_pipe(dev, ctx)
     try:
         time.sleep(2)
         pipe.wait_for_frames()
@@ -74,8 +83,10 @@ def test_emitter_always_on_set_get(test_device):
 
 
 def test_emitter_on_off_blocked_while_always_on(test_device):
-    # The two emitter controls contradict each other, so the SDK drops an emitter on/off set
-    # while emitter always on is enabled - the value stays off rather than raising.
+    # The two emitter controls contradict each other, so an emitter on/off set is refused while
+    # emitter always on is enabled. How it is refused depends on the transport: the native path
+    # wraps the option in a gated_option that silently drops the set, while over DDS the firmware
+    # rejects it and the error surfaces. Either way the value must stay off.
     dev, ctx = test_device
     depth_sensor = dev.first_depth_sensor()
 
@@ -85,10 +96,7 @@ def test_emitter_on_off_blocked_while_always_on(test_device):
     original_always_on = depth_sensor.get_option(rs.option.emitter_always_on)
     original_on_off = depth_sensor.get_option(rs.option.emitter_on_off)
     # the on/off query reports the sub preset the firmware is running, so it only answers while streaming
-    pipe = rs.pipeline(ctx)
-    cfg = rs.config()
-    cfg.enable_stream(rs.stream.depth)
-    pipe.start(cfg)
+    pipe = _start_depth_pipe(dev, ctx)
     try:
         time.sleep(2)
         pipe.wait_for_frames()
@@ -98,7 +106,13 @@ def test_emitter_on_off_blocked_while_always_on(test_device):
         depth_sensor.set_option(rs.option.emitter_always_on, 1)
         time.sleep(0.1)  # laser/emitter is physical: let it settle before the next read/set
 
-        depth_sensor.set_option(rs.option.emitter_on_off, 1)
+        if is_dds_dev(dev):
+            # no gated_option over DDS: the firmware itself rejects the contradictory value
+            with pytest.raises(RuntimeError, match="Option value error"):
+                depth_sensor.set_option(rs.option.emitter_on_off, 1)
+        else:
+            # the native path drops the set inside gated_option, without raising
+            depth_sensor.set_option(rs.option.emitter_on_off, 1)
         time.sleep(0.1)  # laser/emitter is physical: let it settle before the next read/set
         check.equal(depth_sensor.get_option(rs.option.emitter_on_off), 0.0)
 
@@ -109,6 +123,9 @@ def test_emitter_on_off_blocked_while_always_on(test_device):
         time.sleep(0.1)  # laser/emitter is physical: let it settle before the next read/set
         check.equal(depth_sensor.get_option(rs.option.emitter_on_off), 1.0)
     finally:
-        depth_sensor.set_option(rs.option.emitter_on_off, original_on_off)
+        # emitter on/off 0 is accepted whatever emitter always on is, so clearing it first makes
+        # the restore safe from either entry state; any other order can hit the interlock
+        depth_sensor.set_option(rs.option.emitter_on_off, 0)
         depth_sensor.set_option(rs.option.emitter_always_on, original_always_on)
+        depth_sensor.set_option(rs.option.emitter_on_off, original_on_off)
         pipe.stop()
