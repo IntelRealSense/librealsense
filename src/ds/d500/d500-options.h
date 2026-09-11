@@ -176,4 +176,15 @@ namespace librealsense
         }
     };
 
+    class d500_mipi_gyro_sensitivity_option : public uvc_pu_option
+    {
+    public:
+        explicit d500_mipi_gyro_sensitivity_option( const std::weak_ptr< uvc_sensor > & ep );
+
+        void set( float value ) override;
+        bool is_read_only() const override;
+        const char * get_description() const override;
+        const char * get_value_description( float value ) const override;
+    };
+
 } // namespace librealsense
