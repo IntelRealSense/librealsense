@@ -338,10 +338,17 @@ void log_callback_end( uint32_t fps,
             _metadata_modifier(additional_data);
         fr->additional_data = additional_data;
 
+        // Timestamp readers may need an in-band capture header. Borrow the backend
+        // buffer only during these synchronous calls; its owner still releases it.
+        fr->set_data_size( fo.frame_size );
+        fr->attach_continuation( frame_continuation( []() {}, fo.pixels ) );
+
         // update additional data
         additional_data.timestamp = timestamp_reader->get_frame_timestamp(fr);
         additional_data.last_frame_number = last_frame_number;
         additional_data.frame_number = timestamp_reader->get_frame_counter(fr);
+        fr->attach_continuation( frame_continuation() );
+        fr->set_data_size( 0 );
         fr->additional_data = additional_data;
 
         return fr;
