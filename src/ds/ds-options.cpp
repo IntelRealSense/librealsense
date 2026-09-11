@@ -8,6 +8,42 @@
 
 namespace librealsense
 {
+    namespace
+    {
+        struct gyro_sensitivity_entry
+        {
+            rs2_gyro_sensitivity value;
+            double full_scale_dps;
+            const char * description;
+        };
+
+        constexpr gyro_sensitivity_entry gyro_sensitivity_values[] = {
+            { RS2_GYRO_SENSITIVITY_61_0_MILLI_DEG_SEC, 2000., "61.0 mDeg/Sec" },
+            { RS2_GYRO_SENSITIVITY_30_5_MILLI_DEG_SEC, 1000., "30.5 mDeg/Sec" },
+            { RS2_GYRO_SENSITIVITY_15_3_MILLI_DEG_SEC, 500., "15.3 mDeg/Sec" },
+            { RS2_GYRO_SENSITIVITY_7_6_MILLI_DEG_SEC, 250., "7.6 mDeg/Sec" },
+            { RS2_GYRO_SENSITIVITY_3_8_MILLI_DEG_SEC, 125., "3.8 mDeg/Sec" },
+        };
+
+        const gyro_sensitivity_entry & get_gyro_sensitivity_entry( float value )
+        {
+            for( auto const & entry : gyro_sensitivity_values )
+                if( value == entry.value )
+                    return entry;
+            throw invalid_value_exception( "Invalid gyro sensitivity value" );
+        }
+    }
+
+    double gyro_sensitivity_to_scale( float value )
+    {
+        return get_gyro_sensitivity_entry( value ).full_scale_dps / 32768.;
+    }
+
+    const char * get_gyro_sensitivity_value_description( float value )
+    {
+        return get_gyro_sensitivity_entry( value ).description;
+    }
+
     const char* emitter_option::get_value_description(float val) const
     {
         switch (static_cast<int>(val))

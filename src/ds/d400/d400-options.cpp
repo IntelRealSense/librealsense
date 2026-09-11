@@ -471,26 +471,7 @@ namespace librealsense
     
     const char * librealsense::gyro_sensitivity_option::get_value_description( float val ) const
     {
-        switch( static_cast< int >( val ) )
-        {
-            case RS2_GYRO_SENSITIVITY_61_0_MILLI_DEG_SEC: {
-                return "61.0 mDeg/Sec";
-            }
-            case RS2_GYRO_SENSITIVITY_30_5_MILLI_DEG_SEC: {
-                return "30.5 mDeg/Sec";
-            }
-            case RS2_GYRO_SENSITIVITY_15_3_MILLI_DEG_SEC: {
-                return "15.3 mDeg/Sec";
-            }
-            case RS2_GYRO_SENSITIVITY_7_6_MILLI_DEG_SEC: {
-                return "7.6 mDeg/Sec";
-            }
-            case RS2_GYRO_SENSITIVITY_3_8_MILLI_DEG_SEC: {
-                return "3.8 mDeg/Sec";
-            }
-            default:
-                throw invalid_value_exception( "value not found" );
-        }
+        return get_gyro_sensitivity_value_description( val );
     }
 
     const char * librealsense::gyro_sensitivity_option::get_description() const
@@ -507,4 +488,3 @@ namespace librealsense
 
 
  }
- 

@@ -15,7 +15,10 @@ namespace librealsense {
 
 class uvc_pu_option : public option
 {
+protected:
     std::weak_ptr< uvc_sensor > _ep;
+
+private:
     rs2_option _id;
     const std::map< float, std::string > _description_per_value;
     std::function< void( const option & ) > _record = []( const option & ) {};
