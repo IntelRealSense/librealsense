@@ -220,6 +220,7 @@ namespace librealsense
             return;
 
         _is_safety_layout = ( pid == D585S_PID || pid == D585_LEGACY_PID );
+        _is_d585s = ( pid == D585S_PID );
 
         const uint32_t mapping_stream_mi = _is_safety_layout ? 13 : 11;
         auto mapping_devs_info = filter_by_mi( dev_info->get_group().uvc_devices, mapping_stream_mi);
@@ -400,8 +401,8 @@ namespace librealsense
 
     void d500_depth_mapping::register_options(std::shared_ptr<d500_depth_mapping_sensor> occupancy_ep, std::shared_ptr<uvc_sensor> raw_mapping_sensor)
     {
-        // Mapping XU (unit 0x18) exists on the D5xx mapping function only, not on the D585S safety layout
-        if( _is_safety_layout )
+        // Segmentation is supported on all D500 cameras except D585S
+        if( _is_d585s )
             return;
 
         raw_mapping_sensor->register_xu( ds::mapping_xu ); // make sure the XU is initialized every time we power the camera
