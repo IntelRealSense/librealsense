@@ -655,6 +655,8 @@ std::string const & get_string_( rs2_option value )
         CASE( DUAL_RGB_EXPOSURE )
         CASE( DUAL_RGB_GAIN )
         CASE( ACCEL_SENSITIVITY )
+        CASE( OCCUPANCY_GRID_SEGMENTATION )
+        arr[RS2_OPTION_LPCL_SEGMENTATION] = "LPCL Segmentation";
 #undef CASE
         return arr;
     }();
