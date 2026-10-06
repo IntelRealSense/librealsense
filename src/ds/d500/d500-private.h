@@ -50,6 +50,21 @@ namespace librealsense
         const platform::extension_unit inference_xu = { 0, 0x10, 2,
         { 0xf6c3c3d1, 0x5cde, 0x4477, { 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
 
+        // Mapping function XU (vfID_UnitExtPointCloud), in the EP12 Mapping UVC function.
+        // GUID: HKR XU GUID, as for safety_xu / inference_xu (final Mapping XU GUID TBD).
+        const platform::extension_unit mapping_xu = { 0, 0x18, 2,
+        { 0xf6c3c3d1, 0x5cde, 0x4477, { 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
+
+        enum d500_mapping_xu_id : uint8_t
+        {
+            STREAM_SELECT               = 0x01,  // Phase 2: 0 auto, 1 PCL, 2 LPCL, 3 OG, 4 Segmentation (SDK-internal)
+            SEGMENTATION_MODE           = 0x02,  // 1 = high speed (RGB), 2 = high accuracy (RGBD)
+            SEGMENTATION_CLASS          = 0x03,  // bitmask of segmentation classes
+            PCL_FORMAT                  = 0x04,  // Phase 2: 0 = XYZ, 1 = XYZRGB (SDK-internal)
+            OCCUPANCY_GRID_SEGMENTATION = 0x05,  // OccupancyGrid_Segmentation: 0 = off, 1 = on
+            LPCL_SEGMENTATION           = 0x06   // LPCL_Segmentation (Labeled PCL): 0 = off, 1 = on
+        };
+
 
         // d500 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {

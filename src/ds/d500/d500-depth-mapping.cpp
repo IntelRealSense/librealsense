@@ -211,7 +211,25 @@ namespace librealsense
 
     void d500_depth_mapping::register_options(std::shared_ptr<d500_depth_mapping_sensor> occupancy_ep, std::shared_ptr<uvc_sensor> raw_mapping_sensor)
     {
+        // Mapping XU (unit 0x18) exists on the D5xx mapping function only, not on the D585S safety layout
+        if( _is_safety_layout )
+            return;
 
+        raw_mapping_sensor->register_xu( ds::mapping_xu ); // make sure the XU is initialized every time we power the camera
+
+        occupancy_ep->register_option( RS2_OPTION_OCCUPANCY_GRID_SEGMENTATION,
+            std::make_shared< uvc_xu_option< uint8_t > >( raw_mapping_sensor,
+                                                          ds::mapping_xu,
+                                                          ds::d500_mapping_xu_id::OCCUPANCY_GRID_SEGMENTATION,
+                                                          "OccupancyGrid_Segmentation: Off = depth-only labeling, On = segmentation labels in the occupancy grid",
+                                                          false /* not settable while streaming */ ) );
+
+        occupancy_ep->register_option( RS2_OPTION_LPCL_SEGMENTATION,
+            std::make_shared< uvc_xu_option< uint8_t > >( raw_mapping_sensor,
+                                                          ds::mapping_xu,
+                                                          ds::d500_mapping_xu_id::LPCL_SEGMENTATION,
+                                                          "LPCL_Segmentation: Off = depth-only labeling, On = segmentation labels in the labeled point cloud",
+                                                          false /* not settable while streaming */ ) );
     }
 
     void d500_depth_mapping::register_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep)
