@@ -24,7 +24,11 @@ using rs_fourcc = rsutils::type::fourcc;
 #include "pose.h"   // identity_matrix
 
 #include <src/metadata-parser.h>
+#include <rsutils/json.h>
+#include <rsutils/number/crc32.h>
+#include <rsutils/time/timer.h>
 #include <thread>
+#include <cstring>
 
 namespace librealsense
 {
@@ -74,6 +78,7 @@ namespace librealsense
             return;
 
         _is_safety_layout = ( pid == D585S_PID || pid == D585_LEGACY_PID );
+        _supports_depth_mapping_params = d5x5_family_pids.count( pid ) > 0;
 
         const uint32_t mapping_stream_mi = _is_safety_layout ? 13 : 11;
         auto mapping_devs_info = filter_by_mi( dev_info->get_group().uvc_devices, mapping_stream_mi);
@@ -107,6 +112,11 @@ namespace librealsense
             get_backend()->create_uvc_device(occupancy_devices_info.front()),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
             this);
+        if( _supports_depth_mapping_params )
+        {
+            raw_mapping_ep->register_xu( ds::mapping_xu ); // ensure the XU is initialized every time we power the camera
+            _raw_depth_mapping_ep = raw_mapping_ep;
+        }
 
         auto mapping_ep = std::make_shared<d500_depth_mapping_sensor>(this,
             raw_mapping_ep,
@@ -641,5 +651,87 @@ void d500_depth_mapping::register_processing_blocks( std::shared_ptr< d500_depth
     rs2_intrinsics d500_depth_mapping_sensor::get_intrinsics(const stream_profile& profile) const
     {
         return rs2_intrinsics();
+    }
+
+    // FW replies with the header followed by { "result": { "code", "pending", "message" }, "configured", "params" }.
+    // "code" is a name such as "OK" or "OUT_OF_RANGE"; "configured" and "params" are absent while a write is pending.
+    static rsutils::json read_depth_mapping_reply( uvc_sensor & raw_ep )
+    {
+        std::vector< uint8_t > reply( ds::DEPTH_MAPPING_PARAMS_LEN, 0 );
+        raw_ep.invoke_powered( [&]( platform::uvc_device & dev )
+        {
+            if( ! dev.get_xu( ds::mapping_xu, ds::DEPTH_MAPPING_PARAMS, reply.data(), ds::DEPTH_MAPPING_PARAMS_LEN ) )
+                throw io_exception( "Failed to read depth mapping params" );
+        } );
+
+        ds::depth_mapping_params_header header;
+        std::memcpy( &header, reply.data(), sizeof( header ) );
+        auto json = reply.data() + sizeof( header );
+        if( header.version != ds::DEPTH_MAPPING_PARAMS_VERSION )
+            throw io_exception( rsutils::string::from() << "Unsupported depth mapping params version " << header.version );
+        if( header.json_size > ds::DEPTH_MAPPING_PARAMS_LEN - sizeof( header ) )
+            throw io_exception( rsutils::string::from() << "Invalid depth mapping params JSON size " << header.json_size );
+        if( rsutils::number::calc_crc32( json, header.json_size ) != header.json_crc )
+            throw io_exception( "Depth mapping params CRC mismatch" );
+        return rsutils::json::parse( std::string( json, json + header.json_size ) );
+    }
+
+    // Polls until FW is done with any in-flight write, so the reply carries "configured" and "params"
+    static rsutils::json wait_for_depth_mapping_reply( uvc_sensor & raw_ep )
+    {
+        // TODO: timeout is a placeholder until the FW flash write duration is known
+        rsutils::time::timer timer( std::chrono::seconds( 5 ) );
+        timer.start();
+        auto reply = read_depth_mapping_reply( raw_ep );
+        while( reply.at( "result" ).at( "pending" ).get< bool >() )
+        {
+            if( timer.has_expired() )
+                throw io_exception( "Timed out waiting for depth mapping params to be applied" );
+            std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+            reply = read_depth_mapping_reply( raw_ep );
+        }
+        return reply;
+    }
+
+    std::string d500_depth_mapping::get_depth_mapping_params() const
+    {
+        if( ! _raw_depth_mapping_ep )
+            throw not_implemented_exception( "Depth mapping params are not supported on this device" );
+        return wait_for_depth_mapping_reply( *_raw_depth_mapping_ep ).at( "params" ).dump();
+    }
+
+    void d500_depth_mapping::set_depth_mapping_params( const std::string & params_json_str ) const
+    {
+        if( ! _raw_depth_mapping_ep )
+            throw not_implemented_exception( "Depth mapping params are not supported on this device" );
+
+        ds::depth_mapping_params_header header;
+        const size_t max_json_size = ds::DEPTH_MAPPING_PARAMS_LEN - sizeof( header );
+        if( params_json_str.empty() || params_json_str.size() > max_json_size )
+            throw invalid_value_exception( rsutils::string::from() << "Depth mapping params JSON is " << params_json_str.size()
+                                                                   << " bytes; must be 1.." << max_json_size );
+
+        auto json = reinterpret_cast< const uint8_t * >( params_json_str.data() );
+        header.version = ds::DEPTH_MAPPING_PARAMS_VERSION;
+        header.json_size = static_cast< uint16_t >( params_json_str.size() );
+        header.json_crc = rsutils::number::calc_crc32( json, params_json_str.size() );
+
+        auto & raw_ep = *_raw_depth_mapping_ep;
+        std::vector< uint8_t > data( ds::DEPTH_MAPPING_PARAMS_LEN, 0 );
+        std::memcpy( data.data(), &header, sizeof( header ) );
+        std::copy( params_json_str.begin(), params_json_str.end(), data.begin() + sizeof( header ) );
+        raw_ep.invoke_powered( [&]( platform::uvc_device & dev )
+        {
+            // FW validates the content asynchronously; a refusal here only means a write is already in flight
+            if( ! dev.set_xu( ds::mapping_xu, ds::DEPTH_MAPPING_PARAMS, data.data(), ds::DEPTH_MAPPING_PARAMS_LEN ) )
+                throw io_exception( "Device busy, failed to set depth mapping params" );
+        } );
+
+        // FW marks the write pending before acking SET_CUR, so this cannot see the previous write's result
+        auto result = wait_for_depth_mapping_reply( raw_ep ).at( "result" );
+        auto code = result.at( "code" ).get< std::string >();
+        if( code != "OK" )
+            throw invalid_value_exception( rsutils::string::from() << "Failed to set depth mapping params: " << code
+                                                                   << ": " << result.at( "message" ).get< std::string >() );
     }
 }

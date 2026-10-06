@@ -808,6 +808,8 @@ namespace librealsense
     {
     public:
         void update(std::shared_ptr< extension_snapshot > ext) override {}
+        std::string get_depth_mapping_params() const override { return ""; }
+        void set_depth_mapping_params(const std::string& params_json_str) const override {}
     };
 
     class perception_sensor_snapshot
