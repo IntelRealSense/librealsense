@@ -51,9 +51,9 @@ namespace librealsense
         { 0xf6c3c3d1, 0x5cde, 0x4477, { 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
 
         // Mapping function XU (vfID_UnitExtPointCloud), in the EP12 Mapping UVC function.
-        // GUID: HKR XU GUID, as for safety_xu / inference_xu (final Mapping XU GUID TBD).
+        // GUID: {794C4FF5-7919-4657-81C0-30C0471F62DE}, as in the FW Mapping XU descriptor.
         const platform::extension_unit mapping_xu = { 0, 0x18, 2,
-        { 0xf6c3c3d1, 0x5cde, 0x4477, { 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
+        { 0x794c4ff5, 0x7919, 0x4657, { 0x81, 0xc0, 0x30, 0xc0, 0x47, 0x1f, 0x62, 0xde } } };
 
         enum d500_mapping_xu_id : uint8_t
         {
