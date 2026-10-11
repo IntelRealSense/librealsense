@@ -849,6 +849,12 @@ void d500_depth_mapping::register_processing_blocks( std::shared_ptr< d500_depth
             throw invalid_value_exception(rsutils::string::from()
                 << "The Depth Mapping Camera streams one of Point Cloud, Labeled Point Cloud, or Occupancy at a time; "
                 << requests.size() << " profiles were requested");
+
+        // FW Phase 1: PCL cannot open while Depth streams (no prebuilt XYZ branch)
+        if( ! requests.empty() && requests.front()->get_stream_type() == RS2_STREAM_POINT_CLOUD
+            && const_cast< d500_depth_mapping * >( _owner )->get_depth_sensor().is_streaming() )
+            throw wrong_api_call_sequence_exception( "Point Cloud cannot start while Depth is streaming; stop Depth first" );
+
         synthetic_sensor::open(requests);
     }
 
