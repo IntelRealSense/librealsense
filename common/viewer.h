@@ -157,6 +157,8 @@ namespace rs2
         // Alternating Passive Depth interleaves laser-on and laser-off frames on one profile, so each
         // depth/IR stream gets a second tile for the passive class - mapped here from the stream's uid.
         std::map<int, int> passive_streams;
+        // Keys the passive tile of a split stream; kept clear of the unique ids the SDK hands out.
+        static constexpr int PASSIVE_STREAM_KEY_OFFSET = 0x10000000;
         bool fullscreen = false;
         stream_model* selected_stream = nullptr;
         // When true, stream tiles can be re-arranged by dragging one onto another (toggled from the top bar)
@@ -291,6 +293,21 @@ namespace rs2
         // the ruler smoothing state that lives on s_model.
         ruler_bounds calculate_ruler_bounds(std::vector<float> distances,
                                             stream_model& s_model);
+        // Pairs sampled depth values with the colors the tile shows them in; false when there is nothing to show.
+        bool sample_ruler( int stream_key, stream_model & s_model,
+                           std::vector< rgb_per_distance > & colors, std::vector< float > & distances );
+        static void sample_ruler_pixels( const rs2::video_frame & depth, const rs2::video_frame & colorized,
+                                         std::vector< rgb_per_distance > & colors, std::vector< float > & distances );
+        struct ruler_samples
+        {
+            std::vector< rgb_per_distance > colors;
+            std::vector< float > distances;
+            unsigned long long frame_number = 0;  // depth frame the samples were taken from
+            std::chrono::steady_clock::time_point taken;
+        };
+        // Samples of GPU-colorized tiles, by stream key, taken off a CPU colorization and refreshed a few times a second.
+        std::map< int, ruler_samples > _gpu_ruler_samples;
+        std::shared_ptr< rs2::colorizer > _ruler_colorizer;
 
         void set_export_popup(ImFont* large_font, ImFont* font, rect stream_rect, std::string& error_message, config_file& temp_cfg);
         void init_depth_uid(int& selected_depth_source, std::vector<std::string>& depth_sources_str, std::vector<int>& depth_sources);
@@ -298,6 +315,8 @@ namespace rs2
         void draw_3d_labeled_points(const rect& viewer_rect, rs2::labeled_points labeled_points);
         bool should_texture_frame_be_updated(const rs2::frame& f) const;
         bool is_passive_frame(const rs2::frame& f) const;
+        bool is_split_passive_frame( const rs2::frame & f );
+        int last_frames_key( const rs2::frame & f );
 
         streams_layout _layout;
         streams_layout _old_layout;

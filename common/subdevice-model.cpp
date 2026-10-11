@@ -100,6 +100,19 @@ namespace rs2
             && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D500";
     }
 
+    bool is_beta_stream(rs2_stream type)
+    {
+        return type == RS2_STREAM_OCCUPANCY
+            || type == RS2_STREAM_LABELED_POINT_CLOUD
+            || type == RS2_STREAM_OBJECT_DETECTION;
+    }
+
+    static void draw_beta_badge()
+    {
+        ImGui::SameLine();
+        RsImGui::BetaBadge("Beta feature - still maturing, behavior and output may change");
+    }
+
     void subdevice_model::populate_options( const std::string & opt_base_label,
                                             bool * options_invalidated,
                                             std::string & error_message )
@@ -814,6 +827,7 @@ namespace rs2
                 continue;
 
             auto formats_chars = get_string_pointers(f.second);
+            const bool beta = is_beta_stream(stream_type_of(f.first));
             if (!streaming || (streaming && stream_enabled[f.first]))
             {
                 if (streaming)
@@ -878,6 +892,8 @@ namespace rs2
                     }
                     if (mode_locked) ImGui::EndDisabled();
                 }
+                if (beta)
+                    draw_beta_badge();
             }
 
             if (stream_enabled[f.first])
@@ -885,7 +901,9 @@ namespace rs2
                 if (show_single_fps_list)
                 {
                     ImGui::SameLine();
-                    ImGui::SetCursorPosX(col1);
+                    // A long stream name (plus the BETA badge) can run past the column; the combo then starts after it
+                    if (ImGui::GetCursorPosX() < col1)
+                        ImGui::SetCursorPosX(col1);
                 }
 
                 label = rsutils::string::from()
@@ -1111,6 +1129,7 @@ namespace rs2
                 continue;
 
             auto formats_chars = get_string_pointers(f.second);
+            const bool beta = is_beta_stream(stream_type_of(f.first));
             if (!streaming || (streaming && stream_enabled[f.first]))
             {
                 if (streaming)
@@ -1142,6 +1161,8 @@ namespace rs2
                     }
                     if (mode_locked) ImGui::EndDisabled();
                 }
+                if (beta)
+                    draw_beta_badge();
             }
 
             if (stream_enabled[f.first])
@@ -1149,7 +1170,9 @@ namespace rs2
                 if (show_single_fps_list)
                 {
                     ImGui::SameLine();
-                    ImGui::SetCursorPosX(col1);
+                    // A long stream name (plus the BETA badge) can run past the column; the combo then starts after it
+                    if (ImGui::GetCursorPosX() < col1)
+                        ImGui::SetCursorPosX(col1);
                 }
 
                 label = rsutils::string::from()
@@ -1336,8 +1359,7 @@ namespace rs2
                 }
             }
         }
-        last_valid_ui = ui;
-        prev_stream_enabled = stream_enabled; // prev differs from curr only after user changes
+        store_ui_selection(); // prev_stream_enabled differs from stream_enabled only after user changes
     }
 
     template<typename T, typename V>
@@ -1524,8 +1546,8 @@ namespace rs2
             get_sorted_profiles(sorted_profiles);
             std::vector<stream_profile> matching_profiles;
             std::map<std::tuple<int, int, int>, std::map<int, stream_profile>> profiles_by_fps_res; //fps, width, height
-            rs2_format format;
-            int stream_id;
+            rs2_format format = RS2_FORMAT_ANY;
+            int stream_id = -1;
             // find the stream to which the user made changes
             for (auto& it : ui.selected_format_id)
             {
@@ -1538,6 +1560,12 @@ namespace rs2
                         stream_id = it.first;
                     }
                 }
+            }
+            // Format change was on a disabled stream only, nothing to match
+            if (stream_id == -1)
+            {
+                last_valid_ui = ui;
+                return results;
             }
             for (auto&& p : sorted_profiles)
             {

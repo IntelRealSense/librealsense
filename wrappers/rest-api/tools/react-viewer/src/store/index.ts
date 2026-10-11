@@ -5,7 +5,6 @@ import type {
   OptionInfo,
   StreamConfig,
   MetadataUpdate,
-  IMUData,
   ViewMode,
   DeviceState,
   AdvancedControls,
@@ -137,11 +136,6 @@ import type { ProposedSettings } from '../utils/chatPrompt'
 import type { AssistantChatMessage, AssistantFileAttachment } from '../api/assistantChat'
 import { createAssistantSlice } from './assistantSlice'
 
-interface IMUHistory {
-  accel: { timestamp: number; x: number; y: number; z: number }[]
-  gyro: { timestamp: number; x: number; y: number; z: number }[]
-}
-
 interface AppState {
   // Connection state
   isConnected: boolean
@@ -182,12 +176,6 @@ interface AppState {
 
   // Metadata from Socket.IO
   updateMetadata: (metadata: MetadataUpdate) => void
-
-  // IMU data history for graphs (global for now)
-  imuHistory: IMUHistory
-  maxIMUHistoryLength: number
-  addIMUData: (type: 'accel' | 'gyro', data: IMUData) => void
-  clearIMUHistory: () => void
 
   // UI state
   viewMode: ViewMode
@@ -802,16 +790,7 @@ export const useAppStore = create<AppState>()((set, get, api) => ({
       }
     })
 
-    // Extract IMU data if present
-    for (const [streamType, streamData] of Object.entries(metadata.metadata_streams)) {
-      if (streamData.motion_data) {
-        if (streamType.toLowerCase().includes('accel')) {
-          get().addIMUData('accel', streamData.motion_data)
-        } else if (streamType.toLowerCase().includes('gyro')) {
-          get().addIMUData('gyro', streamData.motion_data)
-        }
-      }
-
+    for (const streamData of Object.values(metadata.metadata_streams)) {
       // Extract point cloud data if present.
       // Server sends raw float32 bytes as a Socket.IO binary attachment (ArrayBuffer);
       // fall back to base64 string for older servers.
@@ -835,26 +814,6 @@ export const useAppStore = create<AppState>()((set, get, api) => ({
       }
     }
   },
-
-  // IMU history (global)
-  imuHistory: { accel: [], gyro: [] },
-  maxIMUHistoryLength: 100,
-  addIMUData: (type, data) => {
-    set((state) => {
-      const history = [...state.imuHistory[type]]
-      history.push({ timestamp: Date.now(), ...data })
-      if (history.length > state.maxIMUHistoryLength) {
-        history.shift()
-      }
-      return {
-        imuHistory: {
-          ...state.imuHistory,
-          [type]: history,
-        },
-      }
-    })
-  },
-  clearIMUHistory: () => set({ imuHistory: { accel: [], gyro: [] } }),
 
   // UI state
   viewMode: '2d',

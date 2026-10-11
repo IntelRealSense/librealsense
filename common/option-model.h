@@ -154,6 +154,15 @@ namespace rs2
         float _user_request_value = 0.f;
         rsutils::time::stopwatch _user_request_stopwatch;
 
+        // Arrow-key nudges on the slider are batched: the value is shown at once (through the
+        // user-request mask above) but written only after a short quiet period, so a held or
+        // repeatedly pressed key produces one FW write instead of one per step.
+        void queue_arrow_nudge( float value );
+        void flush_arrow_nudge( std::string & error_message );
+        bool _arrow_nudge_pending = false;
+        float _arrow_nudge_value = 0.f;
+        rsutils::time::stopwatch _arrow_nudge_stopwatch;
+
         // Cross-thread async-error state, see option_async_state for layout. Eagerly
         // allocated so option_model copies (e.g., map-insertion of create_option_model's
         // return value) keep the same state; the worker callback captures this

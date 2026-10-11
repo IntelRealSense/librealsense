@@ -233,6 +233,16 @@ void post_processing_filters::process(rs2::frame f, const rs2::frame_source& sou
         source.frame_ready(std::move(frame));
 }
 
+void post_processing_filters::store_latest(rs2::frame f)
+{
+    std::lock_guard<std::mutex> lock(latest_mutex);
+    latest_set = f;
+    // Laser-on and laser-off frames can share a profile (Alternating Passive Depth); keep the newest of each class
+    for (auto&& sub : f.as<rs2::frameset>())
+        latest_frames[sub.get_profile().unique_id()
+                      + (viewer.is_passive_frame(sub) ? viewer_model::PASSIVE_STREAM_KEY_OFFSET : 0)] = sub;
+}
+
 void post_processing_filters::start()
 {
     stop();

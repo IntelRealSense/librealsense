@@ -526,7 +526,7 @@ namespace librealsense
             long val = 0, flags = 0;
             if ((opt == RS2_OPTION_EXPOSURE) || (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE))
             {
-                auto hr = get_camera_control()->Get(CameraControl_Exposure, &val, &flags);
+                auto hr = get_camera_control(unit.node)->Get(CameraControl_Exposure, &val, &flags);
                 if (hr == DEVICE_NOT_READY_ERROR)
                     return false;
 
@@ -554,7 +554,7 @@ namespace librealsense
             {
                 if (opt == ct.option)
                 {
-                    auto hr = get_camera_control()->Get(ct.property, &val, &flags);
+                    auto hr = get_camera_control(unit.node)->Get(ct.property, &val, &flags);
                     if (hr == DEVICE_NOT_READY_ERROR)
                         return false;
 
@@ -577,7 +577,7 @@ namespace librealsense
         {
             if (opt == RS2_OPTION_EXPOSURE)
             {
-                auto hr = get_camera_control()->Set(CameraControl_Exposure, from_100micros(value), CameraControl_Flags_Manual);
+                auto hr = get_camera_control(unit.node)->Set(CameraControl_Exposure, from_100micros(value), CameraControl_Flags_Manual);
                 if (hr == DEVICE_NOT_READY_ERROR)
                     return false;
 
@@ -590,7 +590,7 @@ namespace librealsense
                 // Manual, uvc_pu_auto_exposure_option re-applies the saved exposure right
                 // after this call, so the value written here is overwritten immediately.
                 auto flags = value ? CameraControl_Flags_Auto : CameraControl_Flags_Manual;
-                auto hr = get_camera_control()->Set(CameraControl_Exposure, 0, flags);
+                auto hr = get_camera_control(unit.node)->Set(CameraControl_Exposure, 0, flags);
                 if (hr == DEVICE_NOT_READY_ERROR)
                     return false;
 
@@ -659,7 +659,7 @@ namespace librealsense
                     {
                         if (value)
                         {
-                            auto hr = get_camera_control()->Set(ct.property, 0, CameraControl_Flags_Auto);
+                            auto hr = get_camera_control(unit.node)->Set(ct.property, 0, CameraControl_Flags_Auto);
                             if (hr == DEVICE_NOT_READY_ERROR)
                                 return false;
 
@@ -668,13 +668,13 @@ namespace librealsense
                         else
                         {
                             long min, max, step, def, caps;
-                            auto hr = get_camera_control()->GetRange(ct.property, &min, &max, &step, &def, &caps);
+                            auto hr = get_camera_control(unit.node)->GetRange(ct.property, &min, &max, &step, &def, &caps);
                             if (hr == DEVICE_NOT_READY_ERROR)
                                 return false;
 
                             CHECK_HR(hr);
 
-                            hr = get_camera_control()->Set(ct.property, def, CameraControl_Flags_Manual);
+                            hr = get_camera_control(unit.node)->Set(ct.property, def, CameraControl_Flags_Manual);
                             if (hr == DEVICE_NOT_READY_ERROR)
                                 return false;
 
@@ -683,7 +683,7 @@ namespace librealsense
                     }
                     else
                     {
-                        auto hr = get_camera_control()->Set(ct.property, value, CameraControl_Flags_Manual);
+                        auto hr = get_camera_control(unit.node)->Set(ct.property, value, CameraControl_Flags_Manual);
                         if (hr == DEVICE_NOT_READY_ERROR)
                             return false;
 
@@ -713,7 +713,7 @@ namespace librealsense
             long minVal = 0, maxVal = 0, steppingDelta = 0, defVal = 0, capsFlag = 0;
             if (opt == RS2_OPTION_EXPOSURE)
             {
-                CHECK_HR(get_camera_control()->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                CHECK_HR(get_camera_control(unit.node)->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                 long min = to_100micros(minVal), max = to_100micros(maxVal), def = to_100micros(defVal);
                 control_range result(min, max, min, def);
                 return result;
@@ -731,7 +731,7 @@ namespace librealsense
             {
                 if (opt == ct.option)
                 {
-                    CHECK_HR(get_camera_control()->GetRange(ct.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                    CHECK_HR(get_camera_control(unit.node)->GetRange(ct.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                     control_range result(minVal, maxVal, steppingDelta, defVal);
                     return result;
                 }
@@ -944,6 +944,7 @@ namespace librealsense
             {
                 std::lock_guard< std::mutex > lk( _video_procs_mtx );
                 _video_procs.clear();
+                _camera_controls.clear();
             }
             safe_release(_reader);
             if (_source)
@@ -983,6 +984,7 @@ namespace librealsense
             {
                 std::lock_guard< std::mutex > lk( _video_procs_mtx );
                 _video_procs.clear();
+                _camera_controls.clear();
             }
             safe_release(_reader);
             if (_source)
@@ -1270,13 +1272,47 @@ namespace librealsense
             return inserted.first->second;
         }
 
-        IAMCameraControl* wmf_uvc_device::get_camera_control() const
+        CComPtr< IAMCameraControl > wmf_uvc_device::get_camera_control( int node ) const
         {
             if (get_power_state() != D0)
                 throw std::runtime_error("Device must be powered to query camera_control!");
-            if (!_camera_control.p)
-                throw std::runtime_error("The device does not support camera settings such as zoom, pan, aperture adjustment, or shutter speed.");
-            return _camera_control.p;
+
+            if (node == DEFAULT_PU_NODE)
+            {
+                if (!_camera_control.p)
+                    throw std::runtime_error("The device does not support camera settings such as zoom, pan, aperture adjustment, or shutter speed.");
+                return _camera_control;
+            }
+
+            std::lock_guard< std::mutex > lk( _video_procs_mtx );
+            auto const found = _camera_controls.find(node);
+            if (found != _camera_controls.end())
+                return found->second;
+
+            CComPtr<IKsTopologyInfo> topology = nullptr;
+            CHECK_HR(_source->QueryInterface(__uuidof(IKsTopologyInfo),
+                reinterpret_cast<void **>(&topology)));
+
+            DWORD node_count = 0;
+            CHECK_HR(topology->get_NumNodes(&node_count));
+            if (node < 0 || static_cast<DWORD>(node) >= node_count)
+                throw std::runtime_error(rsutils::string::from()
+                    << "Processing-unit node " << node << " is outside topology node count " << node_count);
+
+            // The camera terminal feeding a processing unit is the closest camera-terminal node before it.
+            for (int ct = node - 1; ct >= 0; --ct)
+            {
+                GUID node_type = {};
+                CHECK_HR(topology->get_NodeType(static_cast<DWORD>(ct), &node_type));
+                if (!IsEqualGUID(node_type, KSNODETYPE_VIDEO_CAMERA_TERMINAL))
+                    continue;
+
+                CComPtr<IAMCameraControl> camera_control = nullptr;
+                CHECK_HR(topology->CreateNodeInstance(static_cast<DWORD>(ct),
+                    __uuidof(IAMCameraControl), reinterpret_cast<LPVOID *>(&camera_control)));
+                return _camera_controls.emplace(node, camera_control).first->second;
+            }
+            throw std::runtime_error(rsutils::string::from() << "No camera terminal node precedes processing-unit node " << node);
         }
 
         void wmf_uvc_device::stream_on(std::function<void(const notification& n)> error_handler)

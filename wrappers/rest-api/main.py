@@ -59,6 +59,7 @@ import asyncio
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
 from app.core.errors import setup_exception_handlers
@@ -89,6 +90,11 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 # Set up exception handlers
 setup_exception_handlers(app)
+
+# If the react viewer is built, mount it on root (/)
+_static_dir = Path(__file__).parent / "static"
+if (_static_dir / "index.html").exists():
+    app.router.default = StaticFiles(directory=_static_dir, html=True)
 
 
 @app.on_event("startup")

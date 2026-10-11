@@ -150,7 +150,10 @@ void dds_device::impl::reset()
     _device_options_received = false;
     _options.clear();
     _extrinsics_map.clear();
-    _open_profiles_list.clear();
+    {
+        std::lock_guard< std::mutex > lock( _open_profiles_mutex );
+        _open_profiles_list.clear();
+    }
     if( _metadata_reader )
         _metadata_reader->stop();
     _metadata_reader.reset();
@@ -555,6 +558,7 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
     if( ! profiles_to_open.empty() )
         j[topics::control::open_streams::key::stream_profiles] = std::move( profiles_to_open );
 
+    std::lock_guard< std::mutex > lock( _open_profiles_mutex );
     json reply;
     write_control_message( j, &reply );
 
@@ -564,6 +568,8 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
 
 void dds_device::impl::close( const dds_stream_profiles & profiles )
 {
+    std::lock_guard< std::mutex > lock( _open_profiles_mutex );
+
     // Remove profiles from open profiles list. Not using erase-remove idiom but for a small number of profiles it does not really matter...
     for( auto & profile : profiles )
     {
