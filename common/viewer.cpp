@@ -34,36 +34,93 @@
 #include <fstream>
 #include <limits>
 
-namespace rs2
-{
-
 #ifdef BUILD_EASYLOGGINGPP
-// rs2::log_to_* only configure the library's ELPP storage; LOG_* calls made from the viewer use its own
-static void configure_viewer_logger( rs2_log_severity console, rs2_log_severity file, std::string const & filename )
+#ifdef ELPP_PER_MODULE_STORAGE
+namespace
 {
-    static const std::pair< el::Level, rs2_log_severity > levels[] = {
+    // rs2::log_to_* only configure the library's ELPP storage; LOG_* calls made from the viewer use its own
+    struct viewer_logger_state
+    {
+        rs2_log_severity console = RS2_LOG_SEVERITY_NONE;
+        rs2_log_severity file = RS2_LOG_SEVERITY_NONE;
+        rs2_log_severity callback = RS2_LOG_SEVERITY_NONE;
+        std::string filename;
+    } viewer_logger;
+
+    struct level_severity { el::Level level; rs2_log_severity severity; };
+    const level_severity levels[] = {
         { el::Level::Debug, RS2_LOG_SEVERITY_DEBUG },
         { el::Level::Info, RS2_LOG_SEVERITY_INFO },
         { el::Level::Warning, RS2_LOG_SEVERITY_WARN },
         { el::Level::Error, RS2_LOG_SEVERITY_ERROR },
         { el::Level::Fatal, RS2_LOG_SEVERITY_FATAL } };
 
-    el::Configurations conf;
-    conf.setGlobally( el::ConfigurationType::Format,
-                      " %datetime{%d/%M %H:%m:%s,%g} %level [%thread] (%fbase:%line) %msg" );
-    if( ! filename.empty() )
-        conf.setGlobally( el::ConfigurationType::Filename, filename );
-    for( auto const & level : levels )
+    class viewer_log_dispatcher : public el::LogDispatchCallback
     {
-        bool const to_console = level.second >= console;
-        bool const to_file = level.second >= file;
-        conf.set( level.first, el::ConfigurationType::Enabled, to_console || to_file ? "true" : "false" );
-        conf.set( level.first, el::ConfigurationType::ToStandardOutput, to_console ? "true" : "false" );
-        conf.set( level.first, el::ConfigurationType::ToFile, to_file ? "true" : "false" );
+    public:
+        rs2_log_severity min_severity = RS2_LOG_SEVERITY_NONE;
+        std::function< void( rs2_log_severity, char const *, int, char const * ) > callback;
+
+    protected:
+        void handle( el::LogDispatchData const * data ) noexcept override
+        {
+            el::LogMessage const & msg = *data->logMessage();
+            for( auto const & l : levels )
+                if( l.level == msg.level() && l.severity >= min_severity && callback )
+                    callback( l.severity, msg.file().c_str(), (int)msg.line(), msg.message().c_str() );
+        }
+    };
+
+    void apply_viewer_logger()
+    {
+        auto const & st = viewer_logger;
+        el::Configurations conf;
+        conf.setGlobally( el::ConfigurationType::Format,
+                          " %datetime{%d/%M %H:%m:%s,%g} %level [%thread] (%fbase:%line) %msg" );
+        if( ! st.filename.empty() )
+            conf.setGlobally( el::ConfigurationType::Filename, st.filename );
+        for( auto const & l : levels )
+        {
+            bool const to_console = l.severity >= st.console;
+            bool const to_file = l.severity >= st.file;
+            conf.set( l.level, el::ConfigurationType::Enabled,
+                      to_console || to_file || l.severity >= st.callback ? "true" : "false" );
+            conf.set( l.level, el::ConfigurationType::ToStandardOutput, to_console ? "true" : "false" );
+            conf.set( l.level, el::ConfigurationType::ToFile, to_file ? "true" : "false" );
+        }
+        el::Loggers::reconfigureLogger( LIBREALSENSE_ELPP_ID, conf );
     }
-    el::Loggers::reconfigureLogger( LIBREALSENSE_ELPP_ID, conf );
 }
+#endif  // ELPP_PER_MODULE_STORAGE
+#endif  // BUILD_EASYLOGGINGPP
+
+namespace rs2
+{
+#ifdef BUILD_EASYLOGGINGPP
+    // With a shared library the viewer has its own ELPP storage, so the library's rs2::log_* don't reach it
+    static void configure_viewer_logger( rs2_log_severity console, rs2_log_severity file, std::string const & filename )
+    {
+#ifdef ELPP_PER_MODULE_STORAGE
+        viewer_logger.console = console;
+        viewer_logger.file = file;
+        viewer_logger.filename = filename;
+        apply_viewer_logger();
 #endif
+    }
+
+    void log_viewer_messages_to_callback( rs2_log_severity min_severity,
+        std::function< void( rs2_log_severity, char const *, int, char const * ) > callback )
+    {
+#ifdef ELPP_PER_MODULE_STORAGE
+        el::Helpers::installLogDispatchCallback< viewer_log_dispatcher >( "viewer_log_dispatcher" );
+        auto dispatcher = el::Helpers::logDispatchCallback< viewer_log_dispatcher >( "viewer_log_dispatcher" );
+        dispatcher->min_severity = min_severity;
+        dispatcher->callback = std::move( callback );
+        viewer_logger.callback = min_severity;
+        apply_viewer_logger();
+#endif
+    }
+#endif  // BUILD_EASYLOGGINGPP
 
     template <typename T>
     T non_negative(const T& input)

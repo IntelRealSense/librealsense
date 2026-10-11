@@ -340,14 +340,19 @@ int run_viewer( int argc, const char ** argv,
 
 #ifdef BUILD_EASYLOGGINGPP
     std::weak_ptr<notifications_model> notifications = viewer_model.not_model;
-    rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
-        [notifications]( rs2_log_severity severity, rs2::log_message const& msg )
+    auto add_log = [notifications]( rs2_log_severity severity, char const * file, int line, char const * msg )
+    {
+        if (auto not_model = notifications.lock())
         {
-            if (auto not_model = notifications.lock())
-            {
-                not_model->output.add_log(severity, msg.filename(), (int)(msg.line_number()), msg.raw());
-            }
+            not_model->output.add_log(severity, file, line, msg);
+        }
+    };
+    rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
+        [add_log]( rs2_log_severity severity, rs2::log_message const& msg )
+        {
+            add_log(severity, msg.filename(), (int)(msg.line_number()), msg.raw());
         });
+    log_viewer_messages_to_callback( RS2_LOG_SEVERITY_INFO, add_log );
 #endif 
 
     window.on_file_drop = [&](std::string filename)

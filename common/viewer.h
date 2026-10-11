@@ -4,6 +4,7 @@
 #pragma once
 
 #include <unordered_set>
+#include <functional>
 #include "model-views.h"
 #include "device-model.h"
 #include "subdevice-model.h"
@@ -375,4 +376,10 @@ namespace rs2
                                     int tex_cols, int tex_rows, float phys_cell_size_cm);
         vertex transform_vertex(vertex v, const rect& normalize_from, const rect& unnormalize_to);
     };
+#ifdef BUILD_EASYLOGGINGPP
+    // Delivers the viewer's own LOG_* messages, like rs2::log_to_callback does for the library's
+    void log_viewer_messages_to_callback( rs2_log_severity min_severity,
+        std::function< void( rs2_log_severity, char const * file, int line, char const * msg ) > callback );
+#endif
+
 }

@@ -36,6 +36,9 @@ macro(global_set_flags)
 
     if (BUILD_EASYLOGGINGPP)
         add_definitions(-DBUILD_EASYLOGGINGPP)
+        if (BUILD_SHARED_LIBS)
+            add_definitions(-DELPP_PER_MODULE_STORAGE)
+        endif()
     endif()
 
     if (ENABLE_EASYLOGGINGPP_ASYNC)
