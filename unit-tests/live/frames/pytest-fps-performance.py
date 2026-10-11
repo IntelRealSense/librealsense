@@ -360,7 +360,7 @@ def check_stream_fps_accuracy_generic(device, stream_name, stream_type, formats,
 
     # Adjust warmup frames and measurement interval based on FPS rate
     if expected_fps <= 6:
-        warmup_frames = 2      # Minimal warmup for very slow FPS to maximize measurement time
+        warmup_frames = 4      # Must cover the start-of-stream burst (first frames delivered back-to-back)
         # For very low FPS we measure every frame after warmup to avoid having only a single data point
         # (previously interval=2 caused too few measurements for short tests)
         measurement_interval = 1  # Measure on every frame post-warmup
@@ -389,8 +389,11 @@ def check_stream_fps_accuracy_generic(device, stream_name, stream_type, formats,
         if start_test_time is None:
             start_test_time = current_time
 
-        fps_monitor.update(current_time)
         frame_count += 1
+        # Anchor the measurement window at the last warmup frame so warmup arrival times are excluded
+        if frame_count == warmup_frames:
+            fps_monitor.reset()
+        fps_monitor.update(current_time)
 
         # Record FPS after warmup period, using adaptive measurement interval
         if frame_count > warmup_frames and frame_count % measurement_interval == 0:
