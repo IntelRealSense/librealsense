@@ -163,6 +163,31 @@ namespace librealsense
         std::weak_ptr< sensor_base > _sensor;
     };
 
+    // HDR processing mode, sent over the HWM CUSTOM_CMD. The firmware applies it at the next stream start and
+    // rejects changes while the sensor carrying the affected streams is open, so the option is read-only then.
+    class hdr_mode_option : public option
+    {
+    public:
+        hdr_mode_option( std::shared_ptr< hw_monitor > hwm, const std::weak_ptr< sensor_base > & ep );
+
+        void set( float value ) override;
+        float query() const override;
+        option_range get_range() const override { return { 0, RS2_HDR_MODE_COUNT - 1, 1, RS2_HDR_MODE_SINGLE_FRAME_WDR }; }
+        bool is_enabled() const override { return true; }
+        bool is_read_only() const override;
+        const char * get_description() const override
+        {
+            return "HDR processing: Off, Single-Frame WDR or Multi-Frame HDR. Can only be set while the sensor is closed";
+        }
+        const char * get_value_description( float value ) const override;
+        void enable_recording( std::function< void( const option & ) > record_action ) override { _record_action = record_action; }
+
+    private:
+        std::function< void( const option & ) > _record_action = []( const option & ) {};
+        std::shared_ptr< hw_monitor > _hwm;
+        std::weak_ptr< sensor_base > _sensor;
+    };
+
     // Device-side depth-to-color alignment. Enabling it replaces the raw depth payload (over USB) with Z16 projected into the color viewport,
     // so the mode may only change while the sensor is closed. Last known value is cached because intrinsics lookups consult it per frame.
     class d500_enable_aligned_depth_option : public uvc_xu_option< uint8_t >

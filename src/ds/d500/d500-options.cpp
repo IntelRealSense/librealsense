@@ -239,6 +239,66 @@ namespace librealsense
         bool_option::set( value );
     }
 
+    hdr_mode_option::hdr_mode_option( std::shared_ptr< hw_monitor > hwm, const std::weak_ptr< sensor_base > & ep )
+        : _hwm( hwm )
+        , _sensor( ep )
+    {
+    }
+
+    void hdr_mode_option::set( float value )
+    {
+        if( value < 0 || value >= RS2_HDR_MODE_COUNT || static_cast< int >( value ) != value )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "set(...) failed! " << value << " is not a valid value" );
+        if( is_read_only() )
+            throw wrong_api_call_sequence_exception( "Cannot change HDR mode while the sensor is open!" );
+
+        constexpr uint32_t SET_HDR_MODE_SUB_CMD = 0x2C;
+        command cmd( ds::d500_fw_cmd::CUSTOM_CMD, SET_HDR_MODE_SUB_CMD, static_cast< uint32_t >( value ) );
+        // The firmware releases the stream state a few hundred ms after the sensor closes, and reports not-ready until then
+        hwmon_response_type response;
+        rsutils::time::timer timer( std::chrono::milliseconds( 1000 ) );
+        timer.start();
+        _hwm->send( cmd, &response );
+        while( response == ds::d500_hwmon_response::SW_NOT_READY && ! timer.has_expired() )
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+            _hwm->send( cmd, &response );
+        }
+        if( response != ds::d500_hwmon_response::SUCCESS )
+            throw invalid_value_exception( rsutils::string::from() << "Failed to set HDR mode: "
+                                                                   << ds::d500_hwmon_response().hwmon_error2str( response ) );
+        _record_action( *this );
+    }
+
+    float hdr_mode_option::query() const
+    {
+        constexpr uint32_t GET_HDR_MODE_SUB_CMD = 0x2D;
+        command cmd( ds::d500_fw_cmd::CUSTOM_CMD, GET_HDR_MODE_SUB_CMD );
+        auto res = _hwm->send( cmd );
+        if( res.size() < sizeof( uint32_t ) )
+            throw invalid_value_exception( "hdr_mode_option::query result is too short!" );
+
+        return static_cast< float >( *reinterpret_cast< const uint32_t * >( res.data() ) );
+    }
+
+    bool hdr_mode_option::is_read_only() const
+    {
+        auto strong_sensor = _sensor.lock();
+        return strong_sensor && strong_sensor->is_opened();
+    }
+
+    const char * hdr_mode_option::get_value_description( float value ) const
+    {
+        switch( static_cast< int >( value ) )
+        {
+        case RS2_HDR_MODE_OFF: return "Off";
+        case RS2_HDR_MODE_SINGLE_FRAME_WDR: return "Single-Frame WDR";
+        case RS2_HDR_MODE_MULTI_FRAME_HDR: return "Multi-Frame HDR";
+        default: return nullptr;
+        }
+    }
+
     d500_enable_aligned_depth_option::d500_enable_aligned_depth_option( const std::weak_ptr< uvc_sensor > & raw_ep )
         : uvc_xu_option< uint8_t >( raw_ep,
                                     ds::depth_xu,
