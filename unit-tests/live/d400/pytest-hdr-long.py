@@ -590,17 +590,22 @@ def _hdr_active_set_locked_options(dev):
         depth_sensor.set_option(rs.option.enable_auto_exposure, 1)
         assert depth_sensor.get_option(rs.option.enable_auto_exposure) == 0
 
-    if depth_sensor.supports(rs.option.emitter_enabled):
-        depth_sensor.set_option(rs.option.emitter_enabled, 0)
-        assert depth_sensor.get_option(rs.option.emitter_enabled) == 1
-
     if depth_sensor.supports(rs.option.emitter_on_off):
         depth_sensor.set_option(rs.option.emitter_on_off, 1)
         assert depth_sensor.get_option(rs.option.emitter_on_off) == 0
 
-    depth_sensor.set_option(rs.option.laser_power, laser_power_before_hdr - 30)
-    assert depth_sensor.get_option(rs.option.laser_power) == laser_power_before_hdr
+    # laser controls are not locked by HDR
+    if depth_sensor.supports(rs.option.emitter_enabled):
+        depth_sensor.set_option(rs.option.emitter_enabled, 0)
+        assert depth_sensor.get_option(rs.option.emitter_enabled) == 0
+        depth_sensor.set_option(rs.option.emitter_enabled, 1)
+        assert depth_sensor.get_option(rs.option.emitter_enabled) == 1
 
+    depth_sensor.set_option(rs.option.laser_power, laser_power_before_hdr - 30)
+    assert depth_sensor.get_option(rs.option.laser_power) == laser_power_before_hdr - 30
+    assert depth_sensor.get_option(rs.option.hdr_enabled) == 1
+
+    depth_sensor.set_option(rs.option.laser_power, laser_power_before_hdr)
     depth_sensor.set_option(rs.option.hdr_enabled, 0)  # disable hdr before next tests
 
 
@@ -643,16 +648,21 @@ def _hdr_streaming_set_locked_options(dev, ctx):
                 depth_sensor.set_option(rs.option.enable_auto_exposure, 1)
                 assert depth_sensor.get_option(rs.option.enable_auto_exposure) == 0
 
-                depth_sensor.set_option(rs.option.emitter_enabled, 0)
-                assert depth_sensor.get_option(rs.option.emitter_enabled) == 1
-
                 depth_sensor.set_option(rs.option.emitter_on_off, 1)
                 assert depth_sensor.get_option(rs.option.emitter_on_off) == 0
 
+                # laser controls are not locked by HDR
+                depth_sensor.set_option(rs.option.emitter_enabled, 0)
+                assert depth_sensor.get_option(rs.option.emitter_enabled) == 0
+                depth_sensor.set_option(rs.option.emitter_enabled, 1)
+                assert depth_sensor.get_option(rs.option.emitter_enabled) == 1
+
                 depth_sensor.set_option(rs.option.laser_power, laser_power_before_hdr - 30)
-                assert depth_sensor.get_option(rs.option.laser_power) == laser_power_before_hdr
+                assert depth_sensor.get_option(rs.option.laser_power) == laser_power_before_hdr - 30
+                assert depth_sensor.get_option(rs.option.hdr_enabled) == 1
     finally:
         pipe.stop()
+        depth_sensor.set_option(rs.option.laser_power, laser_power_before_hdr)
         depth_sensor.set_option(rs.option.hdr_enabled, 0)  # disable hdr before next tests
 
 
