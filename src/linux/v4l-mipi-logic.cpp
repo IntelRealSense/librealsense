@@ -72,6 +72,8 @@ namespace librealsense
             static constexpr uint32_t RS_CAMERA_CID_DECIMATION_FILTER_DPP   = ( RS_CAMERA_CID_BASE + 49 );
             static constexpr uint32_t RS_CAMERA_CID_TEMPORAL_FILTER_DPP     = ( RS_CAMERA_CID_BASE + 51 );
 
+            static constexpr uint32_t RS_CAMERA_CID_ALIGNED_DEPTH           = ( RS_CAMERA_CID_BASE + 55 );
+
             static constexpr uint8_t GVD_VALID_OPCODE = 0x10;
 
             // MIPI depth-XU selector identifiers (subdevice 0).
@@ -342,9 +344,7 @@ namespace librealsense
                     case RS_DECIMATION_FILTER_DPP: return RS_CAMERA_CID_DECIMATION_FILTER_DPP;
                     case RS_TEMPORAL_FILTER_DPP:   return RS_CAMERA_CID_TEMPORAL_FILTER_DPP;
                     case RS_HDRD_CONTROL:          return RS_CAMERA_CID_MINZ;
-                    // No MIPI equivalent yet.
-                    case RS_ALIGN_DEPTH:
-                        throw linux_backend_exception( rsutils::string::from() << "no v4l2 mipi cid for D500 XU depth control " << std::dec << int( control ) );
+                    case RS_ALIGN_DEPTH:           return RS_CAMERA_CID_ALIGNED_DEPTH;
                     default: break;  // the rest are common to both families
                     }
                 }
