@@ -55,11 +55,13 @@ def setup_depth_watcher(test_device):
 
 
 def wait_for_notifications(count, expected, timeout=5):
-    """Wait until count reaches expected, then one more update interval to catch unexpected extras."""
+    """Wait until count reaches expected, then one more update interval to catch unexpected extras.
+    On timeout, return immediately so the caller's assert fails without the extra wait."""
     deadline = time.time() + timeout
     while count[0] < expected and time.time() < deadline:
         time.sleep(0.1)
-    time.sleep(1.1)  # default options-watcher update interval is 1 second
+    if count[0] >= expected:
+        time.sleep(1.1)  # default options-watcher update interval is 1 second
 
 
 def test_disable_auto_exposure(test_device):
