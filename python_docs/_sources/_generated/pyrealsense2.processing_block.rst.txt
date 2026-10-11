@@ -16,20 +16,37 @@ pyrealsense2.processing_block
    .. autosummary::
    
       ~processing_block.__init__
+      ~processing_block.get_composite_option
+      ~processing_block.get_composite_option_description
+      ~processing_block.get_composite_option_range
+      ~processing_block.get_decimation_filter_dpp_config
+      ~processing_block.get_decimation_filter_dpp_range
+      ~processing_block.get_hdrd_control
+      ~processing_block.get_hdrd_control_range
       ~processing_block.get_info
       ~processing_block.get_option
       ~processing_block.get_option_description
       ~processing_block.get_option_range
       ~processing_block.get_option_value
       ~processing_block.get_option_value_description
+      ~processing_block.get_supported_composite_options
+      ~processing_block.get_supported_option_values
       ~processing_block.get_supported_options
+      ~processing_block.get_temporal_filter_dpp_config
+      ~processing_block.get_temporal_filter_dpp_range
       ~processing_block.invoke
+      ~processing_block.is_composite_option_read_only
       ~processing_block.is_option_read_only
       ~processing_block.on_options_changed
+      ~processing_block.set_composite_option
+      ~processing_block.set_decimation_filter_dpp_config
+      ~processing_block.set_hdrd_control
       ~processing_block.set_option
       ~processing_block.set_option_value
+      ~processing_block.set_temporal_filter_dpp_config
       ~processing_block.start
       ~processing_block.supports
+      ~processing_block.supports_composite_option
    
    
    

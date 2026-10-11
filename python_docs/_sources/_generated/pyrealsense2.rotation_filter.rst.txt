@@ -25,14 +25,26 @@ pyrealsense2.rotation_filter
       ~rotation_filter.as_spatial_filter
       ~rotation_filter.as_temporal_filter
       ~rotation_filter.as_threshold_filter
+      ~rotation_filter.get_composite_option
+      ~rotation_filter.get_composite_option_description
+      ~rotation_filter.get_composite_option_range
+      ~rotation_filter.get_decimation_filter_dpp_config
+      ~rotation_filter.get_decimation_filter_dpp_range
+      ~rotation_filter.get_hdrd_control
+      ~rotation_filter.get_hdrd_control_range
       ~rotation_filter.get_info
       ~rotation_filter.get_option
       ~rotation_filter.get_option_description
       ~rotation_filter.get_option_range
       ~rotation_filter.get_option_value
       ~rotation_filter.get_option_value_description
+      ~rotation_filter.get_supported_composite_options
+      ~rotation_filter.get_supported_option_values
       ~rotation_filter.get_supported_options
+      ~rotation_filter.get_temporal_filter_dpp_config
+      ~rotation_filter.get_temporal_filter_dpp_range
       ~rotation_filter.invoke
+      ~rotation_filter.is_composite_option_read_only
       ~rotation_filter.is_decimation_filter
       ~rotation_filter.is_disparity_transform
       ~rotation_filter.is_hdr_merge
@@ -45,10 +57,15 @@ pyrealsense2.rotation_filter
       ~rotation_filter.is_threshold_filter
       ~rotation_filter.on_options_changed
       ~rotation_filter.process
+      ~rotation_filter.set_composite_option
+      ~rotation_filter.set_decimation_filter_dpp_config
+      ~rotation_filter.set_hdrd_control
       ~rotation_filter.set_option
       ~rotation_filter.set_option_value
+      ~rotation_filter.set_temporal_filter_dpp_config
       ~rotation_filter.start
       ~rotation_filter.supports
+      ~rotation_filter.supports_composite_option
    
    
    

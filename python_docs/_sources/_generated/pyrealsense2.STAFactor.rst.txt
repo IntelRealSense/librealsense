@@ -16,6 +16,7 @@ pyrealsense2.STAFactor
    .. autosummary::
    
       ~STAFactor.__init__
+      ~STAFactor.keys
    
    
    

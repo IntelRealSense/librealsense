@@ -25,14 +25,26 @@ pyrealsense2.save_to_ply
       ~save_to_ply.as_spatial_filter
       ~save_to_ply.as_temporal_filter
       ~save_to_ply.as_threshold_filter
+      ~save_to_ply.get_composite_option
+      ~save_to_ply.get_composite_option_description
+      ~save_to_ply.get_composite_option_range
+      ~save_to_ply.get_decimation_filter_dpp_config
+      ~save_to_ply.get_decimation_filter_dpp_range
+      ~save_to_ply.get_hdrd_control
+      ~save_to_ply.get_hdrd_control_range
       ~save_to_ply.get_info
       ~save_to_ply.get_option
       ~save_to_ply.get_option_description
       ~save_to_ply.get_option_range
       ~save_to_ply.get_option_value
       ~save_to_ply.get_option_value_description
+      ~save_to_ply.get_supported_composite_options
+      ~save_to_ply.get_supported_option_values
       ~save_to_ply.get_supported_options
+      ~save_to_ply.get_temporal_filter_dpp_config
+      ~save_to_ply.get_temporal_filter_dpp_range
       ~save_to_ply.invoke
+      ~save_to_ply.is_composite_option_read_only
       ~save_to_ply.is_decimation_filter
       ~save_to_ply.is_disparity_transform
       ~save_to_ply.is_hdr_merge
@@ -45,10 +57,15 @@ pyrealsense2.save_to_ply
       ~save_to_ply.is_threshold_filter
       ~save_to_ply.on_options_changed
       ~save_to_ply.process
+      ~save_to_ply.set_composite_option
+      ~save_to_ply.set_decimation_filter_dpp_config
+      ~save_to_ply.set_hdrd_control
       ~save_to_ply.set_option
       ~save_to_ply.set_option_value
+      ~save_to_ply.set_temporal_filter_dpp_config
       ~save_to_ply.start
       ~save_to_ply.supports
+      ~save_to_ply.supports_composite_option
    
    
    

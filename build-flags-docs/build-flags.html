@@ -8,7 +8,7 @@
 <body>
   <div class="container">
     <h1>RealSense SDK Build Customization Flags</h1>
-    <h2>Version 2.58.4.10922</h2>
+    <h2>Version 2.59.1.11053</h2>
     <table>
       <tr>
         <th style="width: 25%">Option</th>
@@ -50,6 +50,34 @@
 	</td>
 	<td>
 	  Enable zero-copy GPU memory path (Jetson/integrated GPU only, requires BUILD_WITH_CUDA) <span style='font-style: italic; color: #666;'>Zero-copy GPU memory path (Jetson / integrated-GPU only). Requires BUILD_WITH_CUDA.Eliminates the per-frame CPU->frame copy (capture) and the GPU host<->device round-trips.Activates at runtime only on integrated GPUs; discrete GPUs keep the copy path. Default OFFso a plain CUDA build is byte-for-byte identical to today.</span>
+	</td>
+	<td>
+	  ${BUILD_WITH_CUDA}
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_WITH_HIP</code></b>
+	</td>
+	<td>
+	  Enable HIP/ROCm for AMD GPUs
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">OFF</span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>BUILD_WITH_HIP_ZEROCOPY</code></b>
+	</td>
+	<td>
+	  Enable zero-copy GPU memory path (unified-memory AMD APUs only, requires BUILD_WITH_HIP) <span style='font-style: italic; color: #666;'>Zero-copy GPU memory path for HIP (unified-memory AMD APUs, e.g. Ryzen AI / MI300A,only -- not applicable to discrete RDNA3/CDNA3 GPUs). Requires BUILD_WITH_HIP. MirrorsBUILD_WITH_CUDA_ZEROCOPY: shares the same RS2_USE_CUDA_ZEROCOPY macro and the vendor-neutral try_device_ptr() fast path in rscuda_utils.cuh/cuda-pointcloud.cu, which fallback to the persistent-buffer copy path whenever a buffer is not pinned/mapped -- soenabling this on discrete GPUs is safe (falls back every time) but pointless.</span>
 	</td>
 	<td>
 	  <span style="color: #E74C3C;">OFF</span>
@@ -494,6 +522,20 @@
       </tr>
       <tr>
 	<td>
+	  <b><code>ENABLE_AI_ASSISTANT</code></b>
+	</td>
+	<td>
+	  Build the AI Assistant chat panel into the viewer <span style='font-style: italic; color: #666;'>Same libcurl/OpenSSL dependency profile as CHECK_FOR_UPDATES above, so the same per-OS default applies.</span>
+	</td>
+	<td>
+	  <span class="tooltip">Environment dependant<span class="tooltip-text"><span style="color: #4CAF50;">ON</span> if <b><code>NOT APPLE</code></b>,<br/><span style="color: #E74C3C;">OFF</span> otherwise</span></span>
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
 	  <b><code>BUILD_WITH_CPU_EXTENSIONS</code></b>
 	</td>
 	<td>
@@ -669,6 +711,20 @@
 	</td>
 	<td>
 	  removed
+	</td>
+	<td>
+	  <span style="color: #E74C3C;">NO</span>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  <b><code>ENABLE_STATS</code></b>
+	</td>
+	<td>
+	  Enable RUM (Real User Monitoring) usage-statistics collection
+	</td>
+	<td>
+	  <span style="color: #4CAF50;">ON</span>
 	</td>
 	<td>
 	  <span style="color: #4CAF50;">YES</span>

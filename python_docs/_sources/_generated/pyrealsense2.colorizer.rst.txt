@@ -26,14 +26,26 @@ pyrealsense2.colorizer
       ~colorizer.as_temporal_filter
       ~colorizer.as_threshold_filter
       ~colorizer.colorize
+      ~colorizer.get_composite_option
+      ~colorizer.get_composite_option_description
+      ~colorizer.get_composite_option_range
+      ~colorizer.get_decimation_filter_dpp_config
+      ~colorizer.get_decimation_filter_dpp_range
+      ~colorizer.get_hdrd_control
+      ~colorizer.get_hdrd_control_range
       ~colorizer.get_info
       ~colorizer.get_option
       ~colorizer.get_option_description
       ~colorizer.get_option_range
       ~colorizer.get_option_value
       ~colorizer.get_option_value_description
+      ~colorizer.get_supported_composite_options
+      ~colorizer.get_supported_option_values
       ~colorizer.get_supported_options
+      ~colorizer.get_temporal_filter_dpp_config
+      ~colorizer.get_temporal_filter_dpp_range
       ~colorizer.invoke
+      ~colorizer.is_composite_option_read_only
       ~colorizer.is_decimation_filter
       ~colorizer.is_disparity_transform
       ~colorizer.is_hdr_merge
@@ -46,10 +58,15 @@ pyrealsense2.colorizer
       ~colorizer.is_threshold_filter
       ~colorizer.on_options_changed
       ~colorizer.process
+      ~colorizer.set_composite_option
+      ~colorizer.set_decimation_filter_dpp_config
+      ~colorizer.set_hdrd_control
       ~colorizer.set_option
       ~colorizer.set_option_value
+      ~colorizer.set_temporal_filter_dpp_config
       ~colorizer.start
       ~colorizer.supports
+      ~colorizer.supports_composite_option
    
    
    

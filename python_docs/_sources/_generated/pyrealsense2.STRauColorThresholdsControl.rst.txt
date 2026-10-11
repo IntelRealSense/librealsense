@@ -16,6 +16,7 @@ pyrealsense2.STRauColorThresholdsControl
    .. autosummary::
    
       ~STRauColorThresholdsControl.__init__
+      ~STRauColorThresholdsControl.keys
    
    
    

@@ -25,14 +25,26 @@ pyrealsense2.filter
       ~filter.as_spatial_filter
       ~filter.as_temporal_filter
       ~filter.as_threshold_filter
+      ~filter.get_composite_option
+      ~filter.get_composite_option_description
+      ~filter.get_composite_option_range
+      ~filter.get_decimation_filter_dpp_config
+      ~filter.get_decimation_filter_dpp_range
+      ~filter.get_hdrd_control
+      ~filter.get_hdrd_control_range
       ~filter.get_info
       ~filter.get_option
       ~filter.get_option_description
       ~filter.get_option_range
       ~filter.get_option_value
       ~filter.get_option_value_description
+      ~filter.get_supported_composite_options
+      ~filter.get_supported_option_values
       ~filter.get_supported_options
+      ~filter.get_temporal_filter_dpp_config
+      ~filter.get_temporal_filter_dpp_range
       ~filter.invoke
+      ~filter.is_composite_option_read_only
       ~filter.is_decimation_filter
       ~filter.is_disparity_transform
       ~filter.is_hdr_merge
@@ -45,10 +57,15 @@ pyrealsense2.filter
       ~filter.is_threshold_filter
       ~filter.on_options_changed
       ~filter.process
+      ~filter.set_composite_option
+      ~filter.set_decimation_filter_dpp_config
+      ~filter.set_hdrd_control
       ~filter.set_option
       ~filter.set_option_value
+      ~filter.set_temporal_filter_dpp_config
       ~filter.start
       ~filter.supports
+      ~filter.supports_composite_option
    
    
    

@@ -27,10 +27,14 @@ pyrealsense2.object_detection
    
       ~object_detection.bottom_right_x
       ~object_detection.bottom_right_y
+      ~object_detection.center_of_mass_valid
+      ~object_detection.center_of_mass_x
+      ~object_detection.center_of_mass_y
       ~object_detection.class_id
       ~object_detection.depth
       ~object_detection.score
       ~object_detection.top_left_x
       ~object_detection.top_left_y
+      ~object_detection.world_position
    
    

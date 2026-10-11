@@ -18,20 +18,37 @@ pyrealsense2.embedded_filter
       ~embedded_filter.__init__
       ~embedded_filter.as_embedded_decimation_filter
       ~embedded_filter.as_embedded_temporal_filter
+      ~embedded_filter.get_composite_option
+      ~embedded_filter.get_composite_option_description
+      ~embedded_filter.get_composite_option_range
+      ~embedded_filter.get_decimation_filter_dpp_config
+      ~embedded_filter.get_decimation_filter_dpp_range
+      ~embedded_filter.get_hdrd_control
+      ~embedded_filter.get_hdrd_control_range
       ~embedded_filter.get_option
       ~embedded_filter.get_option_description
       ~embedded_filter.get_option_range
       ~embedded_filter.get_option_value
       ~embedded_filter.get_option_value_description
+      ~embedded_filter.get_supported_composite_options
+      ~embedded_filter.get_supported_option_values
       ~embedded_filter.get_supported_options
+      ~embedded_filter.get_temporal_filter_dpp_config
+      ~embedded_filter.get_temporal_filter_dpp_range
       ~embedded_filter.get_type
+      ~embedded_filter.is_composite_option_read_only
       ~embedded_filter.is_embedded_decimation_filter
       ~embedded_filter.is_embedded_temporal_filter
       ~embedded_filter.is_option_read_only
       ~embedded_filter.on_options_changed
+      ~embedded_filter.set_composite_option
+      ~embedded_filter.set_decimation_filter_dpp_config
+      ~embedded_filter.set_hdrd_control
       ~embedded_filter.set_option
       ~embedded_filter.set_option_value
+      ~embedded_filter.set_temporal_filter_dpp_config
       ~embedded_filter.supports
+      ~embedded_filter.supports_composite_option
    
    
    

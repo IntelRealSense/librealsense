@@ -42,6 +42,7 @@
       BufData
       STAEControl
       STAFactor
+      STAdvancedModeControls
       STCensusRadius
       STColorControl
       STColorCorrection
@@ -62,15 +63,19 @@
       calibration_type
       camera_info
       color_sensor
+      colored_ir_auto_exposure_mode
       colorizer
       combined_motion
       composite_frame
+      composite_option_id
       config
       context
       d500_intercam_sync_mode
       debug_protocol
       debug_stream_sensor
       decimation_filter
+      decimation_filter_dpp_config
+      decimation_filter_dpp_range
       depth_frame
       depth_sensor
       depth_stereo_sensor
@@ -81,10 +86,12 @@
       disparity_frame
       disparity_transform
       distortion
+      dpp_header
       embedded_decimation_filter
       embedded_filter
       embedded_filter_type
       embedded_temporal_filter
+      emitter_mode
       eth_config_device
       event_information
       extension
@@ -102,6 +109,8 @@
       frame_source
       gpu_frame
       hdr_merge
+      hdrd_control
+      hdrd_control_range
       hole_filling_filter
       intrinsics
       ip_address
@@ -170,6 +179,8 @@
       stream_profile
       syncer
       temporal_filter
+      temporal_filter_dpp_config
+      temporal_filter_dpp_range
       terminal_parser
       texture_coordinate
       threshold_filter

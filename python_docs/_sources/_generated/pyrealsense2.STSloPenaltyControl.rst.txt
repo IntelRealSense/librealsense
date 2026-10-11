@@ -16,6 +16,7 @@ pyrealsense2.STSloPenaltyControl
    .. autosummary::
    
       ~STSloPenaltyControl.__init__
+      ~STSloPenaltyControl.keys
    
    
    

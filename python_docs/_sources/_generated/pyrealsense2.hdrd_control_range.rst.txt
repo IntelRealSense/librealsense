@@ -1,0 +1,33 @@
+pyrealsense2.hdrd_control_range
+===============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: hdrd_control_range
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~hdrd_control_range.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~hdrd_control_range.default
+      ~hdrd_control_range.max
+      ~hdrd_control_range.min
+      ~hdrd_control_range.step
+   
+   

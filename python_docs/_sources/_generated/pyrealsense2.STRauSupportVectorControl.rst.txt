@@ -16,6 +16,7 @@ pyrealsense2.STRauSupportVectorControl
    .. autosummary::
    
       ~STRauSupportVectorControl.__init__
+      ~STRauSupportVectorControl.keys
    
    
    

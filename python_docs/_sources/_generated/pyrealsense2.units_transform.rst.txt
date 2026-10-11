@@ -25,14 +25,26 @@ pyrealsense2.units_transform
       ~units_transform.as_spatial_filter
       ~units_transform.as_temporal_filter
       ~units_transform.as_threshold_filter
+      ~units_transform.get_composite_option
+      ~units_transform.get_composite_option_description
+      ~units_transform.get_composite_option_range
+      ~units_transform.get_decimation_filter_dpp_config
+      ~units_transform.get_decimation_filter_dpp_range
+      ~units_transform.get_hdrd_control
+      ~units_transform.get_hdrd_control_range
       ~units_transform.get_info
       ~units_transform.get_option
       ~units_transform.get_option_description
       ~units_transform.get_option_range
       ~units_transform.get_option_value
       ~units_transform.get_option_value_description
+      ~units_transform.get_supported_composite_options
+      ~units_transform.get_supported_option_values
       ~units_transform.get_supported_options
+      ~units_transform.get_temporal_filter_dpp_config
+      ~units_transform.get_temporal_filter_dpp_range
       ~units_transform.invoke
+      ~units_transform.is_composite_option_read_only
       ~units_transform.is_decimation_filter
       ~units_transform.is_disparity_transform
       ~units_transform.is_hdr_merge
@@ -45,10 +57,15 @@ pyrealsense2.units_transform
       ~units_transform.is_threshold_filter
       ~units_transform.on_options_changed
       ~units_transform.process
+      ~units_transform.set_composite_option
+      ~units_transform.set_decimation_filter_dpp_config
+      ~units_transform.set_hdrd_control
       ~units_transform.set_option
       ~units_transform.set_option_value
+      ~units_transform.set_temporal_filter_dpp_config
       ~units_transform.start
       ~units_transform.supports
+      ~units_transform.supports_composite_option
    
    
    

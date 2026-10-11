@@ -27,6 +27,7 @@ pyrealsense2.rs400_visual_preset
    
       ~rs400_visual_preset.custom
       ~rs400_visual_preset.default
+      ~rs400_visual_preset.edge_enhancement
       ~rs400_visual_preset.hand
       ~rs400_visual_preset.high_accuracy
       ~rs400_visual_preset.high_density

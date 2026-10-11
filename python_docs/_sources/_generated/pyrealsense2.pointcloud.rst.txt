@@ -26,14 +26,26 @@ pyrealsense2.pointcloud
       ~pointcloud.as_temporal_filter
       ~pointcloud.as_threshold_filter
       ~pointcloud.calculate
+      ~pointcloud.get_composite_option
+      ~pointcloud.get_composite_option_description
+      ~pointcloud.get_composite_option_range
+      ~pointcloud.get_decimation_filter_dpp_config
+      ~pointcloud.get_decimation_filter_dpp_range
+      ~pointcloud.get_hdrd_control
+      ~pointcloud.get_hdrd_control_range
       ~pointcloud.get_info
       ~pointcloud.get_option
       ~pointcloud.get_option_description
       ~pointcloud.get_option_range
       ~pointcloud.get_option_value
       ~pointcloud.get_option_value_description
+      ~pointcloud.get_supported_composite_options
+      ~pointcloud.get_supported_option_values
       ~pointcloud.get_supported_options
+      ~pointcloud.get_temporal_filter_dpp_config
+      ~pointcloud.get_temporal_filter_dpp_range
       ~pointcloud.invoke
+      ~pointcloud.is_composite_option_read_only
       ~pointcloud.is_decimation_filter
       ~pointcloud.is_disparity_transform
       ~pointcloud.is_hdr_merge
@@ -47,10 +59,15 @@ pyrealsense2.pointcloud
       ~pointcloud.map_to
       ~pointcloud.on_options_changed
       ~pointcloud.process
+      ~pointcloud.set_composite_option
+      ~pointcloud.set_decimation_filter_dpp_config
+      ~pointcloud.set_hdrd_control
       ~pointcloud.set_option
       ~pointcloud.set_option_value
+      ~pointcloud.set_temporal_filter_dpp_config
       ~pointcloud.start
       ~pointcloud.supports
+      ~pointcloud.supports_composite_option
    
    
    

@@ -16,6 +16,7 @@ pyrealsense2.STDepthTableControl
    .. autosummary::
    
       ~STDepthTableControl.__init__
+      ~STDepthTableControl.keys
    
    
    

@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>pyrealsense2.options &#8212; pyrealsense2 2.58.4 documentation</title>
+    <title>pyrealsense2.options &#8212; pyrealsense2 2.59.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
     
-    <script src="../_static/documentation_options.js?v=e8b3beb3"></script>
+    <script src="../_static/documentation_options.js?v=c16f6a54"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     
@@ -25,7 +25,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.58.4 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.59.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">pyrealsense2.options</a></li> 
       </ul>
     </div>  
@@ -52,23 +52,59 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.__init__" title="pyrealsense2.options.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(*args, **kwargs)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option" title="pyrealsense2.options.get_option"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option</span></code></a>(self, option)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_composite_option" title="pyrealsense2.options.get_composite_option"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_composite_option</span></code></a>(self, option)</p></td>
+<td><p>Read a composite option's current raw payload, atomically, in ONE UVC transaction - cast the returned bytes against the option's documented wire layout.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_composite_option_description" title="pyrealsense2.options.get_composite_option_description"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_composite_option_description</span></code></a>(self, option)</p></td>
+<td><p>Get a composite option's human-readable description.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_composite_option_range" title="pyrealsense2.options.get_composite_option_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_composite_option_range</span></code></a>(self, option)</p></td>
+<td><p>Read a composite option's supported {min,max,step,def} bounds, packed together - cast the returned bytes against the option's documented range struct.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_decimation_filter_dpp_config" title="pyrealsense2.options.get_decimation_filter_dpp_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_decimation_filter_dpp_config</span></code></a>(self, option)</p></td>
+<td><p>Typed counterpart to get_composite_option() for Decimation Filter DPP.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_decimation_filter_dpp_range" title="pyrealsense2.options.get_decimation_filter_dpp_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_decimation_filter_dpp_range</span></code></a>(self, option)</p></td>
+<td><p>Typed counterpart to get_composite_option_range() for Decimation Filter DPP.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_hdrd_control" title="pyrealsense2.options.get_hdrd_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_hdrd_control</span></code></a>(self, option)</p></td>
+<td><p>Typed counterpart to get_composite_option() for Improved Close Range Control - returns a hdrd_control object (bound directly against the real C struct) instead of raw bytes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_hdrd_control_range" title="pyrealsense2.options.get_hdrd_control_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_hdrd_control_range</span></code></a>(self, option)</p></td>
+<td><p>Typed counterpart to get_composite_option_range() for Improved Close Range Control.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option" title="pyrealsense2.options.get_option"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option</span></code></a>(self, option)</p></td>
 <td><p>Read option value from the device.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option_description" title="pyrealsense2.options.get_option_description"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option_description</span></code></a>(self, option)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option_description" title="pyrealsense2.options.get_option_description"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option_description</span></code></a>(self, option)</p></td>
 <td><p>Get option description.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option_range" title="pyrealsense2.options.get_option_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option_range</span></code></a>(self, option)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option_range" title="pyrealsense2.options.get_option_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option_range</span></code></a>(self, option)</p></td>
 <td><p>Retrieve the available range of values of a supported option</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option_value" title="pyrealsense2.options.get_option_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option_value</span></code></a>(self, arg0)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option_value" title="pyrealsense2.options.get_option_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option_value</span></code></a>(self, arg0)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option_value_description" title="pyrealsense2.options.get_option_value_description"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option_value_description</span></code></a>(self, option, value)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option_value_description" title="pyrealsense2.options.get_option_value_description"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option_value_description</span></code></a>(self, option, value)</p></td>
 <td><p>Get option value description (In case a specific option value holds special meaning)</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_supported_options" title="pyrealsense2.options.get_supported_options"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_supported_options</span></code></a>(self)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_supported_composite_options" title="pyrealsense2.options.get_supported_composite_options"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_supported_composite_options</span></code></a>(self)</p></td>
+<td><p>Retrieve the list of composite option ids this options container supports.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_supported_option_values" title="pyrealsense2.options.get_supported_option_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_supported_option_values</span></code></a>(self)</p></td>
+<td><p>Retrieve the supported options, each with its value and range</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_supported_options" title="pyrealsense2.options.get_supported_options"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_supported_options</span></code></a>(self)</p></td>
 <td><p>Retrieve list of supported options</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_temporal_filter_dpp_config" title="pyrealsense2.options.get_temporal_filter_dpp_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_temporal_filter_dpp_config</span></code></a>(self, option)</p></td>
+<td><p>Typed counterpart to get_composite_option() for Temporal Filter DPP.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_temporal_filter_dpp_range" title="pyrealsense2.options.get_temporal_filter_dpp_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_temporal_filter_dpp_range</span></code></a>(self, option)</p></td>
+<td><p>Typed counterpart to get_composite_option_range() for Temporal Filter DPP.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.is_composite_option_read_only" title="pyrealsense2.options.is_composite_option_read_only"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_composite_option_read_only</span></code></a>(self, option)</p></td>
+<td><p>Check if a particular composite option is read only.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.is_option_read_only" title="pyrealsense2.options.is_option_read_only"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_option_read_only</span></code></a>(self, option)</p></td>
 <td><p>Check if particular option is read only.</p></td>
@@ -76,17 +112,74 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.on_options_changed" title="pyrealsense2.options.on_options_changed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_options_changed</span></code></a>(self, callback)</p></td>
 <td><p>Sets a callback to notify in case options in this container change value</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.set_option" title="pyrealsense2.options.set_option"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_option</span></code></a>(self, option, value)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.set_composite_option" title="pyrealsense2.options.set_composite_option"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_composite_option</span></code></a>(self, option, data)</p></td>
+<td><p>Write new value to a composite option, atomically, in ONE UVC transaction - <cite>data</cite> must match the option's documented wire layout byte-for-byte (e.g. bytes(struct.pack(...))).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.set_decimation_filter_dpp_config" title="pyrealsense2.options.set_decimation_filter_dpp_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_decimation_filter_dpp_config</span></code></a>(self, ...)</p></td>
+<td><p>Typed counterpart to set_composite_option() for Decimation Filter DPP.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.set_hdrd_control" title="pyrealsense2.options.set_hdrd_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_hdrd_control</span></code></a>(self, option, value)</p></td>
+<td><p>Typed counterpart to set_composite_option() for Improved Close Range Control.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.set_option" title="pyrealsense2.options.set_option"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_option</span></code></a>(self, option, value)</p></td>
 <td><p>Write new value to device option</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.set_option_value" title="pyrealsense2.options.set_option_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_option_value</span></code></a>(self, arg0, arg1)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.set_option_value" title="pyrealsense2.options.set_option_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_option_value</span></code></a>(self, arg0, arg1)</p></td>
 <td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.set_temporal_filter_dpp_config" title="pyrealsense2.options.set_temporal_filter_dpp_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_temporal_filter_dpp_config</span></code></a>(self, option, ...)</p></td>
+<td><p>Typed counterpart to set_composite_option() for Temporal Filter DPP.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.supports" title="pyrealsense2.options.supports"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports</span></code></a>(self, option)</p></td>
 <td><p>Check if particular option is supported by a subdevice</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.supports_composite_option" title="pyrealsense2.options.supports_composite_option"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_composite_option</span></code></a>(self, option)</p></td>
+<td><p>Check if a particular composite option is supported by this options container.</p></td>
+</tr>
 </tbody>
 </table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_composite_option">
+<span class="sig-name descname"><span class="pre">get_composite_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#pyrealsense2.options.get_composite_option" title="Link to this definition">¶</a></dt>
+<dd><p>Read a composite option’s current raw payload, atomically, in ONE UVC transaction - cast the returned bytes against the option’s documented wire layout.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_composite_option_description">
+<span class="sig-name descname"><span class="pre">get_composite_option_description</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#pyrealsense2.options.get_composite_option_description" title="Link to this definition">¶</a></dt>
+<dd><p>Get a composite option’s human-readable description.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_composite_option_range">
+<span class="sig-name descname"><span class="pre">get_composite_option_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#pyrealsense2.options.get_composite_option_range" title="Link to this definition">¶</a></dt>
+<dd><p>Read a composite option’s supported {min,max,step,def} bounds, packed together - cast the returned bytes against the option’s documented range struct.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_decimation_filter_dpp_config">
+<span class="sig-name descname"><span class="pre">get_decimation_filter_dpp_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pyrealsense2.decimation_filter_dpp_config.html#pyrealsense2.decimation_filter_dpp_config" title="pyrealsense2.decimation_filter_dpp_config"><span class="pre">pyrealsense2.decimation_filter_dpp_config</span></a></span></span><a class="headerlink" href="#pyrealsense2.options.get_decimation_filter_dpp_config" title="Link to this definition">¶</a></dt>
+<dd><p>Typed counterpart to get_composite_option() for Decimation Filter DPP.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_decimation_filter_dpp_range">
+<span class="sig-name descname"><span class="pre">get_decimation_filter_dpp_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pyrealsense2.decimation_filter_dpp_range.html#pyrealsense2.decimation_filter_dpp_range" title="pyrealsense2.decimation_filter_dpp_range"><span class="pre">pyrealsense2.decimation_filter_dpp_range</span></a></span></span><a class="headerlink" href="#pyrealsense2.options.get_decimation_filter_dpp_range" title="Link to this definition">¶</a></dt>
+<dd><p>Typed counterpart to get_composite_option_range() for Decimation Filter DPP.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_hdrd_control">
+<span class="sig-name descname"><span class="pre">get_hdrd_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pyrealsense2.hdrd_control.html#pyrealsense2.hdrd_control" title="pyrealsense2.hdrd_control"><span class="pre">pyrealsense2.hdrd_control</span></a></span></span><a class="headerlink" href="#pyrealsense2.options.get_hdrd_control" title="Link to this definition">¶</a></dt>
+<dd><p>Typed counterpart to get_composite_option() for Improved Close Range Control - returns a hdrd_control object (bound directly against the real C struct) instead of raw bytes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_hdrd_control_range">
+<span class="sig-name descname"><span class="pre">get_hdrd_control_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pyrealsense2.hdrd_control_range.html#pyrealsense2.hdrd_control_range" title="pyrealsense2.hdrd_control_range"><span class="pre">pyrealsense2.hdrd_control_range</span></a></span></span><a class="headerlink" href="#pyrealsense2.options.get_hdrd_control_range" title="Link to this definition">¶</a></dt>
+<dd><p>Typed counterpart to get_composite_option_range() for Improved Close Range Control.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="pyrealsense2.options.get_option">
 <span class="sig-name descname"><span class="pre">get_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pyrealsense2.option_type.html#pyrealsense2.option_type.float" title="pyrealsense2.option_type.float"><span class="pre">float</span></a></span></span><a class="headerlink" href="#pyrealsense2.options.get_option" title="Link to this definition">¶</a></dt>
@@ -117,9 +210,39 @@
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_supported_composite_options">
+<span class="sig-name descname"><span class="pre">get_supported_composite_options</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#pyrealsense2.options.get_supported_composite_options" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve the list of composite option ids this options container supports.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_supported_option_values">
+<span class="sig-name descname"><span class="pre">get_supported_option_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pyrealsense2.options_list.html#pyrealsense2.options_list" title="pyrealsense2.options_list"><span class="pre">pyrealsense2.options_list</span></a></span></span><a class="headerlink" href="#pyrealsense2.options.get_supported_option_values" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve the supported options, each with its value and range</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="pyrealsense2.options.get_supported_options">
 <span class="sig-name descname"><span class="pre">get_supported_options</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#pyrealsense2.options.get_supported_options" title="Link to this definition">¶</a></dt>
 <dd><p>Retrieve list of supported options</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_temporal_filter_dpp_config">
+<span class="sig-name descname"><span class="pre">get_temporal_filter_dpp_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pyrealsense2.temporal_filter_dpp_config.html#pyrealsense2.temporal_filter_dpp_config" title="pyrealsense2.temporal_filter_dpp_config"><span class="pre">pyrealsense2.temporal_filter_dpp_config</span></a></span></span><a class="headerlink" href="#pyrealsense2.options.get_temporal_filter_dpp_config" title="Link to this definition">¶</a></dt>
+<dd><p>Typed counterpart to get_composite_option() for Temporal Filter DPP.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_temporal_filter_dpp_range">
+<span class="sig-name descname"><span class="pre">get_temporal_filter_dpp_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pyrealsense2.temporal_filter_dpp_range.html#pyrealsense2.temporal_filter_dpp_range" title="pyrealsense2.temporal_filter_dpp_range"><span class="pre">pyrealsense2.temporal_filter_dpp_range</span></a></span></span><a class="headerlink" href="#pyrealsense2.options.get_temporal_filter_dpp_range" title="Link to this definition">¶</a></dt>
+<dd><p>Typed counterpart to get_composite_option_range() for Temporal Filter DPP.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.is_composite_option_read_only">
+<span class="sig-name descname"><span class="pre">is_composite_option_read_only</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#pyrealsense2.options.is_composite_option_read_only" title="Link to this definition">¶</a></dt>
+<dd><p>Check if a particular composite option is read only.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -135,6 +258,24 @@
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.set_composite_option">
+<span class="sig-name descname"><span class="pre">set_composite_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Buffer</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyrealsense2.options.set_composite_option" title="Link to this definition">¶</a></dt>
+<dd><p>Write new value to a composite option, atomically, in ONE UVC transaction - <cite>data</cite> must match the option’s documented wire layout byte-for-byte (e.g. bytes(struct.pack(…))).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.set_decimation_filter_dpp_config">
+<span class="sig-name descname"><span class="pre">set_decimation_filter_dpp_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.decimation_filter_dpp_config.html#pyrealsense2.decimation_filter_dpp_config" title="pyrealsense2.decimation_filter_dpp_config"><span class="pre">pyrealsense2.decimation_filter_dpp_config</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyrealsense2.options.set_decimation_filter_dpp_config" title="Link to this definition">¶</a></dt>
+<dd><p>Typed counterpart to set_composite_option() for Decimation Filter DPP.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.set_hdrd_control">
+<span class="sig-name descname"><span class="pre">set_hdrd_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.hdrd_control.html#pyrealsense2.hdrd_control" title="pyrealsense2.hdrd_control"><span class="pre">pyrealsense2.hdrd_control</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyrealsense2.options.set_hdrd_control" title="Link to this definition">¶</a></dt>
+<dd><p>Typed counterpart to set_composite_option() for Improved Close Range Control.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="pyrealsense2.options.set_option">
 <span class="sig-name descname"><span class="pre">set_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option_type.html#pyrealsense2.option_type.float" title="pyrealsense2.option_type.float"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyrealsense2.options.set_option" title="Link to this definition">¶</a></dt>
 <dd><p>Write new value to device option</p>
@@ -146,9 +287,21 @@
 <dd></dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.set_temporal_filter_dpp_config">
+<span class="sig-name descname"><span class="pre">set_temporal_filter_dpp_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.temporal_filter_dpp_config.html#pyrealsense2.temporal_filter_dpp_config" title="pyrealsense2.temporal_filter_dpp_config"><span class="pre">pyrealsense2.temporal_filter_dpp_config</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyrealsense2.options.set_temporal_filter_dpp_config" title="Link to this definition">¶</a></dt>
+<dd><p>Typed counterpart to set_composite_option() for Temporal Filter DPP.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="pyrealsense2.options.supports">
 <span class="sig-name descname"><span class="pre">supports</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#pyrealsense2.options.supports" title="Link to this definition">¶</a></dt>
 <dd><p>Check if particular option is supported by a subdevice</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.supports_composite_option">
+<span class="sig-name descname"><span class="pre">supports_composite_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.composite_option_id.html#pyrealsense2.composite_option_id" title="pyrealsense2.composite_option_id"><span class="pre">pyrealsense2.composite_option_id</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#pyrealsense2.options.supports_composite_option" title="Link to this definition">¶</a></dt>
+<dd><p>Check if a particular composite option is supported by this options container.</p>
 </dd></dl>
 
 </dd></dl>
@@ -168,17 +321,34 @@
 <li><a class="reference internal" href="#">pyrealsense2.options</a><ul>
 <li><a class="reference internal" href="#pyrealsense2.options"><code class="docutils literal notranslate"><span class="pre">options</span></code></a><ul>
 <li><a class="reference internal" href="#pyrealsense2.options.__init__"><code class="docutils literal notranslate"><span class="pre">options.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_composite_option"><code class="docutils literal notranslate"><span class="pre">options.get_composite_option()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_composite_option_description"><code class="docutils literal notranslate"><span class="pre">options.get_composite_option_description()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_composite_option_range"><code class="docutils literal notranslate"><span class="pre">options.get_composite_option_range()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_decimation_filter_dpp_config"><code class="docutils literal notranslate"><span class="pre">options.get_decimation_filter_dpp_config()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_decimation_filter_dpp_range"><code class="docutils literal notranslate"><span class="pre">options.get_decimation_filter_dpp_range()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_hdrd_control"><code class="docutils literal notranslate"><span class="pre">options.get_hdrd_control()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_hdrd_control_range"><code class="docutils literal notranslate"><span class="pre">options.get_hdrd_control_range()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.options.get_option"><code class="docutils literal notranslate"><span class="pre">options.get_option()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.options.get_option_description"><code class="docutils literal notranslate"><span class="pre">options.get_option_description()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.options.get_option_range"><code class="docutils literal notranslate"><span class="pre">options.get_option_range()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.options.get_option_value"><code class="docutils literal notranslate"><span class="pre">options.get_option_value()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.options.get_option_value_description"><code class="docutils literal notranslate"><span class="pre">options.get_option_value_description()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_supported_composite_options"><code class="docutils literal notranslate"><span class="pre">options.get_supported_composite_options()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_supported_option_values"><code class="docutils literal notranslate"><span class="pre">options.get_supported_option_values()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.options.get_supported_options"><code class="docutils literal notranslate"><span class="pre">options.get_supported_options()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_temporal_filter_dpp_config"><code class="docutils literal notranslate"><span class="pre">options.get_temporal_filter_dpp_config()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_temporal_filter_dpp_range"><code class="docutils literal notranslate"><span class="pre">options.get_temporal_filter_dpp_range()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.is_composite_option_read_only"><code class="docutils literal notranslate"><span class="pre">options.is_composite_option_read_only()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.options.is_option_read_only"><code class="docutils literal notranslate"><span class="pre">options.is_option_read_only()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.options.on_options_changed"><code class="docutils literal notranslate"><span class="pre">options.on_options_changed()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.set_composite_option"><code class="docutils literal notranslate"><span class="pre">options.set_composite_option()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.set_decimation_filter_dpp_config"><code class="docutils literal notranslate"><span class="pre">options.set_decimation_filter_dpp_config()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.set_hdrd_control"><code class="docutils literal notranslate"><span class="pre">options.set_hdrd_control()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.options.set_option"><code class="docutils literal notranslate"><span class="pre">options.set_option()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.options.set_option_value"><code class="docutils literal notranslate"><span class="pre">options.set_option_value()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.set_temporal_filter_dpp_config"><code class="docutils literal notranslate"><span class="pre">options.set_temporal_filter_dpp_config()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.options.supports"><code class="docutils literal notranslate"><span class="pre">options.supports()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.supports_composite_option"><code class="docutils literal notranslate"><span class="pre">options.supports_composite_option()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -216,7 +386,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.58.4 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.59.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">pyrealsense2.options</a></li> 
       </ul>
     </div>

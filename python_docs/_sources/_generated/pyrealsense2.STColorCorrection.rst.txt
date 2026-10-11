@@ -16,6 +16,7 @@ pyrealsense2.STColorCorrection
    .. autosummary::
    
       ~STColorCorrection.__init__
+      ~STColorCorrection.keys
    
    
    

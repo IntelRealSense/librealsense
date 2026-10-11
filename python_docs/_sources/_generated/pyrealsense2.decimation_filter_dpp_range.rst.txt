@@ -1,0 +1,33 @@
+pyrealsense2.decimation_filter_dpp_range
+========================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: decimation_filter_dpp_range
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~decimation_filter_dpp_range.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~decimation_filter_dpp_range.default
+      ~decimation_filter_dpp_range.max
+      ~decimation_filter_dpp_range.min
+      ~decimation_filter_dpp_range.step
+   
+   

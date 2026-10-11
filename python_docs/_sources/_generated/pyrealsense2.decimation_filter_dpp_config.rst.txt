@@ -1,0 +1,32 @@
+pyrealsense2.decimation_filter_dpp_config
+=========================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: decimation_filter_dpp_config
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~decimation_filter_dpp_config.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~decimation_filter_dpp_config.enabled
+      ~decimation_filter_dpp_config.header
+      ~decimation_filter_dpp_config.magnitude
+   
+   

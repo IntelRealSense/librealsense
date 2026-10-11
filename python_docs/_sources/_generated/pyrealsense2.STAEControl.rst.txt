@@ -16,6 +16,7 @@ pyrealsense2.STAEControl
    .. autosummary::
    
       ~STAEControl.__init__
+      ~STAEControl.keys
    
    
    

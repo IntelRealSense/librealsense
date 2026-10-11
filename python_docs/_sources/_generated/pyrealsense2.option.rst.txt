@@ -49,11 +49,14 @@ pyrealsense2.option
       ~option.digital_gain
       ~option.disparity_shift
       ~option.downscale_ratio
+      ~option.dual_rgb_rectification
       ~option.embedded_filter_enabled
       ~option.emitter_always_on
       ~option.emitter_enabled
       ~option.emitter_frequency
+      ~option.emitter_mode
       ~option.emitter_on_off
+      ~option.enable_aligned_depth
       ~option.enable_auto_exposure
       ~option.enable_auto_white_balance
       ~option.enable_dynamic_calibration

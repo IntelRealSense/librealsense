@@ -44,6 +44,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="classrs2_1_1options-members.html">List of all members</a>  </div>
@@ -111,6 +112,29 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8808596411506894a1aa0f986634ca04"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac8a2ae11a97c0f15199e9174d1933b66"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classrs2_1_1options__list.html">options_list</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#ac8a2ae11a97c0f15199e9174d1933b66">get_supported_option_values</a> ()</td></tr>
 <tr class="separator:ac8a2ae11a97c0f15199e9174d1933b66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf1345824b199a96ee18bc9301cb58ef"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#aaf1345824b199a96ee18bc9301cb58ef">set_composite_option</a> (<a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a> id, const void *data, size_t size) const</td></tr>
+<tr class="separator:aaf1345824b199a96ee18bc9301cb58ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65f97d2e3c1206905dbe14a73d51a26c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#a65f97d2e3c1206905dbe14a73d51a26c">get_composite_option</a> (<a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a> id) const</td></tr>
+<tr class="separator:a65f97d2e3c1206905dbe14a73d51a26c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a358cc825506c27526449140b4e30f60b"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#a358cc825506c27526449140b4e30f60b">get_composite_option_range</a> (<a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a> id) const</td></tr>
+<tr class="separator:a358cc825506c27526449140b4e30f60b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a847bc8d419875caedf2f6911e879e442"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a847bc8d419875caedf2f6911e879e442"><td class="memTemplItemLeft" align="right" valign="top">T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#a847bc8d419875caedf2f6911e879e442">get_composite_option_as</a> (<a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a> id) const</td></tr>
+<tr class="separator:a847bc8d419875caedf2f6911e879e442"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a831adbf81b267b432d766623d3523d90"><td class="memTemplParams" colspan="2">template&lt;typename TRange &gt; </td></tr>
+<tr class="memitem:a831adbf81b267b432d766623d3523d90"><td class="memTemplItemLeft" align="right" valign="top">TRange&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#a831adbf81b267b432d766623d3523d90">get_composite_option_range_as</a> (<a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a> id) const</td></tr>
+<tr class="separator:a831adbf81b267b432d766623d3523d90"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5e773427b9baed3489397cd9f3450f3"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:ad5e773427b9baed3489397cd9f3450f3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#ad5e773427b9baed3489397cd9f3450f3">set_composite_option_from</a> (<a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a> id, const T &amp;value) const</td></tr>
+<tr class="separator:ad5e773427b9baed3489397cd9f3450f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94112d019ac10e1bb705ebc682d16782"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#a94112d019ac10e1bb705ebc682d16782">supports_composite_option</a> (<a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a> id) const</td></tr>
+<tr class="separator:a94112d019ac10e1bb705ebc682d16782"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72f764a7c0c4ac1ad0cdae5cd1eba303"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#a72f764a7c0c4ac1ad0cdae5cd1eba303">is_composite_option_read_only</a> (<a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a> id) const</td></tr>
+<tr class="separator:a72f764a7c0c4ac1ad0cdae5cd1eba303"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a583af5b055762bda6f01f0effb84e298"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#a583af5b055762bda6f01f0effb84e298">get_composite_option_description</a> (<a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a> id) const</td></tr>
+<tr class="separator:a583af5b055762bda6f01f0effb84e298"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67721d41ee4443b523d6a8c8c058ef18"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#a67721d41ee4443b523d6a8c8c058ef18">get_supported_composite_options</a> () const</td></tr>
+<tr class="separator:a67721d41ee4443b523d6a8c8c058ef18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac8d54af6b112b8065bdc71a247d00f3a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classrs2_1_1options.html">options</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#ac8d54af6b112b8065bdc71a247d00f3a">operator=</a> (const <a class="el" href="classrs2_1_1options.html">options</a> &amp;other)</td></tr>
 <tr class="separator:ac8d54af6b112b8065bdc71a247d00f3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a619cbe834a38174f86352dbb2be27121"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1options.html#a619cbe834a38174f86352dbb2be27121">options</a> (const <a class="el" href="classrs2_1_1options.html">options</a> &amp;other)</td></tr>
@@ -205,6 +229,175 @@ Protected Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a65f97d2e3c1206905dbe14a73d51a26c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65f97d2e3c1206905dbe14a73d51a26c">&#9670;&nbsp;</a></span>get_composite_option()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; uint8_t &gt; rs2::options::get_composite_option </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a>&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>read a composite option's current raw payload, atomically, in ONE UVC transaction </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">id</td><td>composite option id to read </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the option's current raw payload bytes - cast to a struct matching the option's documented wire layout </dd></dl>
+
+</div>
+</div>
+<a id="a847bc8d419875caedf2f6911e879e442"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a847bc8d419875caedf2f6911e879e442">&#9670;&nbsp;</a></span>get_composite_option_as()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">T rs2::options::get_composite_option_as </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a>&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>typed counterpart to <a class="el" href="classrs2_1_1options.html#a65f97d2e3c1206905dbe14a73d51a26c">get_composite_option()</a> - casts the raw payload directly into T. Validates sizeof(T) matches, and for structs with a composed <a class="el" href="structdpp__header.html">dpp_header</a>, that its version is DPP_HEADER_CURRENT_VERSION (see <a class="el" href="rs__dpp__header_8h.html" title="Wire header shared by every control in the HKR Depth Post-Processing (DPP) composite-option family: t...">rs_dpp_header.h</a>), unpopulated (0) included. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">id</td><td>composite option id to read </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>T, populated from the option's current raw payload </dd></dl>
+
+</div>
+</div>
+<a id="a583af5b055762bda6f01f0effb84e298"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a583af5b055762bda6f01f0effb84e298">&#9670;&nbsp;</a></span>get_composite_option_description()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char* rs2::options::get_composite_option_description </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a>&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>get a composite option's human-readable description </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">id</td><td>composite option id to describe </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>human-readable composite option description </dd></dl>
+
+</div>
+</div>
+<a id="a358cc825506c27526449140b4e30f60b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a358cc825506c27526449140b4e30f60b">&#9670;&nbsp;</a></span>get_composite_option_range()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; uint8_t &gt; rs2::options::get_composite_option_range </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a>&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>read a composite option's supported {min,max,step,def} bounds </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">id</td><td>composite option id to read </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the option's range payload bytes - cast to the range struct documented for id </dd></dl>
+
+</div>
+</div>
+<a id="a831adbf81b267b432d766623d3523d90"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a831adbf81b267b432d766623d3523d90">&#9670;&nbsp;</a></span>get_composite_option_range_as()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename TRange &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">TRange rs2::options::get_composite_option_range_as </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a>&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>typed counterpart to <a class="el" href="classrs2_1_1options.html#a358cc825506c27526449140b4e30f60b">get_composite_option_range()</a> - casts the raw {min,max,step,def} payload into TRange. Validates sizeof(TRange); the wrapper itself has no version field, but each of its four bounds does, each checked the same way as check_version_supported(). </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">id</td><td>composite option id to read </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>TRange, populated from the option's raw range payload </dd></dl>
+
+</div>
+</div>
 <a id="a0bc42a585de805c151f1255ae3318ebe"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0bc42a585de805c151f1255ae3318ebe">&#9670;&nbsp;</a></span>get_option()</h2>
 
@@ -408,6 +601,32 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a67721d41ee4443b523d6a8c8c058ef18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67721d41ee4443b523d6a8c8c058ef18">&#9670;&nbsp;</a></span>get_supported_composite_options()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a> &gt; rs2::options::get_supported_composite_options </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>the list of composite option ids this options object (sensor or <a class="el" href="classrs2_1_1embedded__filter.html">embedded_filter</a>) supports </dd></dl>
+
+</div>
+</div>
 <a id="ac8a2ae11a97c0f15199e9174d1933b66"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac8a2ae11a97c0f15199e9174d1933b66">&#9670;&nbsp;</a></span>get_supported_option_values()</h2>
 
@@ -455,6 +674,39 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a72f764a7c0c4ac1ad0cdae5cd1eba303"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a72f764a7c0c4ac1ad0cdae5cd1eba303">&#9670;&nbsp;</a></span>is_composite_option_read_only()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool rs2::options::is_composite_option_read_only </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a>&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>check if a composite option is read-only </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">id</td><td>composite option id to be checked </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if the composite option is read-only </dd></dl>
 
 </div>
 </div>
@@ -577,6 +829,101 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
+<a id="aaf1345824b199a96ee18bc9301cb58ef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf1345824b199a96ee18bc9301cb58ef">&#9670;&nbsp;</a></span>set_composite_option()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void rs2::options::set_composite_option </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a>&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const void *&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>size</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>See <a class="el" href="rs__composite__option_8h.html" title="Generic entry points shared by every composite (multi-field, atomically-exchanged) XU control...">rs_composite_option.h</a> for the underlying C API and atomicity contract (one UVC transaction per call) - these methods just forward to the corresponding rs2_* function. write new value to a composite option, atomically, in ONE UVC transaction </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">id</td><td>composite option id to write </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">data</td><td>pointer to the caller's struct matching the option's documented wire layout </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">size</td><td>sizeof(...) of the caller's struct </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ad5e773427b9baed3489397cd9f3450f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5e773427b9baed3489397cd9f3450f3">&#9670;&nbsp;</a></span>set_composite_option_from()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void rs2::options::set_composite_option_from </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a>&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>typed counterpart to <a class="el" href="classrs2_1_1options.html#aaf1345824b199a96ee18bc9301cb58ef">set_composite_option()</a> - sends value itself. For structs carrying a <code>header.version</code> field, rejects a value whose version isn't current - most likely a get-modify-set that left the header zero-initialized. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">id</td><td>composite option id to write </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">value</td><td>the caller's struct matching the option's documented wire layout </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a6b18985a9a19f0ca253a4564a6fafde6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6b18985a9a19f0ca253a4564a6fafde6">&#9670;&nbsp;</a></span>set_option()</h2>
 
@@ -683,6 +1030,39 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if option is supported </dd></dl>
+
+</div>
+</div>
+<a id="a94112d019ac10e1bb705ebc682d16782"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94112d019ac10e1bb705ebc682d16782">&#9670;&nbsp;</a></span>supports_composite_option()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool rs2::options::supports_composite_option </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rs__composite__option_8h.html#a86e3f1ece230650badf4d0236ea53564">rs2_composite_option_id</a>&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>check if particular composite option is supported (and currently enabled) </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">id</td><td>composite option id to be checked </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if the composite option is supported </dd></dl>
 
 </div>
 </div>

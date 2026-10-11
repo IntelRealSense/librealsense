@@ -30,10 +30,17 @@ pyrealsense2.motion_sensor
       ~motion_sensor.close
       ~motion_sensor.from_frame
       ~motion_sensor.get_active_streams
+      ~motion_sensor.get_composite_option
+      ~motion_sensor.get_composite_option_description
+      ~motion_sensor.get_composite_option_range
+      ~motion_sensor.get_decimation_filter_dpp_config
+      ~motion_sensor.get_decimation_filter_dpp_range
       ~motion_sensor.get_embedded_close_range_filter
       ~motion_sensor.get_embedded_decimation_filter
       ~motion_sensor.get_embedded_filter
       ~motion_sensor.get_embedded_temporal_filter
+      ~motion_sensor.get_hdrd_control
+      ~motion_sensor.get_hdrd_control_range
       ~motion_sensor.get_info
       ~motion_sensor.get_option
       ~motion_sensor.get_option_description
@@ -42,8 +49,13 @@ pyrealsense2.motion_sensor
       ~motion_sensor.get_option_value_description
       ~motion_sensor.get_recommended_filters
       ~motion_sensor.get_stream_profiles
+      ~motion_sensor.get_supported_composite_options
+      ~motion_sensor.get_supported_option_values
       ~motion_sensor.get_supported_options
+      ~motion_sensor.get_temporal_filter_dpp_config
+      ~motion_sensor.get_temporal_filter_dpp_range
       ~motion_sensor.is_color_sensor
+      ~motion_sensor.is_composite_option_read_only
       ~motion_sensor.is_debug_stream_sensor
       ~motion_sensor.is_depth_sensor
       ~motion_sensor.is_fisheye_sensor
@@ -58,12 +70,17 @@ pyrealsense2.motion_sensor
       ~motion_sensor.on_options_changed
       ~motion_sensor.open
       ~motion_sensor.query_embedded_filters
+      ~motion_sensor.set_composite_option
+      ~motion_sensor.set_decimation_filter_dpp_config
+      ~motion_sensor.set_hdrd_control
       ~motion_sensor.set_notifications_callback
       ~motion_sensor.set_option
       ~motion_sensor.set_option_value
+      ~motion_sensor.set_temporal_filter_dpp_config
       ~motion_sensor.start
       ~motion_sensor.stop
       ~motion_sensor.supports
+      ~motion_sensor.supports_composite_option
    
    
    

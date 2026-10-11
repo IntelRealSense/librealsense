@@ -30,11 +30,18 @@ pyrealsense2.depth_sensor
       ~depth_sensor.close
       ~depth_sensor.from_frame
       ~depth_sensor.get_active_streams
+      ~depth_sensor.get_composite_option
+      ~depth_sensor.get_composite_option_description
+      ~depth_sensor.get_composite_option_range
+      ~depth_sensor.get_decimation_filter_dpp_config
+      ~depth_sensor.get_decimation_filter_dpp_range
       ~depth_sensor.get_depth_scale
       ~depth_sensor.get_embedded_close_range_filter
       ~depth_sensor.get_embedded_decimation_filter
       ~depth_sensor.get_embedded_filter
       ~depth_sensor.get_embedded_temporal_filter
+      ~depth_sensor.get_hdrd_control
+      ~depth_sensor.get_hdrd_control_range
       ~depth_sensor.get_info
       ~depth_sensor.get_option
       ~depth_sensor.get_option_description
@@ -43,8 +50,13 @@ pyrealsense2.depth_sensor
       ~depth_sensor.get_option_value_description
       ~depth_sensor.get_recommended_filters
       ~depth_sensor.get_stream_profiles
+      ~depth_sensor.get_supported_composite_options
+      ~depth_sensor.get_supported_option_values
       ~depth_sensor.get_supported_options
+      ~depth_sensor.get_temporal_filter_dpp_config
+      ~depth_sensor.get_temporal_filter_dpp_range
       ~depth_sensor.is_color_sensor
+      ~depth_sensor.is_composite_option_read_only
       ~depth_sensor.is_debug_stream_sensor
       ~depth_sensor.is_depth_sensor
       ~depth_sensor.is_fisheye_sensor
@@ -59,12 +71,17 @@ pyrealsense2.depth_sensor
       ~depth_sensor.on_options_changed
       ~depth_sensor.open
       ~depth_sensor.query_embedded_filters
+      ~depth_sensor.set_composite_option
+      ~depth_sensor.set_decimation_filter_dpp_config
+      ~depth_sensor.set_hdrd_control
       ~depth_sensor.set_notifications_callback
       ~depth_sensor.set_option
       ~depth_sensor.set_option_value
+      ~depth_sensor.set_temporal_filter_dpp_config
       ~depth_sensor.start
       ~depth_sensor.stop
       ~depth_sensor.supports
+      ~depth_sensor.supports_composite_option
    
    
    

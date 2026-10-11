@@ -26,6 +26,7 @@ pyrealsense2.option_value
    .. autosummary::
    
       ~option_value.id
+      ~option_value.range
       ~option_value.type
       ~option_value.value
    

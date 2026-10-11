@@ -25,14 +25,26 @@ pyrealsense2.disparity_transform
       ~disparity_transform.as_spatial_filter
       ~disparity_transform.as_temporal_filter
       ~disparity_transform.as_threshold_filter
+      ~disparity_transform.get_composite_option
+      ~disparity_transform.get_composite_option_description
+      ~disparity_transform.get_composite_option_range
+      ~disparity_transform.get_decimation_filter_dpp_config
+      ~disparity_transform.get_decimation_filter_dpp_range
+      ~disparity_transform.get_hdrd_control
+      ~disparity_transform.get_hdrd_control_range
       ~disparity_transform.get_info
       ~disparity_transform.get_option
       ~disparity_transform.get_option_description
       ~disparity_transform.get_option_range
       ~disparity_transform.get_option_value
       ~disparity_transform.get_option_value_description
+      ~disparity_transform.get_supported_composite_options
+      ~disparity_transform.get_supported_option_values
       ~disparity_transform.get_supported_options
+      ~disparity_transform.get_temporal_filter_dpp_config
+      ~disparity_transform.get_temporal_filter_dpp_range
       ~disparity_transform.invoke
+      ~disparity_transform.is_composite_option_read_only
       ~disparity_transform.is_decimation_filter
       ~disparity_transform.is_disparity_transform
       ~disparity_transform.is_hdr_merge
@@ -45,10 +57,15 @@ pyrealsense2.disparity_transform
       ~disparity_transform.is_threshold_filter
       ~disparity_transform.on_options_changed
       ~disparity_transform.process
+      ~disparity_transform.set_composite_option
+      ~disparity_transform.set_decimation_filter_dpp_config
+      ~disparity_transform.set_hdrd_control
       ~disparity_transform.set_option
       ~disparity_transform.set_option_value
+      ~disparity_transform.set_temporal_filter_dpp_config
       ~disparity_transform.start
       ~disparity_transform.supports
+      ~disparity_transform.supports_composite_option
    
    
    

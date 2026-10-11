@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>pyrealsense2.rs400_advanced_mode &#8212; pyrealsense2 2.58.4 documentation</title>
+    <title>pyrealsense2.rs400_advanced_mode &#8212; pyrealsense2 2.59.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
     
-    <script src="../_static/documentation_options.js?v=e8b3beb3"></script>
+    <script src="../_static/documentation_options.js?v=c16f6a54"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     
@@ -25,7 +25,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.58.4 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.59.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">pyrealsense2.rs400_advanced_mode</a></li> 
       </ul>
     </div>  
@@ -54,44 +54,50 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_ae_control" title="pyrealsense2.rs400_advanced_mode.get_ae_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_ae_control</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_amp_factor" title="pyrealsense2.rs400_advanced_mode.get_amp_factor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_amp_factor</span></code></a>(self[, mode])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_all_controls" title="pyrealsense2.rs400_advanced_mode.get_all_controls"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_all_controls</span></code></a>(self)</p></td>
+<td><p>Read every control group and mode at once, in a single bulk operation</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_amp_factor" title="pyrealsense2.rs400_advanced_mode.get_amp_factor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_amp_factor</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_census" title="pyrealsense2.rs400_advanced_mode.get_census"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_census</span></code></a>(self[, mode])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_census" title="pyrealsense2.rs400_advanced_mode.get_census"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_census</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_color_control" title="pyrealsense2.rs400_advanced_mode.get_color_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_color_control</span></code></a>(self[, mode])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_color_control" title="pyrealsense2.rs400_advanced_mode.get_color_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_color_control</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_color_correction" title="pyrealsense2.rs400_advanced_mode.get_color_correction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_color_correction</span></code></a>(self[, mode])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_color_correction" title="pyrealsense2.rs400_advanced_mode.get_color_correction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_color_correction</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_depth_control" title="pyrealsense2.rs400_advanced_mode.get_depth_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_depth_control</span></code></a>(self[, mode])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_depth_control" title="pyrealsense2.rs400_advanced_mode.get_depth_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_depth_control</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_depth_table" title="pyrealsense2.rs400_advanced_mode.get_depth_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_depth_table</span></code></a>(self[, mode])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_depth_table" title="pyrealsense2.rs400_advanced_mode.get_depth_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_depth_table</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_hdad" title="pyrealsense2.rs400_advanced_mode.get_hdad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_hdad</span></code></a>(self[, mode])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_hdad" title="pyrealsense2.rs400_advanced_mode.get_hdad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_hdad</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_rau_support_vector_control" title="pyrealsense2.rs400_advanced_mode.get_rau_support_vector_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rau_support_vector_control</span></code></a>(self[, mode])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_rau_support_vector_control" title="pyrealsense2.rs400_advanced_mode.get_rau_support_vector_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rau_support_vector_control</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_rau_thresholds_control" title="pyrealsense2.rs400_advanced_mode.get_rau_thresholds_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rau_thresholds_control</span></code></a>(self[, mode])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_rau_thresholds_control" title="pyrealsense2.rs400_advanced_mode.get_rau_thresholds_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rau_thresholds_control</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_rsm" title="pyrealsense2.rs400_advanced_mode.get_rsm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rsm</span></code></a>(self[, mode])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_rsm" title="pyrealsense2.rs400_advanced_mode.get_rsm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rsm</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_slo_color_thresholds_control" title="pyrealsense2.rs400_advanced_mode.get_slo_color_thresholds_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_slo_color_thresholds_control</span></code></a>(self[, mode])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_slo_color_thresholds_control" title="pyrealsense2.rs400_advanced_mode.get_slo_color_thresholds_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_slo_color_thresholds_control</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_slo_penalty_control" title="pyrealsense2.rs400_advanced_mode.get_slo_penalty_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_slo_penalty_control</span></code></a>(self[, mode])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_slo_penalty_control" title="pyrealsense2.rs400_advanced_mode.get_slo_penalty_control"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_slo_penalty_control</span></code></a>(self[, mode])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.is_enabled" title="pyrealsense2.rs400_advanced_mode.is_enabled"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_enabled</span></code></a>(self)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.is_enabled" title="pyrealsense2.rs400_advanced_mode.is_enabled"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_enabled</span></code></a>(self)</p></td>
 <td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.keys" title="pyrealsense2.rs400_advanced_mode.keys"><code class="xref py py-obj docutils literal notranslate"><span class="pre">keys</span></code></a></p></td>
+<td><p>(self: object) -&gt; list</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.load_json" title="pyrealsense2.rs400_advanced_mode.load_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_json</span></code></a>(self, json_content)</p></td>
 <td><p></p></td>
@@ -147,6 +153,12 @@
 <dt class="sig sig-object py" id="pyrealsense2.rs400_advanced_mode.get_ae_control">
 <span class="sig-name descname"><span class="pre">get_ae_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode" title="pyrealsense2.rs400_advanced_mode"><span class="pre">pyrealsense2.rs400_advanced_mode</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pyrealsense2.STAEControl.html#pyrealsense2.STAEControl" title="pyrealsense2.STAEControl"><span class="pre">pyrealsense2.STAEControl</span></a></span></span><a class="headerlink" href="#pyrealsense2.rs400_advanced_mode.get_ae_control" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.rs400_advanced_mode.get_all_controls">
+<span class="sig-name descname"><span class="pre">get_all_controls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode" title="pyrealsense2.rs400_advanced_mode"><span class="pre">pyrealsense2.rs400_advanced_mode</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pyrealsense2.STAdvancedModeControls.html#pyrealsense2.STAdvancedModeControls" title="pyrealsense2.STAdvancedModeControls"><span class="pre">pyrealsense2.STAdvancedModeControls</span></a></span></span><a class="headerlink" href="#pyrealsense2.rs400_advanced_mode.get_all_controls" title="Link to this definition">¶</a></dt>
+<dd><p>Read every control group and mode at once, in a single bulk operation</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyrealsense2.rs400_advanced_mode.get_amp_factor">
@@ -212,6 +224,12 @@
 <dt class="sig sig-object py" id="pyrealsense2.rs400_advanced_mode.is_enabled">
 <span class="sig-name descname"><span class="pre">is_enabled</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode" title="pyrealsense2.rs400_advanced_mode"><span class="pre">pyrealsense2.rs400_advanced_mode</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#pyrealsense2.rs400_advanced_mode.is_enabled" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.rs400_advanced_mode.keys">
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyrealsense2.rs400_advanced_mode.keys" title="Link to this definition">¶</a></dt>
+<dd><p>(self: object) -&gt; list</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyrealsense2.rs400_advanced_mode.load_json">
@@ -312,6 +330,7 @@
 <li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode</span></code></a><ul>
 <li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.__init__"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.__init__()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_ae_control"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.get_ae_control()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_all_controls"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.get_all_controls()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_amp_factor"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.get_amp_factor()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_census"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.get_census()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_color_control"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.get_color_control()</span></code></a></li>
@@ -325,6 +344,7 @@
 <li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_slo_color_thresholds_control"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.get_slo_color_thresholds_control()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.get_slo_penalty_control"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.get_slo_penalty_control()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.is_enabled"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.is_enabled()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.keys"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.keys()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.load_json"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.load_json()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.serialize_json"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.serialize_json()</span></code></a></li>
 <li><a class="reference internal" href="#pyrealsense2.rs400_advanced_mode.set_ae_control"><code class="docutils literal notranslate"><span class="pre">rs400_advanced_mode.set_ae_control()</span></code></a></li>
@@ -378,7 +398,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.58.4 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.59.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">pyrealsense2.rs400_advanced_mode</a></li> 
       </ul>
     </div>

@@ -25,14 +25,26 @@ pyrealsense2.yuy_decoder
       ~yuy_decoder.as_spatial_filter
       ~yuy_decoder.as_temporal_filter
       ~yuy_decoder.as_threshold_filter
+      ~yuy_decoder.get_composite_option
+      ~yuy_decoder.get_composite_option_description
+      ~yuy_decoder.get_composite_option_range
+      ~yuy_decoder.get_decimation_filter_dpp_config
+      ~yuy_decoder.get_decimation_filter_dpp_range
+      ~yuy_decoder.get_hdrd_control
+      ~yuy_decoder.get_hdrd_control_range
       ~yuy_decoder.get_info
       ~yuy_decoder.get_option
       ~yuy_decoder.get_option_description
       ~yuy_decoder.get_option_range
       ~yuy_decoder.get_option_value
       ~yuy_decoder.get_option_value_description
+      ~yuy_decoder.get_supported_composite_options
+      ~yuy_decoder.get_supported_option_values
       ~yuy_decoder.get_supported_options
+      ~yuy_decoder.get_temporal_filter_dpp_config
+      ~yuy_decoder.get_temporal_filter_dpp_range
       ~yuy_decoder.invoke
+      ~yuy_decoder.is_composite_option_read_only
       ~yuy_decoder.is_decimation_filter
       ~yuy_decoder.is_disparity_transform
       ~yuy_decoder.is_hdr_merge
@@ -45,10 +57,15 @@ pyrealsense2.yuy_decoder
       ~yuy_decoder.is_threshold_filter
       ~yuy_decoder.on_options_changed
       ~yuy_decoder.process
+      ~yuy_decoder.set_composite_option
+      ~yuy_decoder.set_decimation_filter_dpp_config
+      ~yuy_decoder.set_hdrd_control
       ~yuy_decoder.set_option
       ~yuy_decoder.set_option_value
+      ~yuy_decoder.set_temporal_filter_dpp_config
       ~yuy_decoder.start
       ~yuy_decoder.supports
+      ~yuy_decoder.supports_composite_option
    
    
    

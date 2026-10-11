@@ -34,6 +34,7 @@ pyrealsense2.format
       ~format.distance
       ~format.fg
       ~format.gpio_raw
+      ~format.h264
       ~format.invi
       ~format.inzi
       ~format.m420

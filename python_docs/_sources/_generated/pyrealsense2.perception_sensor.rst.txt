@@ -30,10 +30,17 @@ pyrealsense2.perception_sensor
       ~perception_sensor.close
       ~perception_sensor.from_frame
       ~perception_sensor.get_active_streams
+      ~perception_sensor.get_composite_option
+      ~perception_sensor.get_composite_option_description
+      ~perception_sensor.get_composite_option_range
+      ~perception_sensor.get_decimation_filter_dpp_config
+      ~perception_sensor.get_decimation_filter_dpp_range
       ~perception_sensor.get_embedded_close_range_filter
       ~perception_sensor.get_embedded_decimation_filter
       ~perception_sensor.get_embedded_filter
       ~perception_sensor.get_embedded_temporal_filter
+      ~perception_sensor.get_hdrd_control
+      ~perception_sensor.get_hdrd_control_range
       ~perception_sensor.get_info
       ~perception_sensor.get_option
       ~perception_sensor.get_option_description
@@ -42,8 +49,13 @@ pyrealsense2.perception_sensor
       ~perception_sensor.get_option_value_description
       ~perception_sensor.get_recommended_filters
       ~perception_sensor.get_stream_profiles
+      ~perception_sensor.get_supported_composite_options
+      ~perception_sensor.get_supported_option_values
       ~perception_sensor.get_supported_options
+      ~perception_sensor.get_temporal_filter_dpp_config
+      ~perception_sensor.get_temporal_filter_dpp_range
       ~perception_sensor.is_color_sensor
+      ~perception_sensor.is_composite_option_read_only
       ~perception_sensor.is_debug_stream_sensor
       ~perception_sensor.is_depth_sensor
       ~perception_sensor.is_fisheye_sensor
@@ -58,12 +70,17 @@ pyrealsense2.perception_sensor
       ~perception_sensor.on_options_changed
       ~perception_sensor.open
       ~perception_sensor.query_embedded_filters
+      ~perception_sensor.set_composite_option
+      ~perception_sensor.set_decimation_filter_dpp_config
+      ~perception_sensor.set_hdrd_control
       ~perception_sensor.set_notifications_callback
       ~perception_sensor.set_option
       ~perception_sensor.set_option_value
+      ~perception_sensor.set_temporal_filter_dpp_config
       ~perception_sensor.start
       ~perception_sensor.stop
       ~perception_sensor.supports
+      ~perception_sensor.supports_composite_option
    
    
    

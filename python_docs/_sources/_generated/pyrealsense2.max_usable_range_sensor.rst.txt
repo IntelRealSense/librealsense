@@ -30,10 +30,17 @@ pyrealsense2.max_usable_range_sensor
       ~max_usable_range_sensor.close
       ~max_usable_range_sensor.from_frame
       ~max_usable_range_sensor.get_active_streams
+      ~max_usable_range_sensor.get_composite_option
+      ~max_usable_range_sensor.get_composite_option_description
+      ~max_usable_range_sensor.get_composite_option_range
+      ~max_usable_range_sensor.get_decimation_filter_dpp_config
+      ~max_usable_range_sensor.get_decimation_filter_dpp_range
       ~max_usable_range_sensor.get_embedded_close_range_filter
       ~max_usable_range_sensor.get_embedded_decimation_filter
       ~max_usable_range_sensor.get_embedded_filter
       ~max_usable_range_sensor.get_embedded_temporal_filter
+      ~max_usable_range_sensor.get_hdrd_control
+      ~max_usable_range_sensor.get_hdrd_control_range
       ~max_usable_range_sensor.get_info
       ~max_usable_range_sensor.get_max_usable_depth_range
       ~max_usable_range_sensor.get_option
@@ -43,8 +50,13 @@ pyrealsense2.max_usable_range_sensor
       ~max_usable_range_sensor.get_option_value_description
       ~max_usable_range_sensor.get_recommended_filters
       ~max_usable_range_sensor.get_stream_profiles
+      ~max_usable_range_sensor.get_supported_composite_options
+      ~max_usable_range_sensor.get_supported_option_values
       ~max_usable_range_sensor.get_supported_options
+      ~max_usable_range_sensor.get_temporal_filter_dpp_config
+      ~max_usable_range_sensor.get_temporal_filter_dpp_range
       ~max_usable_range_sensor.is_color_sensor
+      ~max_usable_range_sensor.is_composite_option_read_only
       ~max_usable_range_sensor.is_debug_stream_sensor
       ~max_usable_range_sensor.is_depth_sensor
       ~max_usable_range_sensor.is_fisheye_sensor
@@ -59,12 +71,17 @@ pyrealsense2.max_usable_range_sensor
       ~max_usable_range_sensor.on_options_changed
       ~max_usable_range_sensor.open
       ~max_usable_range_sensor.query_embedded_filters
+      ~max_usable_range_sensor.set_composite_option
+      ~max_usable_range_sensor.set_decimation_filter_dpp_config
+      ~max_usable_range_sensor.set_hdrd_control
       ~max_usable_range_sensor.set_notifications_callback
       ~max_usable_range_sensor.set_option
       ~max_usable_range_sensor.set_option_value
+      ~max_usable_range_sensor.set_temporal_filter_dpp_config
       ~max_usable_range_sensor.start
       ~max_usable_range_sensor.stop
       ~max_usable_range_sensor.supports
+      ~max_usable_range_sensor.supports_composite_option
    
    
    

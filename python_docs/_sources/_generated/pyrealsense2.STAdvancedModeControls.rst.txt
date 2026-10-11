@@ -1,0 +1,43 @@
+pyrealsense2.STAdvancedModeControls
+===================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: STAdvancedModeControls
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~STAdvancedModeControls.__init__
+      ~STAdvancedModeControls.keys
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~STAdvancedModeControls.ae_control
+      ~STAdvancedModeControls.amp_factor
+      ~STAdvancedModeControls.census
+      ~STAdvancedModeControls.color_control
+      ~STAdvancedModeControls.color_correction
+      ~STAdvancedModeControls.depth_control
+      ~STAdvancedModeControls.depth_table
+      ~STAdvancedModeControls.hdad
+      ~STAdvancedModeControls.rau_support_vector_control
+      ~STAdvancedModeControls.rau_thresholds_control
+      ~STAdvancedModeControls.rsm
+      ~STAdvancedModeControls.slo_color_thresholds_control
+      ~STAdvancedModeControls.slo_penalty_control
+   
+   

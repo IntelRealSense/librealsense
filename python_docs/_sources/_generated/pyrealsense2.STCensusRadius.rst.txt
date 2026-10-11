@@ -16,6 +16,7 @@ pyrealsense2.STCensusRadius
    .. autosummary::
    
       ~STCensusRadius.__init__
+      ~STCensusRadius.keys
    
    
    

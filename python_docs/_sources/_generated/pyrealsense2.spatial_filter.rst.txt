@@ -25,14 +25,26 @@ pyrealsense2.spatial_filter
       ~spatial_filter.as_spatial_filter
       ~spatial_filter.as_temporal_filter
       ~spatial_filter.as_threshold_filter
+      ~spatial_filter.get_composite_option
+      ~spatial_filter.get_composite_option_description
+      ~spatial_filter.get_composite_option_range
+      ~spatial_filter.get_decimation_filter_dpp_config
+      ~spatial_filter.get_decimation_filter_dpp_range
+      ~spatial_filter.get_hdrd_control
+      ~spatial_filter.get_hdrd_control_range
       ~spatial_filter.get_info
       ~spatial_filter.get_option
       ~spatial_filter.get_option_description
       ~spatial_filter.get_option_range
       ~spatial_filter.get_option_value
       ~spatial_filter.get_option_value_description
+      ~spatial_filter.get_supported_composite_options
+      ~spatial_filter.get_supported_option_values
       ~spatial_filter.get_supported_options
+      ~spatial_filter.get_temporal_filter_dpp_config
+      ~spatial_filter.get_temporal_filter_dpp_range
       ~spatial_filter.invoke
+      ~spatial_filter.is_composite_option_read_only
       ~spatial_filter.is_decimation_filter
       ~spatial_filter.is_disparity_transform
       ~spatial_filter.is_hdr_merge
@@ -45,10 +57,15 @@ pyrealsense2.spatial_filter
       ~spatial_filter.is_threshold_filter
       ~spatial_filter.on_options_changed
       ~spatial_filter.process
+      ~spatial_filter.set_composite_option
+      ~spatial_filter.set_decimation_filter_dpp_config
+      ~spatial_filter.set_hdrd_control
       ~spatial_filter.set_option
       ~spatial_filter.set_option_value
+      ~spatial_filter.set_temporal_filter_dpp_config
       ~spatial_filter.start
       ~spatial_filter.supports
+      ~spatial_filter.supports_composite_option
    
    
    

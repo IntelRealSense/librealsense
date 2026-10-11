@@ -1,0 +1,37 @@
+pyrealsense2.hdrd_control
+=========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: hdrd_control
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~hdrd_control.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~hdrd_control.downscale_ratio
+      ~hdrd_control.enable
+      ~hdrd_control.filter_type
+      ~hdrd_control.header
+      ~hdrd_control.shift_mode
+      ~hdrd_control.shift_pixels
+      ~hdrd_control.threshold_mm
+      ~hdrd_control.threshold_mode
+   
+   

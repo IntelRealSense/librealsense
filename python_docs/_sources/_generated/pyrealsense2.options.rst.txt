@@ -16,17 +16,34 @@ pyrealsense2.options
    .. autosummary::
    
       ~options.__init__
+      ~options.get_composite_option
+      ~options.get_composite_option_description
+      ~options.get_composite_option_range
+      ~options.get_decimation_filter_dpp_config
+      ~options.get_decimation_filter_dpp_range
+      ~options.get_hdrd_control
+      ~options.get_hdrd_control_range
       ~options.get_option
       ~options.get_option_description
       ~options.get_option_range
       ~options.get_option_value
       ~options.get_option_value_description
+      ~options.get_supported_composite_options
+      ~options.get_supported_option_values
       ~options.get_supported_options
+      ~options.get_temporal_filter_dpp_config
+      ~options.get_temporal_filter_dpp_range
+      ~options.is_composite_option_read_only
       ~options.is_option_read_only
       ~options.on_options_changed
+      ~options.set_composite_option
+      ~options.set_decimation_filter_dpp_config
+      ~options.set_hdrd_control
       ~options.set_option
       ~options.set_option_value
+      ~options.set_temporal_filter_dpp_config
       ~options.supports
+      ~options.supports_composite_option
    
    
    

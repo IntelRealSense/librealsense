@@ -68,6 +68,14 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a25ff07b3a7c7d085bef7c1d4fa700ef1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7102e6a377899872637f2de19cc2efd7"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__object__detection.html#a7102e6a377899872637f2de19cc2efd7">depth</a></td></tr>
 <tr class="separator:a7102e6a377899872637f2de19cc2efd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a875f13065c67f46dd497b01c51c1fa0a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structrs2__vector.html">rs2_vector</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__object__detection.html#a875f13065c67f46dd497b01c51c1fa0a">world_position</a></td></tr>
+<tr class="separator:a875f13065c67f46dd497b01c51c1fa0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4cd87285fa8a8f1feb1be9146ddc33bb"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__object__detection.html#a4cd87285fa8a8f1feb1be9146ddc33bb">center_of_mass_x</a></td></tr>
+<tr class="separator:a4cd87285fa8a8f1feb1be9146ddc33bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a979b12975f8752db4e8d829701a694"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__object__detection.html#a4a979b12975f8752db4e8d829701a694">center_of_mass_y</a></td></tr>
+<tr class="separator:a4a979b12975f8752db4e8d829701a694"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaeb97ae011d7a245ff22b7040935ef18"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__object__detection.html#aaeb97ae011d7a245ff22b7040935ef18">center_of_mass_valid</a></td></tr>
+<tr class="separator:aaeb97ae011d7a245ff22b7040935ef18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Object detection result from algorithm. </p>
@@ -99,6 +107,51 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Bottom-right corner pixel Y coordinate </p>
+
+</div>
+</div>
+<a id="aaeb97ae011d7a245ff22b7040935ef18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaeb97ae011d7a245ff22b7040935ef18">&#9670;&nbsp;</a></span>center_of_mass_valid</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int rs2_object_detection::center_of_mass_valid</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Nonzero when world_position, center_of_mass_x and center_of_mass_y are valid </p>
+
+</div>
+</div>
+<a id="a4cd87285fa8a8f1feb1be9146ddc33bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4cd87285fa8a8f1feb1be9146ddc33bb">&#9670;&nbsp;</a></span>center_of_mass_x</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float rs2_object_detection::center_of_mass_x</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>COM column in source-image pixels. Valid only when center_of_mass_valid is nonzero </p>
+
+</div>
+</div>
+<a id="a4a979b12975f8752db4e8d829701a694"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a979b12975f8752db4e8d829701a694">&#9670;&nbsp;</a></span>center_of_mass_y</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float rs2_object_detection::center_of_mass_y</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>COM row in source-image pixels. Valid only when center_of_mass_valid is nonzero </p>
 
 </div>
 </div>
@@ -174,6 +227,21 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Top-left corner pixel Y coordinate </p>
+
+</div>
+</div>
+<a id="a875f13065c67f46dd497b01c51c1fa0a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a875f13065c67f46dd497b01c51c1fa0a">&#9670;&nbsp;</a></span>world_position</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structrs2__vector.html">rs2_vector</a> rs2_object_detection::world_position</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>COM X, Y, Z in camera coordinates, meters. Valid only when center_of_mass_valid is nonzero </p>
 
 </div>
 </div>

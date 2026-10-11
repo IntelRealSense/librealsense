@@ -25,14 +25,26 @@ pyrealsense2.hole_filling_filter
       ~hole_filling_filter.as_spatial_filter
       ~hole_filling_filter.as_temporal_filter
       ~hole_filling_filter.as_threshold_filter
+      ~hole_filling_filter.get_composite_option
+      ~hole_filling_filter.get_composite_option_description
+      ~hole_filling_filter.get_composite_option_range
+      ~hole_filling_filter.get_decimation_filter_dpp_config
+      ~hole_filling_filter.get_decimation_filter_dpp_range
+      ~hole_filling_filter.get_hdrd_control
+      ~hole_filling_filter.get_hdrd_control_range
       ~hole_filling_filter.get_info
       ~hole_filling_filter.get_option
       ~hole_filling_filter.get_option_description
       ~hole_filling_filter.get_option_range
       ~hole_filling_filter.get_option_value
       ~hole_filling_filter.get_option_value_description
+      ~hole_filling_filter.get_supported_composite_options
+      ~hole_filling_filter.get_supported_option_values
       ~hole_filling_filter.get_supported_options
+      ~hole_filling_filter.get_temporal_filter_dpp_config
+      ~hole_filling_filter.get_temporal_filter_dpp_range
       ~hole_filling_filter.invoke
+      ~hole_filling_filter.is_composite_option_read_only
       ~hole_filling_filter.is_decimation_filter
       ~hole_filling_filter.is_disparity_transform
       ~hole_filling_filter.is_hdr_merge
@@ -45,10 +57,15 @@ pyrealsense2.hole_filling_filter
       ~hole_filling_filter.is_threshold_filter
       ~hole_filling_filter.on_options_changed
       ~hole_filling_filter.process
+      ~hole_filling_filter.set_composite_option
+      ~hole_filling_filter.set_decimation_filter_dpp_config
+      ~hole_filling_filter.set_hdrd_control
       ~hole_filling_filter.set_option
       ~hole_filling_filter.set_option_value
+      ~hole_filling_filter.set_temporal_filter_dpp_config
       ~hole_filling_filter.start
       ~hole_filling_filter.supports
+      ~hole_filling_filter.supports_composite_option
    
    
    

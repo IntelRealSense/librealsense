@@ -25,14 +25,26 @@ pyrealsense2.save_single_frameset
       ~save_single_frameset.as_spatial_filter
       ~save_single_frameset.as_temporal_filter
       ~save_single_frameset.as_threshold_filter
+      ~save_single_frameset.get_composite_option
+      ~save_single_frameset.get_composite_option_description
+      ~save_single_frameset.get_composite_option_range
+      ~save_single_frameset.get_decimation_filter_dpp_config
+      ~save_single_frameset.get_decimation_filter_dpp_range
+      ~save_single_frameset.get_hdrd_control
+      ~save_single_frameset.get_hdrd_control_range
       ~save_single_frameset.get_info
       ~save_single_frameset.get_option
       ~save_single_frameset.get_option_description
       ~save_single_frameset.get_option_range
       ~save_single_frameset.get_option_value
       ~save_single_frameset.get_option_value_description
+      ~save_single_frameset.get_supported_composite_options
+      ~save_single_frameset.get_supported_option_values
       ~save_single_frameset.get_supported_options
+      ~save_single_frameset.get_temporal_filter_dpp_config
+      ~save_single_frameset.get_temporal_filter_dpp_range
       ~save_single_frameset.invoke
+      ~save_single_frameset.is_composite_option_read_only
       ~save_single_frameset.is_decimation_filter
       ~save_single_frameset.is_disparity_transform
       ~save_single_frameset.is_hdr_merge
@@ -45,10 +57,15 @@ pyrealsense2.save_single_frameset
       ~save_single_frameset.is_threshold_filter
       ~save_single_frameset.on_options_changed
       ~save_single_frameset.process
+      ~save_single_frameset.set_composite_option
+      ~save_single_frameset.set_decimation_filter_dpp_config
+      ~save_single_frameset.set_hdrd_control
       ~save_single_frameset.set_option
       ~save_single_frameset.set_option_value
+      ~save_single_frameset.set_temporal_filter_dpp_config
       ~save_single_frameset.start
       ~save_single_frameset.supports
+      ~save_single_frameset.supports_composite_option
    
    
    

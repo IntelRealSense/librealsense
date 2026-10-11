@@ -64,6 +64,8 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a0fe675b2f1d448b9f18eeaceb13bb11c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1option__value.html#a0fe675b2f1d448b9f18eeaceb13bb11c">option_value</a> (<a class="el" href="structrs2__option__value.html">rs2_option_value</a> const *handle)</td></tr>
 <tr class="separator:a0fe675b2f1d448b9f18eeaceb13bb11c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad97101150c64ffe5f38700875051d0eb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1option__value.html#ad97101150c64ffe5f38700875051d0eb">option_value</a> (<a class="el" href="structrs2__option__value.html">rs2_option_value</a> const *handle, std::shared_ptr&lt; <a class="el" href="rs__types_8h.html#ad178343e6e89d8c5fefdca16b05d66db">rs2_options_list</a> &gt; list, int index)</td></tr>
+<tr class="separator:ad97101150c64ffe5f38700875051d0eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3b95eb2ef06f2650e627f1ce231baf2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1option__value.html#af3b95eb2ef06f2650e627f1ce231baf2">option_value</a> (<a class="el" href="classrs2_1_1option__value.html">option_value</a> const &amp;)=default</td></tr>
 <tr class="separator:af3b95eb2ef06f2650e627f1ce231baf2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5d50d76649e0e8187410433bf26fd812"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1option__value.html#a5d50d76649e0e8187410433bf26fd812">option_value</a> (<a class="el" href="classrs2_1_1option__value.html">option_value</a> &amp;&amp;)=default</td></tr>
@@ -88,6 +90,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ace41299488a1bd251057fd0d3f95f99d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17c6f7fc8248602cadd8d4afb52b732c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1option__value.html#a17c6f7fc8248602cadd8d4afb52b732c">operator rs2_option_value const *</a> () const</td></tr>
 <tr class="separator:a17c6f7fc8248602cadd8d4afb52b732c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f441d373b6cf9db0c6dd64938807dfd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1option__value.html#a8f441d373b6cf9db0c6dd64938807dfd">has_range</a> () const</td></tr>
+<tr class="separator:a8f441d373b6cf9db0c6dd64938807dfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f9129544fd4ec4316296a3ad90afdf4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structrs2_1_1option__range.html">option_range</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1option__value.html#a6f9129544fd4ec4316296a3ad90afdf4">range</a> () const</td></tr>
+<tr class="separator:a6f9129544fd4ec4316296a3ad90afdf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="aebe4f1f14aaa7bd782c307409cdcb4a0"></a>
@@ -109,7 +115,7 @@ Public Member Functions</h2></td></tr>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a0fe675b2f1d448b9f18eeaceb13bb11c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0fe675b2f1d448b9f18eeaceb13bb11c">&#9670;&nbsp;</a></span>option_value() <span class="overload">[1/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0fe675b2f1d448b9f18eeaceb13bb11c">&#9670;&nbsp;</a></span>option_value() <span class="overload">[1/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -134,8 +140,50 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="ad97101150c64ffe5f38700875051d0eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad97101150c64ffe5f38700875051d0eb">&#9670;&nbsp;</a></span>option_value() <span class="overload">[2/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">rs2::option_value::option_value </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structrs2__option__value.html">rs2_option_value</a> const *&#160;</td>
+          <td class="paramname"><em>handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::shared_ptr&lt; <a class="el" href="rs__types_8h.html#ad178343e6e89d8c5fefdca16b05d66db">rs2_options_list</a> &gt;&#160;</td>
+          <td class="paramname"><em>list</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="af3b95eb2ef06f2650e627f1ce231baf2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af3b95eb2ef06f2650e627f1ce231baf2">&#9670;&nbsp;</a></span>option_value() <span class="overload">[2/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af3b95eb2ef06f2650e627f1ce231baf2">&#9670;&nbsp;</a></span>option_value() <span class="overload">[3/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -161,7 +209,7 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="a5d50d76649e0e8187410433bf26fd812"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5d50d76649e0e8187410433bf26fd812">&#9670;&nbsp;</a></span>option_value() <span class="overload">[3/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d50d76649e0e8187410433bf26fd812">&#9670;&nbsp;</a></span>option_value() <span class="overload">[4/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -187,7 +235,7 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="a88bda37d41e4ac71592e00052eab23a2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a88bda37d41e4ac71592e00052eab23a2">&#9670;&nbsp;</a></span>option_value() <span class="overload">[4/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a88bda37d41e4ac71592e00052eab23a2">&#9670;&nbsp;</a></span>option_value() <span class="overload">[5/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -212,7 +260,7 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="a7a40fb9edfadca3783aa4a6afdd2a5de"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7a40fb9edfadca3783aa4a6afdd2a5de">&#9670;&nbsp;</a></span>option_value() <span class="overload">[5/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a40fb9edfadca3783aa4a6afdd2a5de">&#9670;&nbsp;</a></span>option_value() <span class="overload">[6/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -248,7 +296,7 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="a986924d650f8bf01a1505a486ab8686a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a986924d650f8bf01a1505a486ab8686a">&#9670;&nbsp;</a></span>option_value() <span class="overload">[6/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a986924d650f8bf01a1505a486ab8686a">&#9670;&nbsp;</a></span>option_value() <span class="overload">[7/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -284,7 +332,7 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="af19cb05dad07431566327af5f70c09e0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af19cb05dad07431566327af5f70c09e0">&#9670;&nbsp;</a></span>option_value() <span class="overload">[7/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af19cb05dad07431566327af5f70c09e0">&#9670;&nbsp;</a></span>option_value() <span class="overload">[8/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -320,7 +368,7 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="a1539b04e02ceb3047680d2deb67b5a74"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1539b04e02ceb3047680d2deb67b5a74">&#9670;&nbsp;</a></span>option_value() <span class="overload">[8/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1539b04e02ceb3047680d2deb67b5a74">&#9670;&nbsp;</a></span>option_value() <span class="overload">[9/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -356,7 +404,7 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="a964a932db8891c325aed1a9b97b9f41e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a964a932db8891c325aed1a9b97b9f41e">&#9670;&nbsp;</a></span>option_value() <span class="overload">[9/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a964a932db8891c325aed1a9b97b9f41e">&#9670;&nbsp;</a></span>option_value() <span class="overload">[10/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -392,6 +440,32 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a8f441d373b6cf9db0c6dd64938807dfd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f441d373b6cf9db0c6dd64938807dfd">&#9670;&nbsp;</a></span>has_range()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool rs2::option_value::has_range </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>whether a range is available with this value </dd></dl>
+
+</div>
+</div>
 <a id="a17c6f7fc8248602cadd8d4afb52b732c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a17c6f7fc8248602cadd8d4afb52b732c">&#9670;&nbsp;</a></span>operator rs2_option_value const *()</h2>
 
@@ -491,6 +565,32 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6f9129544fd4ec4316296a3ad90afdf4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f9129544fd4ec4316296a3ad90afdf4">&#9670;&nbsp;</a></span>range()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structrs2_1_1option__range.html">option_range</a> rs2::option_value::range </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The range of values this option accepts. Throws if no range is available. </p>
 
 </div>
 </div>

@@ -30,10 +30,17 @@ pyrealsense2.sensor
       ~sensor.close
       ~sensor.from_frame
       ~sensor.get_active_streams
+      ~sensor.get_composite_option
+      ~sensor.get_composite_option_description
+      ~sensor.get_composite_option_range
+      ~sensor.get_decimation_filter_dpp_config
+      ~sensor.get_decimation_filter_dpp_range
       ~sensor.get_embedded_close_range_filter
       ~sensor.get_embedded_decimation_filter
       ~sensor.get_embedded_filter
       ~sensor.get_embedded_temporal_filter
+      ~sensor.get_hdrd_control
+      ~sensor.get_hdrd_control_range
       ~sensor.get_info
       ~sensor.get_option
       ~sensor.get_option_description
@@ -42,8 +49,13 @@ pyrealsense2.sensor
       ~sensor.get_option_value_description
       ~sensor.get_recommended_filters
       ~sensor.get_stream_profiles
+      ~sensor.get_supported_composite_options
+      ~sensor.get_supported_option_values
       ~sensor.get_supported_options
+      ~sensor.get_temporal_filter_dpp_config
+      ~sensor.get_temporal_filter_dpp_range
       ~sensor.is_color_sensor
+      ~sensor.is_composite_option_read_only
       ~sensor.is_debug_stream_sensor
       ~sensor.is_depth_sensor
       ~sensor.is_fisheye_sensor
@@ -58,12 +70,17 @@ pyrealsense2.sensor
       ~sensor.on_options_changed
       ~sensor.open
       ~sensor.query_embedded_filters
+      ~sensor.set_composite_option
+      ~sensor.set_decimation_filter_dpp_config
+      ~sensor.set_hdrd_control
       ~sensor.set_notifications_callback
       ~sensor.set_option
       ~sensor.set_option_value
+      ~sensor.set_temporal_filter_dpp_config
       ~sensor.start
       ~sensor.stop
       ~sensor.supports
+      ~sensor.supports_composite_option
    
    
    

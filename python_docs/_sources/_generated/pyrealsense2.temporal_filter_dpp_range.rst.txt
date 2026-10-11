@@ -1,0 +1,33 @@
+pyrealsense2.temporal_filter_dpp_range
+======================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: temporal_filter_dpp_range
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~temporal_filter_dpp_range.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~temporal_filter_dpp_range.default
+      ~temporal_filter_dpp_range.max
+      ~temporal_filter_dpp_range.min
+      ~temporal_filter_dpp_range.step
+   
+   
