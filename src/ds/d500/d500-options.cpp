@@ -279,7 +279,11 @@ namespace librealsense
         if( res.size() < sizeof( uint32_t ) )
             throw invalid_value_exception( "hdr_mode_option::query result is too short!" );
 
-        return static_cast< float >( *reinterpret_cast< const uint32_t * >( res.data() ) );
+        uint32_t const mode = *reinterpret_cast< const uint32_t * >( res.data() );
+        if( mode >= RS2_HDR_MODE_COUNT )
+            throw invalid_value_exception( rsutils::string::from() << "hdr_mode_option::query invalid mode " << mode );
+
+        return static_cast< float >( mode );
     }
 
     bool hdr_mode_option::is_read_only() const
