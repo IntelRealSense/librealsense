@@ -384,6 +384,7 @@ def check_stream_fps_accuracy_generic(device, stream_name, stream_type, formats,
 
     anchor_time = None
     last_frame_time = None
+    frame_gaps = []
 
     def frame_callback(frame):
         nonlocal frame_count, start_test_time, anchor_time, last_frame_time
@@ -391,6 +392,8 @@ def check_stream_fps_accuracy_generic(device, stream_name, stream_type, formats,
 
         if start_test_time is None:
             start_test_time = current_time
+        if last_frame_time is not None:
+            frame_gaps.append(current_time - last_frame_time)
 
         frame_count += 1
         # Anchor the measurement window at the last warmup frame so warmup arrival times are excluded
@@ -472,6 +475,20 @@ def check_stream_fps_accuracy_generic(device, stream_name, stream_type, formats,
         except Exception as e:
             log.debug(f"{stream_name} sensor.close() failed during teardown: {e}")
         _settle()
+
+    # Host delivery jitter is reported but not failed on: frames held back and then delivered together
+    # still average out to the right rate
+    if frame_gaps:
+        period_ms = 1000.0 / expected_fps
+        min_gap_ms = min(frame_gaps) * 1000
+        max_gap_ms = max(frame_gaps) * 1000
+        gap_msg = (f"{stream_name} frame arrival gaps: min {min_gap_ms:.0f} ms, max {max_gap_ms:.0f} ms "
+                   f"(expected period {period_ms:.0f} ms)")
+        # A held-back frame shows as a gap of about two periods; ignore scheduling jitter at high FPS
+        if max_gap_ms > 1.9 * period_ms and max_gap_ms - period_ms > 50:
+            log.warning(gap_msg)
+        else:
+            log.info(gap_msg)
 
     # Calculate statistics
     if not fps_measurements:
