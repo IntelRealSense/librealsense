@@ -49,7 +49,9 @@ namespace
 
     struct level_severity { el::Level level; rs2_log_severity severity; };
     const level_severity levels[] = {
+        { el::Level::Trace, RS2_LOG_SEVERITY_DEBUG },
         { el::Level::Debug, RS2_LOG_SEVERITY_DEBUG },
+        { el::Level::Verbose, RS2_LOG_SEVERITY_INFO },
         { el::Level::Info, RS2_LOG_SEVERITY_INFO },
         { el::Level::Warning, RS2_LOG_SEVERITY_WARN },
         { el::Level::Error, RS2_LOG_SEVERITY_ERROR },
@@ -1082,8 +1084,7 @@ namespace rs2
             rs2::log_to_console( console_severity );
         }
         auto file_severity = RS2_LOG_SEVERITY_NONE;
-        std::string filename = config_file::instance().get_or_default(
-            configurations::viewer::log_filename, std::string() );
+        std::string filename = config_file::instance().get( configurations::viewer::log_filename, "" );
         if (config_file::instance().get_or_default(
             configurations::viewer::log_to_file, false))
         {
