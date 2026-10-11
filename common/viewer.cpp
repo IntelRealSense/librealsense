@@ -36,6 +36,35 @@
 
 namespace rs2
 {
+
+#ifdef BUILD_EASYLOGGINGPP
+// rs2::log_to_* only configure the library's ELPP storage; LOG_* calls made from the viewer use its own
+static void configure_viewer_logger( rs2_log_severity console, rs2_log_severity file, std::string const & filename )
+{
+    static const std::pair< el::Level, rs2_log_severity > levels[] = {
+        { el::Level::Debug, RS2_LOG_SEVERITY_DEBUG },
+        { el::Level::Info, RS2_LOG_SEVERITY_INFO },
+        { el::Level::Warning, RS2_LOG_SEVERITY_WARN },
+        { el::Level::Error, RS2_LOG_SEVERITY_ERROR },
+        { el::Level::Fatal, RS2_LOG_SEVERITY_FATAL } };
+
+    el::Configurations conf;
+    conf.setGlobally( el::ConfigurationType::Format,
+                      " %datetime{%d/%M %H:%m:%s,%g} %level [%thread] (%fbase:%line) %msg" );
+    if( ! filename.empty() )
+        conf.setGlobally( el::ConfigurationType::Filename, filename );
+    for( auto const & level : levels )
+    {
+        bool const to_console = level.second >= console;
+        bool const to_file = level.second >= file;
+        conf.set( level.first, el::ConfigurationType::Enabled, to_console || to_file ? "true" : "false" );
+        conf.set( level.first, el::ConfigurationType::ToStandardOutput, to_console ? "true" : "false" );
+        conf.set( level.first, el::ConfigurationType::ToFile, to_file ? "true" : "false" );
+    }
+    el::Loggers::reconfigureLogger( LIBREALSENSE_ELPP_ID, conf );
+}
+#endif
+
     template <typename T>
     T non_negative(const T& input)
     {
@@ -988,26 +1017,23 @@ namespace rs2
         auto min_severity = (rs2_log_severity)config_file::instance().get_or_default(
             configurations::viewer::log_severity, 2);
 
+        auto console_severity = RS2_LOG_SEVERITY_DEBUG;  // --debug: console stays as the command line set it
         if( ! _disable_log_to_console )
         {
-            if( config_file::instance().get_or_default(
-                configurations::viewer::log_to_console, false ) )
-            {
-                rs2::log_to_console( min_severity );
-            }
-            else
-            {
-                rs2::log_to_console( RS2_LOG_SEVERITY_NONE );
-            }
+            console_severity = config_file::instance().get_or_default(
+                configurations::viewer::log_to_console, false ) ? min_severity : RS2_LOG_SEVERITY_NONE;
+            rs2::log_to_console( console_severity );
         }
+        auto file_severity = RS2_LOG_SEVERITY_NONE;
+        std::string filename = config_file::instance().get_or_default(
+            configurations::viewer::log_filename, std::string() );
         if (config_file::instance().get_or_default(
             configurations::viewer::log_to_file, false))
         {
-            std::string filename = config_file::instance().get(
-                configurations::viewer::log_filename);
-
+            file_severity = min_severity;
             rs2::log_to_file(min_severity, filename.c_str());
         }
+        configure_viewer_logger( console_severity, file_severity, filename );
 #endif
 
         show_skybox = config_file::instance().get_or_default(
