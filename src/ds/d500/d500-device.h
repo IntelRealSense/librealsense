@@ -170,6 +170,8 @@ namespace librealsense
         // every non-safety D5X5 subclass. Gated per transport - USB and MIPI publish these on
         // different FW versions. Called from each subclass ctor; no-op below the required FW.
         void register_dpp_embedded_filters();
+        // Registers the HDR mode on ep, the sensor carrying the affected streams.
+        void register_hdr_mode_option( synthetic_sensor & ep );
         void set_imu_type( const std::vector< uint8_t > & gvd_buf, ds::d500_gvd_parsed_fields * parsed_fields );
         friend class d500_depth_sensor;
 

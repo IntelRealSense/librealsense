@@ -843,6 +843,14 @@ namespace librealsense
         register_feature( std::make_shared< hdrd_filter_feature >( depth_sensor, _is_mipi_device ) );
     }
 
+    void d500_device::register_hdr_mode_option( synthetic_sensor & ep )
+    {
+        // Supported over USB only
+        if( _is_mipi_device || _fw_version < firmware_version( "7.59.46629.16494" ) )
+            return;
+        ep.register_option( RS2_OPTION_HDR_MODE, std::make_shared< hdr_mode_option >( _hw_monitor, ep.get_raw_sensor() ) );
+    }
+
     void d500_device::register_converters( synthetic_sensor & depth_sensor )
     {
         depth_sensor.register_processing_block( processing_block_factory::create_id_pbf(RS2_FORMAT_Z16, RS2_STREAM_DEPTH) );

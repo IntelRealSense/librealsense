@@ -276,6 +276,21 @@ const char * get_string( rs2_passive_depth_mode mode )
 #undef CASE
 }
 
+const char * get_string( rs2_hdr_mode mode )
+{
+#define CASE( X ) STRCASE( HDR_MODE, X )
+    switch( mode )
+    {
+    CASE( OFF )
+    CASE( SINGLE_FRAME_WDR )
+    CASE( MULTI_FRAME_HDR )
+    default:
+        assert( ! is_valid( mode ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
 const char * get_string( rs2_emitter_mode mode )
 {
 #define CASE( X ) STRCASE( EMITTER_MODE, X )
@@ -657,6 +672,7 @@ std::string const & get_string_( rs2_option value )
         CASE( ACCEL_SENSITIVITY )
         CASE( OCCUPANCY_GRID_SEGMENTATION )
         arr[RS2_OPTION_LPCL_SEGMENTATION] = "LPCL Segmentation";
+        CASE( HDR_MODE )
 #undef CASE
         return arr;
     }();
@@ -1139,6 +1155,7 @@ const char * rs2_depth_auto_exposure_mode_to_string( rs2_depth_auto_exposure_mod
 const char * rs2_colored_ir_auto_exposure_mode_to_string( rs2_colored_ir_auto_exposure_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_emitter_mode_to_string( rs2_emitter_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_passive_depth_mode_to_string( rs2_passive_depth_mode mode ) { return librealsense::get_string( mode ); }
+const char * rs2_hdr_mode_to_string( rs2_hdr_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_safety_mode_to_string( rs2_safety_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_d500_intercam_sync_mode_to_string( rs2_d500_intercam_sync_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_point_cloud_label_to_string(rs2_point_cloud_label label) { return librealsense::get_string(label); }
