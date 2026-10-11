@@ -163,6 +163,9 @@ namespace librealsense
                 if( rectification )
                     get_depth_sensor().register_option( RS2_OPTION_DUAL_RGB_RECTIFICATION, rectification );
             }
+
+            // The affected (color) streams share the depth sensor
+            register_hdr_mode_option( get_depth_sensor() );
         }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override
@@ -225,6 +228,9 @@ namespace librealsense
             ds_advanced_mode_base::initialize_advanced_mode( this );
 
             register_dpp_embedded_filters();
+
+            // Affects the color sensor streams
+            register_hdr_mode_option( get_color_sensor() );
         }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override
