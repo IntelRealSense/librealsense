@@ -36,9 +36,12 @@ def hdr_sensor(test_device):
 
 
 def color_profile(sensor, fps=30):
-    return next(p for p in sensor.profiles
-                if p.stream_type() == rs.stream.color and p.fps() == fps
-                and p.as_video_stream_profile().width() == 1280 and p.as_video_stream_profile().height() == 720)
+    profile = next((p for p in sensor.profiles
+                    if p.stream_type() == rs.stream.color and p.fps() == fps
+                    and p.as_video_stream_profile().width() == 1280 and p.as_video_stream_profile().height() == 720), None)
+    if not profile:
+        pytest.skip(f"no 1280x720 {fps} fps color profile")
+    return profile
 
 
 def test_hdr_mode_range(hdr_sensor):
