@@ -1,6 +1,14 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2026 RealSense, Inc. All Rights Reserved.
 
+# Runs the following for a mock D555 and for a mock D455 (control):
+# 1. A server process pretends to be the camera on DDS, with a depth stream and a motion (IMU) stream.
+# 2. LibRS finds it, opens its Motion sensor and starts streaming.
+# 3. The server publishes a known sample (accel 1,2,3 and gyro 0.1,0.2,0.3), repeating until a frame arrives
+#    because DDS drops samples sent before the reader connects.
+# 4. The test reads the combined-motion frame LibRS produced.
+# 5. D555: X and Z are negated, as on USB. D455: values are unchanged.
+
 import time
 import pytest
 import logging
