@@ -46,7 +46,7 @@ def setup_depth_watcher(test_device):
     dev, ctx = test_device
     _depth_sensor = dev.first_depth_sensor()
     # Gain/exposure setters turn AE off when it is on, which would add an extra notification.
-    # Disable it here so a rerun after a device recycle does not depend on test_disable_auto_exposure.
+    # Disable it here so every test starts with AE off, including a rerun after a device recycle.
     if _depth_sensor.get_option(rs.option.enable_auto_exposure) != 0:
         _depth_sensor.set_option(rs.option.enable_auto_exposure, 0)
     _depth_sensor.on_options_changed(callback)
@@ -56,21 +56,12 @@ def setup_depth_watcher(test_device):
 
 def wait_for_notifications(count, expected, timeout=5):
     """Wait until count reaches expected, then one more update interval to catch unexpected extras.
-    On timeout, return immediately so the caller's assert fails without the extra wait."""
+    On timeout or when extras already arrived, return immediately so the caller's assert fails without the extra wait."""
     deadline = time.time() + timeout
     while count[0] < expected and time.time() < deadline:
         time.sleep(0.1)
-    if count[0] >= expected:
+    if count[0] == expected:
         time.sleep(1.1)  # default options-watcher update interval is 1 second
-
-
-def test_disable_auto_exposure(test_device):
-    """Disable AE once; device state persists for subsequent tests."""
-    dev, ctx = test_device
-    depth_sensor = dev.first_depth_sensor()
-    depth_sensor.set_option(rs.option.enable_auto_exposure, 0)
-    assert depth_sensor.get_option(rs.option.enable_auto_exposure) == 0.0
-    time.sleep(1.5)  # default options-watcher update interval is 1 second
 
 
 def test_set_one_option(test_device):
