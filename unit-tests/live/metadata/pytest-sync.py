@@ -11,7 +11,6 @@ log = logging.getLogger(__name__)
 pytestmark = [
     pytest.mark.device_each("D400*"),
     pytest.mark.device_exclude("D401"),
-    pytest.mark.device_exclude("D435"),  # RSDSO-21894: temporary, ~22 ms depth-color TS gap on FW 5.17.4.27+; remove when fixed
     pytest.mark.context("nightly"),
     pytest.mark.timeout(300),
 ]

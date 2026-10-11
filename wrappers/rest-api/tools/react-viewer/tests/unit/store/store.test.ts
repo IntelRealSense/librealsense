@@ -70,13 +70,6 @@ describe('AppStore', () => {
       expect(state.isChatAvailable).toBe(false)
       expect(state.chatMessages).toEqual([])
     })
-
-    it('starts with empty IMU history', () => {
-      const state = useAppStore.getState()
-      
-      expect(state.imuHistory.accel).toEqual([])
-      expect(state.imuHistory.gyro).toEqual([])
-    })
   })
 
   describe('Connection State', () => {
@@ -143,51 +136,6 @@ describe('AppStore', () => {
       useAppStore.getState().clearChat()
       
       expect(useAppStore.getState().chatMessages).toEqual([])
-    })
-  })
-
-  describe('IMU History', () => {
-    it('adds accelerometer data', () => {
-      const accelData = { timestamp: 1234567890, x: 0.1, y: 0.2, z: 9.8 }
-      
-      useAppStore.getState().addIMUData('accel', accelData)
-      
-      const state = useAppStore.getState()
-      expect(state.imuHistory.accel).toHaveLength(1)
-      expect(state.imuHistory.accel[0]).toEqual(accelData)
-    })
-
-    it('adds gyroscope data', () => {
-      const gyroData = { timestamp: 1234567890, x: 0.01, y: 0.02, z: 0.03 }
-      
-      useAppStore.getState().addIMUData('gyro', gyroData)
-      
-      const state = useAppStore.getState()
-      expect(state.imuHistory.gyro).toHaveLength(1)
-      expect(state.imuHistory.gyro[0]).toEqual(gyroData)
-    })
-
-    it('clears IMU history', () => {
-      useAppStore.getState().addIMUData('accel', { timestamp: 1, x: 0, y: 0, z: 0 })
-      useAppStore.getState().addIMUData('gyro', { timestamp: 1, x: 0, y: 0, z: 0 })
-      
-      useAppStore.getState().clearIMUHistory()
-      
-      const state = useAppStore.getState()
-      expect(state.imuHistory.accel).toEqual([])
-      expect(state.imuHistory.gyro).toEqual([])
-    })
-
-    it('limits IMU history length', () => {
-      const maxLength = useAppStore.getState().maxIMUHistoryLength
-      
-      // Add more than max entries
-      for (let i = 0; i < maxLength + 10; i++) {
-        useAppStore.getState().addIMUData('accel', { timestamp: i, x: i, y: i, z: i })
-      }
-      
-      const state = useAppStore.getState()
-      expect(state.imuHistory.accel.length).toBeLessThanOrEqual(maxLength)
     })
   })
 

@@ -145,6 +145,10 @@ extern "C" {
         RS2_OPTION_EMITTER_MODE, /**< Emitter mode, mutually exclusive values: Off, On, Always On (constant laser), On Off (alternating per frame) */
         RS2_OPTION_ENABLE_ALIGNED_DEPTH, /**< Device-side depth-to-color alignment: the depth stream returns Z16 aligned to the color viewport. */
         RS2_OPTION_PASSIVE_DEPTH_MODE, /**< D585 2C: which exposure classes produce depth, see rs2_passive_depth_mode for values (pre-stream only) */
+        RS2_OPTION_DUAL_RGB_ENABLE_AUTO_EXPOSURE, /**< D585 2C: enable / disable auto-exposure of the RGB cameras, independent of the depth auto-exposure */
+        RS2_OPTION_DUAL_RGB_EXPOSURE, /**< D585 2C: RGB exposure time in 100 microsecond units, like other color sensors. Setting any value disables RGB auto-exposure */
+        RS2_OPTION_DUAL_RGB_GAIN, /**< D585 2C: RGB gain. Setting any value disables RGB auto-exposure */
+        RS2_OPTION_ACCEL_SENSITIVITY, /**< Control of the accel sensitivity (dynamic range) level, see rs2_accel_sensitivity for values. Selects the saturation point only, the reported unit scale is unchanged */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -387,6 +391,17 @@ extern "C" {
         RS2_GYRO_SENSITIVITY_COUNT
     } rs2_gyro_sensitivity;
     const char * rs2_gyro_sensitivity_to_string( rs2_gyro_sensitivity mode );
+
+    /** \brief values for RS2_OPTION_ACCEL_SENSITIVITY option, the accelerometer full-scale range. */
+    typedef enum rs2_accel_sensitivity
+    {
+        RS2_ACCEL_SENSITIVITY_3G = 0,
+        RS2_ACCEL_SENSITIVITY_6G = 1,
+        RS2_ACCEL_SENSITIVITY_12G = 2,
+        RS2_ACCEL_SENSITIVITY_24G = 3,
+        RS2_ACCEL_SENSITIVITY_COUNT
+    } rs2_accel_sensitivity;
+    const char * rs2_accel_sensitivity_to_string( rs2_accel_sensitivity mode );
 
     /**
     * check if an option is read-only

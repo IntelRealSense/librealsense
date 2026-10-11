@@ -65,6 +65,7 @@ namespace librealsense
             if( dynamic_cast< color_sensor * >( base ) )
                 _color_sensor = base;
         }
+        _dual_rgb = ! _color_sensor && _depth_sensor->supports_option( RS2_OPTION_DUAL_RGB_EXPOSURE );
 
         device_specific_initialization();
 
@@ -406,20 +407,20 @@ namespace librealsense
         }
     }
 
-    void ds_advanced_mode_base::get_exposure( sensor_base * sensor, exposure_control * ptr ) const
+    void ds_advanced_mode_base::get_exposure( sensor_base * sensor, exposure_control * ptr, rs2_option id ) const
     {
-        if( supports_option( sensor, RS2_OPTION_EXPOSURE ) )
+        if( supports_option( sensor, id ) )
         {
-            ptr->exposure = sensor->get_option(RS2_OPTION_EXPOSURE).query();
+            ptr->exposure = sensor->get_option( id ).query();
             ptr->was_set = true;
         }
     }
 
-    void ds_advanced_mode_base::get_auto_exposure( sensor_base * sensor, auto_exposure_control * ptr ) const
+    void ds_advanced_mode_base::get_auto_exposure( sensor_base * sensor, auto_exposure_control * ptr, rs2_option id ) const
     {
-        if( supports_option( sensor, RS2_OPTION_ENABLE_AUTO_EXPOSURE ) )
+        if( supports_option( sensor, id ) )
         {
-            ptr->auto_exposure = static_cast< int >( sensor->get_option( RS2_OPTION_ENABLE_AUTO_EXPOSURE ).query() );
+            ptr->auto_exposure = static_cast< int >( sensor->get_option( id ).query() );
             ptr->was_set = true;
         }
     }
@@ -676,16 +677,16 @@ namespace librealsense
             _depth_sensor->get_option( RS2_OPTION_EMITTER_ENABLED ).set( (float)val.laser_state );
     }
 
-    void ds_advanced_mode_base::set_exposure( sensor_base * sensor, const exposure_control & val )
+    void ds_advanced_mode_base::set_exposure( sensor_base * sensor, const exposure_control & val, rs2_option id )
     {
         if( sensor )
-            sensor->get_option( RS2_OPTION_EXPOSURE ).set( val.exposure );
+            sensor->get_option( id ).set( val.exposure );
     }
 
-    void ds_advanced_mode_base::set_auto_exposure( sensor_base * sensor, const auto_exposure_control & val )
+    void ds_advanced_mode_base::set_auto_exposure( sensor_base * sensor, const auto_exposure_control & val, rs2_option id )
     {
         if( sensor )
-            sensor->get_option( RS2_OPTION_ENABLE_AUTO_EXPOSURE ).set( float( val.auto_exposure ) );
+            sensor->get_option( id ).set( float( val.auto_exposure ) );
     }
 
     void ds_advanced_mode_base::set_depth_exposure(const exposure_control& val)
@@ -908,6 +909,9 @@ namespace librealsense
             get_color_power_line_frequency( &p.color_power_line_frequency );
         }
 
+        if( _dual_rgb )
+            get_dual_rgb( &p );
+
         get_hdr_preset( &p.auto_hdr );
 
         return p;
@@ -918,6 +922,8 @@ namespace librealsense
         set_all_depth( p );
         if( should_set_rgb_preset() )
             set_all_rgb( p );
+        if( _dual_rgb )
+            set_all_dual_rgb( p );
         if( should_set_hdr_preset(p) )
             set_hdr_preset( p );
     }
@@ -987,6 +993,31 @@ namespace librealsense
 
             // TODO: W/O due to a FW bug of power_line_frequency control on Windows OS
             // set_color_power_line_frequency(p.color_power_line_frequency);
+        }
+    }
+
+    void ds_advanced_mode_base::get_dual_rgb( preset * p ) const
+    {
+        get_exposure( _depth_sensor, &p->color_exposure, RS2_OPTION_DUAL_RGB_EXPOSURE );
+        get_auto_exposure( _depth_sensor, &p->color_auto_exposure, RS2_OPTION_DUAL_RGB_ENABLE_AUTO_EXPOSURE );
+        if( supports_option( _depth_sensor, RS2_OPTION_DUAL_RGB_GAIN ) )
+        {
+            p->color_gain.gain = _depth_sensor->get_option( RS2_OPTION_DUAL_RGB_GAIN ).query();
+            p->color_gain.was_set = true;
+        }
+    }
+
+    void ds_advanced_mode_base::set_all_dual_rgb( const preset & p )
+    {
+        if( p.color_auto_exposure.was_set )
+            set_auto_exposure( _depth_sensor, p.color_auto_exposure, RS2_OPTION_DUAL_RGB_ENABLE_AUTO_EXPOSURE );
+
+        if( p.color_auto_exposure.was_set && p.color_auto_exposure.auto_exposure == 0 )
+        {
+            if( p.color_exposure.was_set )
+                set_exposure( _depth_sensor, p.color_exposure, RS2_OPTION_DUAL_RGB_EXPOSURE );
+            if( p.color_gain.was_set )
+                _depth_sensor->get_option( RS2_OPTION_DUAL_RGB_GAIN ).set( p.color_gain.gain );
         }
     }
 

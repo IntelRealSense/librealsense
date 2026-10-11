@@ -4,6 +4,7 @@
 #include "d500-dual-color.h"
 #include "d500-info.h"
 #include "environment.h"
+#include "frame.h"
 #include "metadata.h"
 #include "proc/color-formats-converter.h"  // m420_converter, nv12_converter
 #include <src/proc/identity-processing-block.h>
@@ -61,7 +62,13 @@ namespace librealsense
             raw_fourcc_to_rs2_stream_map->insert( { entry.first, RS2_STREAM_INFRARED } );
         }
 
-        raw_depth_sensor->set_stream_id_resolver( resolve_color_stream );
+        raw_depth_sensor->set_stream_id_resolver( [this]( const std::vector< platform::stream_profile > & all,
+                                                          const platform::stream_profile & p,
+                                                          rs2_stream & type,
+                                                          int & index )
+                                                  { resolve_color_stream( all, p, type, index ); } );
+        depth_sensor.set_frame_stream_resolver( RS2_STREAM_COLOR,
+                                                [this]( const frame_interface * f, int & index ) { return resolve_color_frame( f, index ); } );
 
         // NV12 registered before M420 so RGB targets resolve to NV12 when present, and to M420 when it is not
         // (converter breaks ties by registration order).
@@ -152,25 +159,6 @@ namespace librealsense
         }
     }
 
-    void d500_dual_color::register_ae_policy_option()
-    {
-        if( _fw_version < firmware_version( "7.58.45946.14332" ) )
-            return;
-
-        // IR imagers feed both RGB and depth at once, so AE has to be arbitrated between the IPU (color priority) and the SDP (depth priority).
-        auto options_map = std::map< float, std::string >{ { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_AUTO ), "Auto" },
-                                                           { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_DEPTH_PRIORITY ), "Depth Priority" },
-                                                           { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_COLOR_PRIORITY ), "Color Priority" },
-                                                           { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_HYBRID ), "Hybrid" } };
-        auto ae_policy = std::make_shared< colored_ir_ae_policy_option >( get_raw_depth_sensor(),
-                                                                          options_map,
-                                                                          _passive_depth_mode );
-        get_depth_sensor().register_option( RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE, ae_policy );
-
-        if( _passive_depth_mode )
-            _passive_depth_mode->set_ae_policy_option( ae_policy );
-    }
-
     static int32_t range_field( const std::vector< uint8_t > & raw )
     {
         int32_t value = 0;
@@ -221,6 +209,31 @@ namespace librealsense
             LOG_DEBUG( "Control " << id << " not published: " << e.what() );
             return false;
         }
+    }
+
+    void d500_dual_color::register_ae_policy_option()
+    {
+        if( _fw_version < firmware_version( "7.58.45946.14332" ) )
+            return;
+        if( ! is_xu_published( get_raw_depth_sensor(), ds::depth_xu, ds::d500_xu_id::COLORED_IR_AE_POLICY,
+                               sizeof( uint8_t ), RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE ) )
+        {
+            LOG_ERROR( "Auto exposure policy control not available, " << RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE << " is not registered" );
+            return;
+        }
+
+        // IR imagers feed both RGB and depth at once, so AE has to be arbitrated between the IPU (color priority) and the SDP (depth priority).
+        auto options_map = std::map< float, std::string >{ { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_AUTO ), "Auto" },
+                                                           { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_DEPTH_PRIORITY ), "Depth Priority" },
+                                                           { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_COLOR_PRIORITY ), "Color Priority" },
+                                                           { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_HYBRID ), "Hybrid" } };
+        auto ae_policy = std::make_shared< colored_ir_ae_policy_option >( get_raw_depth_sensor(),
+                                                                          options_map,
+                                                                          _passive_depth_mode );
+        get_depth_sensor().register_option( RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE, ae_policy );
+
+        if( _passive_depth_mode )
+            _passive_depth_mode->set_ae_policy_option( ae_policy );
     }
 
     // Selects which exposure classes produce depth. Reaching here means a dual-RGB device; the GMSL driver
@@ -279,6 +292,22 @@ namespace librealsense
                          RS2_OPTION_SATURATION, RS2_OPTION_GAMMA, RS2_OPTION_SHARPNESS, RS2_OPTION_HUE } )
             if( is_pu_published( raw_ep, rgb_pu, id ) )
                 color_ep.register_option( id, make_rgb_option( id ) );
+
+        // The standard exposure / gain / AE options stay with the depth sensor, so RGB gets its own IDs.
+        // A user's RS2_OPTION_DUAL_RGB_EXPOSURE is routed to the standard RS2_OPTION_EXPOSURE, which is the ID the backends
+        // know, but bound to the RGB PU. Same for DUAL_RGB_GAIN -> GAIN and DUAL_RGB_ENABLE_AUTO_EXPOSURE -> ENABLE_AUTO_EXPOSURE.
+        if( is_pu_published( raw_ep, rgb_pu, RS2_OPTION_ENABLE_AUTO_EXPOSURE )
+            && is_pu_published( raw_ep, rgb_pu, RS2_OPTION_EXPOSURE )
+            && is_pu_published( raw_ep, rgb_pu, RS2_OPTION_GAIN ) )
+        {
+            auto exposure = make_rgb_option( RS2_OPTION_EXPOSURE );
+            auto auto_exposure = std::make_shared< uvc_pu_auto_exposure_option >( raw_ep, exposure, rgb_pu );
+            color_ep.register_option( RS2_OPTION_DUAL_RGB_ENABLE_AUTO_EXPOSURE, auto_exposure );
+            color_ep.register_option( RS2_OPTION_DUAL_RGB_EXPOSURE,
+                                      std::make_shared< auto_disabling_control >( exposure, auto_exposure ) );
+            color_ep.register_option( RS2_OPTION_DUAL_RGB_GAIN,
+                                      std::make_shared< auto_disabling_control >( make_rgb_option( RS2_OPTION_GAIN ), auto_exposure ) );
+        }
 
         if( is_pu_published( raw_ep, rgb_pu, RS2_OPTION_POWER_LINE_FREQUENCY ) )
         {
@@ -419,9 +448,50 @@ namespace librealsense
             ++rank;
         }
 
-        // Assign in descending order so the highest pin -> Color 1, matching infrared 1 / 2.
+        _color_pins = static_cast< int >( color_pins.size() );
         type = RS2_STREAM_COLOR;
-        index = static_cast< int >( color_pins.size() ) - rank;
+        // A single pin carries both sources multiplexed; resolve_color_frame assigns Color 1 / 2 per frame.
+        // Separate pins are assigned in descending order so the highest pin -> Color 1, matching infrared 1 / 2.
+        index = _color_pins == 1 ? 0 : _color_pins - rank;
+    }
+
+    // Configuration metadata v4 names the source of every frame on a multiplexed pin; without it such a pin
+    // carries the left source only. Separate pins keep the identity assigned at enumeration.
+    bool d500_dual_color::resolve_color_frame( const frame_interface * f, int & index )
+    {
+        if( _color_pins != 1 )
+            return true;
+
+        constexpr size_t configuration_offset = metadata_raw_mode_offset + offsetof( md_rgb_mode, rgb_mode )
+                                              + offsetof( md_rgb_normal_mode, intel_configuration );
+        constexpr uint32_t source_index_version = 4;
+
+        const md_configuration * configuration = nullptr;
+        if( auto frame = dynamic_cast< const librealsense::frame * >( f ) )
+            if( frame->additional_data.metadata_size >= configuration_offset + sizeof( md_configuration ) )
+            {
+                auto candidate = reinterpret_cast< const md_configuration * >( frame->additional_data.metadata_blob.data() + configuration_offset );
+                if( candidate->header.md_type_id == md_type::META_DATA_INTEL_CONFIGURATION_ID
+                    && candidate->version >= source_index_version )
+                    configuration = candidate;
+            }
+
+        if( ! configuration )
+        {
+            if( ! _warned_no_source_index.exchange( true ) )
+                LOG_WARNING( "Color metadata carries no source index; delivering Color 1 only" );
+            index = 1;
+            return true;
+        }
+        if( configuration->source_index > 1 )
+        {
+            LOG_WARNING( "Dropping color frame with invalid source index " << int( configuration->source_index ) );
+            return false;
+        }
+
+        index = configuration->source_index + 1;
+
+        return true;
     }
 
     // Identify a color pin: it advertises the native color format (M420 or NV12) paired with a YUY2/YUYV

@@ -206,7 +206,6 @@ namespace rs2
                         error_message = "Exporter not implemented";
                     else if (auto ret = file_dialog_open(save_file, curr_exporter->second.filters.data(), NULL, NULL))
                     {
-                        auto model = ppf.get_points();
                         frame tex;
                         if (selected_tex_source_uid >= 0 && streams.find(selected_tex_source_uid) != streams.end())
                         {
@@ -1084,6 +1083,7 @@ namespace rs2
                 last_texture.reset();
                 selected_tex_source_uid = -1;
             }
+            _gpu_ruler_samples.erase( i );
             streams.erase(i);
         }
         {
@@ -1692,47 +1692,20 @@ namespace rs2
         std::map<int, frame> last_frames;
         try
         {
-            size_t index = 0;
-            while (ppf.resulting_queue.poll_for_frame(&f) && ++index < ppf.resulting_queue_max_size)
+            // Keep frames of shown streams, their post-processed outputs, and the point cloud
+            for( auto && kv : ppf.take_latest_frames( f ) )
             {
-                // Open the frame-set and validate the incoming frame originated from one of the source streams
-                // and save the frames on last_frames
-                // if one of the streams is missing we will use the last frame arrived
-                // point cloud is not a stream type yet it's a frame we want to display
-                if (f.is<rs2::frameset>())
+                // Keyed by uid here; re-key per tile, and where a stream is not split keep its newest class
+                auto & frame = kv.second;
+                auto profile_id = frame.get_profile().unique_id();
+                auto stream_origin_iter = streams_origin.find( profile_id );
+                if( frame.is< points >() || streams.find( profile_id ) != streams.end()
+                    || ( stream_origin_iter != streams_origin.end()
+                         && streams.find( stream_origin_iter->second ) != streams.end() ) )
                 {
-                    for (auto frame : f.as<rs2::frameset>())
-                    {
-                        auto profile_id = frame.get_profile().unique_id();
-
-                        if (frame.is< points >() || streams.find(profile_id) != streams.end())
-                        {
-                            last_frames[profile_id] = frame;
-                            continue;
-                        }
-
-                        auto stream_origin_iter = streams_origin.find(profile_id);
-                        if( (stream_origin_iter != streams_origin.end() && streams.find( stream_origin_iter->second ) != streams.end() ))
-                        {
-                            last_frames[ profile_id ] = frame;
-                        }
-                    }
-                }
-                else
-                {
-                    auto profile_id = f.get_profile().unique_id();
-
-                    if (f.is< points >() || streams.find(profile_id) != streams.end())
-                    {
-                        last_frames[profile_id] = f;
-                        continue;
-                    }
-
-                    auto stream_origin_iter = streams_origin.find(profile_id);
-                    if ((stream_origin_iter != streams_origin.end() && streams.find(stream_origin_iter->second) != streams.end()))
-                    {
-                        last_frames[profile_id] = f;
-                    }
+                    auto & slot = last_frames[last_frames_key( frame )];
+                    if( ! slot || frame.get_frame_number() > slot.get_frame_number() )
+                        slot = frame;
                 }
             }
 
@@ -1762,7 +1735,8 @@ namespace rs2
 
                 auto texture = upload_frame( std::move( f ) );
 
-                if ( should_texture_frame_be_updated(f) )
+                // A split stream's passive frames carry the offset key; the point cloud texture follows the active class
+                if ( frame.first == f.get_profile().unique_id() && should_texture_frame_be_updated(f) )
                 {
                     texture_frame = texture;
                 }
@@ -2090,6 +2064,98 @@ namespace rs2
         glVertex2f(right_x_numbered_ruler + right_line_offset / 2, bottom_y_ruler + top_line_offset);
         glVertex2f(left_x_colored_ruler - top_line_offset, bottom_y_ruler + top_line_offset);
         glEnd();
+    }
+
+    void viewer_model::sample_ruler_pixels( const rs2::video_frame & depth, const rs2::video_frame & colorized,
+                                            std::vector< rgb_per_distance > & colors, std::vector< float > & distances )
+    {
+        auto width = depth.get_width();
+        auto height = depth.get_height();
+        // The colorized pixels are indexed by depth position, so the two must be the same size
+        if( RS2_FORMAT_RGB8 != colorized.get_profile().format()
+            || colorized.get_width() != width || colorized.get_height() != height )
+            return;
+        auto depth_data = static_cast< const uint16_t * >( depth.get_data() );
+        auto colorized_data = static_cast< const uint8_t * >( colorized.get_data() );
+        // Take the scale off the frame, like the colorizer does: sensors that don't
+        // expose RS2_OPTION_DEPTH_UNITS (DDS) leave the cached value at its 1.0 default.
+        const float depth_scale = depth.as< depth_frame >().get_units();
+        static const auto skip_pixels_factor = 30;
+        for( uint64_t i = 0; i < height; i += skip_pixels_factor )
+        {
+            for( uint64_t j = 0; j < width; j += skip_pixels_factor )
+            {
+                auto depth_index = i * width + j;
+                auto length = depth_data[depth_index] * depth_scale;
+                if( length > 0.f )
+                {
+                    auto colorized_index = depth_index * 3;
+                    colors.push_back( { length,
+                                        { colorized_data[colorized_index],
+                                          colorized_data[colorized_index + 1],
+                                          colorized_data[colorized_index + 2] } } );
+                    distances.push_back( length );
+                }
+            }
+        }
+    }
+
+    // Mirrors the tile colorizer's settings, so the ruler colors match what the tile shows.
+    static void copy_colorizer_options( rs2::colorizer & from, rs2::colorizer & to )
+    {
+        // The preset rewrites the other options, so it goes first and the explicit values land on top of it.
+        // Setting min/max distance turns histogram equalization off, so that one goes last.
+        auto options = from.get_supported_options();
+        auto rank = []( rs2_option o )
+        {
+            return o == RS2_OPTION_VISUAL_PRESET ? 0 : o == RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED ? 2 : 1;
+        };
+        std::stable_sort( options.begin(), options.end(),
+                          [&]( rs2_option a, rs2_option b ) { return rank( a ) < rank( b ); } );
+        for( auto option : options )
+        {
+            if( from.is_option_read_only( option ) || ! to.supports( option ) || to.is_option_read_only( option ) )
+                continue;
+            auto value = from.get_option( option );
+            if( to.get_option( option ) != value )
+                to.set_option( option, value );
+        }
+    }
+
+    bool viewer_model::sample_ruler( int stream_key, stream_model & s_model,
+                                     std::vector< rgb_per_distance > & colors, std::vector< float > & distances )
+    {
+        auto depth = s_model.texture->get_last_frame().as< video_frame >();
+        auto colorized = s_model.texture->get_last_frame( true ).as< video_frame >();
+        if( ! depth || ! colorized )
+            return false;
+
+        // CPU-colorized tile: its pixels are already in memory, so sampling every frame costs next to nothing.
+        if( ! colorized.is< gl::gpu_frame >() )
+        {
+            sample_ruler_pixels( depth, colorized, colors, distances );
+            return ! distances.empty();
+        }
+
+        // GPU-colorized tile: reading its pixels waits on the GPU while holding the GL context the post-processing thread
+        // uploads through, stalling both under load. The depth pixels are kept on the CPU, so colorize those there instead.
+        // That is an extra colorization, redo only for a new frame and at most every 100 ms, refreshes fast enough for a scale.
+        auto & cached = _gpu_ruler_samples[stream_key];
+        auto now = std::chrono::steady_clock::now();
+        if( depth.get_frame_number() != cached.frame_number && now - cached.taken > std::chrono::milliseconds( 100 ) )
+        {
+            if( ! _ruler_colorizer )
+                _ruler_colorizer = std::make_shared< rs2::colorizer >();
+            copy_colorizer_options( *s_model.texture->colorize, *_ruler_colorizer );
+            cached.colors.clear();
+            cached.distances.clear();
+            sample_ruler_pixels( depth, _ruler_colorizer->colorize( depth ), cached.colors, cached.distances );
+            cached.frame_number = depth.get_frame_number();
+            cached.taken = now;
+        }
+        colors = cached.colors;
+        distances = cached.distances;
+        return ! distances.empty();
     }
 
     viewer_model::ruler_bounds viewer_model::calculate_ruler_bounds(
@@ -2499,52 +2565,18 @@ namespace rs2
             stream_rect.w += 1;
             draw_rect(stream_rect);
 
-            auto frame = streams[stream].texture->get_last_frame().as<video_frame>();
-            auto textured_frame = streams[stream].texture->get_last_frame(true).as<video_frame>();
-            if (streams[stream].show_map_ruler && frame && textured_frame &&
+            std::vector<rgb_per_distance> rgb_per_distance_vec;
+            std::vector<float> distances;
+            if (streams[stream].show_map_ruler &&
                 RS2_STREAM_DEPTH == stream_mv.profile.stream_type() &&
-                RS2_FORMAT_Z16 == stream_mv.profile.format())
+                RS2_FORMAT_Z16 == stream_mv.profile.format() &&
+                sample_ruler( stream, streams[stream], rgb_per_distance_vec, distances ))
             {
-                if(RS2_FORMAT_RGB8 == textured_frame.get_profile().format())
-                {
-                    static const std::string depth_units = "m";
-                    auto depth_vid_profile = stream_mv.profile.as<video_stream_profile>();
-                    auto depth_width = depth_vid_profile.width();
-                    auto depth_height = depth_vid_profile.height();
-                    auto depth_data = static_cast<const uint16_t*>(frame.get_data());
-                    auto textured_depth_data = static_cast<const uint8_t*>(textured_frame.get_data());
-                    // Take the scale off the frame, like the colorizer does: sensors that don't
-                    // expose RS2_OPTION_DEPTH_UNITS (DDS) leave the cached value at its 1.0 default.
-                    const float depth_scale = frame.as<depth_frame>().get_units();
-                    static const auto skip_pixels_factor = 30;
-                    std::vector<rgb_per_distance> rgb_per_distance_vec;
-                    std::vector<float> distances;
-                    for (uint64_t i = 0; i < depth_height; i+= skip_pixels_factor)
-                    {
-                        for (uint64_t j = 0; j < depth_width; j+= skip_pixels_factor)
-                        {
-                            auto depth_index = i*depth_width + j;
-                            auto length = depth_data[depth_index] * depth_scale;
-                            if (length > 0.f)
-                            {
-                                auto textured_depth_index = depth_index * 3;
-                                auto r = textured_depth_data[textured_depth_index];
-                                auto g = textured_depth_data[textured_depth_index + 1];
-                                auto b = textured_depth_data[textured_depth_index + 2];
-                                rgb_per_distance_vec.push_back({ length, { r, g, b } });
-                                distances.push_back(length);
-                            }
-                        }
-                    }
-
-                    if (!distances.empty())
-                    {
-                        auto bounds = calculate_ruler_bounds(std::move(distances),
-                                                             streams[stream]);
-                        draw_color_ruler(active_mouse, streams[stream], stream_rect,
-                                         rgb_per_distance_vec, bounds, depth_units);
-                    }
-                }
+                static const std::string depth_units = "m";
+                auto bounds = calculate_ruler_bounds(std::move(distances),
+                                                     streams[stream]);
+                draw_color_ruler(active_mouse, streams[stream], stream_rect,
+                                 rgb_per_distance_vec, bounds, depth_units);
             }
         }
 
@@ -4028,9 +4060,6 @@ namespace rs2
         mouse.prev_cursor = mouse.cursor;
     }
 
-    // Keys the passive tile of a split stream; kept clear of the unique ids the SDK hands out.
-    static const int PASSIVE_STREAM_KEY_OFFSET = 0x10000000;
-
     // Only Alternating Passive Depth interleaves the two exposure classes on one profile. Full Passive
     // delivers passive frames alone, so they stay on the stream's own tile.
     static bool splits_passive_depth( const std::shared_ptr<subdevice_model>& d, const rs2::stream_profile& p )
@@ -4133,20 +4162,13 @@ namespace rs2
 
     bool viewer_model::is_3d_depth_source(frame f)
     {
+        // While the stream is split the point cloud follows the active class; Full Passive is not split,
+        // so its passive frames still feed the 3D view.
+        if( is_split_passive_frame( f ) )
+            return false;
 
         auto index = f.get_profile().unique_id();
         auto mapped_index = streams_origin[index];
-
-        // While the stream is split the point cloud follows the active class; Full Passive is not split,
-        // so its passive frames still feed the 3D view. Reached from the frame callback and the
-        // post-processing thread, so the lookup needs the lock begin_stream writes under.
-        bool split = false;
-        {
-            std::lock_guard< std::mutex > lock( streams_mutex );
-            split = passive_streams.count( index ) || passive_streams.count( mapped_index );
-        }
-        if( split && is_passive_frame( f ) )
-            return false;
 
         if(index == selected_depth_source_uid || mapped_index  == selected_depth_source_uid
                 ||(selected_depth_source_uid == -1 && f.get_profile().stream_type() == RS2_STREAM_DEPTH))
@@ -4179,6 +4201,29 @@ namespace rs2
     {
         return f.supports_frame_metadata( RS2_FRAME_METADATA_FRAME_EMITTER_MODE )
             && f.get_frame_metadata( RS2_FRAME_METADATA_FRAME_EMITTER_MODE ) == RS2_EMITTER_MODE_OFF;
+    }
+
+    // A split stream delivers both exposure classes on one profile, and several frames can arrive in one
+    // UI iteration. Keying the passive class apart keeps the latest of each, so neither tile starves.
+    int viewer_model::last_frames_key( const rs2::frame & f )
+    {
+        auto profile_id = f.get_profile().unique_id();
+        return is_split_passive_frame( f ) ? profile_id + PASSIVE_STREAM_KEY_OFFSET : profile_id;
+    }
+
+    // A laser-off frame of a stream that Alternating Passive Depth splits into two tiles. Reached from the UI,
+    // frame callback and post-processing threads, so the lookup needs the lock begin_stream writes under.
+    bool viewer_model::is_split_passive_frame( const rs2::frame & f )
+    {
+        auto index = f.get_profile().unique_id();
+        {
+            std::lock_guard< std::mutex > lock( streams_mutex );
+            auto origin = streams_origin.find( index );
+            if( ! passive_streams.count( index )
+                && ( origin == streams_origin.end() || ! passive_streams.count( origin->second ) ) )
+                return false;
+        }
+        return is_passive_frame( f );
     }
 
     std::shared_ptr< subdevice_model > viewer_model::get_frame_subdevice( rs2::frame const & frame ) const
@@ -4314,10 +4359,6 @@ namespace rs2
         }
         objects->ticks_without_od_frame = 0;
 
-        // OD frame arrived but depth not yet available — skip without clearing
-        if( ! df )
-            return;
-
         // Fresh OD frame with no detections — clear
         if( odf.get_detection_count() == 0 )
         {
@@ -4329,17 +4370,22 @@ namespace rs2
         try
         {
             auto color_vsp = cf.get_profile().as< rs2::video_stream_profile >();
-            auto depth_vsp = df.get_profile().as< rs2::video_stream_profile >();
-
             rs2_intrinsics color_intrin = color_vsp.get_intrinsics();
-            rs2_intrinsics depth_intrin = depth_vsp.get_intrinsics();
-            rs2_extrinsics color_to_depth = color_vsp.get_extrinsics_to( depth_vsp );
-            rs2_extrinsics depth_to_color = depth_vsp.get_extrinsics_to( color_vsp );
-
             rs2::rect color_frame_rect{ 0.f, 0.f, float( color_intrin.width ), float( color_intrin.height ) };
-            rs2::rect depth_frame_rect{ 0.f, 0.f, float( depth_intrin.width ), float( depth_intrin.height ) };
 
-            uint16_t const * const depth_data = reinterpret_cast< uint16_t const * >( df.get_data() );
+            // Depth is optional: only the viewer-side distance fallback below needs it
+            rs2_intrinsics depth_intrin{};
+            rs2_extrinsics color_to_depth{}, depth_to_color{};
+            uint16_t const * depth_data = nullptr;
+            if( df )
+            {
+                auto depth_vsp = df.get_profile().as< rs2::video_stream_profile >();
+                depth_intrin = depth_vsp.get_intrinsics();
+                color_to_depth = color_vsp.get_extrinsics_to( depth_vsp );
+                depth_to_color = depth_vsp.get_extrinsics_to( color_vsp );
+                depth_data = reinterpret_cast< uint16_t const * >( df.get_data() );
+            }
+            rs2::rect depth_frame_rect{ 0.f, 0.f, float( depth_intrin.width ), float( depth_intrin.height ) };
 
             com::depth_image_16 com_raw{ depth_data, depth_intrin.width, depth_intrin.height };
             std::vector< uint8_t > depth8u_buf( depth_intrin.width * depth_intrin.height );
@@ -4401,7 +4447,7 @@ namespace rs2
                 // Checked per-detection intentionally: firmware could return 0 for individual
                 // detections (e.g. out-of-range) even when HKR COM is otherwise working.
                 // Remove once HKR COM is fully implemented and reliable on all devices.
-                if( hkr_depth_m == 0.f )
+                if( hkr_depth_m == 0.f && df )
                 {
                     if( !depth8u_ready )
                     {
@@ -4516,7 +4562,8 @@ namespace rs2
                 _measurements.show_tooltip(window);
         }
 
-        if (ImGui::IsKeyPressed(ImGuiKey_Space))
+        // Space also activates the focused widget (combo, checkbox, button); only pause when it didn't
+        if (ImGui::IsKeyPressed(ImGuiKey_Space) && !GImGui->NavActivateId && !ImGui::GetActiveID())
         {
             if (paused)
             {

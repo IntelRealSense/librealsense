@@ -97,8 +97,16 @@ namespace rs2
         // Restore might be called several times, restore only if options where actually saved.
         if( _options_saved )
         {
-            restore_laser_emitter_state();
-            restore_thermal_loop_state();
+            // Called from GUI button handlers, an escaping exception would leave the ImGui frame unbalanced
+            try
+            {
+                restore_laser_emitter_state();
+                restore_thermal_loop_state();
+            }
+            catch( const std::exception & e )
+            {
+                log( rsutils::string::from() << "Failed to restore options after calibration: " << e.what() );
+            }
             _options_saved = false;
         }
     }
@@ -174,6 +182,9 @@ namespace rs2
                         _sub->stop(_viewer.not_model);
                     if (_sub_color.get() && _sub_color->streaming)
                         _sub_color->stop(_viewer.not_model);
+
+                    // Calibration may change and restore advanced controls on its own, re-read them once it ends
+                    _model.get_curr_advanced_controls = true;
                 });
 
             // Wait until frames from all active profiles stop arriving
@@ -641,8 +652,28 @@ namespace rs2
 
             if (!_sub->is_selected_combination_supported())
             {
-                return false;
+                // (0, 0, 0) keeps the user's selection, which may not support the enabled streams
+                // (e.g. D455 1280x800 is IR only, no depth). Fall back to the sensor default profiles.
+                if( w != 0 || h != 0 )
+                    return false;
+
+                std::vector< stream_profile > defaults;
+                for( auto && p : _sub->profiles )
+                {
+                    auto enabled = _sub->stream_enabled.find( p.unique_id() );
+                    if( p.is_default() && enabled != _sub->stream_enabled.end() && enabled->second )
+                        defaults.push_back( p );
+                }
+                if( defaults.empty() )
+                    return false;
+
+                _sub->update_ui( defaults );
+                if( ! _sub->is_selected_combination_supported() )
+                    return false;
             }
+
+            // Selection was changed directly, not via the UI
+            _sub->store_ui_selection();
 
             auto profiles = _sub->get_selected_profiles();
 
@@ -658,6 +689,7 @@ namespace rs2
                 }
 
                 _sub_color->select_resolution( w, h, RS2_STREAM_COLOR );
+                _sub_color->store_ui_selection();
 
                 profiles_color = _sub_color->get_selected_profiles();
             }
@@ -1336,16 +1368,7 @@ namespace rs2
             {
                 log( "Calibration failed with exception" );
                 stop_viewer(invoke);
-                if (_ui.get())
-                {
-                    _sub->ui = *_ui;
-                    _ui.reset();
-                }
-                if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB && _sub_color.get() && _ui_color.get())
-                {
-                    _sub_color->ui = *_ui_color;
-                    _ui_color.reset();
-                }
+                restore_ui_selection();
 
                 if (_was_streaming)
                     start_viewer(0, 0, 0, invoke);
@@ -1366,16 +1389,7 @@ namespace rs2
         if (action != RS2_CALIB_ACTION_UVMAPPING_CALIB)
         {
             stop_viewer(invoke);
-            if (_sub.get() && _ui.get())
-            {
-                _sub->ui = *_ui;
-                _ui.reset();
-            }
-            if (_sub_color.get() && _ui_color.get())
-            {
-                _sub_color->ui = *_ui_color;
-                _ui_color.reset();
-            }
+            restore_ui_selection();
         }
 
         if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH && action != RS2_CALIB_ACTION_UVMAPPING_CALIB)
@@ -1393,6 +1407,22 @@ namespace rs2
         _done = true;
     }
 
+    void on_chip_calib_manager::restore_ui_selection()
+    {
+        if( _sub.get() && _ui.get() )
+        {
+            _sub->ui = *_ui;
+            _sub->store_ui_selection();
+            _ui.reset();
+        }
+        if( _sub_color.get() && _ui_color.get() ) // Color selection saved only for UV-mapping
+        {
+            _sub_color->ui = *_ui_color;
+            _sub_color->store_ui_selection();
+            _ui_color.reset();
+        }
+    }
+
     void on_chip_calib_manager::restore_workspace(invoker invoke)
     {
         try
@@ -1403,17 +1433,7 @@ namespace rs2
             _viewer.synchronization_enable = _synchronized;
 
             stop_viewer(invoke);
-
-            if (_sub.get() && _ui.get())
-            {
-                _sub->ui = *_ui;
-                _ui.reset();
-            }
-            if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB && _sub_color.get() && _ui_color.get())
-            {
-                _sub_color->ui = *_ui_color;
-                _ui_color.reset();
-            }
+            restore_ui_selection();
 
             _sub->post_processing_enabled = _post_processing;
 

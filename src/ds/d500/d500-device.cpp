@@ -522,7 +522,10 @@ namespace librealsense
 
             if ((_device_capabilities & ds_caps::CAP_INTERCAM_HW_SYNC) == ds_caps::CAP_INTERCAM_HW_SYNC)
             {
-                if( _fw_version >= firmware_version( "7.58.40929.13516" ) )
+                // The sync-mode XU ships on FW >= 7.58.40929.13516. D585S runs a separate 8.x FW line
+                // with no such XU, so it keeps the HW-monitor SET/GET_CAM_SYNC path regardless of FW
+                // version.
+                if( _pid != ds::D585S_PID && _fw_version >= firmware_version( "7.58.40929.13516" ) )
                 {
                     // GMSL: d4xx kernel driver exposes the D457-style range 0..2 (0:Internal, 1:Master, 2:External);
                     // USB: FW register 0x2C uses the D500-native 2:Internal, 3:External. Different range → different
@@ -615,13 +618,15 @@ namespace librealsense
             if( d5x5_family_pids.count( _pid )
                 && _fw_version >= firmware_version( "7.58.40897.13078" ) )
             {
+                // The camera rejects a reset sent right after the write, so wait for the new mode to read back
                 depth_sensor.register_option( RS2_OPTION_SENSORS_CONFIG_MODE,
-                    std::make_shared< uvc_xu_option< uint8_t > >(
+                    std::make_shared< ensure_set_xu_option< uint8_t > >(
                         raw_depth_sensor,
                         depth_xu,
                         d500_xu_id::DUAL_RGB_MODE,
                         "Dedicated color sensor (0) vs dual RGB (1). Requires a hardware reset to take effect.",
                         std::map< float, std::string >{ { 0.f, "Dedicated Color Sensor" }, { 1.f, "Dual RGB" } },
+                        std::chrono::milliseconds( 250 ),
                         false /* not settable while streaming */ ) );
             }
 

@@ -59,12 +59,7 @@ async function main() {
   await copyDir(SOURCE_DIR, TARGET_DIR);
 
   console.log('✅ Build bundled successfully!');
-  console.log('\n📝 To serve from FastAPI, add static file mounting:');
-  console.log(`
-   from fastapi.staticfiles import StaticFiles
-   
-   app.mount("/", StaticFiles(directory="static", html=True), name="static")
-  `);
+  console.log('\n📝 Run the server - it serves this build automatically.');
 }
 
 main().catch(console.error);

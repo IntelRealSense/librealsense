@@ -551,15 +551,23 @@ int run_viewer( int argc, const char ** argv,
         viewer_model.not_model->output.draw(window, output_rect, *device_models);
 
         // Set window position and size
+        // The pane is a few pixels wider than the top bar so its thin scrollbar grab lands right under the top bar's
+        // dividing line; the black track and border past it blend into the stream area
+        const float scrollbar_size = 4.f;
+        const float scrollbar_overhang = 3.f;
         ImGui::SetNextWindowPos({ 0, viewer_model.panel_y });
-        ImGui::SetNextWindowSize({ viewer_model.panel_width, window.height() - viewer_model.panel_y });
+        ImGui::SetNextWindowSize({ viewer_model.panel_width + scrollbar_overhang, window.height() - viewer_model.panel_y });
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::PushStyleColor(ImGuiCol_WindowBg, sensor_bg);
 
         // *********************
         // Creating window menus
         // *********************
+        ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, scrollbar_size);
+        ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, black);
         ImGui::Begin("Control Panel", nullptr, flags | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar();
 
         if (device_models->size() > 0)
         {
