@@ -52,8 +52,8 @@ namespace librealsense
 
         // Mapping EU on the depth mapping interface (D5x5 family only); carries the OG/LPCL params as JSON.
         const platform::extension_unit mapping_xu = { 0, 0x18, 2,
-        { 0xc5dd90f6, 0x7e7d, 0x4906, { 0xbc, 0x77, 0xcb, 0x62, 0x2c, 0x72, 0xbe, 0x62 } } };
-        const uint8_t DEPTH_MAPPING_PARAMS = 0x01;
+        { 0x794c4ff5, 0x7919, 0x4657, { 0x81, 0xc0, 0x30, 0xc0, 0x47, 0x1f, 0x62, 0xde } } };
+        const uint8_t DEPTH_MAPPING_PARAMS = 0x0A;
         const int DEPTH_MAPPING_PARAMS_LEN = 1024;  // fixed control length; caps the JSON
         const uint16_t DEPTH_MAPPING_PARAMS_VERSION = 1;
 
