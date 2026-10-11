@@ -383,33 +383,25 @@ def check_stream_fps_accuracy_generic(device, stream_name, stream_type, formats,
         log.info(f"Very high FPS mode for {expected_fps} FPS: warmup={warmup_frames}, interval={measurement_interval}")
 
     anchor_time = None
-    anchor_frame = 0
-    anchor_domain = None
     last_frame_time = None
 
     def frame_callback(frame):
-        nonlocal frame_count, start_test_time, anchor_time, anchor_frame, anchor_domain, last_frame_time
-        # Device timestamp: host delivery jitter (frames held back, then delivered together) must not
-        # count as an FPS deviation
-        current_time = frame.get_timestamp() / 1000.0
-        domain = frame.get_frame_timestamp_domain()
+        nonlocal frame_count, start_test_time, anchor_time, last_frame_time
+        current_time = time.time()
 
         if start_test_time is None:
-            start_test_time = time.time()
+            start_test_time = current_time
 
         frame_count += 1
-        # Anchor at the last warmup frame, and re-anchor if the timestamp domain changes (the first frames
-        # can arrive before their metadata, stamped by a different clock)
-        if frame_count == warmup_frames or (anchor_domain is not None and domain != anchor_domain):
+        # Anchor the measurement window at the last warmup frame so warmup arrival times are excluded
+        if frame_count == warmup_frames:
             fps_monitor.reset()
             anchor_time = current_time
-            anchor_frame = frame_count
-            anchor_domain = domain
         last_frame_time = current_time
         fps_monitor.update(current_time)
 
         # Record FPS after warmup period, using adaptive measurement interval
-        if frame_count > anchor_frame and frame_count > warmup_frames and frame_count % measurement_interval == 0:
+        if frame_count > warmup_frames and frame_count % measurement_interval == 0:
             current_fps = fps_monitor.get_current_fps()
             if current_fps > 0:
                 fps_measurements.append(current_fps)
@@ -497,7 +489,7 @@ def check_stream_fps_accuracy_generic(device, stream_name, stream_type, formats,
         return False, 0.0, {"error": f"Insufficient FPS measurements: {len(fps_measurements)} (need >=2 for statistics, or >=1 with >={MIN_FRAME_COUNT_LOW_FPS} frames for <=6 FPS). Got {frame_count} frames in {test_stopwatch.get_elapsed():.1f}s with warmup={warmup_frames}, interval={measurement_interval}"}
     else:
         # Overall rate since the anchor; a mean of window rates is skewed by back-to-back frames after warmup
-        actual_avg_fps = (frame_count - anchor_frame) / (last_frame_time - anchor_time)
+        actual_avg_fps = (frame_count - warmup_frames) / (last_frame_time - anchor_time)
         fps_min = min(fps_measurements)
         fps_max = max(fps_measurements)
         fps_std = np.std(fps_measurements) if len(fps_measurements) > 1 else 0.0
