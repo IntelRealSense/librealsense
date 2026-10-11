@@ -176,7 +176,7 @@ std::vector< char const * > get_option_enum_values( rs2::sensor const & sensor,
     {
         auto label = sensor.get_option_value_description( opt, i );
         if( ! label )
-            return {};  // Missing value - not an enum
+            continue;  // Value hidden for this device, not evidence the option isn't an enum
 
         if( std::fabs( i - current_value ) < 0.001f )
             current_index = labels.size();
@@ -638,7 +638,7 @@ lrs_device_controller::frame_to_streaming_server( rs2::frame const & f, rs2::str
 lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< realdds::dds_device_server > dds_device_server )
     : _rs_dev( dev )
     , _dds_device_server( dds_device_server )
-    , _control_dispatcher( QUEUE_MAX_SIZE )
+    , _control_dispatcher( QUEUE_MAX_SIZE, "lrs-device-control" )
 {
     if( ! _dds_device_server )
         throw std::runtime_error( "Empty dds_device_server" );

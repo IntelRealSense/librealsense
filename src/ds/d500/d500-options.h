@@ -11,6 +11,8 @@
 
 #include <rsutils/lazy.h>
 
+#include <atomic>
+
 
 namespace librealsense
 {
@@ -109,7 +111,7 @@ namespace librealsense
         virtual bool is_read_only() const override;
         const char * get_description() const override
         {
-            return "Inter-camera synchronization mode: 0:No sync, 1:RGB Master, 2:PWM Master, 3:External Master";
+            return "Inter-camera synchronization mode: 2:Internal, 3:External";
         }
         const char * get_value_description( float val ) const override;
 
@@ -139,6 +141,50 @@ namespace librealsense
         std::weak_ptr< hw_monitor > _hwm;
     };
     
+    // Dual-RGB rectification toggle, sent over the HWM CUSTOM_CMD with the DUAL_RGB_RECTIFY sub-command.
+    // Temporary until FW exposes a dedicated XU: there is no matching read command, so query() returns
+    // the last value set.
+    class dual_rgb_rectification_option : public bool_option
+    {
+    public:
+        dual_rgb_rectification_option( std::shared_ptr< hw_monitor > hwm, const std::weak_ptr< sensor_base > & ep );
+
+        void set( float value ) override;
+        const char * get_description() const override
+        {
+            return "Dual RGB rectification enabling ON (1) / OFF (0). Can only be set before streaming";
+        }
+
+        static uint32_t const DUAL_RGB_RECTIFY_SUB_CMD = 0x29;
+
+    private:
+        std::shared_ptr< hw_monitor > _hwm;
+        std::weak_ptr< sensor_base > _sensor;
+    };
+
+    // Device-side depth-to-color alignment. Enabling it replaces the raw depth payload (over USB) with Z16 projected into the color viewport,
+    // so the mode may only change while the sensor is closed. Last known value is cached because intrinsics lookups consult it per frame.
+    class d500_enable_aligned_depth_option : public uvc_xu_option< uint8_t >
+    {
+    public:
+        explicit d500_enable_aligned_depth_option( const std::weak_ptr< uvc_sensor > & raw_ep );
+
+        void set( float value ) override;
+        float query() const override;
+        bool is_read_only() const override;
+
+        // Cached state, free of a firmware round-trip
+        bool is_aligned() const { return _aligned; }
+        void add_observer( std::function< void( bool ) > observer ) { _observers.push_back( std::move( observer ) ); }
+
+    private:
+        void update( bool aligned ) const;
+
+        std::weak_ptr< sensor_base > _sensor;
+        mutable std::atomic< bool > _aligned;
+        std::vector< std::function< void( bool ) > > _observers;
+    };
+
     class power_line_freq_option : public uvc_pu_option
     {
     public:
@@ -153,6 +199,17 @@ namespace librealsense
             range.max = 2.f;
             return range;
         }
+    };
+
+    class d500_mipi_gyro_sensitivity_option : public uvc_pu_option
+    {
+    public:
+        explicit d500_mipi_gyro_sensitivity_option( const std::weak_ptr< uvc_sensor > & ep );
+
+        void set( float value ) override;
+        bool is_read_only() const override;
+        const char * get_description() const override;
+        const char * get_value_description( float value ) const override;
     };
 
 } // namespace librealsense

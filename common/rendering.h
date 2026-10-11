@@ -389,6 +389,7 @@ namespace rs2
         GLuint texture;
         rs2::frame_queue last_queue[2];
         mutable rs2::frame last[2];
+        std::vector< uint8_t > raw16_preview;
     public:
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
@@ -398,6 +399,23 @@ namespace rs2
         bool zoom_preview = false;
         rect curr_preview_rect{};
         int texture_id = 0;
+
+        // Geometry of the last uploaded occupancy frame, so a 2D overlay can size itself from
+        // the real grid instead of an assumed constant. tex_cols/tex_rows: lateral/depth axes,
+        // matching decode_occupancy_cells' layout. 0 fields mean "unknown".
+        struct occupancy_geometry
+        {
+            bool valid = false;
+            int tex_cols = 0;
+            int tex_rows = 0;
+            float cell_size_cm = 0.f;
+        };
+        occupancy_geometry last_occupancy_geometry;
+
+        // Signed cell values (-1/0/100), same (x,y) layout as the displayed texture - unlike
+        // the raw frame buffer, header/transpose already applied, so a hover-readout can index
+        // it directly with cursor coordinates.
+        std::vector< int8_t > last_occupancy_raw;
 
         // Own the GL texture properly. Each Stop/Start cycle gc_streams destroys
         // and recreates this object, so without a destructor the GL texture (and
@@ -678,6 +696,41 @@ namespace rs2
                 case RS2_FORMAT_Y10BPACK:
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
                     break;
+                case RS2_FORMAT_RAW16:
+                {
+                    if( !data || width <= 0 || height <= 0 )
+                        throw std::runtime_error( "invalid RAW16 frame" );
+
+                    const size_t row_bytes = static_cast< size_t >( width ) * sizeof( uint16_t );
+                    const size_t pixel_count = static_cast< size_t >( width ) * height;
+                    if( stride < static_cast< int >( row_bytes )
+                        || frame.get_data_size() < static_cast< size_t >( stride ) * height )
+                        throw std::runtime_error( "invalid RAW16 frame" );
+
+                    uint16_t max_sample = 0;
+                    for( int y = 0; y < height; ++y )
+                    {
+                        auto row = reinterpret_cast< const uint16_t * >(
+                            static_cast< const uint8_t * >( data ) + static_cast< size_t >( y ) * stride );
+                        max_sample = std::max( max_sample, *std::max_element( row, row + width ) );
+                    }
+
+                    unsigned shift = 0;
+                    while( (max_sample >> shift) > 0xff )
+                        ++shift;
+                    raw16_preview.resize( pixel_count );
+                    for( int y = 0; y < height; ++y )
+                    {
+                        auto row = reinterpret_cast< const uint16_t * >(
+                            static_cast< const uint8_t * >( data ) + static_cast< size_t >( y ) * stride );
+                        auto out = raw16_preview.data() + static_cast< size_t >( y ) * width;
+                        for( int x = 0; x < width; ++x )
+                            out[x] = static_cast< uint8_t >( row[x] >> shift );
+                    }
+                    glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0,
+                                  GL_LUMINANCE, GL_UNSIGNED_BYTE, raw16_preview.data() );
+                    break;
+                }
                 case RS2_FORMAT_RAW8:
                 case RS2_FORMAT_MOTION_RAW:
                 case RS2_FORMAT_GPIO_RAW:
@@ -786,63 +839,7 @@ namespace rs2
             }
         }
 
-        void upload_occupancy_frame(const rs2::frame &frame, const void *data)
-        {
-            if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS) ||
-                !frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS))
-                throw std::runtime_error("Occupancy rows / columns could not be read from frame metadata");
-
-            auto occup_cols = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS)); // width
-            auto occup_rows = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS));    // height
-
-
-            // Using look up table to make the following operation faster
-            // Pre-computed lookup table for bit expansion
-            // Example: For byte value 0b10110001 (177)
-            // lut[177] = { 0xFF,  0x00,  0x00,  0x00,  0xFF,  0xFF,  0x00,  0xFF }
-            //              bit0   bit1   bit2   bit3   bit4   bit5   bit6   bit7
-            // Then the below line "std::memcpy(&vec[i * 8], expanded.data(), 8);"
-            // grabs 8 values at once from the LUT instead of calculating each bit one by one
-            static const std::array<std::array<uint8_t, 8>, 256> bit_expand_lut = []() {
-                std::array<std::array<uint8_t, 8>, 256> lut;
-                for (int byte_val = 0; byte_val < 256; ++byte_val) {
-                    for (int bit = 0; bit < 8; ++bit) {
-                        lut[byte_val][bit] = ((byte_val >> bit) & 1) ? 0xFF : 0;
-                    }
-                }
-                return lut;
-                }();
-
-            // We want to reverse the data's bit, because AICV algo is packing each 8 cells into one byte, but in an opposite order
-            // than we (and OpenGL) expect. The rightest bit (LSB) inside the packed byte from AICV algo represents the first bit we want to draw from this byte
-            // e.g. Occupancy Cells: 0 0 1 1 0 0 1 0 ---> AICV packing algo ---> bytes[i] = 01001100. The order is reversed, so we reverse it again.
-            // Each byte represents 8 cells (1 bit <==> 1 cell), therefore the size is ==> rows(height) * cols(width) / 8
-
-            std::vector<uint8_t> vec(occup_rows * occup_cols);
-            uint8_t *byte_array = (uint8_t *)data;
-
-            for (int i = 0; i < occup_rows * occup_cols / 8; i++)
-            {
-                const auto& expanded = bit_expand_lut[byte_array[i]];
-                std::memcpy(&vec[i * 8], expanded.data(), 8);
-            }
-
-            // Default alignment is 4 byte on windows, store it and work with 1 as our grid columns are not a multiple of 4
-            GLint unpackAlignment;
-            glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlignment);
-
-            // Change alignment to 1
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-            // Render
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, occup_cols, occup_rows, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, vec.data());
-
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-            // Restore default alignment
-            glPixelStorei(GL_UNPACK_ALIGNMENT, unpackAlignment);
-        }
+        void upload_occupancy_frame(const rs2::frame &frame, const void *data);
 
         static void  draw_axes(float axis_size = 1.f, float axisWidth = 4.f)
         {
@@ -1114,6 +1111,19 @@ namespace rs2
         {
             auto image = get_last_frame().as<video_frame>();
             if (!image) return false;
+
+            if (image.get_profile().stream_type() == RS2_STREAM_OCCUPANCY)
+            {
+                // Raw frame buffer has a MAP1 header + axis transpose; last_occupancy_raw
+                // already accounts for both, indexed like the displayed texture.
+                if (!last_occupancy_geometry.valid
+                    || x < 0 || x >= last_occupancy_geometry.tex_cols
+                    || y < 0 || y >= last_occupancy_geometry.tex_rows)
+                    return false;
+                *result = static_cast<float>(
+                    last_occupancy_raw[static_cast<size_t>(y) * last_occupancy_geometry.tex_cols + x]);
+                return true;
+            }
 
             auto format = image.get_profile().format();
             switch (format)

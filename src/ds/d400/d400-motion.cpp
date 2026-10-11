@@ -59,6 +59,14 @@ namespace librealsense
         return _fw_version >= firmware_version( 5, 16, 0, 0 ) ? 0.0001 : 0.1;
     }
 
+    double d400_motion_base::get_accel_default_scale() const
+    {
+        // FW accel unit changed from integer milli-g (HID exponent -3) to 10 micro-g
+        // (exponent -5) when the FW accel conversion moved to float.
+        // 5.17.4.24 is the first FW version that can only carry that change.
+        return _fw_version >= firmware_version( 5, 17, 4, 24 ) ? 0.00001 : 0.001;
+    }
+
     std::shared_ptr<synthetic_sensor> d400_motion_uvc::create_uvc_device(std::shared_ptr<context> ctx,
                                                   const std::vector<platform::uvc_device_info>& all_uvc_infos,
                                                   const firmware_version& camera_fw_version)
@@ -103,12 +111,13 @@ namespace librealsense
         catch (...) {}
 
         double gyro_scale_factor = get_gyro_default_scale();
+        double accel_scale_factor = get_accel_default_scale();
         bool high_accuracy = is_imu_high_accuracy();
         motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL}, {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            [&, mm_calib, high_accuracy, mm_correct_opt, gyro_scale_factor]()
-            { return std::make_shared< motion_to_accel_gyro >( mm_calib, mm_correct_opt, gyro_scale_factor, high_accuracy );
+            [&, mm_calib, high_accuracy, mm_correct_opt, gyro_scale_factor, accel_scale_factor]()
+            { return std::make_shared< motion_to_accel_gyro >( mm_calib, mm_correct_opt, gyro_scale_factor, accel_scale_factor, high_accuracy );
         });
 
         return motion_ep;
@@ -184,6 +193,10 @@ namespace librealsense
             //for FW >=5.16 the scale factor changes to 1000.0 since FW sends 32bit
             if (_fw_version >= firmware_version( 5, 16, 0, 0))
                 get_raw_motion_sensor()->set_gyro_scale_factor( 10000.0 );
+            // Windows MF receives accel in G and rebuilds FW counts; derive the factor from the
+            // same scale the transform uses so the two can never disagree (1000 legacy, 100000 new)
+            if (hid_ep)
+                get_raw_motion_sensor()->set_accel_scale_factor( 1.0 / get_accel_default_scale() );
 #endif
         }
         catch (const std::exception& e)
@@ -281,6 +294,12 @@ namespace librealsense
         auto fisheye_infos = _ds_motion_common->init_fisheye(group, is_fisheye_avaialable);
         if (!is_fisheye_avaialable)
             return;
+
+        if (fisheye_infos.empty())
+        {
+            LOG_WARNING("FishEye sensor reported as available with no UVC node - sensor not created");
+            return;
+        }
 
         std::unique_ptr< frame_timestamp_reader > ds_timestamp_reader_backup( new ds_timestamp_reader() );
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds_timestamp_reader_backup)));

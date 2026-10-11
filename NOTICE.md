@@ -5,6 +5,10 @@
 
 ### This file specifies all 3rd party SW components used for RealSense™ SDK and the inbound license for each of these 3rd party components.
 
+## Contributed Code
+
+The AMD HIP/ROCm GPU acceleration support and the related build and unit-test integration was contributed by Advanced Micro Devices, Inc. under the Copyright (c) 2026 Advanced Micro Devices, Inc.
+
 #### MIT License 
 
 | Component | Home Page | License| Copyright |
@@ -12,12 +16,15 @@
 | easyloggingpp | https://github.com/abumq/easyloggingpp | MIT License | Copyright (c) 2012-present @abumq (Majid Q.) |
 | GLAD | https://glad.dav1d.de/, https://github.com/Dav1dde/glad | MIT License | Copyright (c) 2013-2022 David Herberth |
 | JSON for Modern C++ | https://github.com/nlohmann/json | MIT License | Copyright (c) 2013-2022 Niels Lohmann |
+| libdeflate | https://github.com/ebiggers/libdeflate | MIT License | Copyright 2016 Eric Biggers |
 | imgui | https://github.com/ocornut/imgui | MIT License  | Copyright (c) 2014-2024 Omar Cornut |
 | implot | https://github.com/epezent/implot | MIT License  | Copyright (c) 2020 Evan Pezent |
 | rapidxml | https://github.com/Fe-Bell/RapidXML | MIT License  | Copyright (c) 2006, 2007 Marcin Kalicinski |
 | easyloggingpp | https://github.com/abumq/easyloggingpp | MIT License | Copyright (c) 2012-present @abumq (Majid Q.) |
 | tclap | http://tclap.sourceforge.net/ | MIT License | Copyright (c) 2003 Michael E. Smoot, Copyright (c) 2004 Daniel Aarno, Copyright (c) 2017 Google Inc.  |
 | yaml-cpp (rosbag2) | https://github.com/jbeder/yaml-cpp | MIT License | Copyright (c) Jesse Beder |
+| imgui_md | https://github.com/mekhontsev/imgui_md | MIT License | Copyright (c) 2021 Dmitry Mekhontsev |
+| md4c | https://github.com/mity/md4c | MIT License | Copyright (c) 2016-2026 Martin Mitáš |
 
 ###### MIT License 
 The MIT License (MIT)
@@ -982,6 +989,7 @@ DEALINGS IN THE SOFTWARE.
 | Component | Home Page | License| Copyright |
 | ------- | ------- | ------- | ------- |
 | fontawesome | http://fontawesome.io | SIL OPEN FONT LICENSE | N/A |
+| Karla (Google Fonts) | https://github.com/google/fonts/tree/main/ofl/karla | SIL OPEN FONT LICENSE | Copyright 2019 The Karla Project Authors |
 
 ###### SIL OPEN FONT LICENSE
 SIL OPEN FONT LICENSE

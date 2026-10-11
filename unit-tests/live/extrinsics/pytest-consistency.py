@@ -13,6 +13,10 @@ pytestmark = [
     pytest.mark.device_each("D500*"),
 ]
 
+# Streams with no pose of their own: FW reports object detections as color-frame pixels, so the
+# stream is deliberately absent from the extrinsics graph and get_extrinsics_to() on it throws.
+NON_SPATIAL_STREAMS = (rs.stream.object_detection,)
+
 # rotation tolerance - units are in cosinus of radians
 ROTATION_TOLERANCE = 1e-5
 # translation tolerance - units are in meters
@@ -70,12 +74,13 @@ def test_extrinsics_graph_4x4(test_device):
 
     relevant_profiles = []
     for sensor in sensors:
-        relevant_profiles.extend(sensor.get_stream_profiles())
+        relevant_profiles.extend(p for p in sensor.get_stream_profiles()
+                                 if p.stream_type() not in NON_SPATIAL_STREAMS)
 
     start_point = [1.0, 2.0, 3.0]
 
-    for i in range(len(relevant_profiles) - 2):
-        for j in range(i + 1, len(relevant_profiles) - 1):
+    for i in range(len(relevant_profiles)):
+        for j in range(i + 1, len(relevant_profiles)):
             p_i = relevant_profiles[i]
             p_j = relevant_profiles[j]
             extr_i_to_j = p_i.get_extrinsics_to(p_j)

@@ -82,7 +82,7 @@ namespace librealsense
         rs_uvc_device::rs_uvc_device(const rs_usb_device& usb_device, const uvc_device_info &info, uint8_t usb_request_count) :
                 _usb_device(usb_device),
                 _info(info),
-                _action_dispatcher(10),
+                _action_dispatcher(10, "uvc-device"),
                 _usb_request_count(usb_request_count)
         {
             _parser = std::make_shared<uvc_parser>(usb_device, info);
@@ -199,7 +199,7 @@ namespace librealsense
                             break;
                     }
                 }
-            }, [this, state](){ return state == _power_state; });
+            }, [this, state](){ return state == _power_state; }, true);
 
             if(state != _power_state)
                 throw std::runtime_error("failed to set power state");
@@ -518,7 +518,7 @@ namespace librealsense
                             0);
                 }
 
-            }, [this](){ return !_messenger; });
+            }, [this](){ return !_messenger; }, true);
 
             if (sts != RS2_USB_STATUS_SUCCESS)
                 throw std::runtime_error("get_data_usb failed, error: " + usb_status_to_string.at(sts));
@@ -608,7 +608,7 @@ namespace librealsense
                           0);
                 }
 
-            }, [this](){ return !_messenger; });
+            }, [this](){ return !_messenger; }, true);
 
             if (sts != RS2_USB_STATUS_SUCCESS)
                 throw std::runtime_error("set_data_usb failed, error: " + usb_status_to_string.at(sts));
@@ -619,7 +619,7 @@ namespace librealsense
 
         bool rs_uvc_device::uvc_get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len, uvc_req_code req_code) const
         {
-            usb_status sts;
+            usb_status sts = RS2_USB_STATUS_OTHER;
             _action_dispatcher.invoke_and_wait([&, this](dispatcher::cancellable_timer c)
             {
                 if (_messenger)
@@ -632,7 +632,7 @@ namespace librealsense
                             static_cast<unsigned char *>(data),
                             len, transferred, CONTROL_TRANSFER_TIMEOUT);
                 }
-            }, [this](){ return !_messenger; });
+            }, [this](){ return !_messenger; }, true);
 
             if (sts == RS2_USB_STATUS_NO_DEVICE)
                 throw std::runtime_error("usb device disconnected");
@@ -642,7 +642,7 @@ namespace librealsense
 
         bool rs_uvc_device::uvc_set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
         {
-            usb_status sts;
+            usb_status sts = RS2_USB_STATUS_OTHER;
             _action_dispatcher.invoke_and_wait([&, this](dispatcher::cancellable_timer c)
             {
                 if (_messenger)
@@ -655,7 +655,7 @@ namespace librealsense
                             static_cast<unsigned char *>(data),
                             len, transferred, CONTROL_TRANSFER_TIMEOUT);
                 }
-            }, [this](){ return !_messenger; });
+            }, [this](){ return !_messenger; }, true);
 
             if (sts == RS2_USB_STATUS_NO_DEVICE)
                 throw std::runtime_error("usb device disconnected");
@@ -854,7 +854,7 @@ namespace librealsense
                 }
             }
 
-            usb_status sts;
+            usb_status sts = RS2_USB_STATUS_OTHER;
             _action_dispatcher.invoke_and_wait([&, this](dispatcher::cancellable_timer c)
             {
                 if (_messenger)
@@ -870,7 +870,7 @@ namespace librealsense
                                 buf, static_cast<uint32_t>(len), transferred, 0);
                     } while (sts != RS2_USB_STATUS_SUCCESS && retries++ < 5);
                 }
-            }, [this](){ return !_messenger; });
+            }, [this](){ return !_messenger; }, true);
 
             if (sts != RS2_USB_STATUS_SUCCESS)
             {

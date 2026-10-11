@@ -112,6 +112,7 @@ EXPORTS
     rs2_get_options_list
     rs2_get_option_from_list
     rs2_get_option_value_from_list
+    rs2_get_option_range_from_list
     rs2_get_options_list_size
     rs2_delete_options_list
     rs2_set_options_changed_callback
@@ -125,6 +126,10 @@ EXPORTS
     rs2_get_raw_data_size
     rs2_delete_raw_data
     rs2_get_raw_data
+
+    rs2_rum_get_report_path
+    rs2_rum_set_cloud_enabled
+    rs2_rum_is_cloud_enabled
 
     rs2_get_device_info
     rs2_supports_device_info
@@ -270,6 +275,7 @@ EXPORTS
     rs2_get_census
     rs2_get_amp_factor
     rs2_set_amp_factor
+    rs2_get_all_advanced_controls
     rs2_rs400_visual_preset_to_string
     rs2_l500_visual_preset_to_string
     rs2_sensor_mode_to_string
@@ -280,6 +286,8 @@ EXPORTS
     rs2_serialize_json
     rs2_emitter_frequency_mode_to_string
     rs2_depth_auto_exposure_mode_to_string
+    rs2_colored_ir_auto_exposure_mode_to_string
+    rs2_emitter_mode_to_string
     rs2_gyro_sensitivity_to_string
 
     rs2_create_record_device
@@ -468,6 +476,17 @@ EXPORTS
     rs2_set_calibration_config
     rs2_get_application_config
     rs2_set_application_config
+    rs2_get_composite_option
+    rs2_set_composite_option
+    rs2_get_composite_option_range
+    rs2_get_composite_options_list
+    rs2_get_composite_options_list_size
+    rs2_get_composite_option_from_list
+    rs2_delete_composite_options_list
+    rs2_supports_composite_option
+    rs2_is_composite_option_read_only
+    rs2_get_composite_option_description
+    rs2_composite_option_id_to_string
     rs2_hw_monitor_get_opcode_string
 
     rs2_eth_link_priority_to_string

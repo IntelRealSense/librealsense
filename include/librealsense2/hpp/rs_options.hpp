@@ -6,8 +6,19 @@
 
 #include "rs_types.hpp"
 #include "../h/rs_types.h"
+#include "../h/rs_composite_option.h"
+#include "../h/rs_dpp_header.h"   // DPP_HEADER_CURRENT_VERSION - see check_version_supported() below
 
 #include <memory>
+#include <vector>
+#include <cstdint>
+#include <cstddef>
+#include <cstring>
+#include <string>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+#include <limits>
 
 
 namespace rs2
@@ -16,9 +27,19 @@ namespace rs2
     {
         std::shared_ptr< const rs2_option_value > _value;
 
+        // Set only for values taken out of an options-list, which is what carries the ranges
+        std::shared_ptr< rs2_options_list > _list;
+        int _index = -1;
+
     public:
         explicit option_value( rs2_option_value const * handle )
             : _value( handle, rs2_delete_option_value )
+        {
+        }
+        option_value( rs2_option_value const * handle, std::shared_ptr< rs2_options_list > list, int index )
+            : _value( handle, rs2_delete_option_value )
+            , _list( std::move( list ) )
+            , _index( index )
         {
         }
         option_value( option_value const & ) = default;
@@ -55,6 +76,38 @@ namespace rs2
 
         rs2_option_value const * operator->() const { return _value.get(); }
         operator rs2_option_value const *() const { return _value.get(); }
+
+        /**
+        * \return whether a range is available with this value
+        */
+        bool has_range() const
+        {
+            rs2_option_range range;
+            return get_range( range );
+        }
+
+        /**
+        * The range of values this option accepts. Throws if no range is available.
+        */
+        option_range range() const
+        {
+            rs2_option_range range;
+            if( ! get_range( range ) )
+                throw std::runtime_error( std::string( "no range available for option " )
+                                          + rs2_option_to_string( _value ? _value->id : RS2_OPTION_COUNT ) );
+            return { range.min, range.max, range.def, range.step };
+        }
+
+    private:
+        bool get_range( rs2_option_range & range ) const
+        {
+            if( ! _list )
+                return false;
+            rs2_error * e = nullptr;
+            int const has_range = rs2_get_option_range_from_list( _list.get(), _index, &range, &e );
+            error::handle( e );
+            return has_range != 0;
+        }
     };
 
     class options_list
@@ -82,7 +135,7 @@ namespace rs2
             rs2_error * e = nullptr;
             auto value = rs2_get_option_value_from_list( _list.get(), static_cast< int >( index ), &e );
             error::handle( e );
-            return option_value( value );
+            return option_value( value, _list, static_cast< int >( index ) );
         }
 
         size_t size() const { return _size; }
@@ -320,6 +373,159 @@ namespace rs2
             return options_list( sptr );
         };
 
+        /**
+        * See rs_composite_option.h for the underlying C API and atomicity contract (one UVC
+        * transaction per call) - these methods just forward to the corresponding rs2_* function.
+        */
+
+        /**
+        * write new value to a composite option, atomically, in ONE UVC transaction
+        * \param[in] id     composite option id to write
+        * \param[in] data   pointer to the caller's struct matching the option's documented wire layout
+        * \param[in] size   sizeof(...) of the caller's struct
+        */
+        void set_composite_option( rs2_composite_option_id id, const void * data, size_t size ) const
+        {
+            // The C API takes an unsigned int; guard the narrowing cast rather than silently
+            // truncating a caller-supplied size_t larger than UINT_MAX into a smaller, wrong value.
+            if( size > (std::numeric_limits< unsigned int >::max)() )
+                throw std::runtime_error( "composite option payload size (" + std::to_string( size )
+                                           + ") exceeds what the C API can represent" );
+
+            rs2_error * e = nullptr;
+            rs2_set_composite_option( _options, id, data, static_cast< unsigned int >( size ), &e );
+            error::handle( e );
+        }
+
+        /**
+        * read a composite option's current raw payload, atomically, in ONE UVC transaction
+        * \param[in] id   composite option id to read
+        * \return         the option's current raw payload bytes - cast to a struct matching the
+        *                 option's documented wire layout
+        */
+        std::vector< uint8_t > get_composite_option( rs2_composite_option_id id ) const
+        {
+            rs2_error * e = nullptr;
+            auto buffer = rs2_get_composite_option( _options, id, &e );
+            return unwrap_raw_data_buffer( buffer, e );
+        }
+
+        /**
+        * read a composite option's supported {min,max,step,def} bounds
+        * \param[in] id   composite option id to read
+        * \return         the option's range payload bytes - cast to the range struct documented for id
+        */
+        std::vector< uint8_t > get_composite_option_range( rs2_composite_option_id id ) const
+        {
+            rs2_error * e = nullptr;
+            auto buffer = rs2_get_composite_option_range( _options, id, &e );
+            return unwrap_raw_data_buffer( buffer, e );
+        }
+
+        /**
+        * typed counterpart to get_composite_option() - casts the raw payload directly into T.
+        * Validates sizeof(T) matches, and for structs with a composed dpp_header, that its
+        * version is DPP_HEADER_CURRENT_VERSION (see rs_dpp_header.h), unpopulated (0) included.
+        * \param[in] id   composite option id to read
+        * \return         T, populated from the option's current raw payload
+        */
+        template< typename T >
+        T get_composite_option_as( rs2_composite_option_id id ) const
+        {
+            T value{};
+            cast_composite_payload( get_composite_option( id ), value );
+            return value;
+        }
+
+        /**
+        * typed counterpart to get_composite_option_range() - casts the raw {min,max,step,def}
+        * payload into TRange. Validates sizeof(TRange); the wrapper itself has no version field,
+        * but each of its four bounds does, each checked the same way as check_version_supported().
+        * \param[in] id   composite option id to read
+        * \return         TRange, populated from the option's raw range payload
+        */
+        template< typename TRange >
+        TRange get_composite_option_range_as( rs2_composite_option_id id ) const
+        {
+            TRange range{};
+            cast_composite_payload( get_composite_option_range( id ), range );
+            return range;
+        }
+
+        /**
+        * typed counterpart to set_composite_option() - sends value itself. For structs carrying a
+        * `header.version` field, rejects a value whose version isn't current - most likely a
+        * get-modify-set that left the header zero-initialized.
+        * \param[in] id      composite option id to write
+        * \param[in] value   the caller's struct matching the option's documented wire layout
+        */
+        template< typename T >
+        void set_composite_option_from( rs2_composite_option_id id, const T & value ) const
+        {
+            check_version_supported( value );
+            set_composite_option( id, &value, sizeof( T ) );
+        }
+
+        /**
+        * check if particular composite option is supported (and currently enabled)
+        * \param[in] id   composite option id to be checked
+        * \return true if the composite option is supported
+        */
+        bool supports_composite_option( rs2_composite_option_id id ) const
+        {
+            rs2_error * e = nullptr;
+            auto res = rs2_supports_composite_option( _options, id, &e );
+            error::handle( e );
+            return res > 0;
+        }
+
+        /**
+        * check if a composite option is read-only
+        * \param[in] id   composite option id to be checked
+        * \return true if the composite option is read-only
+        */
+        bool is_composite_option_read_only( rs2_composite_option_id id ) const
+        {
+            rs2_error * e = nullptr;
+            auto res = rs2_is_composite_option_read_only( _options, id, &e );
+            error::handle( e );
+            return res > 0;
+        }
+
+        /**
+        * get a composite option's human-readable description
+        * \param[in] id   composite option id to describe
+        * \return human-readable composite option description
+        */
+        const char * get_composite_option_description( rs2_composite_option_id id ) const
+        {
+            rs2_error * e = nullptr;
+            auto res = rs2_get_composite_option_description( _options, id, &e );
+            error::handle( e );
+            return res;
+        }
+
+        /**
+        * \return the list of composite option ids this options object (sensor or embedded_filter) supports
+        */
+        std::vector< rs2_composite_option_id > get_supported_composite_options() const
+        {
+            std::vector< rs2_composite_option_id > res;
+            rs2_error * e = nullptr;
+            std::shared_ptr< rs2_composite_options_list > list( rs2_get_composite_options_list( _options, &e ),
+                                                                 rs2_delete_composite_options_list );
+            error::handle( e );
+
+            auto size = rs2_get_composite_options_list_size( list.get(), &e );
+            error::handle( e );
+            for( auto i = 0; i < size; i++ )
+            {
+                res.push_back( rs2_get_composite_option_from_list( list.get(), i, &e ) );
+                error::handle( e );
+            }
+            return res;
+        }
+
         options& operator=(const options& other)
         {
             _options = other._options;
@@ -343,6 +549,97 @@ namespace rs2
         }
 
     private:
+        // Shared unwrap helper for get_composite_option()/get_composite_option_range() - hides the
+        // raw rs2_raw_data_buffer/manual-free (mirrors safety_sensor::get_safety_preset's pattern).
+        static std::vector< uint8_t > unwrap_raw_data_buffer( const rs2_raw_data_buffer * buffer, rs2_error * e )
+        {
+            std::shared_ptr< const rs2_raw_data_buffer > guard( buffer, rs2_delete_raw_data );
+            error::handle( e );
+
+            rs2_error * e2 = nullptr;
+            auto size = rs2_get_raw_data_size( guard.get(), &e2 );
+            error::handle( e2 );
+
+            auto start = rs2_get_raw_data( guard.get(), &e2 );
+            error::handle( e2 );
+
+            std::vector< uint8_t > result;
+            result.insert( result.begin(), start, start + size );
+            return result;
+        }
+
+        // ---- typed composite-option cast helpers (get_composite_option_as() and friends) -----
+        // Detects whether T has a `.header.version` member via a composed dpp_header - value
+        // structs like rs2_hdrd_control.
+        template< typename U >
+        class has_header_version
+        {
+            template< typename V > static auto test( int ) -> decltype( std::declval< V >().header.version, std::true_type{} );
+            template< typename > static std::false_type test( ... );
+        public:
+            static const bool value = decltype( test< U >( 0 ) )::value;
+        };
+
+        // Detects whether T is a {min,max,step,def} range wrapper whose ELEMENTS each carry their
+        // own `.header.version` - e.g. rs2_hdrd_control_range. The wrapper itself has no version
+        // field of its own (see rs_hdrd_control.h) - each of its four bounds does.
+        template< typename U >
+        class has_min_header_version
+        {
+            template< typename V > static auto test( int ) -> decltype( std::declval< V >().min.header.version, std::true_type{} );
+            template< typename > static std::false_type test( ... );
+        public:
+            static const bool value = decltype( test< U >( 0 ) )::value;
+        };
+
+        // T has neither shape - no dpp_header anywhere in it - nothing to check. Every composite-
+        // option struct currently in the SDK has one or the other, but a future one might not
+        // (e.g. a control outside the HKR DPP family entirely).
+        template< typename T >
+        static typename std::enable_if< ! has_header_version< T >::value && ! has_min_header_version< T >::value >::type
+        check_version_supported( const T & )
+        {
+        }
+
+        // This is what makes the version field worth having: reject anything other than
+        // DPP_HEADER_CURRENT_VERSION up front - including 0, the "never populated" sentinel - rather
+        // than silently misreading a struct laid out by a wire version this build doesn't know.
+        template< typename T >
+        static typename std::enable_if< has_header_version< T >::value >::type
+        check_version_supported( const T & value )
+        {
+            if( value.header.version != DPP_HEADER_CURRENT_VERSION )
+                throw std::runtime_error( "composite option struct has unsupported wire version "
+                                           + std::to_string( (int)value.header.version ) + " (this SDK build supports version "
+                                           + std::to_string( (int)DPP_HEADER_CURRENT_VERSION )
+                                           + ") - wrong struct for this option id, a zero-initialized header about to "
+                                             "be sent, or a newer device/firmware speaking a wire version this build "
+                                             "doesn't know yet?" );
+        }
+
+        // Range wrapper (e.g. rs2_hdrd_control_range) - checks each of the four bounds' own
+        // header.version the same way, since the wrapper carries none of its own.
+        template< typename T >
+        static typename std::enable_if< has_min_header_version< T >::value >::type
+        check_version_supported( const T & value )
+        {
+            check_version_supported( value.min );
+            check_version_supported( value.max );
+            check_version_supported( value.step );
+            check_version_supported( value.def );
+        }
+
+        template< typename T >
+        static void cast_composite_payload( const std::vector< uint8_t > & raw, T & out )
+        {
+            if( raw.size() != sizeof( T ) )
+                throw std::runtime_error( "composite option payload size (" + std::to_string( raw.size() )
+                                           + ") does not match sizeof(T) (" + std::to_string( sizeof( T ) )
+                                           + ") - wrong struct for this option id?" );
+            std::memcpy( &out, raw.data(), sizeof( T ) );
+            check_version_supported( out );
+        }
+
         rs2_options* _options;
     };
 

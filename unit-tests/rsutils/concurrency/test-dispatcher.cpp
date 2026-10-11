@@ -6,6 +6,7 @@
 #include <rsutils/concurrency/concurrency.h>
 
 #include <algorithm>
+#include <future>
 #include <vector>
 #include <iostream>
 
@@ -21,7 +22,7 @@ int fibo( int num )
 
 TEST_CASE( "dispatcher main flow" )
 {
-    dispatcher d(3);
+    dispatcher d( 3, "test" );
     std::atomic_bool run = { false };
     auto func = [&](dispatcher::cancellable_timer c) 
     {
@@ -44,7 +45,7 @@ TEST_CASE( "dispatcher main flow" )
 
 TEST_CASE( "invoke and wait" )
 {
-    dispatcher d(2);
+    dispatcher d( 2, "test" );
 
     std::atomic_bool run = { false };
     auto func = [&](dispatcher::cancellable_timer c)
@@ -60,6 +61,66 @@ TEST_CASE( "invoke and wait" )
     d.stop();
 }
 
+TEST_CASE( "invoke and wait is blocking by default" )
+{
+    std::atomic_bool worker_started{ false };
+    std::atomic_bool release_worker{ false };
+    std::atomic_bool queued_action_dropped{ false };
+    std::atomic_bool invocation_started{ false };
+    std::atomic_bool invoked_action_ran{ false };
+    dispatcher d( 1, "test", [&]( dispatcher::action const & ) { queued_action_dropped = true; } );
+    d.start();
+
+    d.invoke( [&]( dispatcher::cancellable_timer ) {
+        worker_started = true;
+        while( ! release_worker )
+            std::this_thread::yield();
+    } );
+    while( ! worker_started )
+        std::this_thread::yield();
+
+    d.invoke( []( dispatcher::cancellable_timer ) {} );
+    auto invocation = std::async( std::launch::async, [&]() {
+        invocation_started = true;
+        d.invoke_and_wait(
+            [&]( dispatcher::cancellable_timer ) { invoked_action_ran = true; },
+            []() { return false; } );
+    } );
+    while( ! invocation_started )
+        std::this_thread::yield();
+
+    CHECK( invocation.wait_for( std::chrono::milliseconds( 100 ) ) == std::future_status::timeout );
+    CHECK_FALSE( queued_action_dropped );
+
+    release_worker = true;
+    CHECK( invocation.wait_for( std::chrono::seconds( 1 ) ) == std::future_status::ready );
+    CHECK( invoked_action_ran );
+    d.stop();
+}
+
+TEST_CASE( "invoke and wait propagates action errors" )
+{
+    dispatcher d( 1, "test" );
+    d.start();
+
+#if defined( _WIN32 )
+    CHECK_THROWS(
+        d.invoke_and_wait(
+            []( dispatcher::cancellable_timer ) { throw std::runtime_error( "dispatch failed" ); },
+            []() { return false; },
+            true ) );
+#else
+    CHECK_THROWS_WITH(
+        d.invoke_and_wait(
+            []( dispatcher::cancellable_timer ) { throw std::runtime_error( "dispatch failed" ); },
+            []() { return false; },
+            true ),
+        "dispatch failed" );
+#endif
+
+    d.stop();
+}
+
 TEST_CASE("verify stop() not consuming high CPU usage")
 {
     // using shared_ptr because no copy constructor is allowed for a dispatcher.
@@ -67,7 +128,7 @@ TEST_CASE("verify stop() not consuming high CPU usage")
 
     for (int i = 0 ; i < 32; ++i)
     {
-        dispatchers.push_back(std::make_shared<dispatcher>(10));
+        dispatchers.push_back(std::make_shared<dispatcher>( 10, "test" ));
     }
 
     for (auto &&dispatcher : dispatchers)
@@ -99,7 +160,7 @@ TEST_CASE("stop() notify flush to finish")
 {
     // On this test we check that if during a flush() another thread call stop(),
     // than the flush CV will be triggered to exit and not wait a full timeout
-    dispatcher dispatcher( 10 );
+    dispatcher dispatcher( 10, "test" );
     dispatcher.start();
 
     stopwatch sw;
@@ -129,4 +190,9 @@ TEST_CASE("stop() notify flush to finish")
     //std::cout << "Flushing is done" << std::endl;
     CHECK( sw.get_elapsed() < timeout );
     stop_thread.join();
+}
+
+TEST_CASE( "dispatcher name" )
+{
+    CHECK( dispatcher( 10, "my-dispatcher" ).name() == "my-dispatcher" );
 }

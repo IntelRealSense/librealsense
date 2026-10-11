@@ -25,8 +25,11 @@
 
 #include <imgui_internal.h>
 
+#include "rum-uploader/rum-uploader.h"
+
 using namespace rs2;
 using namespace rs400;
+
 
 
 void update_viewer_configuration(viewer_model& viewer_model)
@@ -388,6 +391,10 @@ int run_viewer( int argc, const char ** argv,
     if( on_setup )
         on_setup( *device_models, viewer_model );
 
+    // Its destructor joins the boot-upload worker on any exit from run_viewer (normal return or an
+    // exception out of the render loop), so the thread is never left running after shutdown.
+    rs2::rum_uploader rum_boot;
+
     // Closing the window
     while (window)
     {
@@ -656,6 +663,11 @@ int run_viewer( int argc, const char ** argv,
         // Fetch and process frames from queue
         viewer_model.handle_ready_frames(viewer_rect, window, static_cast<int>(device_models->size()), error_message);
 
+        viewer_model.assistant->draw(window, viewer_model.get_output_height());
+
+        if( ! keep_alive )
+            rum_boot.upload_data(window);
+
         // Check if we need to close the window
         if( keep_alive && !keep_alive() )
             glfwSetWindowShouldClose( window, GLFW_TRUE );
@@ -674,6 +686,8 @@ int run_viewer( int argc, const char ** argv,
             if (sub->streaming)
                 sub->stop(viewer_model.not_model);
         }
+
+    rs2::rum_uploader::join_pending_stops(device_models);
 
     return EXIT_SUCCESS;
 }

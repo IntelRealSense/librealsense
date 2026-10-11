@@ -19,7 +19,9 @@ class gyro_sensitivity_feature : public feature_interface
 public:
     static const feature_id ID;
 
-    gyro_sensitivity_feature( std::shared_ptr< hid_sensor > motion_sensor, ds_motion_sensor & motion );
+    gyro_sensitivity_feature( std::shared_ptr< hid_sensor > motion_sensor,
+                              ds_motion_sensor & motion,
+                              float default_value = 1.f );
 
     feature_id get_id() const override;
 

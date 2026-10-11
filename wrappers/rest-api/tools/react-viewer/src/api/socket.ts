@@ -20,7 +20,12 @@ class SocketService {
 
     this.socket = io(serverUrl, {
       path: '/socket',
-      transports: ['polling', 'websocket'], // Start with polling, upgrade to websocket
+      // Websocket first: metadata is broadcast at 30 Hz, and HTTP long-polling
+      // at that rate competes with the WebRTC event loop. tryAllTransports
+      // makes polling a real fallback — engine.io only advances to the next
+      // transport on connect failure when it is set.
+      transports: ['websocket', 'polling'],
+      tryAllTransports: true,
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
@@ -52,8 +57,9 @@ class SocketService {
 
     this.socket.on('devices_changed', (data: { added?: string[]; removed?: string[] }) => {
       if (import.meta.env.DEV) console.log('Socket.IO devices_changed:', data)
-      // Refresh device list. fetchDevices itself handles first-load auto-activate.
-      useAppStore.getState().fetchDevices()
+      // Force a re-enumeration: a device returning after a FW flash must not be
+      // served from the cached list. fetchDevices handles first-load auto-activate.
+      useAppStore.getState().fetchDevices(true)
     })
 
     this.socket.on('welcome', (data) => {

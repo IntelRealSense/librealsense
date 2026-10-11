@@ -303,6 +303,26 @@ def test_set_amp_factor(test_device_wrapped):
     assert new_af.a_factor == pytest.approx(0.12, abs=0.005)
 
 
+def test_get_all_controls_matches_individual_getters(test_device_wrapped):
+    """get_all_controls reads every group and mode in one bulk operation - the values must be the ones
+    the per-group getters return. A group whose min/max FW does not report gives its value instead."""
+    if not _module_state.get('preset_ok'):
+        pytest.skip("prerequisite test_visual_preset_support failed")
+    dev, ctx = test_device_wrapped
+    am_dev = get_am_dev(dev)
+    all_controls = am_dev.get_all_controls()
+    # Every group is reported under the name it is read by on its own
+    for group in all_controls.keys():
+        per_mode = all_controls[group]
+        assert len(per_mode) == 3, f"{group}: expected a value, a minimum and a maximum"
+        for mode in (0, 1, 2):
+            try:
+                expected = am_dev[group, mode]
+            except RuntimeError:  # FW has no min/max for this group, so the value is expected
+                expected = am_dev[group]
+            assert repr(per_mode[mode]) == repr(expected), f"{group} mode {mode}"
+
+
 def test_return_to_default_visual_preset(test_device_wrapped):
     if not _module_state.get('preset_ok'):
         pytest.skip("prerequisite test_visual_preset_support failed")

@@ -14,6 +14,10 @@
 #include "measurement.h"
 #include "updates-model.h"
 #include "bag-conversion-helper.h"
+#include "assistant/assistant-model.h"
+#ifdef ENABLE_STATS
+#include "rum-uploader/rum-uploader.h"
+#endif
 #include <librealsense2/hpp/rs_export.hpp>
 
 namespace rs2
@@ -157,7 +161,11 @@ namespace rs2
         post_processing_filters ppf;
 
         context &ctx;
+#ifdef ENABLE_STATS
+        rs2::rum_uploader _rum_uploader;  // owns the "Upload now" worker; joins itself in its dtor
+#endif
         std::shared_ptr<notifications_model> not_model = std::make_shared<notifications_model>();
+        std::shared_ptr<assistant_model> assistant = std::make_shared<assistant_model>();
         bool is_3d_view = false;
         bool paused = false;
         bool metric_system = true;
@@ -262,13 +270,18 @@ namespace rs2
         std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
         void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y,
                        int id, const ImVec4& color, const std::string& tooltip = "");
+        struct ruler_bounds { float min; float max; };
         void draw_color_ruler(const mouse_info& mouse,
                               const stream_model& s_model,
                               const rect& stream_rect,
                               std::vector<rgb_per_distance> rgb_per_distance_vec,
-                              float ruler_length,
+                              const ruler_bounds& bounds,
                               const std::string& ruler_units);
-        float calculate_ruler_max_distance(const std::vector<float>& distances) const;
+        // Takes distances by value so the caller can std::move — nth_element
+        // partitions in place, avoiding a per-frame copy. Not const: updates
+        // the ruler smoothing state that lives on s_model.
+        ruler_bounds calculate_ruler_bounds(std::vector<float> distances,
+                                            stream_model& s_model);
 
         void set_export_popup(ImFont* large_font, ImFont* font, rect stream_rect, std::string& error_message, config_file& temp_cfg);
         void init_depth_uid(int& selected_depth_source, std::vector<std::string>& depth_sources_str, std::vector<int>& depth_sources);
@@ -329,6 +342,8 @@ namespace rs2
         std::vector<vertex> init_zone(Zone zone, const frame& frame, float scale_factor);
         void draw_zone_2d(Zone zone, const rect& draw_within, const frame& frame);
         void draw_zone_3d(Zone zone, const rs2::labeled_points& frame);
+        void draw_distance_grid_2d(const rect& draw_within, int line_spacing_cm, const rect& normalized_zoom,
+                                    int tex_cols, int tex_rows, float phys_cell_size_cm);
         vertex transform_vertex(vertex v, const rect& normalize_from, const rect& unnormalize_to);
     };
 }

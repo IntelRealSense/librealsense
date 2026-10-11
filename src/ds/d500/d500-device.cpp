@@ -7,6 +7,7 @@
 #include <src/platform/platform-utils.h>
 
 #include "d500-device.h"
+#include "d500-mipi-device.h"
 #include "d500-private.h"
 #include "d500-options.h"
 #include "d500-info.h"
@@ -136,6 +137,12 @@ namespace librealsense
 
     rs2_intrinsics d500_depth_sensor::get_intrinsics( const stream_profile & profile ) const
     {
+        // Aligned depth is a depth-sized virtual rectified color viewport, so per FW it is interpreted with
+        // rectified color intrinsics scaled and cropped to the depth dimensions - not with depth's own.
+        if( profile.stream == RS2_STREAM_DEPTH && _owner->_aligned_depth_option
+            && _owner->_aligned_depth_option->is_aligned() )
+            return get_color_intrinsics( profile );
+
         return get_d500_intrinsic_by_resolution(
             *_owner->_coefficients_table_raw,
             ds::d500_calibration_table_id::depth_calibration_id,
@@ -151,26 +158,11 @@ namespace librealsense
             uvc->set_frame_metadata_modifier(callback);
     }
 
-    void d500_depth_sensor::color_stream_allowed_or_throw( const stream_profiles & requests ) const
-    {
-        bool color_requested = false;
-        for( auto & p : requests )
-            if( p && p->get_stream_type() == RS2_STREAM_COLOR )
-                color_requested = true;
-        if( ! color_requested )
-            return;  // color only lives on this sensor for dual-color devices
-
-        for( auto & f : _embedded_filters )
-            if( f && f->get_type() == RS2_EMBEDDED_FILTER_TYPE_CLOSE_RANGE
-                && f->supports_option( RS2_OPTION_EMBEDDED_FILTER_ENABLED )
-                && f->get_option( RS2_OPTION_EMBEDDED_FILTER_ENABLED ).query() != 0.f )
-                throw wrong_api_call_sequence_exception(
-                    "Color streams cannot be activated while Improved Close Range Depth is enabled" );
-    }
-
     void d500_depth_sensor::open( const stream_profiles & requests )
     {
-        color_stream_allowed_or_throw( requests );
+        if( ! _owner )
+            throw std::runtime_error( "d500_depth_sensor has no owner device" );
+        _owner->stream_combination_allowed_or_throw( requests );
 
         group_multiple_fw_calls(*this, [&]() {
             _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
@@ -398,7 +390,17 @@ namespace librealsense
     {
         // Signal background loops (polling_error_handler) so they exit cleanly on the
         // next tick instead of firing one more failing FW query before being joined.
-        _device_alive->store( false );
+        _is_alive->store( false );
+    }
+
+    bool d500_device::extend_to( rs2_extension extension_type, void ** ptr )
+    {
+        if( extension_type == RS2_EXTENSION_UPDATE_DEVICE && _mipi_device && ptr )
+        {
+            *ptr = static_cast< update_device_interface * >( _mipi_device.get() );
+            return true;
+        }
+        return false;
     }
 
     void d500_device::init(std::shared_ptr<context> ctx,
@@ -517,14 +519,43 @@ namespace librealsense
 
             if ((_device_capabilities & ds_caps::CAP_INTERCAM_HW_SYNC) == ds_caps::CAP_INTERCAM_HW_SYNC)
             {
-                std::map< float, std::string > description_per_value = { { 0.f, "No Sync" },
-                                                                         { 1.f, "RGB master" },
-                                                                         { 2.f, "PWM master" },
-                                                                         { 3.f, "External master" } };
-                depth_sensor.register_option( RS2_OPTION_INTER_CAM_SYNC_MODE,
-                                              std::make_shared< d500_external_sync_mode >( *_hw_monitor,
-                                                                                           raw_depth_sensor,
-                                                                                           description_per_value ) );
+                if( _fw_version >= firmware_version( "7.58.40929.13516" ) )
+                {
+                    // GMSL: d4xx kernel driver exposes the D457-style range 0..2 (0:Internal, 1:Master, 2:External);
+                    // USB: FW register 0x2C uses the D500-native 2:Internal, 3:External. Different range → different
+                    // labels are needed for the viewer to render this as an enum combo rather than a slider.
+                    std::map< float, std::string > description_per_value = _is_mipi_device
+                        ? std::map< float, std::string >{ { 0.f, "Internal" },
+                                                          { 1.f, "Master" },
+                                                          { 2.f, "External" } }
+                        : std::map< float, std::string >{ { 2.f, "Internal" },
+                                                          { 3.f, "External" } };
+                    const char * desc = _is_mipi_device
+                        ? "Inter-camera synchronization mode: 0:Internal, 1:Master, 2:External"
+                        : "Inter-camera synchronization mode: 2:Internal, 3:External";
+                    depth_sensor.register_option( RS2_OPTION_INTER_CAM_SYNC_MODE,
+                                                  std::make_shared< uvc_xu_option< uint16_t > >(
+                                                      raw_depth_sensor,
+                                                      depth_xu,
+                                                      d500_xu_id::EXTERNAL_SYNC_MODE,
+                                                      desc,
+                                                      description_per_value,
+                                                      false /* allow_set_while_streaming */ ) );
+                }
+                else
+                {
+                    // Legacy FW may still report modes 0 or 1 from a persistent state written
+                    // before the enumeration was narrowed; keep labels for those so the
+                    // current-value string resolves. Selectable set stays 2/3 (option range).
+                    std::map< float, std::string > description_per_value = { { 0.f, "No Sync" },
+                                                                             { 1.f, "RGB master" },
+                                                                             { 2.f, "Internal" },
+                                                                             { 3.f, "External" } };
+                    depth_sensor.register_option( RS2_OPTION_INTER_CAM_SYNC_MODE,
+                                                  std::make_shared< d500_external_sync_mode >( *_hw_monitor,
+                                                                                               raw_depth_sensor,
+                                                                                               description_per_value ) );
+                }
             }
 
             depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
@@ -567,7 +598,19 @@ namespace librealsense
                 depth_sensor.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE, proj_temperature);
             }
 
-            if (d5x5_family_pids.count(_pid))
+            // Constructing the option probes the XU; firmware without aligned-depth support throws and we skip it.
+            try
+            {
+                _aligned_depth_option = std::make_shared< d500_enable_aligned_depth_option >( raw_depth_sensor );
+                depth_sensor.register_option( RS2_OPTION_ENABLE_ALIGNED_DEPTH, _aligned_depth_option );
+            }
+            catch( std::exception const & e )
+            {
+                LOG_DEBUG( "Align Depth is not supported by this firmware: " << e.what() );
+            }
+
+            if( d5x5_family_pids.count( _pid )
+                && _fw_version >= firmware_version( "7.58.40897.13078" ) )
             {
                 depth_sensor.register_option( RS2_OPTION_SENSORS_CONFIG_MODE,
                     std::make_shared< uvc_xu_option< uint8_t > >(
@@ -587,7 +630,7 @@ namespace librealsense
             _polling_error_handler = std::make_shared< polling_error_handler >(
                 1000,
                 error_control,
-                std::weak_ptr<std::atomic<bool>>( _device_alive ),
+                std::weak_ptr<std::atomic<bool>>( _is_alive ),
                 raw_depth_sensor->get_notifications_processor(),
                 std::make_shared< ds_notification_decoder >( d500_fw_error_report ) );
 
@@ -633,6 +676,22 @@ namespace librealsense
         depth_sensor.register_metadata(RS2_FRAME_METADATA_EXPOSURE_ROI_BOTTOM, make_attribute_parser(&md_depth_control::exposure_roi_bottom, md_depth_control_attributes::roi_attribute, md_prop_offset));
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_EMITTER_MODE, make_attribute_parser(&md_depth_control::emitterMode, md_depth_control_attributes::emitter_mode_attribute, md_prop_offset));
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_LED_POWER, make_attribute_parser(&md_depth_control::ledPower, md_depth_control_attributes::led_power_attribute, md_prop_offset));
+
+        // Post-processing filters applied bitmask - only where the DPP composite-option filters
+        // themselves are registered, and gated behind the highest FW version any of the three
+        // filters that can set a bit here requires (make_always_enabled_param_parser has no
+        // flags-bit check, so an older FW without this field would otherwise report it as
+        // supported and hand back garbage bytes). On D555, Decimation/Temporal register at
+        // 7.58.39807.10573 but HDRD needs 7.58.45911.14188 (see d500-factory.cpp's rs555_device) -
+        // the higher of the two applies here too, so this PID currently needs no special case.
+        bool registers_dpp_filters = d5x5_family_pids.count( _pid )
+            || _pid == ds::D585_LEGACY_PID
+            || ( _pid == ds::D555_PID && ! _is_mipi_device );
+        auto dpp_filters_min_fw = firmware_version( "7.58.45911.14188" );
+        if( registers_dpp_filters && _fw_version >= dpp_filters_min_fw )
+        {
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_EMBEDDED_FILTERS, make_always_enabled_param_parser(&md_depth_control::embedded_filters, md_prop_offset));
+        }
 
         // md_configuration - will be used for internal validation only
         md_prop_offset = metadata_raw_mode_offset + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
@@ -687,6 +746,16 @@ namespace librealsense
         register_info( RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str );
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D500");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
+        const std::string & dfu_path = group.uvc_devices.front().dfu_device_path;
+        // Skip update_device registration when no DFU chardev was resolved; otherwise
+        // the device advertises RS2_EXTENSION_UPDATE_DEVICE, viewer offers "Update
+        // Firmware", and it fails at the ofstream with an empty path.
+        if( _is_mipi_device && ! dfu_path.empty() )
+        {
+            register_info( RS2_CAMERA_INFO_DFU_DEVICE_PATH, dfu_path );
+            _mipi_device = std::make_unique< d500_mipi_device >(
+                dfu_path, _ds_device_common, _polling_error_handler );
+        }
 
         if (_pid == D585S_PID)
         {

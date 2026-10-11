@@ -23,6 +23,7 @@ namespace librealsense
         // devices under RealSense VID
         const uint16_t D500_RECOVERY_PID      = 0x0CFD; // Shared across the D500 family
         const uint16_t D500_USB2_RECOVERY_PID = 0x0CFE; // Fallback for USB2 hosts
+        const uint16_t D500_MIPI_RECOVERY_PID = 0xBBDD; // D500 MIPI/GMSL DFU recovery (synthetic; no USB enumeration)
         const uint16_t D535_2C_PID            = 0x0C01;
         const uint16_t D535_3C_PID            = 0x0C02;
         const uint16_t D535F_PID              = 0x0C03; // 3C with IR only L/R cover
@@ -39,7 +40,9 @@ namespace librealsense
             DUAL_RGB_MODE         = 0x12,  // FW spec: csEU_CONTROL_ADVANCED_DEVICE_MODE. 1-byte GET/SET: 0 = dedicated color sensor (3C), 1 = dual RGB (2C). SET triggers PID change on next enumeration.
             PVT_TEMPERATURE       = 0x15,
             PROJECTOR_TEMPERATURE = 0x16,
-            OHM_TEMPERATURE       = 0x17
+            OHM_TEMPERATURE       = 0x17,
+            COLORED_IR_AE_POLICY  = 0x19,
+            EXTERNAL_SYNC_MODE    = 0x1A
         };
 
         // Same GUID as safety_xu. FW publishes as either safety or inference, not both.
@@ -76,10 +79,8 @@ namespace librealsense
         };
 
         // D5x5 (non-safety, non-legacy) SKU family: D535 and D585 in their 2C/3C/F/proto variants.
-        // Used to gate features that are only exposed by the modern D5x5 FW branch — currently:
-        //   - interactive Triggered Calibration flow (D555 stays on the D400 OCC path;
-        //     D585S and D585_LEGACY_PID stay on the current D500 triggered-calibration flow)
-        //   - the DUAL_RGB_MODE XU (0x12) selector that toggles Dual-RGB (2C) vs Dedicated-Color (3C)
+        // Gates the DUAL_RGB_MODE XU (0x12) selector that toggles Dual-RGB (2C) vs Dedicated-Color (3C).
+        // D585S has no dual-RGB variant, so it stays out of this set — see uses_interactive_triggered_calibration below.
         static const std::set<std::uint16_t> d5x5_family_pids = {
             D535_2C_PID,
             D535_3C_PID,
@@ -91,9 +92,11 @@ namespace librealsense
             D585_3C_PROTO_PID
         };
 
+        // Interactive Triggered Calibration eligibility: D5x5 family + D585S safety.
+        // D555 stays on the D400 OCC path; D585_LEGACY_PID stays on the current D500 triggered-calibration flow.
         inline bool uses_interactive_triggered_calibration( uint16_t pid )
         {
-            return d5x5_family_pids.find( pid ) != d5x5_family_pids.end();
+            return d5x5_family_pids.count( pid ) || pid == D585S_PID;
         }
 
         static const std::map< std::uint16_t, std::string > rs500_sku_names = {
@@ -104,6 +107,7 @@ namespace librealsense
             { D585S_RECOVERY_PID,     "RealSense D585S Recovery"},
             { D500_RECOVERY_PID,      "RealSense D500 Recovery"},
             { D500_USB2_RECOVERY_PID, "RealSense D500 Recovery"},
+            { D500_MIPI_RECOVERY_PID, "RealSense D5xx MIPI Recovery"},
             { D535_2C_PID,            "RealSense D535 Dual RGB" },
             { D535_3C_PID,            "RealSense D535" },
             { D535F_PID,              "RealSense D535F" },
@@ -117,6 +121,7 @@ namespace librealsense
         // D500-only HWM opcodes. Shared opcodes are in ds::fw_cmd (ds/ds-private.h).
         enum d500_fw_cmd : uint8_t
         {
+            CUSTOM_CMD               = 0x80, // Custom FW command, sub-command given in param1
             HKR_THERMAL_COMPENSATION = 0x84, // Control HKR thermal compensation
             SAFETY_PRESET_READ       = 0x94, // Read safety preset from given index
             SAFETY_PRESET_WRITE      = 0x95, // Write safety preset to given index
@@ -135,6 +140,7 @@ namespace librealsense
         {
             switch (state)
             {
+                ENUM2STR(CUSTOM_CMD);
                 ENUM2STR(HKR_THERMAL_COMPENSATION);
                 ENUM2STR(SAFETY_PRESET_READ);
                 ENUM2STR(SAFETY_PRESET_WRITE);

@@ -9,6 +9,7 @@ export class WebRTCHandler {
   private onTrack: (event: RTCTrackEvent) => void
   private onConnectionStateChange: (state: RTCPeerConnectionState) => void
   private iceCandidateQueue: RTCIceCandidate[] = []
+  private closed = false
 
   constructor(
     deviceId: string,
@@ -23,24 +24,26 @@ export class WebRTCHandler {
   }
 
   async connect(): Promise<void> {
-    // Create peer connection
-    this.peerConnection = new RTCPeerConnection({
+    // Create peer connection. Kept in a local so the negotiation sequence
+    // below survives disconnect() nulling this.peerConnection mid-await.
+    const pc = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
       ],
     })
+    this.peerConnection = pc
 
     // Set up event handlers
-    this.peerConnection.ontrack = this.onTrack
+    pc.ontrack = this.onTrack
 
-    this.peerConnection.onconnectionstatechange = () => {
+    pc.onconnectionstatechange = () => {
       if (this.peerConnection) {
         this.onConnectionStateChange(this.peerConnection.connectionState)
       }
     }
 
-    this.peerConnection.onicecandidate = async (event) => {
+    pc.onicecandidate = async (event) => {
       if (event.candidate && this.sessionId) {
         try {
           await apiClient.addICECandidate(this.sessionId, {
@@ -54,13 +57,13 @@ export class WebRTCHandler {
       }
     }
 
-    this.peerConnection.oniceconnectionstatechange = () => {
-      if (import.meta.env.DEV) console.log('ICE connection state:', this.peerConnection?.iceConnectionState)
+    pc.oniceconnectionstatechange = () => {
+      if (import.meta.env.DEV) console.log('ICE connection state:', pc.iceConnectionState)
     }
 
     // Add transceivers for receiving streams
     this.streamTypes.forEach((streamType) => {
-      this.peerConnection?.addTransceiver('video', {
+      pc.addTransceiver('video', {
         direction: 'recvonly',
         streams: [new MediaStream()],
       })
@@ -76,21 +79,30 @@ export class WebRTCHandler {
 
       this.sessionId = serverOffer.session_id
 
+      // disconnect() may have run while the offer was in flight (React
+      // StrictMode remounts every effect in dev). Without this the session id
+      // is only learned after the handler is already dead, so the server keeps
+      // an orphan peer connection encoding frames until its 1-hour sweep.
+      if (this.closed) {
+        this.releaseSession()
+        return
+      }
+
       // Set remote description (server's offer)
-      await this.peerConnection.setRemoteDescription({
+      await pc.setRemoteDescription({
         type: serverOffer.type as RTCSdpType,
         sdp: serverOffer.sdp,
       })
 
       // Create and send answer
-      const answer = await this.peerConnection.createAnswer()
-      await this.peerConnection.setLocalDescription(answer)
+      const answer = await pc.createAnswer()
+      await pc.setLocalDescription(answer)
 
       await apiClient.sendWebRTCAnswer(this.sessionId, answer)
 
       // Process any queued ICE candidates
       for (const candidate of this.iceCandidateQueue) {
-        await this.peerConnection.addIceCandidate(candidate)
+        await pc.addIceCandidate(candidate)
       }
       this.iceCandidateQueue = []
 
@@ -138,11 +150,17 @@ export class WebRTCHandler {
   }
 
   disconnect(): void {
+    this.closed = true
+
     if (this.peerConnection) {
       this.peerConnection.close()
       this.peerConnection = null
     }
 
+    this.releaseSession()
+  }
+
+  private releaseSession(): void {
     if (this.sessionId) {
       apiClient.closeWebRTCSession(this.sessionId).catch(console.error)
       this.sessionId = null

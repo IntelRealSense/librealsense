@@ -53,7 +53,12 @@ public:
     void stop() override;
     void set_imu_sensitivity( rs2_stream stream, float value );
     double get_imu_sensitivity_values( rs2_stream stream );
+    // HKR FW accepts the option value directly as a range index:
+    // 0/1/2/3/4 select 2000/1000/500/250/125 dps respectively.
+    // Other devices retain the D400 conversion to FW tokens 0/0.1/0.2/0.3/0.4.
+    void enable_gyro_sensitivity_range_index() { _gyro_sensitivity_uses_range_index = true; }
     void set_gyro_scale_factor(double scale_factor);
+    void set_accel_scale_factor(double scale_factor);
     std::vector< uint8_t > get_custom_report_data( const std::string & custom_sensor_name,
                                                    const std::string & report_name,
                                                    platform::custom_sensor_report_field report_field ) const;
@@ -73,6 +78,7 @@ private:
     std::unique_ptr< frame_timestamp_reader > _custom_hid_timestamp_reader;
     //Keeps set sensitivity values for gyro and accel
     std::map< rs2_stream, float > _imu_sensitivity_per_rs2_stream;
+    bool _gyro_sensitivity_uses_range_index = false;
 
     stream_profiles get_sensor_profiles( std::string sensor_name ) const;
 

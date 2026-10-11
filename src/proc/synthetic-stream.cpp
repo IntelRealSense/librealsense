@@ -17,6 +17,8 @@
 
 #include <rsutils/string/from.h>
 
+#include "rum/rum-hooks.h"
+
 
 namespace librealsense
 {
@@ -83,6 +85,8 @@ namespace librealsense
             {
                 if (should_process(f))
                 {
+                    if( ! _rum_applied.exchange( true ) )  // first processed frame -> filter actually used
+                        rum::hooks::on_filter( get_info( RS2_CAMERA_INFO_NAME ), *( frame_interface * )f.get() );
                     auto res = process_frame(source, f);
                     if (!res) continue;
                     if (auto composite = res.as<rs2::frameset>())

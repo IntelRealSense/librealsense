@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace librealsense
 {
@@ -26,6 +27,12 @@ namespace librealsense
 
             // bInterfaceNumber of a video4linux node. Throws if unreadable.
             uint16_t read_interface_number( const std::string & name );
+
+            // The VideoStreaming interface feeding each output terminal of the UVC function whose VideoControl
+            // interface is 'vc_interface', in the order that descriptor lists the terminals - i.e. in /dev/videoN
+            // order. 'video_path' is any sysfs node path of the device. Empty when the descriptor cannot be read.
+            std::vector< uint8_t > read_streaming_interfaces_in_terminal_order( const std::string & video_path,
+                                                                               uint16_t vc_interface );
 
             // Find USB connection type (USB2/3) for UVC device. Note - input parameter is passed by value.
             usb_spec get_usb_connection_type( std::string path );

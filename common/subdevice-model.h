@@ -45,6 +45,9 @@ namespace rs2
 
     std::string get_post_processing_device_sensor_name(subdevice_model* sub);
 
+    // True for D500 devices with a wired-up depth-mapping sensor (occupancy grid / labeled point cloud).
+    bool device_has_depth_mapping(const device& dev);
+
     class frame_queues
     {
     public:
@@ -101,7 +104,6 @@ namespace rs2
         void draw_options(const std::vector<rs2_option>& drawing_order,
             bool update_read_only_options, std::string& error_message,
             notifications_model& model);
-        uint64_t num_supported_non_default_options() const;
         bool draw_option(rs2_option opt, bool update_read_only_options,
             std::string& error_message, notifications_model& model)
         {
@@ -201,7 +203,6 @@ namespace rs2
         rect normalized_zoom{ 0, 0, 1, 1 };
         rect roi_rect;
         bool auto_exposure_enabled = false;
-        float depth_units = 1.f;
         float stereo_baseline = -1.f;
 
         bool roi_checked = false;
@@ -229,6 +230,15 @@ namespace rs2
 
         std::vector<std::shared_ptr<embedded_filter_model>> embedded_filters;
         bool embedded_filters_enabled = true;
+
+        // UI state for the Temporal Filter DPP "structured API" panel (gated on
+        // RS2_COMPOSITE_OPTION_TEMPORAL_FILTER_DPP support - see device-model.cpp). Widget
+        // values change locally until "Apply" issues one atomic set_composite_option() call.
+        bool temporal_filter_dpp_populated = false;
+        int temporal_filter_dpp_enabled = 0;
+        float temporal_filter_dpp_smooth_alpha = 0.4f;
+        int temporal_filter_dpp_smooth_delta = 20;
+        int temporal_filter_dpp_persistency_index = 3;
 
         bool uvmapping_calib_full = false;
         device_model* dev_model;
@@ -292,6 +302,9 @@ namespace rs2
         // True when `unique_id`'s checkbox should be greyed out given the current mode (IR while raw
         // dual-RGB is active; the raw-only Color 1 while IR is active).
         bool is_stream_mode_locked(int unique_id) const;
+        // The device publishes a separate aligned-depth stream (DDS) only while the mode is on, so its
+        // checkbox stays disabled until then. False for devices that carry aligned depth on one stream.
+        bool is_aligned_depth_stream_off(int unique_id) const;
         void set_extrinsics_from_depth_if_needed();
         bool is_post_processing_enabled_in_config_file() const;
         void avoid_streaming_on_embedded_filters_not_matching_configuration() const;

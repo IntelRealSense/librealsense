@@ -64,7 +64,7 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
-    void imgui_easy_theming(ImFont*& font_dynamic, ImFont*& font_18, ImFont*& monofont, int& font_size);
+    void imgui_easy_theming(ImFont*& font_dynamic, ImFont*& font_18, ImFont*& monofont, ImFont*& font_bold, int& font_size);
 
     constexpr const char* server_versions_db_url = "https://librealsense.realsenseai.com/Releases/rs_versions_db.json";
 
@@ -139,6 +139,14 @@ namespace rs2
             static const char* log_severity{ "viewer_model.log_severity" };
             static const char* post_processing{ "viewer_model.post_processing" };
             static const char* show_map_ruler{ "viewer_model.show_map_ruler" };
+            // Per-device ruler settings are stored under
+            //   viewer_model.ruler.<device name>.<sensor name>.{range_mode,fixed_min,fixed_max}
+            // — mirrors the layout used for post_processing so each SKU keeps its own
+            // preference (D455 vs D435 vs D585 don't share a fixed range).
+            static const char* ruler_key_root      { "viewer_model.ruler" };
+            static const char* ruler_range_mode_key{ "range_mode" };
+            static const char* ruler_fixed_min_key { "fixed_min" };
+            static const char* ruler_fixed_max_key { "fixed_max" };
             static const char* show_stream_details{ "viewer_model.show_stream_details" };
             static const char* metric_system{ "viewer_model.metric_system" };
             static const char* shading_mode{ "viewer_model.shading_mode" };
@@ -150,6 +158,8 @@ namespace rs2
             static const char* lpc_point_size{ "viewer_model.lpc_point_size" };
             static const char* show_safety_zones_3d{ "viewer_model.show_safety_zones_3d" };
             static const char* show_safety_zones_2d{ "viewer_model.show_safety_zones_2d" };
+            static const char* show_distance_grid_2d{ "viewer_model.show_distance_grid_2d" };
+            static const char* distance_grid_cell_size_cm{ "viewer_model.distance_grid_cell_size_cm" };
             namespace viewport_grid_overlay
             {
                 static const char* horizontal_lines{ "viewer_model.grid_overlay.horizontal_lines" };
@@ -183,6 +193,15 @@ namespace rs2
             static const char* font_oversample{ "performance.font_oversample.v2" };
             static const char* show_skybox{ "performance.show_skybox" };
             static const char* occlusion_invalidation{ "performance.occlusion_invalidation" };
+        }
+        namespace stats
+        {
+            // Same key the SDK's RUM config (src/rum/rum-config) uses in realsense-config.json.
+            static const char* rum_cloud_enabled{ "rum_cloud_enabled" };
+            // Boot-upload throttle (config-only, no UI): min hours between uploads (default 24, 0 disables)
+            // and the last successful upload time in unix seconds.
+            static const char* rum_upload_interval_hours{ "rum_upload_interval_hours" };
+            static const char* rum_last_upload{ "rum_last_upload" };
         }
         namespace ply
         {
@@ -316,7 +335,8 @@ namespace rs2
         void refresh_notifications(viewer_model& viewer);
 
         int draw_playback_panel(ux_window& window, ImFont* font, viewer_model& view);
-        bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message, bool is_streaming = false);
+        bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message,
+            bool is_streaming, std::string const & filter, std::vector<std::function<void()>>& draw_later);
         void draw_controls(float panel_width, float panel_height,
             ux_window& window,
             std::string& error_message,
@@ -417,14 +437,8 @@ namespace rs2
         bool draw_device_panel_auto_calib_d400(viewer_model& viewer, bool& something_to_show, std::string& error_message);
         bool draw_device_panel_auto_calib_d500(viewer_model& viewer, bool& something_to_show, std::string& error_message);
 
-        void draw_processing_blocks(std::shared_ptr<subdevice_model> sub, float windows_width,
-            ux_window& window, viewer_model& viewer,
-            std::string& error_message, std::string& label,
-            std::vector<std::function<void()>>& draw_later, const bool& update_read_only_options);
-
-        void draw_embedded_filters(std::shared_ptr<subdevice_model> sub, float windows_width,
-            ux_window& window, viewer_model& viewer, std::string& error_message, std::string& label,
-            std::vector<std::function<void()>>& draw_later, const bool& update_read_only_options);
+        void draw_processing_blocks(std::shared_ptr<subdevice_model> sub, control_draw_context& ctx);
+        void draw_embedded_filters(std::shared_ptr<subdevice_model> sub, control_draw_context& ctx);
 
         std::thread check_for_device_updates_thread;
         std::mutex dev_mutex;

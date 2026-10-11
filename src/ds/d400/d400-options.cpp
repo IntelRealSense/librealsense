@@ -38,6 +38,32 @@ namespace librealsense
         return option_range{ -40, 125, 0, 0 };
     }
 
+    thermal_compensation_option_mipi::thermal_compensation_option_mipi( std::shared_ptr< hw_monitor > hwm )
+        : bool_option( true )
+        , _hw_monitor( hwm )
+    {}
+
+    void thermal_compensation_option_mipi::set( float value )
+    {
+        auto hwm = _hw_monitor.lock();
+        if( ! hwm )
+            throw wrong_api_call_sequence_exception( "hw monitor is not available for thermal compensation" );
+
+        try
+        {
+            command cmd( ds::TC_CMD, ds::TC_CMD_SWITCH, value > 0 ? 1 : 0 );
+            hwm->send( cmd );
+        }
+        catch( const std::exception & e )
+        {
+            throw wrong_api_call_sequence_exception(
+                std::string( "hw monitor command for setting thermal compensation failed: " ) + e.what() );
+        }
+
+        bool_option::set( value );
+        _recording_function( *this );
+    }
+
     projector_temperature_option_mipi::projector_temperature_option_mipi(std::shared_ptr<hw_monitor> hwm, rs2_option opt)
         : _hw_monitor(hwm), _option(opt)
     {}
@@ -445,26 +471,7 @@ namespace librealsense
     
     const char * librealsense::gyro_sensitivity_option::get_value_description( float val ) const
     {
-        switch( static_cast< int >( val ) )
-        {
-            case RS2_GYRO_SENSITIVITY_61_0_MILLI_DEG_SEC: {
-                return "61.0 mDeg/Sec";
-            }
-            case RS2_GYRO_SENSITIVITY_30_5_MILLI_DEG_SEC: {
-                return "30.5 mDeg/Sec";
-            }
-            case RS2_GYRO_SENSITIVITY_15_3_MILLI_DEG_SEC: {
-                return "15.3 mDeg/Sec";
-            }
-            case RS2_GYRO_SENSITIVITY_7_6_MILLI_DEG_SEC: {
-                return "7.6 mDeg/Sec";
-            }
-            case RS2_GYRO_SENSITIVITY_3_8_MILLI_DEG_SEC: {
-                return "3.8 mDeg/Sec";
-            }
-            default:
-                throw invalid_value_exception( "value not found" );
-        }
+        return get_gyro_sensitivity_value_description( val );
     }
 
     const char * librealsense::gyro_sensitivity_option::get_description() const
@@ -481,4 +488,3 @@ namespace librealsense
 
 
  }
- 

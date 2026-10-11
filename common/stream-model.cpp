@@ -17,6 +17,10 @@ struct attribute
     std::string description;
 };
 
+namespace {
+    int clamp_distance_grid_cell_size( int cm ) { return std::min( std::max( cm, 1 ), 200 ); }
+}
+
 namespace rs2
 {
     stream_model::stream_model()
@@ -26,10 +30,17 @@ namespace rs2
     {
         show_map_ruler = config_file::instance().get_or_default(
             configurations::viewer::show_map_ruler, true);
+        // Ruler mode / fixed range are loaded per-device in begin_stream once
+        // we know which SKU + sensor this stream belongs to. Defaults stay in
+        // the field initializers so a stream without a subdevice still behaves.
         show_stream_details = config_file::instance().get_or_default(
             configurations::viewer::show_stream_details, false);
         show_safety_zones_2d = config_file::instance().get_or_default(
             configurations::viewer::show_safety_zones_2d, true);
+        show_distance_grid_2d = config_file::instance().get_or_default(
+            configurations::viewer::show_distance_grid_2d, true);
+        distance_grid_cell_size_cm = clamp_distance_grid_cell_size(config_file::instance().get_or_default(
+            configurations::viewer::distance_grid_cell_size_cm, 5));
         {
             namespace cfg = configurations::viewer::viewport_grid_overlay;
             auto& cf = config_file::instance();
@@ -212,6 +223,37 @@ namespace rs2
     {
         dev = d;
         original_profile = p;
+
+        // Per-device ruler settings: same key layout as post_processing entries.
+        if (p.stream_type() == RS2_STREAM_DEPTH
+            && d && d->dev.supports(RS2_CAMERA_INFO_NAME)
+            && d->s  && d->s->supports(RS2_CAMERA_INFO_NAME))
+        {
+            std::stringstream ss;
+            ss << configurations::viewer::ruler_key_root
+               << "." << d->dev.get_info(RS2_CAMERA_INFO_NAME)
+               << "." << d->s->get_info(RS2_CAMERA_INFO_NAME);
+            ruler_config_key_root = ss.str();
+
+            auto& cf = config_file::instance();
+            const std::string mode_key = ruler_config_key_root + "." + configurations::viewer::ruler_range_mode_key;
+            const std::string min_key  = ruler_config_key_root + "." + configurations::viewer::ruler_fixed_min_key;
+            const std::string max_key  = ruler_config_key_root + "." + configurations::viewer::ruler_fixed_max_key;
+
+            int mode_val = cf.get_or_default(mode_key.c_str(),
+                                             static_cast<int>(ruler_range_mode::auto_dynamic));
+            if (mode_val != static_cast<int>(ruler_range_mode::auto_dynamic) &&
+                mode_val != static_cast<int>(ruler_range_mode::fixed_user))
+            {
+                mode_val = static_cast<int>(ruler_range_mode::auto_dynamic);
+            }
+            ruler_mode = static_cast<ruler_range_mode>(mode_val);
+            ruler_fixed_min = cf.get_or_default(min_key.c_str(), 0.f);
+            ruler_fixed_max = cf.get_or_default(max_key.c_str(), 4.f);
+            if (ruler_fixed_max <= ruler_fixed_min + k_min_ruler_gap)
+                ruler_fixed_max = ruler_fixed_min + k_min_ruler_gap;
+            ruler_state.initialized = false;  // reseed smoothing for the new device
+        }
 
         profile = p;
         texture->colorize = d->depth_colorizer;
@@ -455,12 +497,23 @@ namespace rs2
         const auto top_bar_height = 32.f;
         auto num_of_buttons = 5;
 
+        // Computed once, reused for both button-count sizing and the draw below.
+        const bool show_distance_grid_button
+            = RS2_STREAM_OCCUPANCY == profile.stream_type() && _normalized_zoom.w == 1
+              && dev && device_has_depth_mapping(dev->dev); // hide when zooming in, or for non-depth-mapping devices
+
         if (!viewer.allow_stream_close) --num_of_buttons;
         if (viewer.streams.size() > 1) ++num_of_buttons;
         if (profile.as<rs2::video_stream_profile>()) ++num_of_buttons; // Grid/crosshair button - video streams only
         if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
         if (RS2_FORMAT_MOTION_XYZ32F == profile.format()) ++num_of_buttons; // Motion graph button
         if (RS2_STREAM_OCCUPANCY == profile.stream_type() && _normalized_zoom.w == 1) ++num_of_buttons; // Safety zones button
+        if (show_distance_grid_button)
+        {
+            ++num_of_buttons; // Distance grid button
+            if (show_distance_grid_2d)
+                num_of_buttons += 2; // + cell-size input, roughly twice a button's width
+        }
 
         RsImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -630,6 +683,12 @@ namespace rs2
 
         if (RS2_STREAM_DEPTH == profile.stream_type())
         {
+            // Scope the button + popover ID to this stream instance. Without this,
+            // two visible depth streams would collide on both the "##Color map"
+            // button ID and the "##ColorMapRulerPopup" popup ID, and right-
+            // clicking either button would mutate the other stream's ruler state.
+            ImGui::PushID(static_cast<const void*>(this));
+
             label = rsutils::string::from() << textual_icons::bar_chart << "##Color map";
             if (show_map_ruler)
             {
@@ -642,7 +701,7 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    RsImGui::CustomTooltip("Hide color map ruler");
+                    RsImGui::CustomTooltip("Hide color map ruler (right-click for range options)");
                 }
                 ImGui::PopStyleColor(2);
             }
@@ -655,15 +714,82 @@ namespace rs2
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    RsImGui::CustomTooltip("Show color map ruler");
+                    RsImGui::CustomTooltip("Show color map ruler (right-click for range options)");
                 }
             }
+
+            // Range popover (right-click the ruler button). ImGui associates the
+            // popup with the most-recently-submitted item, so it targets the button.
+            static const char* const popup_id = "##ColorMapRulerPopup";
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+            {
+                ImGui::OpenPopup(popup_id);
+            }
+            if (ImGui::BeginPopup(popup_id))
+            {
+                ImGui::TextUnformatted("Depth ruler range");
+                ImGui::Separator();
+                int mode_i = static_cast<int>(ruler_mode);
+                bool mode_changed = false;
+                mode_changed |= ImGui::RadioButton("Auto (adaptive)##rulerAuto",
+                                                   &mode_i,
+                                                   static_cast<int>(ruler_range_mode::auto_dynamic));
+                if (ImGui::IsItemHovered())
+                    RsImGui::CustomTooltip("Percentile-driven, smoothed across frames");
+                mode_changed |= ImGui::RadioButton("Fixed custom range##rulerCustom",
+                                                   &mode_i,
+                                                   static_cast<int>(ruler_range_mode::fixed_user));
+
+                if (mode_changed)
+                {
+                    ruler_mode = static_cast<ruler_range_mode>(mode_i);
+                    if (!ruler_config_key_root.empty())
+                    {
+                        const std::string k = ruler_config_key_root + "." +
+                                              configurations::viewer::ruler_range_mode_key;
+                        config_file::instance().set(k.c_str(), mode_i);
+                    }
+                    ruler_state.initialized = false; // re-seed on next frame
+                }
+
+                const bool custom_enabled = (ruler_mode == ruler_range_mode::fixed_user);
+                if (!custom_enabled) ImGui::BeginDisabled();
+                ImGui::PushItemWidth(90);
+                bool range_changed = false;
+                range_changed |= ImGui::DragFloat("min (m)##rulerFixedMin",
+                                                  &ruler_fixed_min, 0.05f, 0.f, 100.f, "%.2f");
+                range_changed |= ImGui::DragFloat("max (m)##rulerFixedMax",
+                                                  &ruler_fixed_max, 0.05f, 0.f, 100.f, "%.2f");
+                ImGui::PopItemWidth();
+                if (!custom_enabled) ImGui::EndDisabled();
+
+                if (range_changed)
+                {
+                    if (ruler_fixed_min < 0.f) ruler_fixed_min = 0.f;
+                    if (ruler_fixed_max <= ruler_fixed_min + k_min_ruler_gap)
+                        ruler_fixed_max = ruler_fixed_min + k_min_ruler_gap;
+                    if (!ruler_config_key_root.empty())
+                    {
+                        auto& cf = config_file::instance();
+                        const std::string min_k = ruler_config_key_root + "." +
+                                                  configurations::viewer::ruler_fixed_min_key;
+                        const std::string max_k = ruler_config_key_root + "." +
+                                                  configurations::viewer::ruler_fixed_max_key;
+                        cf.set(min_k.c_str(), ruler_fixed_min);
+                        cf.set(max_k.c_str(), ruler_fixed_max);
+                    }
+                    ruler_state.initialized = false;
+                }
+                ImGui::EndPopup();
+            }
+
+            ImGui::PopID();
             ImGui::SameLine();
         }
 
         if (RS2_STREAM_OCCUPANCY == profile.stream_type() && _normalized_zoom.w == 1) // hide polygons button when zooming in
         {
-            label = rsutils::string::from() << textual_icons::draw_polygon << "##Safety zones";
+            label = rsutils::string::from() << textual_icons::draw_polygon << "##Safety zones " << profile.unique_id();
             if (show_safety_zones_2d)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
@@ -689,6 +815,56 @@ namespace rs2
                 if (ImGui::IsItemHovered())
                 {
                     RsImGui::CustomTooltip("Show safety polygons");
+                }
+            }
+            ImGui::SameLine();
+        }
+
+        if (show_distance_grid_button)
+        {
+            label = rsutils::string::from() << textual_icons::grid << "##Distance grid " << profile.unique_id();
+            if (show_distance_grid_2d)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    show_distance_grid_2d = false;
+                    config_file::instance().set(configurations::viewer::show_distance_grid_2d, show_distance_grid_2d);
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    RsImGui::CustomTooltip("Hide distance grid");
+                }
+                ImGui::PopStyleColor(2);
+
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(45);
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, header_window_bg);
+                // Edits the member directly - a fresh local copy each frame fought with ImGui's
+                // in-progress edit buffer while typing.
+                std::string cell_size_id = rsutils::string::from() << "##Distance grid cell size " << profile.unique_id();
+                if (ImGui::InputInt(cell_size_id.c_str(), &distance_grid_cell_size_cm, 0, 0))
+                {
+                    distance_grid_cell_size_cm = clamp_distance_grid_cell_size(distance_grid_cell_size_cm);
+                    config_file::instance().set(configurations::viewer::distance_grid_cell_size_cm, distance_grid_cell_size_cm);
+                }
+                ImGui::PopStyleColor();
+                if (ImGui::IsItemHovered())
+                {
+                    RsImGui::CustomTooltip("Distance grid line spacing, in cm");
+                }
+            }
+            else
+            {
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    show_distance_grid_2d = true;
+                    config_file::instance().set(configurations::viewer::show_distance_grid_2d, show_distance_grid_2d);
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    RsImGui::CustomTooltip("Show distance grid");
                 }
             }
             ImGui::SameLine();
@@ -1081,12 +1257,14 @@ namespace rs2
 
 
         //add_descriptions_for_d500_metadata_fields(descriptions);
-        std::string pid;
+        bool use_depth_mapping_metadata_adaptations = false;
         if (dev)
         {
-            pid = dev->dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-            if (pid == "0B6B")
-                add_d585S_metadata_descriptions(descriptions);
+            // D555 shares the white-balance metadata quirk with the other depth-mapping
+            // devices, so it rides along on the same check here.
+            use_depth_mapping_metadata_adaptations = device_has_depth_mapping(dev->dev);
+            if (use_depth_mapping_metadata_adaptations)
+                add_depth_mapping_metadata_descriptions(descriptions);
 
             if (dev->dev.supports(RS2_CAMERA_INFO_CONNECTION_TYPE))
             {
@@ -1103,8 +1281,8 @@ namespace rs2
             {
                 auto val = (rs2_frame_metadata_value)i;
                 std::string name = rs2_frame_metadata_to_string(val);
-                if( pid == "0B6B" )
-                    name = adapt_d585S_metadata_name( name );
+                if( use_depth_mapping_metadata_adaptations )
+                    name = adapt_depth_mapping_metadata_name( name );
                 std::string desc;
                 if( descriptions.find( val ) != descriptions.end() )
                     desc = descriptions[val];
@@ -1233,7 +1411,7 @@ namespace rs2
         ImGui::EndChild();
     }
 
-    void stream_model::add_d585S_metadata_descriptions(std::map<rs2_frame_metadata_value, std::string>& descriptions) const
+    void stream_model::add_depth_mapping_metadata_descriptions(std::map<rs2_frame_metadata_value, std::string>& descriptions) const
     {
         std::vector<std::string> meanings;
         descriptions[RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_COUNTER] = "Counter of the depth frame upon which the stream was calculated";
@@ -1389,7 +1567,7 @@ namespace rs2
         descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_SW_MONITOR_STATUS] = "SMCU SW Monitor Status:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SMCU_SW_MONITOR_STATUS, meanings, "None");
     }
 
-    std::string stream_model::adapt_d585S_metadata_name( const std::string & name ) const
+    std::string stream_model::adapt_depth_mapping_metadata_name( const std::string & name ) const
     {
         if( name == "Manual White Balance" )
             return "White Balance"; // D585S also outputs auto white balance values in this fields so the "manual" in the name is wrong
@@ -1508,7 +1686,13 @@ namespace rs2
             std::stringstream ss;
             rect cursor_rect{ mouse.cursor.x, mouse.cursor.y };
             auto ts = cursor_rect.normalize(stream_rect);
-            auto pixels = ts.unnormalize(_normalized_zoom.unnormalize(get_stream_bounds()));
+            // MAP1 frames are transposed for display (decode_occupancy_cells), so the displayed
+            // texture is tex_cols x tex_rows, not this stream's native size.
+            auto occ_geom = texture->last_occupancy_geometry;
+            auto pixel_bounds = (profile.stream_type() == RS2_STREAM_OCCUPANCY && occ_geom.valid)
+                ? rect{ 0, 0, static_cast<float>(occ_geom.tex_cols), static_cast<float>(occ_geom.tex_rows) }
+                : get_stream_bounds();
+            auto pixels = ts.unnormalize(_normalized_zoom.unnormalize(pixel_bounds));
             auto x = (int)pixels.x;
             auto y = (int)pixels.y;
 
@@ -1517,7 +1701,14 @@ namespace rs2
             float val{};
             if (texture->try_pick(x, y, &val))
             {
-                ss << " 0x" << std::hex << static_cast< int >( round( val ) );
+                if (profile.stream_type() == RS2_STREAM_OCCUPANCY)
+                {
+                    ss << " " << static_cast< int >( round( val ) );
+                }
+                else
+                {
+                    ss << " 0x" << std::hex << static_cast< int >( round( val ) );
+                }
             }
 
             bool show_max_range = false;

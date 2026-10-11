@@ -59,10 +59,14 @@
 #include "debug-stream-sensor.h"
 #include "max-usable-range-sensor.h"
 #include "fw-update/fw-update-device-interface.h"
+#include "rum/rum-config.h"
+#include "rum/rum-collector.h"
+#include "rum/rum-hooks.h"
 #include "core/frame-callback.h"
 #include "color-sensor.h"
 #include "perception-sensor.h"
 #include "safety-sensor.h"
+#include "composite-option-interface.h"
 #include "depth-mapping-sensor.h"
 #include "composite-frame.h"
 #include "points.h"
@@ -111,11 +115,16 @@ struct rs2_option_value_wrapper : rs2_option_value
     // Add a reference count to control lifetime
     mutable std::atomic< int > ref_count;
 
+    int has_range;
+    rs2_option_range range;
+
     rs2_option_value_wrapper( rs2_option option_id,
                               rs2_option_type option_type,
                               std::shared_ptr< const json > const & p_json_value )
         : ref_count( 1 )
         , p_json( p_json_value )
+        , has_range( 0 )
+        , range{}
     {
         id = option_id;
         type = option_type;
@@ -182,6 +191,14 @@ struct rs2_option_value_wrapper : rs2_option_value
 struct rs2_options_list
 {
     std::vector< rs2_option_value_wrapper const * > list;
+};
+
+// Composite-option twin of rs2_options_list - a fully separate, id-only list type (composite
+// options have no rs2_option_value-style value abstraction; callers cast the raw payload
+// bytes returned by rs2_get_composite_option instead).
+struct rs2_composite_options_list
+{
+    std::vector< rs2_composite_option_id > list;
 };
 
 struct rs2_sensor : public rs2_options
@@ -292,6 +309,7 @@ NOEXCEPT_RETURN(nullptr, what, name, args, type)
 
 void notifications_processor::raise_notification(const notification n)
 {
+    librealsense::rum::hooks::on_notification(n.category);
     _dispatcher.invoke([this, n](dispatcher::cancellable_timer ct)
     {
         std::lock_guard<std::mutex> lock(_callback_mutex);
@@ -412,7 +430,10 @@ rs2_device* rs2_create_device(const rs2_device_list* info_list, int index, rs2_e
     VALIDATE_NOT_NULL(info_list);
     VALIDATE_RANGE(index, 0, (int)info_list->list.size() - 1);
 
-    return new rs2_device{ info_list->list[index]->create_device() };
+    auto dev = info_list->list[index]->create_device();
+    if( dev )
+        librealsense::rum::hooks::on_device( *dev );
+    return new rs2_device{ dev };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, info_list, index)
 
@@ -801,6 +822,25 @@ void rs2_delete_raw_data(const rs2_raw_data_buffer* buffer) BEGIN_API_CALL
 }
 NOEXCEPT_RETURN(, buffer)
 
+const rs2_raw_data_buffer* rs2_rum_get_report_path(rs2_error** error) BEGIN_API_CALL
+{
+    auto path = librealsense::rum::report_path();
+    return new rs2_raw_data_buffer{ std::vector<uint8_t>( path.begin(), path.end() ) };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+void rs2_rum_set_cloud_enabled(int enabled, rs2_error** error) BEGIN_API_CALL
+{
+    librealsense::rum::rum_config::instance().set_cloud_enabled( enabled != 0 );
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, enabled)
+
+int rs2_rum_is_cloud_enabled(rs2_error** error) BEGIN_API_CALL
+{
+    return librealsense::rum::rum_config::instance().is_cloud_enabled() ? 1 : 0;
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
+
 void rs2_open(rs2_sensor* sensor, const rs2_stream_profile* profile, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
@@ -907,6 +947,7 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
     VALIDATE_OPTION_ENABLED(options, option);
     auto& option_ref = options->options->get_option(option);
     auto range = option_ref.get_range();
+    float applied = value;   // value actually set (integer options are truncated); reported to RUM
     switch (option_ref.get_value_type())
     {
     case RS2_OPTION_TYPE_FLOAT:
@@ -921,7 +962,8 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
         if ((int)value != value)
             LOG_WARNING("Float value " << value << " given to integer option " << rs2_get_option_name(options, option, error)
                 << ", truncating to " << std::trunc(value));
-        option_ref.set(std::trunc(value));
+        applied = std::trunc(value);
+        option_ref.set(applied);
         break;
 
     case RS2_OPTION_TYPE_BOOLEAN:
@@ -946,6 +988,7 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
         }
         throw not_implemented_exception("use rs2_set_option_value to set string values");
     }
+    librealsense::rum::hooks::on_set_option( *options->options, option, applied, range.def );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 
@@ -1013,6 +1056,21 @@ rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** e
         if( option.is_enabled() )
             value = std::make_shared< const json >( option.get_value() );
         auto wrapper = new rs2_option_value_wrapper( option_id, option.get_value_type(), value );
+        // In addition to the option, read its range here (if exists) while the UVC sensor is powered
+        try
+        {
+            auto const range = option.get_range();
+            wrapper->range = { range.min, range.max, range.def, range.step };
+            wrapper->has_range = 1;
+        }
+        catch( std::exception const & e )
+        {
+            LOG_DEBUG( "failed to query range of " << get_string( option_id ) << ": " << e.what() );
+        }
+        catch( ... )
+        {
+            LOG_DEBUG( "failed to query range of " << get_string( option_id ) );
+        }
         rs2_list->list.push_back( wrapper );
     }
     return rs2_list;
@@ -1048,6 +1106,18 @@ rs2_option_value const * rs2_get_option_value_from_list( const rs2_options_list 
     return p_option_value;
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, options, i )
+
+int rs2_get_option_range_from_list( const rs2_options_list * options, int i, rs2_option_range * out_range, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( options );
+    VALIDATE_NOT_NULL( out_range );
+    auto const p_option_value = options->list.at( i );
+    if( ! p_option_value->has_range )
+        return 0;
+    *out_range = p_option_value->range;
+    return 1;
+}
+HANDLE_EXCEPTIONS_AND_RETURN( 0, options, i )
 
 void rs2_delete_options_list(rs2_options_list* list) BEGIN_API_CALL
 {
@@ -3025,13 +3095,22 @@ rs2_processing_block* rs2_create_decimation_filter_block(rs2_error** error) BEGI
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-rs2_processing_block* rs2_create_rotation_filter_block( rs2_streams_list streams_to_rotate, rs2_error ** error ) BEGIN_API_CALL
+rs2_processing_block* rs2_create_rotation_filter_block( const rs2_stream * streams_to_rotate, int stream_count, rs2_error ** error ) BEGIN_API_CALL
 {
-    auto block = std::make_shared< librealsense::rotation_filter >( streams_to_rotate.list );
+    VALIDATE_LE( 0, stream_count );
+
+    std::vector< rs2_stream > streams;
+    if( stream_count > 0 )
+    {
+        VALIDATE_NOT_NULL( streams_to_rotate );
+        streams.assign( streams_to_rotate, streams_to_rotate + stream_count );
+    }
+
+    auto block = std::make_shared< librealsense::rotation_filter >( std::move( streams ) );
 
     return new rs2_processing_block{ block };
 }
-NOARGS_HANDLE_EXCEPTIONS_AND_RETURN( nullptr )
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, streams_to_rotate, stream_count )
 
 rs2_processing_block* rs2_create_temporal_filter_block(rs2_error** error) BEGIN_API_CALL
 {
@@ -4839,6 +4918,111 @@ void rs2_set_application_config(
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, application_config_json_str)
 
+// See rs_composite_option.h. One generic family of entry points for every composite option,
+// keyed by rs2_composite_option_id, a separate id space from rs2_option. Each call performs
+// exactly one UVC transaction, looked up directly in the container's own composite registry.
+void rs2_set_composite_option(
+    const rs2_options* options,
+    rs2_composite_option_id option,
+    const void* data,
+    unsigned int size,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    VALIDATE_ENUM(option);
+    VALIDATE_NOT_NULL(data);
+    auto & composite = options->options->get_composite_option( option );  // throws if unsupported
+    composite.set_raw(data, size);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, options, option, data, size)
+
+const rs2_raw_data_buffer* rs2_get_composite_option(
+    const rs2_options* options,
+    rs2_composite_option_id option,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    VALIDATE_ENUM(option);
+    auto & composite = options->options->get_composite_option( option );  // throws if unsupported
+    std::vector<uint8_t> vec = composite.get_raw();
+    return new rs2_raw_data_buffer{ std::move(vec) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option)
+
+const rs2_raw_data_buffer* rs2_get_composite_option_range(
+    const rs2_options* options,
+    rs2_composite_option_id option,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    VALIDATE_ENUM(option);
+    auto & composite = options->options->get_composite_option( option );  // throws if unsupported
+    std::vector<uint8_t> vec = composite.get_raw_range();
+    return new rs2_raw_data_buffer{ std::move(vec) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option)
+
+// Composite-option analogue of rs2_get_options_list/rs2_get_options_list_size/
+// rs2_get_option_from_list - the separate enumeration path for composite ids (never merged with
+// rs2_get_options_list's scalar rs2_option ids).
+rs2_composite_options_list* rs2_get_composite_options_list(const rs2_options* options, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    auto rs2_list = new rs2_composite_options_list;
+    rs2_list->list = options->options->get_supported_composite_options();
+    return rs2_list;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options)
+
+int rs2_get_composite_options_list_size(const rs2_composite_options_list* list, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(list);
+    return int(list->list.size());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, list)
+
+rs2_composite_option_id rs2_get_composite_option_from_list(const rs2_composite_options_list* list, int i, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(list);
+    return list->list.at( i );
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_COMPOSITE_OPTION_COUNT, list, i)
+
+void rs2_delete_composite_options_list(rs2_composite_options_list* list) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(list);
+    delete list;
+}
+NOEXCEPT_RETURN(, list)
+
+// Metadata trio for composite options, mirroring rs2_supports_option/rs2_is_option_read_only/
+// rs2_get_option_description for scalar options.
+int rs2_supports_composite_option(const rs2_options* options, rs2_composite_option_id option, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    VALIDATE_ENUM(option);
+    return options->options->supports_composite_option( option ) ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
+
+int rs2_is_composite_option_read_only(const rs2_options* options, rs2_composite_option_id option, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    VALIDATE_ENUM(option);
+    auto & composite = options->options->get_composite_option( option );  // throws if unsupported
+    return composite.is_read_only() ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
+
+const char* rs2_get_composite_option_description(const rs2_options* options, rs2_composite_option_id option, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    VALIDATE_ENUM(option);
+    auto & composite = options->options->get_composite_option( option );  // throws if unsupported
+    return composite.get_description();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option)
+
 void rs2_hw_monitor_get_opcode_string(int opcode, char* buffer, size_t buffer_size,
     rs2_device* device,
     rs2_error** error) BEGIN_API_CALL
@@ -5073,12 +5257,16 @@ void rs2_get_frame_object_detection(const rs2_frame* frame, unsigned int index, 
                                         std::to_string(od_frame->get_detection_count()) + ")" );
 
     const auto & entry = od_frame->get_detection( index );
-    detection->class_id       = entry.detection_type;
-    detection->score          = entry.confidence;
-    detection->top_left_x     = entry.top_left_x;
-    detection->top_left_y     = entry.top_left_y;
-    detection->bottom_right_x = entry.bottom_right_x;
-    detection->bottom_right_y = entry.bottom_right_y;
-    detection->depth          = entry.distance;
+    detection->class_id           = entry.detection_type;
+    detection->score              = entry.confidence;
+    detection->top_left_x         = entry.top_left_x;
+    detection->top_left_y         = entry.top_left_y;
+    detection->bottom_right_x     = entry.bottom_right_x;
+    detection->bottom_right_y     = entry.bottom_right_y;
+    detection->depth              = entry.distance;
+    detection->world_position     = entry.world_position;
+    detection->center_of_mass_x   = entry.image_x;
+    detection->center_of_mass_y   = entry.image_y;
+    detection->center_of_mass_valid = entry.com_valid ? 1 : 0;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame, index, output_arg(detection))

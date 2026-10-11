@@ -96,6 +96,7 @@ body:
         - Ubuntu 20.04
         - Ubuntu 22.04
         - Ubuntu 24.04
+        - Ubuntu 26.04
         - Nvidia Jetson JP5
         - Nvidia Jetson JP6
         - Nvidia Jetson JP7

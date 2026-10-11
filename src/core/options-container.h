@@ -53,6 +53,40 @@ public:
     void register_option( rs2_option id, std::shared_ptr< option > option );
     void unregister_option( rs2_option id );
 
+    // Composite-option twin of the eight methods above, operating on a SEPARATE map
+    // (_composite_options_by_id) - a fully independent registry, never merged with the scalar
+    // one. See src/composite-option-interface.h / include/librealsense2/h/rs_composite_option.h.
+    bool supports_composite_option(rs2_composite_option_id id) const override
+    {
+        auto it = _composite_options_by_id.find( id );
+        if( it == _composite_options_by_id.end() )
+            return false;
+        return it->second->is_enabled();
+    }
+
+    composite_option_interface& get_composite_option(rs2_composite_option_id id) override
+    {
+        return const_cast<composite_option_interface&>(const_cast<const options_container*>(this)->get_composite_option(id));
+    }
+
+    const composite_option_interface & get_composite_option( rs2_composite_option_id id ) const override;
+
+    std::shared_ptr<composite_option_interface> get_composite_option_handler(rs2_composite_option_id id)
+    {
+        return (const_cast<const options_container*>(this)->get_composite_option_handler(id));
+    }
+
+    std::shared_ptr<composite_option_interface> get_composite_option_handler( rs2_composite_option_id id ) const
+    {
+        auto it = _composite_options_by_id.find( id );
+        if( it == _composite_options_by_id.end() )
+            return {};
+        return it->second;
+    }
+
+    void register_composite_option( rs2_composite_option_id id, std::shared_ptr< composite_option_interface > option );
+    void unregister_composite_option( rs2_composite_option_id id );
+
     void create_snapshot(std::shared_ptr<options_interface>& snapshot) const override
     {
         snapshot = std::make_shared<options_container>(*this);
@@ -69,12 +103,20 @@ public:
 
     std::string const & get_option_name( rs2_option option ) const override;
 
+    std::vector<rs2_composite_option_id> get_supported_composite_options() const override;
+
+    std::string const & get_composite_option_name( rs2_composite_option_id option ) const override;
+
     virtual rsutils::subscription register_options_changed_callback(options_watcher::callback&& cb) override
     { return rsutils::subscription(); }
 
 protected:
     std::vector< rs2_option > _ordered_options;
     std::map< rs2_option, std::shared_ptr< option > > _options_by_id;
+
+    std::vector< rs2_composite_option_id > _ordered_composite_options;
+    std::map< rs2_composite_option_id, std::shared_ptr< composite_option_interface > > _composite_options_by_id;
+
     std::function<void(const options_interface&)> _recording_function = [](const options_interface&) {};
 };
 

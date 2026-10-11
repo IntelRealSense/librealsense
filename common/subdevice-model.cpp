@@ -94,6 +94,12 @@ namespace rs2
         return ss.str();
     }
 
+    bool device_has_depth_mapping(const device& dev)
+    {
+        return dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE)
+            && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D500";
+    }
+
     void subdevice_model::populate_options( const std::string & opt_base_label,
                                             bool * options_invalidated,
                                             std::string & error_message )
@@ -161,7 +167,7 @@ namespace rs2
         // Queue capacity is generous: even rapid slider drags coalesce into at most one
         // queued job per option (see option_model::set_option_async), so realistically
         // depth ≪ 16.
-        _set_dispatcher( std::make_shared< dispatcher >( 64u ) )
+        _set_dispatcher( std::make_shared< dispatcher >( 64u, "subdevice-set-option" ) )
     {
         // dispatcher's worker thread starts in _was_stopped=true; invoke() is a
         // silent no-op until start() is called. (The header comment claiming it
@@ -185,13 +191,6 @@ namespace rs2
         {
 
         }
-
-        try
-        {
-            if (s->supports(RS2_OPTION_DEPTH_UNITS))
-                depth_units = s->get_option(RS2_OPTION_DEPTH_UNITS);
-        }
-        catch (...) {}
 
         try
         {
@@ -324,30 +323,9 @@ namespace rs2
             auto model = std::make_shared<embedded_filter_model>(
                 this, shared_filter->get_type(), shared_filter, viewer, error_message);
 
-            // Dual-color variants (0C01/0C04/0C07) share a depth+color sensor, so close-range runs depth-only.
-            std::string device_pid = s->supports( RS2_CAMERA_INFO_PRODUCT_ID )
-                                   ? s->get_info( RS2_CAMERA_INFO_PRODUCT_ID ) : "";
-            const bool is_dual_color = ( device_pid == "0C01" || device_pid == "0C04" || device_pid == "0C07" );
-            if( shared_filter->get_type() == RS2_EMBEDDED_FILTER_TYPE_CLOSE_RANGE && is_dual_color )
-            {
-                // Safe to capture this: the lambda lives in model which lives in embedded_filters,
-                // a member of this subdevice_model — so it cannot outlive its owner.
-                model->available_predicate = [this]()
-                {
-                    // Only a live color stream conflicts with close range; while stopped
-                    // the toggle stays available even if color is selected for the next run.
-                    if( !streaming )
-                        return true;
-                    for( auto& p : profiles )
-                    {
-                        auto it = stream_enabled.find( p.unique_id() );
-                        if( it != stream_enabled.end() && it->second && p.stream_type() == RS2_STREAM_COLOR )
-                            return false;
-                    }
-                    return true;
-                };
-                model->unavailable_tooltip = "Improved Close Range Depth cannot be activated while color streams are active";
-            }
+            // is_multiple_resolutions_supported() reads the composite enabled state on the draw
+            // path, so seed it here rather than waiting for the editor's first draw.
+            model->sync_decimation_filter_dpp_state( error_message );
 
             embedded_filters.push_back(model);
         }
@@ -397,6 +375,32 @@ namespace rs2
         {
             auto option_value = depth_colorizer->get_option(RS2_OPTION_VISUAL_PRESET);
             depth_colorizer->set_option(RS2_OPTION_VISUAL_PRESET, option_value);
+        }
+
+        // Each preset also assigns color scheme, min/max and equalization, so the re-set above
+        // discards what restore_processing_block applied. Re-apply those, equalization last -
+        // setting min/max unsets it through the observers.
+        auto & cfg = config_file::instance();
+        for( auto opt : { RS2_OPTION_COLOR_SCHEME,
+                          RS2_OPTION_MIN_DISTANCE,
+                          RS2_OPTION_MAX_DISTANCE,
+                          RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED } )
+        {
+            if( ! depth_colorizer->supports( opt ) )
+                continue;
+            auto key = std::string( "colorizer." ) + depth_colorizer->get_option_name( opt );
+            if( ! cfg.contains( key.c_str() ) )
+                continue;
+            try
+            {
+                float value = cfg.get( key.c_str() );
+                auto range = depth_colorizer->get_option_range( opt );
+                if( value >= range.min && value <= range.max )
+                    depth_colorizer->set_option( opt, value );
+            }
+            catch( ... )
+            {
+            }
         }
 
         std::stringstream ss;
@@ -573,8 +577,13 @@ namespace rs2
                         auto res_it = resolutions_for_current_stream.end() - 1;
                         ui.selected_stream_to_res[cur_stream] = *res_it;
 
-                        while (res_it->first && !is_selected_combination_supported())
+                        // Walk this stream down to a resolution the combination resolves at. The
+                        // selection must be updated each step - it is what the check above reads.
+                        while (res_it != resolutions_for_current_stream.begin() && !is_selected_combination_supported())
+                        {
                             --res_it;
+                            ui.selected_stream_to_res[cur_stream] = *res_it;
+                        }
                     }
                 }
             }
@@ -807,7 +816,14 @@ namespace rs2
                     auto tmp = stream_enabled;
                     label = rsutils::string::from() << stream_display_names[f.first] << "##" << f.first;
                     // Grey out streams invalid in the current D401 GMSL mode (see is_stream_mode_locked).
-                    const bool mode_locked = is_stream_mode_locked(f.first);
+                    // Cannot select the aligned depth stream when its is off
+                    const bool aligned_off = is_aligned_depth_stream_off(f.first);
+                    if (aligned_off && stream_enabled[f.first])
+                    {
+                        stream_enabled[f.first] = false;
+                        res = true;
+                    }
+                    const bool mode_locked = is_stream_mode_locked(f.first) || aligned_off;
                     if (mode_locked) ImGui::BeginDisabled();
                     if (ImGui::Checkbox(label.c_str(), &stream_enabled[f.first]))
                     {
@@ -1053,7 +1069,14 @@ namespace rs2
                     res = true;
                     auto tmp = stream_enabled;
                     label = rsutils::string::from() << stream_display_names[f.first] << "##" << f.first;
-                    const bool mode_locked = is_stream_mode_locked(f.first);
+                    // Cannot select the aligned depth stream before its mode is on - and drop it if the mode went off while it was selected
+                    const bool aligned_off = is_aligned_depth_stream_off(f.first);
+                    if (aligned_off && stream_enabled[f.first])
+                    {
+                        stream_enabled[f.first] = false;
+                        res = true;
+                    }
+                    const bool mode_locked = is_stream_mode_locked(f.first) || aligned_off;
                     if (mode_locked) ImGui::BeginDisabled();
                     if (ImGui::Checkbox(label.c_str(), &stream_enabled[f.first]))
                     {
@@ -1727,6 +1750,19 @@ namespace rs2
         return false;                                       // depth and Color 0 work in both modes - never lock
     }
 
+    bool subdevice_model::is_aligned_depth_stream_off(int unique_id) const
+    {
+        // The aligned stream is the second depth stream; on USB aligned depth replaces the only one
+        if( stream_type_of( unique_id ) != RS2_STREAM_DEPTH || stream_index_of( unique_id ) == 0 )
+            return false;
+
+        auto it = options_metadata.find( RS2_OPTION_ENABLE_ALIGNED_DEPTH );
+        if( it == options_metadata.end() || ! it->second.supported )
+            return false;
+
+        return it->second.value_as_float() <= 0.f;
+    }
+
     bool subdevice_model::is_depth_calibration_profile() const
     {
         // Check if D555 at depth resolution of 1280x800
@@ -1786,9 +1822,10 @@ namespace rs2
             auto filter = ef->get_filter();
             if( ! filter || filter->get_type() != RS2_EMBEDDED_FILTER_TYPE_DECIMATION )
                 continue;
-            // Filter present without the ENABLED option => permanently on in FW.
+            // Decimation is registered as a composite option, which intentionally does not carry
+            // EMBEDDED_FILTER_ENABLED - the composite's own enabled field is the real state.
             if( ! filter->supports( RS2_OPTION_EMBEDDED_FILTER_ENABLED ) )
-                return true;
+                return ef->is_decimation_filter_dpp_enabled();
             return ef->is_enabled();
         }
         return false;
@@ -1850,8 +1887,10 @@ namespace rs2
         // filter (FW-side) only accepts depth at 640x360 and pairs it with IR at 1280x720.
         // Landing the combo boxes on these values here avoids the streaming-time error
         // in avoid_streaming_on_embedded_filters_not_matching_configuration().
+        // Dual-color carries color on this same sensor, so pin it alongside IR
         static const std::pair< int, int > DEPTH_RES{ 640, 360 };
         static const std::pair< int, int > IR_RES{ 1280, 720 };
+        static const std::pair< int, int > COLOR_RES{ 1280, 720 };
 
         auto force = [&]( rs2_stream stream, const std::pair< int, int > & res ) {
             auto it = resolutions_per_stream.find( stream );
@@ -1862,6 +1901,7 @@ namespace rs2
         };
         force( RS2_STREAM_DEPTH, DEPTH_RES );
         force( RS2_STREAM_INFRARED, IR_RES );
+        force( RS2_STREAM_COLOR, COLOR_RES );
     }
 
     std::pair<int, int> subdevice_model::get_max_resolution(rs2_stream stream) const
@@ -2119,8 +2159,18 @@ namespace rs2
                     break;
                 }
             }
-            if (embedded_decimation &&
-                embedded_decimation->get_filter()->get_option(RS2_OPTION_EMBEDDED_FILTER_ENABLED))
+            // The USB/composite-option Decimation filter never registers this scalar option - its
+            // enable lives in the composite struct instead, so fall back to the editor's own
+            // synced value for that case.
+            bool decimation_enabled = false;
+            if (embedded_decimation)
+            {
+                if (embedded_decimation->get_filter()->supports(RS2_OPTION_EMBEDDED_FILTER_ENABLED))
+                    decimation_enabled = embedded_decimation->get_filter()->get_option(RS2_OPTION_EMBEDDED_FILTER_ENABLED) != 0;
+                else
+                    decimation_enabled = embedded_decimation->is_decimation_filter_dpp_enabled();
+            }
+            if (decimation_enabled)
             {
                 // check if resolution is different from 640 X 360
                 int width = 0;
@@ -2172,7 +2222,14 @@ namespace rs2
                     else
                     {
                         auto id = f.get_profile().unique_id();
-                        viewer.ppf.frames_queue[id].enqueue(f);
+                        {
+                            std::lock_guard< std::mutex > lock( viewer.streams_mutex );
+                            auto queue = viewer.ppf.frames_queue.find( id );
+                            if( queue == viewer.ppf.frames_queue.end() )
+                                return;
+
+                            queue->second.enqueue( f );
+                        }
 
                         on_frame();
                     }
@@ -2275,11 +2332,6 @@ namespace rs2
                     }
                 }
 
-                if (next == RS2_OPTION_DEPTH_UNITS)
-                {
-                    opt_md.dev->depth_units = opt_md.value_as_float();
-                }
-
                 if (next == RS2_OPTION_STEREO_BASELINE)
                     opt_md.dev->stereo_baseline = opt_md.value_as_float();
             }
@@ -2308,14 +2360,6 @@ namespace rs2
         }
     }
 
-    uint64_t subdevice_model::num_supported_non_default_options() const
-    {
-        return (uint64_t)std::count_if(
-            std::begin(options_metadata),
-            std::end(options_metadata),
-            [&](const std::pair<int, option_model>& p) {return p.second.supported && !viewer.is_option_skipped(p.second.opt); });
-    }
-
     bool subdevice_model::supports_on_chip_calib()
     {
         bool is_d400 = s->supports(RS2_CAMERA_INFO_PRODUCT_LINE) ?
@@ -2337,9 +2381,8 @@ namespace rs2
 
     void subdevice_model::set_extrinsics_from_depth_if_needed()
     {
-        std::string pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
         std::string sensor_name = s->get_info(RS2_CAMERA_INFO_NAME);
-        if (pid == "0B6B" && sensor_name == "Depth Mapping Camera")
+        if (device_has_depth_mapping(dev) && sensor_name == "Depth Mapping Camera")
         {
             //_labeled_point_cloud_to_depth_extrinsics
             stream_profile depth_profile;

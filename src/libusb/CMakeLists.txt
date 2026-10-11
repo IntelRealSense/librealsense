@@ -5,6 +5,9 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/context-libusb.h"
         "${CMAKE_CURRENT_LIST_DIR}/context-libusb.cpp"
 
+        "${CMAKE_CURRENT_LIST_DIR}/darwin-device-capture.h"
+        "${CMAKE_CURRENT_LIST_DIR}/darwin-device-capture.cpp"
+
         "${CMAKE_CURRENT_LIST_DIR}/handle-libusb.h"
         "${CMAKE_CURRENT_LIST_DIR}/endpoint-libusb.h"
         "${CMAKE_CURRENT_LIST_DIR}/interface-libusb.h"

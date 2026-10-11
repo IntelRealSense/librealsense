@@ -5,9 +5,6 @@ export interface DeviceInfo {
   name: string
   serial_number: string
   firmware_version?: string
-  recommended_firmware_version?: string
-  firmware_status?: FirmwareStatus
-  firmware_file_available?: boolean
   physical_port?: string
   usb_type?: string
   product_id?: string
@@ -16,16 +13,54 @@ export interface DeviceInfo {
   metadata_enabled?: boolean | null
 }
 
-export type FirmwareStatus = 'up_to_date' | 'outdated' | 'missing_file' | 'unknown'
+/** Display label for an SDK name: "deepSeaMedianThreshold" -> "Deep Sea Median Threshold". */
+export function optionLabel(id: string): string {
+  return id
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
 
+/**
+ * Options that are plumbing rather than controls - the set the legacy viewer hides in
+ * viewer_model::hide_common_options(). What to draw is the viewer's call, so everything
+ * the API reports passes through here.
+ */
+const HIDDEN_OPTIONS = [
+  'frames_queue_size', 'stream_filter', 'stream_format_filter', 'stream_index_filter',
+  'noise_estimation', 'region_of_interest', 'readout_shaping', 'sensors_config_mode',
+]
+
+export function visibleOptions(options: OptionInfo[]): OptionInfo[] {
+  return options.filter((o) => !HIDDEN_OPTIONS.includes(o.option_id.toLowerCase()))
+}
+
+export type FirmwareStatus = 'up_to_date' | 'outdated' | 'unknown'
+
+/** Numeric compare of dotted firmware versions. */
+export function firmwareStatus(current?: string, recommended?: string): FirmwareStatus {
+  const parse = (v?: string) => v?.split('.').map(Number)
+  const [cur, rec] = [parse(current), parse(recommended)]
+  if (!cur || !rec || cur.some(isNaN) || rec.some(isNaN)) return 'unknown'
+  for (let i = 0; i < Math.max(cur.length, rec.length); i++) {
+    if ((cur[i] ?? 0) !== (rec[i] ?? 0)) return (cur[i] ?? 0) < (rec[i] ?? 0) ? 'outdated' : 'up_to_date'
+  }
+  return 'up_to_date'
+}
+
+// No verdict stored: it would go stale as soon as the camera reports a different version.
 export interface FirmwareState {
-  current?: string
   recommended?: string
-  status: FirmwareStatus
-  file_available?: boolean
   is_updating?: boolean
+  phase?: 'downloading' | 'installing'  // one-click update: download then install
   progress?: number
   last_error?: string | null
+}
+
+// Wire shape of GET/POST /devices/{id}/advanced_mode/
+export interface AdvancedModeStatus {
+  supported: boolean
+  enabled: boolean
 }
 
 export interface SensorInfo {
@@ -45,18 +80,43 @@ export interface SupportedStreamProfile {
 
 export interface OptionInfo {
   option_id: string
-  name: string
   description?: string
   current_value: number | boolean | string
   default_value: number | boolean | string
-  min_value?: number
-  max_value?: number
+  min_value: number
+  max_value: number
   step?: number
   units?: string
   read_only: boolean
-  category: string
-  filter_name?: string  // For post-processing filter options
   value_descriptions?: Record<string, string>  // For enum-type options: {value: description}
+}
+
+// A sensor's post-processing filters, keyed by name. Filters share option names
+// (holes_fill lives on three of them), so the key is what tells those controls apart.
+export type SensorFilters = Record<string, {
+  enabled: boolean
+  default_enabled: boolean
+  options: OptionInfo[]
+}>
+
+/** Advanced-mode controls, keyed by the control group that owns them. */
+export type AdvancedControls = Record<string, OptionInfo[]>
+
+/** The panels the viewer draws, in the order the C++ viewer uses (device-model.cpp). */
+export const SECTIONS = ['Controls', 'Advanced Controls', 'Depth Visualization', 'Post-Processing'] as const
+
+/**
+ * One list of controls with one endpoint behind it, keyed by that endpoint's path under
+ * the device: the four control sources differ only in their path, not in their shape.
+ */
+export interface ControlGroup {
+  section: typeof SECTIONS[number]
+  sensorId: string    // the sensor it is drawn under, which for a device-level group
+                      // (the colorizer, advanced mode) is the depth sensor
+  name: string        // '' when the section draws its controls without a subheader
+  enabled?: boolean   // filters only: whether the frame passes through it
+  default_enabled?: boolean
+  options: OptionInfo[]
 }
 
 export interface StreamConfig {
@@ -66,20 +126,6 @@ export interface StreamConfig {
   resolution: { width: number; height: number }
   framerate: number
   enable: boolean
-}
-
-export interface StreamStartRequest {
-  configs: StreamConfig[]
-  align_to?: string
-  apply_filters: boolean
-  reuse_cache?: boolean
-}
-
-export interface StreamStatus {
-  device_id?: string
-  is_streaming: boolean
-  active_streams: string[]
-  stopping?: boolean
 }
 
 export interface WebRTCOffer {
@@ -162,17 +208,23 @@ export interface SensorConfig {
 export interface DeviceState {
   device: DeviceInfo
   firmware?: FirmwareState
+  advancedMode?: AdvancedModeStatus
+  // Every control the device shows, keyed by the endpoint that writes it.
+  controls: Record<string, ControlGroup>
+  /**
+   * Whether each sensor runs its post-processing at all, keyed by sensor_id, on unless
+   * set. Neither the SDK nor the API has such a switch - it is the viewer's, as in the
+   * legacy one (subdevice-model.h), and it leaves the per-filter choices alone.
+   */
+  postProcessing?: Record<string, boolean>
   sensors: SensorInfo[]
-  options: Record<string, OptionInfo[]> // keyed by sensor_id
   streamConfigs: StreamConfig[]
   sensorConfigs: Record<string, SensorConfig> // Per-sensor resolution/FPS, keyed by sensor_id
   isStreaming: boolean
-  isStopping?: boolean
   isActive: boolean // whether this device is shown in viewer
   isLoading: boolean // loading sensors/options
   streamMetadata: Record<string, StreamMetadata> // keyed by stream_type
   // Per-sensor streaming state (sensor API)
-  streamingMode: 'idle' | 'pipeline' | 'sensor' // which API is being used
   sensorStreamingStatus: Record<string, SensorStreamStatus> // keyed by sensor_id
 }
 
@@ -186,19 +238,6 @@ export interface SensorStreamConfig {
 
 export interface SensorStartRequest {
   config: SensorStreamConfig
-}
-
-export interface SensorStartItem {
-  sensor_id: string
-  config: SensorStreamConfig
-}
-
-export interface BatchSensorStartRequest {
-  sensors: SensorStartItem[]
-}
-
-export interface BatchSensorStopRequest {
-  sensor_ids?: string[] | null
 }
 
 export interface SensorStreamStatus {
@@ -217,11 +256,4 @@ export interface SensorStreamStatus {
   started_at?: string | null
   // UI-only: pending operation state for optimistic updates
   pendingOp?: 'stopping' | null
-}
-
-export interface BatchSensorStatus {
-  device_id: string
-  mode: 'idle' | 'pipeline' | 'sensor'
-  sensors: SensorStreamStatus[]
-  errors: string[]
 }

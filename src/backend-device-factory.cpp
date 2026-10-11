@@ -103,6 +103,19 @@ public:
             { _callbacks.raise( old, curr ); } );
     }
 
+    ~device_watcher_singleton()
+    {
+        // The watcher callback captures this, so stop it before _callbacks is destroyed.
+        try
+        {
+            _device_watcher->stop();
+        }
+        catch( ... )
+        {
+            // Destructors must not propagate watcher shutdown failures.
+        }
+    }
+
     rsutils::subscription subscribe( platform::device_changed_callback && cb )
     {
         return _callbacks.subscribe( std::move( cb ) );

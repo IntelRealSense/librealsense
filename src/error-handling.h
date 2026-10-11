@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <memory>
+#include <string>
 
 
 namespace librealsense
@@ -27,15 +28,22 @@ namespace librealsense
         polling_error_handler & operator=(const polling_error_handler &) = delete;
 
         unsigned int get_polling_interval() const { return _poll_intervals_ms; }
+        bool is_active() const { return _active_object->is_active(); }
 
         void start( unsigned int poll_intervals_ms = 0 );
         void stop();
 
     private:
         void polling(dispatcher::cancellable_timer cancellable_timer);
+        void on_query_failure( std::string const & what );
+
+        // Consecutive query failures after which the loop gives up. A disconnected
+        // camera fails every tick forever, and there is nobody left to recover from.
+        static const unsigned int MAX_CONSECUTIVE_FAILURES = 3;
 
         unsigned int _poll_intervals_ms;
         bool _silenced = false;
+        unsigned int _consecutive_failures = 0;
         std::shared_ptr<option> _option;
         std::weak_ptr<std::atomic<bool>> _device_alive;
         std::shared_ptr < active_object<> > _active_object;

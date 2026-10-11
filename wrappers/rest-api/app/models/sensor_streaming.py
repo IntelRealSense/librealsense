@@ -33,23 +33,6 @@ class SensorStartRequest(BaseModel):
     configs: Optional[List[SensorStreamConfig]] = None  # New: multiple streams
 
 
-class SensorStartItem(BaseModel):
-    """A single sensor configuration for batch operations."""
-    sensor_id: str
-    config: Optional[SensorStreamConfig] = None   # Legacy: single stream  
-    configs: Optional[List[SensorStreamConfig]] = None  # New: multiple streams
-
-
-class BatchSensorStartRequest(BaseModel):
-    """Request body for starting multiple sensors atomically."""
-    sensors: List[SensorStartItem]
-
-
-class BatchSensorStopRequest(BaseModel):
-    """Request body for stopping multiple sensors."""
-    sensor_ids: Optional[List[str]] = None  # None = stop all sensors
-
-
 class SensorStreamStatus(BaseModel):
     """Status of a single sensor's streaming state."""
     sensor_id: str
@@ -65,11 +48,3 @@ class SensorStreamStatus(BaseModel):
     streams: List[SensorStreamConfig] = []  # All active stream configs
     error: Optional[str] = None
     started_at: Optional[datetime] = None
-
-
-class BatchSensorStatus(BaseModel):
-    """Status of all sensors on a device."""
-    device_id: str
-    mode: str  # "sensor_api" | "pipeline_api" | "idle"
-    sensors: List[SensorStreamStatus]
-    errors: List[str] = []

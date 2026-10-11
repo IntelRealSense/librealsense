@@ -4,6 +4,7 @@
 #pragma once
 
 #include <functional>
+#include <utility>
 
 
 namespace rsutils {
@@ -27,13 +28,27 @@ public:
     deferred() = default;
 
     deferred( fn && f )
-        : _deferred( f )
+        : _deferred( std::move( f ) )
     {
     }
 
-    deferred( deferred && that ) = default;
+    deferred( deferred && that ) noexcept
+        : _deferred( std::move( that._deferred ) )
+    {
+        // A moved-from std::function is valid but its state is unspecified.
+        // Make ownership of the deferred action explicit so it can run only once.
+        that._deferred = {};
+    }
 
-    deferred & operator=( deferred && ) = default;
+    deferred & operator=( deferred && that ) noexcept
+    {
+        if( this != &that )
+        {
+            _deferred = std::move( that._deferred );
+            that._deferred = {};
+        }
+        return *this;
+    }
 
     bool is_valid() const { return ! ! _deferred; }
     operator bool() const { return is_valid(); }
@@ -49,7 +64,12 @@ public:
     void reset() { _deferred = {}; }
 
     // Returns the deferred function so you can move it somewhere else
-    fn detach() { return std::move( _deferred ); }
+    fn detach()
+    {
+        auto detached = std::move( _deferred );
+        _deferred = {};
+        return detached;
+    }
 
     // Cause the deferred call to be invoked NOW (throws if nothing there!)
     void execute() { _deferred(); }

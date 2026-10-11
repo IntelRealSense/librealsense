@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MutableRefObject, ReactElement } from 'react'
 import { useAppStore } from '../store'
-import type { DeviceInfo, SensorInfo, OptionInfo, StreamConfig, DeviceState, FirmwareState, SensorConfig } from '../api/types'
+import type { ControlGroup, DeviceInfo, SensorInfo, OptionInfo, StreamConfig, DeviceState, FirmwareState, SensorConfig } from '../api/types'
+import { SECTIONS, firmwareStatus, optionLabel } from '../api/types'
+import { RefreshCcw, Search, X } from 'lucide-react'
 import { FirmwareProgressModal } from './FirmwareProgressModal'
 import { ToastContainer, type ToastType, type ToastAction } from './Toast'
+import { searchGroup } from '../utils/optionSearch'
+import { Collapsible, ToggleSwitch } from './Collapsible'
 
 interface Toast {
   id: string
@@ -54,6 +58,41 @@ function showMetadataEnablePromptIfNeeded(
   )
 }
 
+// Prompt once per (device, recommended version): a newer recommendation later re-prompts,
+// and dismissing the toast is enough — no persisted dismissal state. Same pattern as the
+// metadata prompt above. The serial number is in the message because the toast is global
+// while the proposal is per-camera.
+function showFirmwareUpdatePromptsIfNeeded(
+  deviceStates: Record<string, DeviceState>,
+  promptedRef: MutableRefObject<Set<string>>,
+  addToast: (type: ToastType, message: string, action?: ToastAction) => void,
+  removeToast: (id: string) => void,
+  onUpdate: (device: DeviceInfo) => void,
+): void {
+  const live = new Set<string>()
+  for (const ds of Object.values(deviceStates)) {
+    const fw = ds.firmware
+    if (firmwareStatus(ds.device.firmware_version, fw?.recommended) !== 'outdated') continue
+    const key = `${ds.device.device_id}:${fw?.recommended ?? ''}`
+    live.add(key)
+    if (promptedRef.current.has(key)) continue
+    promptedRef.current.add(key)
+    addToast(
+      'info',
+      `${ds.device.name} (S/N ${ds.device.serial_number}): firmware ${ds.device.firmware_version ?? '?'} → ${fw?.recommended ?? '?'} is available.`,
+      {
+        label: 'Update',
+        onClick: (toastId) => {
+          removeToast(toastId)
+          onUpdate(ds.device)
+        },
+      },
+    )
+  }
+  // Re-arm for proposals that are gone (device removed, or flashed and now up to date).
+  promptedRef.current = live
+}
+
 // Reusable hidden-file-input hook. Returns the JSX to render once at a stable
 // location in the tree (so the OS file picker callback fires even after the
 // menu that triggered it unmounts) and an `open()` function to trigger it.
@@ -94,16 +133,18 @@ export function DevicePanel() {
     clearError,
     updateStreamConfig,
     updateSensorConfig,
-    setOption,
     startSensorStreaming,
     stopSensorStreaming,
     checkFirmwareUpdates,
     updateFirmwareFromFile,
+    updateFirmwareFromRecommended,
+    toggleAdvancedMode,
   } = useAppStore()
 
   const [toasts, setToasts] = useState<Toast[]>([])
   // Only one FW update can run at a time, so a single-value state is enough.
-  const [firmwareProgressDeviceId, setFirmwareProgressDeviceId] = useState<string | null>(null)
+  // Snapshot, not a lookup: the camera leaves the device list while it is in DFU.
+  const [firmwareProgressDevice, setFirmwareProgressDevice] = useState<DeviceInfo | null>(null)
   const [firmwareProgressState, setFirmwareProgressState] = useState<FirmwareState | null>(null)
   const [firmwareFileName, setFirmwareFileName] = useState<string | null>(null)
 
@@ -111,8 +152,11 @@ export function DevicePanel() {
     fetchDevices(true)
   }, [fetchDevices])
 
+  // Counter, not just Date.now(): several cameras can raise a firmware proposal in the
+  // same tick, and duplicate keys would make React drop all but one toast.
+  const toastSeqRef = useRef(0)
   const addToast = (type: ToastType, message: string, action?: ToastAction) => {
-    const id = Date.now().toString()
+    const id = `${Date.now()}-${toastSeqRef.current++}`
     setToasts((prev) => [...prev, { id, type, message, action }])
   }
 
@@ -120,9 +164,11 @@ export function DevicePanel() {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }
 
-  const handleFirmwareProgressUpdate = (progress: number) => {
+  const handleFirmwareProgressUpdate = (progress: number, phase?: 'downloading' | 'installing') => {
     setFirmwareProgressState((prev) =>
-      prev ? { ...prev, progress } : { status: 'unknown' as const, is_updating: true, progress }
+      prev
+        ? { ...prev, progress, ...(phase ? { phase } : {}) }
+        : { is_updating: true, progress, phase }
     )
   }
 
@@ -130,7 +176,7 @@ export function DevicePanel() {
     setFirmwareProgressState((prev) =>
       prev
         ? { ...prev, progress: 1.0, is_updating: false }
-        : { status: 'unknown' as const, is_updating: false, progress: 1.0 }
+        : { is_updating: false, progress: 1.0 }
     )
     addToast('success', `Firmware update successful! Version: ${fwVersion || 'Unknown'}`)
     // Backend has already refreshed the device list (in _refresh_until_device_returns)
@@ -143,7 +189,7 @@ export function DevicePanel() {
     setFirmwareProgressState((prev) =>
       prev
         ? { ...prev, is_updating: false, last_error: error }
-        : { status: 'unknown' as const, is_updating: false, progress: 0, last_error: error }
+        : { is_updating: false, progress: 0, last_error: error }
     )
     addToast('error', `Firmware update failed: ${error}`)
     // Device may or may not have returned; refresh so the UI reflects the
@@ -152,35 +198,60 @@ export function DevicePanel() {
   }
 
   const handleCloseFirmwareModal = () => {
-    setFirmwareProgressDeviceId(null)
+    setFirmwareProgressDevice(null)
     setFirmwareProgressState(null)
     setFirmwareFileName(null)
   }
 
-  const handleUpdateFirmwareFromFile = (device: DeviceInfo, file: File) => {
-    const deviceId = device.device_id
-    setFirmwareFileName(file.name)
-    setFirmwareProgressDeviceId(deviceId)
-    const baseFirmware = deviceStates[deviceId]?.firmware || {
-      current: device.firmware_version,
-      recommended: device.recommended_firmware_version,
-      status: 'unknown' as const,
-      file_available: device.firmware_file_available,
-    }
-    setFirmwareProgressState({
-      ...baseFirmware,
-      is_updating: true,
-      progress: 0,
-      last_error: null,
-    })
-    updateFirmwareFromFile(deviceId, file)
-  }
+  const startFirmwareUpdate = useCallback(
+    (device: DeviceInfo, label: string, phase: FirmwareState['phase'], run: (deviceId: string) => Promise<void>) => {
+      setFirmwareFileName(label)
+      setFirmwareProgressDevice(device)
+      setFirmwareProgressState({ is_updating: true, phase, progress: 0, last_error: null })
+      // Rejected outright: no Socket.IO event will arrive, so close the modal ourselves.
+      run(device.device_id).catch((error: Error) => {
+        handleCloseFirmwareModal()
+        addToast('error', error.message)
+      })
+    },
+    [],
+  )
+
+  const handleUpdateFirmwareFromFile = (device: DeviceInfo, file: File) =>
+    startFirmwareUpdate(device, file.name, undefined, (deviceId) => updateFirmwareFromFile(deviceId, file))
+
+  const handleUpdateFromRecommended = useCallback((device: DeviceInfo) => {
+    const recommended = useAppStore.getState().deviceStates[device.device_id]?.firmware?.recommended
+    const label = recommended ? `Firmware ${recommended}` : 'Recommended firmware'
+    startFirmwareUpdate(device, label, 'downloading', updateFirmwareFromRecommended)
+  }, [startFirmwareUpdate, updateFirmwareFromRecommended])
 
   const promptedSetRef = useRef<string>('')
   const enableInFlightRef = useRef<boolean>(false)
   useEffect(() => {
     showMetadataEnablePromptIfNeeded(devices, promptedSetRef, enableInFlightRef, addToast, removeToast, enableMetadata)
   }, [devices])
+
+  // Explicit "Check for Firmware Updates": an outdated result raises the proposal toast
+  // via the effect below, so only the no-proposal outcomes need reporting here.
+  const handleCheckFirmwareUpdates = async (deviceId: string) => {
+    let recommended: string | undefined
+    try {
+      recommended = await checkFirmwareUpdates(deviceId)
+    } catch (error) {
+      addToast('error', `Failed to check firmware updates: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      return
+    }
+    const device = deviceStates[deviceId]?.device ?? devices.find((d) => d.device_id === deviceId)
+    const status = firmwareStatus(device?.firmware_version, recommended)
+    if (status === 'up_to_date') addToast('success', 'Firmware is up to date.')
+    else if (status === 'unknown') addToast('info', 'No firmware recommendation available for this device.')
+  }
+
+  const promptedFirmwareRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    showFirmwareUpdatePromptsIfNeeded(deviceStates, promptedFirmwareRef, addToast, removeToast, handleUpdateFromRecommended)
+  }, [deviceStates, handleUpdateFromRecommended])
 
   return (
     <div className="p-4">
@@ -194,19 +265,7 @@ export function DevicePanel() {
           className="p-2 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title={isLoadingDevices ? 'Refreshing…' : 'Refresh devices'}
         >
-          <svg
-            className={`w-5 h-5 ${isLoadingDevices ? 'animate-spin' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
+          <RefreshCcw className={`w-5 h-5 ${isLoadingDevices ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
@@ -263,13 +322,11 @@ export function DevicePanel() {
                 onReset={() => resetDevice(device.device_id)}
                 onUpdateStreamConfig={(config) => updateStreamConfig(device.device_id, config)}
                 onUpdateSensorConfig={(sensorId, config) => updateSensorConfig(device.device_id, sensorId, config)}
-                onSetOption={(sensorId, optionId, value) => 
-                  setOption(device.device_id, sensorId, optionId, value)
-                }
                 onStartSensorStreaming={(sensorId) => startSensorStreaming(device.device_id, sensorId)}
                 onStopSensorStreaming={(sensorId) => stopSensorStreaming(device.device_id, sensorId)}
-                onCheckFirmwareUpdates={() => checkFirmwareUpdates(device.device_id)}
+                onCheckFirmwareUpdates={() => handleCheckFirmwareUpdates(device.device_id)}
                 onUpdateFirmwareFromFile={(file) => handleUpdateFirmwareFromFile(device, file)}
+                onToggleAdvancedMode={(enable) => toggleAdvancedMode(device.device_id, enable)}
                 onShowToast={addToast}
               />
             )
@@ -277,28 +334,11 @@ export function DevicePanel() {
         </div>
       )}
 
-      {firmwareProgressDeviceId && (
+      {firmwareProgressDevice && (
         <FirmwareProgressModal
           isOpen={true}
-          device={
-            devices.find((d) => d.device_id === firmwareProgressDeviceId) || {
-              // Keep the real device_id so the modal's socket subscriptions
-              // remain bound to firmware_*_<id> across DFU/re-enumeration.
-              device_id: firmwareProgressDeviceId,
-              name: firmwareFileName || 'Updating device',
-            }
-          }
-          firmware={
-            firmwareProgressState || {
-              current: undefined,
-              recommended: undefined,
-              status: 'unknown' as const,
-              file_available: false,
-              is_updating: true,
-              progress: 0,
-              last_error: null,
-            }
-          }
+          device={firmwareProgressDevice}
+          firmware={firmwareProgressState || { is_updating: true, progress: 0, last_error: null }}
           fileName={firmwareFileName || undefined}
           onClose={handleCloseFirmwareModal}
           onProgressUpdate={handleFirmwareProgressUpdate}
@@ -320,11 +360,11 @@ interface DeviceCardProps {
   onReset: () => void
   onUpdateStreamConfig: (config: StreamConfig) => void
   onUpdateSensorConfig: (sensorId: string, config: Partial<SensorConfig>) => void
-  onSetOption: (sensorId: string, optionId: string, value: number | boolean | string) => Promise<void>
   onStartSensorStreaming: (sensorId: string) => void
   onStopSensorStreaming: (sensorId: string) => void
   onCheckFirmwareUpdates: () => void
   onUpdateFirmwareFromFile: (file: File) => void
+  onToggleAdvancedMode: (enable: boolean) => void
   onShowToast: (type: ToastType, message: string) => void
 }
 
@@ -335,25 +375,23 @@ function DeviceCard({
   onReset,
   onUpdateStreamConfig,
   onUpdateSensorConfig,
-  onSetOption,
   onStartSensorStreaming,
   onStopSensorStreaming,
   onCheckFirmwareUpdates,
   onUpdateFirmwareFromFile,
+  onToggleAdvancedMode,
   onShowToast,
 }: DeviceCardProps) {
   const [showMenu, setShowMenu] = useState(false)
-  const [expandedSensor, setExpandedSensor] = useState<string | null>(null)
   const fwPicker = useFilePicker(onUpdateFirmwareFromFile, '.bin')
 
   const isActive = deviceState?.isActive || false
   const isLoading = deviceState?.isLoading || false
   const isStreaming = deviceState?.isStreaming || false
   const sensors = deviceState?.sensors || []
-  const options = deviceState?.options || {}
+  const controls = deviceState?.controls || {}
   const streamConfigs = deviceState?.streamConfigs || []
   const sensorConfigs = deviceState?.sensorConfigs || {}
-  const streamingMode = deviceState?.streamingMode || 'idle'
   const sensorStreamingStatus = deviceState?.sensorStreamingStatus || {}
 
   // Group stream configs by sensor
@@ -454,6 +492,29 @@ function DeviceCard({
                       </svg>
                       Check for Firmware Updates
                     </button>
+                    {deviceState?.advancedMode?.supported && (
+                      <button
+                        onClick={() => {
+                          setShowMenu(false)
+                          onToggleAdvancedMode(!deviceState.advancedMode?.enabled)
+                        }}
+                        // Toggling either way restarts the device, so the C++ viewer keeps this
+                        // item disabled while streaming (device-model.cpp) - do the same here.
+                        disabled={isStreaming}
+                        title={isStreaming ? 'Disabled while streaming' : undefined}
+                        className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${
+                          isStreaming
+                            ? 'text-gray-500 cursor-not-allowed'
+                            : 'hover:bg-gray-700'
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {deviceState.advancedMode.enabled ? 'Disable Advanced Mode' : 'Enable Advanced Mode'}
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         setShowMenu(false)
@@ -484,9 +545,7 @@ function DeviceCard({
                         isStreaming ? 'text-gray-500 cursor-not-allowed' : 'text-red-400 hover:bg-gray-700'
                       }`}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
+                      <RefreshCcw className="w-4 h-4" />
                       Hardware Reset
                     </button>
                   </div>
@@ -511,9 +570,6 @@ function DeviceCard({
             </button>
           </div>
         </div>
-
-        {/* Firmware download link */}
-        <FirmwareBanner device={device} />
 
         {/* Device Details */}
         <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-gray-500">
@@ -540,119 +596,77 @@ function DeviceCard({
 
       {/* Device Controls - shown when active */}
       {isActive && !isLoading && (
-        <div className="border-t border-gray-700">
-          {/* Stream Configuration */}
-          <div className="p-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-medium text-gray-300">Streams</h4>
-                {/* Streaming mode indicator */}
-                {streamingMode !== 'idle' && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${
-                    streamingMode === 'pipeline' 
-                      ? 'bg-blue-900 text-blue-300' 
-                      : 'bg-purple-900 text-purple-300'
-                  }`}>
-                    {streamingMode === 'pipeline' ? 'All' : 'Per-sensor'}
-                  </span>
-                )}
-              </div>
-            </div>
-            
-            {/* Stream configs grouped by sensor */}
-            <SensorStreamControls
-              sensors={sensors}
-              streamsBySensor={streamsBySensor}
-              streamingMode={streamingMode}
-              sensorStreamingStatus={sensorStreamingStatus}
-              sensorConfigs={sensorConfigs}
+        <div className="border-t border-gray-700 p-3 space-y-1.5">
+          {sensors.map((sensor) => (
+            <SensorPanel
+              key={sensor.sensor_id}
+              deviceId={device.device_id}
+              sensor={sensor}
+              groups={Object.entries(controls).filter(([, g]) => g.sensorId === sensor.sensor_id)}
+              streams={streamsBySensor[sensor.sensor_id] || []}
+              sensorConfig={sensorConfigs[sensor.sensor_id]}
+              status={sensorStreamingStatus[sensor.sensor_id]}
               onUpdateStreamConfig={onUpdateStreamConfig}
               onUpdateSensorConfig={onUpdateSensorConfig}
-              onStartSensorStreaming={onStartSensorStreaming}
-              onStopSensorStreaming={onStopSensorStreaming}
+              onStartStreaming={() => onStartSensorStreaming(sensor.sensor_id)}
+              onStopStreaming={() => onStopSensorStreaming(sensor.sensor_id)}
             />
-          </div>
-
-          {/* Camera Controls */}
-          <div className="border-t border-gray-700 p-3">
-            <h4 className="text-sm font-medium text-gray-300 mb-2">Controls</h4>
-            {sensors.map((sensor) => (
-              <SensorOptionsPanel
-                key={sensor.sensor_id}
-                sensor={sensor}
-                options={options[sensor.sensor_id] || []}
-                isExpanded={expandedSensor === sensor.sensor_id}
-                onToggle={() =>
-                  setExpandedSensor(expandedSensor === sensor.sensor_id ? null : sensor.sensor_id)
-                }
-                onSetOption={onSetOption}
-              />
-            ))}
-          </div>
+          ))}
         </div>
       )}
     </div>
   )
 }
 
-interface FirmwareBannerProps {
-  device: DeviceInfo
-}
-
-function FirmwareBanner({ device: _device }: FirmwareBannerProps) {
-  return (
-    <div className="mt-2 text-xs text-gray-400">
-      <a
-        href="https://dev.realsenseai.com/docs/firmware-updates"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-rs-blue hover:underline"
-      >
-        Download firmware →
-      </a>
-    </div>
-  )
-}
-
-interface SensorStreamControlsProps {
-  sensors: SensorInfo[]
-  streamsBySensor: Record<string, StreamConfig[]>
-  streamingMode: string
-  sensorStreamingStatus: Record<string, { is_streaming: boolean; pendingOp?: string | null; error?: string | null }>
-  sensorConfigs: Record<string, SensorConfig>
+interface SensorPanelProps {
+  deviceId: string
+  sensor: SensorInfo
+  /** The sensor's control groups, each with the key its writes go to. */
+  groups: [string, ControlGroup][]
+  streams: StreamConfig[]
+  sensorConfig?: SensorConfig
+  status?: { is_streaming: boolean; pendingOp?: string | null; error?: string | null }
   onUpdateStreamConfig: (config: StreamConfig) => void
   onUpdateSensorConfig: (sensorId: string, config: Partial<SensorConfig>) => void
-  onStartSensorStreaming: (sensorId: string) => void
-  onStopSensorStreaming: (sensorId: string) => void
+  onStartStreaming: () => void
+  onStopStreaming: () => void
 }
 
-function SensorStreamControls({
-  sensors,
-  streamsBySensor,
-  streamingMode,
-  sensorStreamingStatus,
-  sensorConfigs,
-  onUpdateStreamConfig,
-  onUpdateSensorConfig,
-  onStartSensorStreaming,
-  onStopSensorStreaming,
-}: SensorStreamControlsProps) {
-  return (
-    <div className="space-y-3">
-      {sensors.map((sensor) => {
-        const sensorStreamConfigs = streamsBySensor[sensor.sensor_id] || []
-        if (sensorStreamConfigs.length === 0) return null
+/**
+ * One sensor: what it can stream and every control it has, in one expander, the way the
+ * C++ viewer draws a sensor (device-model.cpp) rather than listing every sensor twice.
+ */
+function SensorPanel({
+  deviceId, sensor, groups, streams, sensorConfig, status,
+  onUpdateStreamConfig, onUpdateSensorConfig, onStartStreaming, onStopStreaming,
+}: SensorPanelProps) {
+  const { setControl, setControlEnabled, setPostProcessing, deviceStates } = useAppStore()
+  const postProcessing = deviceStates[deviceId]?.postProcessing?.[sensor.sensor_id] !== false
+  // The search covers this sensor's controls, so it lives with them, as in the C++ viewer.
+  const [searchQuery, setSearchQuery] = useState('')
+  const searching = searchQuery.trim().length > 0
+  const nothingMatches = searching && !groups.some(([, g]) => searchGroup(g, searchQuery))
 
-        const sensorStatus = sensorStreamingStatus[sensor.sensor_id]
-        const isSensorStreaming = sensorStatus?.is_streaming || false
-        const isSensorPending = sensorStatus?.pendingOp === 'stopping'
-        const sensorError = sensorStatus?.error
-        const hasEnabledSensorStreams = sensorStreamConfigs.some(c => c.enable)
-        const sensorConfig = sensorConfigs[sensor.sensor_id]
+  /** Put every control of these groups back to the value the device reports as default. */
+  const restore = async (gs: [string, ControlGroup][]) => {
+    for (const [key, group] of gs) {
+      if (group.enabled !== undefined && group.enabled !== group.default_enabled) {
+        await setControlEnabled(deviceId, key, group.default_enabled!)
+      }
+      for (const option of group.options.filter(isModified)) {
+        await setControl(deviceId, key, option.option_id, option.default_value)
+      }
+    }
+  }
 
-        const canStartSensor = hasEnabledSensorStreams && streamingMode !== 'pipeline'
+  const isSensorStreaming = status?.is_streaming || false
+  const isSensorPending = status?.pendingOp === 'stopping'
+  const sensorError = status?.error
+  const canStartSensor = streams.some(c => c.enable)
 
-        const computeCommonOptions = () => {
+  const modifiedCount = groups.flatMap(([, g]) => g.options).filter(isModified).length
+
+  const computeCommonOptions = () => {
           const profiles = sensor.supported_stream_profiles
           if (profiles.length === 0) return { resolutions: [], fps: [] }
 
@@ -674,47 +688,51 @@ function SensorStreamControls({
           return { resolutions, fps }
         }
 
-        const { resolutions: availableResolutions, fps: availableFps } = computeCommonOptions()
+  const { resolutions: availableResolutions, fps: availableFps } = computeCommonOptions()
 
-        return (
-          <div key={sensor.sensor_id} className="bg-gray-800/50 rounded-lg p-2">
-            {/* Sensor header with per-sensor start button */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-300">{sensor.name}</span>
-                {isSensorStreaming && (
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                )}
-              </div>
-              <button
-                onClick={() => isSensorStreaming
-                  ? onStopSensorStreaming(sensor.sensor_id)
-                  : onStartSensorStreaming(sensor.sensor_id)
-                }
-                disabled={isSensorPending || (!canStartSensor && !isSensorStreaming)}
-                data-testid={isSensorStreaming ? "stop-streaming" : "start-streaming"}
-                title={streamingMode === 'pipeline' ? 'Stop all streams first' : isSensorPending ? 'Stopping...' : isSensorStreaming ? 'Stop' : 'Start'}
-                className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                  isSensorPending
-                    ? 'bg-yellow-600 text-white cursor-wait'
-                    : isSensorStreaming
-                      ? 'bg-red-600 hover:bg-red-700 text-white'
-                      : canStartSensor
-                        ? 'bg-green-600/80 hover:bg-green-600 text-white'
-                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                <span className="sr-only">{isSensorStreaming ? 'Stop' : 'Start'}</span>
-                {isSensorPending ? '⏳' : isSensorStreaming ? '■' : '▶'}
-              </button>
-            </div>
-
-            {sensorError && (
-              <div className="mb-2 text-xs text-red-400 bg-red-900/30 rounded px-2 py-1">
-                {sensorError}
-              </div>
-            )}
-
+  return (
+    <Collapsible
+      variant="sensor"
+      label={
+        <>
+          <span className="text-sm font-medium text-gray-300 truncate">{sensor.name}</span>
+          {isSensorStreaming && (
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shrink-0" />
+          )}
+          {modifiedCount > 0 && (
+            <span className="px-1.5 py-0.5 bg-rs-blue/20 text-rs-blue rounded text-[10px] shrink-0">
+              {modifiedCount} modified
+            </span>
+          )}
+        </>
+      }
+      aside={
+        <button
+          onClick={() => isSensorStreaming ? onStopStreaming() : onStartStreaming()}
+          disabled={isSensorPending || (!canStartSensor && !isSensorStreaming)}
+          data-testid={isSensorStreaming ? "stop-streaming" : "start-streaming"}
+          title={isSensorPending ? 'Stopping...' : isSensorStreaming ? 'Stop' : 'Start'}
+          className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+            isSensorPending
+              ? 'bg-yellow-600 text-white cursor-wait'
+              : isSensorStreaming
+                ? 'bg-red-600 hover:bg-red-700 text-white'
+                : canStartSensor
+                  ? 'bg-green-600/80 hover:bg-green-600 text-white'
+                  : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          <span className="sr-only">{isSensorStreaming ? 'Stop' : 'Start'}</span>
+          {isSensorPending ? '⏳' : isSensorStreaming ? '■' : '▶'}
+        </button>
+      }
+      belowHeader={sensorError && (
+        <div className="mb-2 text-xs text-red-400 bg-red-900/30 rounded px-2 py-1">
+          {sensorError}
+        </div>
+      )}
+    >
+      <div className="mt-2 space-y-1">
             {sensorConfig && !sensorConfig.isMotionSensor && (
               <div className="mb-2 flex items-center gap-2 text-xs">
                 <div className="flex items-center gap-1">
@@ -725,7 +743,7 @@ function SensorStreamControls({
                       const [width, height] = e.target.value.split('x').map(Number)
                       onUpdateSensorConfig(sensor.sensor_id, { resolution: { width, height } })
                     }}
-                    disabled={streamingMode === 'pipeline' || isSensorStreaming}
+                    disabled={isSensorStreaming}
                     className="bg-gray-700 text-white rounded px-1 py-0.5 text-xs"
                   >
                     {availableResolutions.map(([w, h]) => (
@@ -740,7 +758,7 @@ function SensorStreamControls({
                   <select
                     value={sensorConfig.framerate}
                     onChange={(e) => onUpdateSensorConfig(sensor.sensor_id, { framerate: Number(e.target.value) })}
-                    disabled={streamingMode === 'pipeline' || isSensorStreaming}
+                    disabled={isSensorStreaming}
                     className="bg-gray-700 text-white rounded px-1 py-0.5 text-xs"
                   >
                     {availableFps.map((fps) => (
@@ -754,35 +772,71 @@ function SensorStreamControls({
             )}
 
             <div className="space-y-1">
-              {sensorStreamConfigs.map((config) => (
+              {streams.map((config) => (
                 <StreamConfigItem
                   key={`${config.sensor_id}-${config.stream_type}`}
                   config={config}
-                  sensors={sensors}
+                  sensor={sensor}
                   onUpdate={onUpdateStreamConfig}
-                  disabled={streamingMode === 'pipeline' || isSensorStreaming}
+                  disabled={isSensorStreaming}
                   isMotionSensor={sensorConfig?.isMotionSensor ?? false}
                 />
               ))}
             </div>
-          </div>
-        )
-      })}
-    </div>
+
+        <ControlsSearchBox value={searchQuery} onChange={setSearchQuery} />
+
+        {modifiedCount > 0 && (
+          <button
+            onClick={() => restore(groups)}
+            className="w-full flex items-center justify-center gap-1 p-1 bg-gray-700/50 hover:bg-gray-600 rounded text-xs text-gray-300 transition-colors"
+          >
+            <RefreshCcw className="w-3 h-3" />
+            Restore All Defaults
+          </button>
+        )}
+
+        {/* SECTIONS is in the order the C++ viewer draws them (device-model.cpp). */}
+        {SECTIONS.map((title) => {
+          const mine = groups.filter(([, g]) => g.section === title)
+          return (
+            <ControlSection
+              key={title}
+              title={title}
+              groups={mine}
+              // Post-processing is the one section the viewer can bypass wholesale.
+              sectionSwitch={title === 'Post-Processing' ? {
+                enabled: postProcessing,
+                onToggle: () => setPostProcessing(deviceId, sensor.sensor_id, !postProcessing),
+              } : undefined}
+              searchQuery={searchQuery}
+              onSet={(key, optionId, value) => setControl(deviceId, key, optionId, value)}
+              onToggleGroup={(key, enabled) => setControlEnabled(deviceId, key, enabled)}
+              onRestoreDefaults={() => restore(mine)}
+            />
+          )
+        })}
+
+        {nothingMatches && (
+          <p className="text-gray-500 text-xs py-1">
+            No controls match “{searchQuery.trim()}”.
+          </p>
+        )}
+      </div>
+    </Collapsible>
   )
 }
 
 interface StreamConfigItemProps {
   config: StreamConfig
-  sensors: SensorInfo[]
+  sensor: SensorInfo
   onUpdate: (config: StreamConfig) => void
   disabled: boolean
   isMotionSensor: boolean
 }
 
-function StreamConfigItem({ config, sensors, onUpdate, disabled, isMotionSensor }: StreamConfigItemProps) {
-  const sensor = sensors.find((s) => s.sensor_id === config.sensor_id)
-  const profile = sensor?.supported_stream_profiles.find((p) => 
+function StreamConfigItem({ config, sensor, onUpdate, disabled, isMotionSensor }: StreamConfigItemProps) {
+  const profile = sensor.supported_stream_profiles.find((p) =>
     p.stream_type.toLowerCase() === config.stream_type.toLowerCase()
   )
 
@@ -853,374 +907,136 @@ function StreamConfigItem({ config, sensors, onUpdate, disabled, isMotionSensor 
   )
 }
 
-interface SensorOptionsPanelProps {
-  sensor: SensorInfo
-  options: OptionInfo[]
-  isExpanded: boolean
-  onToggle: () => void
-  onSetOption: (sensorId: string, optionId: string, value: number | boolean | string) => Promise<void>
+interface ControlsSearchBoxProps {
+  value: string
+  onChange: (value: string) => void
 }
 
-function SensorOptionsPanel({ sensor, options, isExpanded, onToggle, onSetOption }: SensorOptionsPanelProps) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+function ControlsSearchBox({ value, onChange }: ControlsSearchBoxProps) {
+  return (
+    <div className="relative mb-2">
+      <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Search controls…"
+        className="w-full pl-7 pr-7 py-1.5 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-rs-blue text-xs"
+      />
+      {value && (
+        <button
+          onClick={() => onChange('')}
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+          title="Clear search"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  )
+}
 
-  // Group options by category
-  const optionsByCategory = options.reduce((acc, option) => {
-    const category = option.category || 'Basic Controls'
-    if (!acc[category]) {
-      acc[category] = []
-    }
-    acc[category].push(option)
-    return acc
-  }, {} as Record<string, OptionInfo[]>)
+interface ControlSectionProps {
+  title: string
+  /** The section's groups, each with the key its writes go to. */
+  groups: [string, ControlGroup][]
+  /** The section's own on/off switch, when it has one. */
+  sectionSwitch?: { enabled: boolean; onToggle: () => void }
+  searchQuery: string
+  onSet: (key: string, optionId: string, value: number | boolean | string) => Promise<void>
+  onToggleGroup: (key: string, enabled: boolean) => Promise<void>
+  onRestoreDefaults: () => void
+}
 
-  // Ensure consistent category order: Basic Controls first, then Post-Processing
-  const categoryOrder = ['Basic Controls', 'Post-Processing']
-  const sortedCategories = Object.keys(optionsByCategory).sort((a, b) => {
-    const indexA = categoryOrder.indexOf(a)
-    const indexB = categoryOrder.indexOf(b)
-    if (indexA === -1 && indexB === -1) return a.localeCompare(b)
-    if (indexA === -1) return 1
-    if (indexB === -1) return -1
-    return indexA - indexB
+/**
+ * A section of the controls tree: the sensor's own options, the colorizer, the advanced-mode
+ * groups or the post-processing filters. They differ only in whether their groups are named
+ * and whether a group can be switched off, so they are all this component.
+ */
+function ControlSection({
+  title, groups, sectionSwitch, searchQuery, onSet, onToggleGroup, onRestoreDefaults,
+}: ControlSectionProps) {
+  const searching = searchQuery.trim().length > 0
+
+  // A group with nothing to interact with is dropped, so a section the device has no
+  // controls for - the colorizer on a sensor that is not the depth one - shows no header.
+  // A switch counts as something to interact with: the disparity transforms carry no
+  // options at all.
+  const matching = groups.flatMap(([key, group]) => {
+    const options = searchGroup(group, searchQuery)
+    if (!options || (options.length === 0 && group.enabled === undefined)) return []
+    return [{ key, group, options }]
   })
+  if (matching.length === 0) return null
 
-  const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(category)) {
-        newSet.delete(category)
-      } else {
-        newSet.add(category)
-      }
-      return newSet
-    })
-  }
-
-  const handleRestoreCategoryDefaults = async (category: string) => {
-    const categoryOptions = optionsByCategory[category] || []
-    for (const option of categoryOptions) {
-      if (!option.read_only && option.current_value !== option.default_value) {
-        await onSetOption(sensor.sensor_id, option.option_id, option.default_value)
-      }
-    }
-  }
-
-  const handleRestoreAllDefaults = async () => {
-    for (const option of options) {
-      if (!option.read_only && option.current_value !== option.default_value) {
-        await onSetOption(sensor.sensor_id, option.option_id, option.default_value)
-      }
-    }
-  }
-
-  // Count modified options across all categories
-  const modifiedCount = options.filter(o => !o.read_only && o.current_value !== o.default_value).length
+  const modified = groups.some(([, g]) => g.options.some(isModified))
 
   return (
-    <div className="mb-1">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between p-1.5 bg-gray-800/50 rounded hover:bg-gray-700 transition-colors text-xs"
-      >
-        <span className="font-medium">{sensor.name}</span>
-        <div className="flex items-center gap-1">
-          {modifiedCount > 0 && (
-            <span className="px-1.5 py-0.5 bg-rs-blue/20 text-rs-blue rounded text-[10px]">
-              {modifiedCount} modified
+    <Collapsible
+      variant="section"
+      forcedOpen={searching}
+      label={<span className="text-xs font-medium text-gray-300">{title}</span>}
+      aside={
+        <>
+          {modified && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRestoreDefaults(); }}
+              className="px-1.5 py-0.5 mr-1 text-[10px] text-rs-blue hover:text-blue-400"
+              title={`Restore ${title} to defaults`}
+            >
+              <RefreshCcw className="w-3 h-3" />
+            </button>
+          )}
+          {sectionSwitch && (
+            <span className="pr-1">
+              <ToggleSwitch enabled={sectionSwitch.enabled} onToggle={sectionSwitch.onToggle} />
             </span>
           )}
-          <svg
-            className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </button>
-
-      {isExpanded && (
-        <div className="mt-1 space-y-1 pl-2">
-          {options.length === 0 ? (
-            <p className="text-gray-500 text-xs py-1">No options available</p>
-          ) : (
-            <>
-              {/* Global restore defaults for all sensor options */}
-              {modifiedCount > 0 && (
-                <button
-                  onClick={handleRestoreAllDefaults}
-                  className="w-full flex items-center justify-center gap-1 p-1 bg-gray-700/50 hover:bg-gray-600 rounded text-xs text-gray-300 transition-colors mb-1"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Restore All Defaults
-                </button>
-              )}
-
-              {sortedCategories.map(category => (
-                <CategorySection
-                  key={category}
-                  category={category}
-                  options={optionsByCategory[category]}
-                  isExpanded={expandedCategories.has(category)}
-                  onToggle={() => toggleCategory(category)}
-                  onRestoreDefaults={() => handleRestoreCategoryDefaults(category)}
-                  sensorId={sensor.sensor_id}
-                  onSetOption={onSetOption}
-                />
-              ))}
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-interface CategorySectionProps {
-  category: string
-  options: OptionInfo[]
-  isExpanded: boolean
-  onToggle: () => void
-  onRestoreDefaults: () => void
-  sensorId: string
-  onSetOption: (sensorId: string, optionId: string, value: number | boolean | string) => Promise<void>
-}
-
-function CategorySection({ category, options, isExpanded, onToggle, onRestoreDefaults, sensorId, onSetOption }: CategorySectionProps) {
-  const hasModifiedOptions = options.some(opt => !opt.read_only && opt.current_value !== opt.default_value)
-
-  // For Post-Processing category, render specialized filter sections
-  if (category === 'Post-Processing') {
-    return (
-      <PostProcessingSection
-        options={options}
-        isExpanded={isExpanded}
-        onToggle={onToggle}
-        onRestoreDefaults={onRestoreDefaults}
-        sensorId={sensorId}
-        onSetOption={onSetOption}
-        hasModifiedOptions={hasModifiedOptions}
-      />
-    )
-  }
-
-  return (
-    <div className="border border-gray-700 rounded overflow-hidden">
-      <div className="flex items-center bg-gray-750 hover:bg-gray-700 transition-colors">
-        <button
-          onClick={onToggle}
-          className="flex-1 flex items-center justify-between p-1.5"
-        >
-          <span className="text-xs font-medium text-gray-300">{category}</span>
-          <svg
-            className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        {hasModifiedOptions && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onRestoreDefaults(); }}
-            className="px-1.5 py-0.5 mr-1 text-[10px] text-rs-blue hover:text-blue-400"
-            title={`Restore ${category} to defaults`}
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
-        )}
-      </div>
-
-      {isExpanded && (
-        <div className="p-1.5 space-y-1 bg-gray-800/30">
-          {options.map((option) => (
-            <OptionControl 
-              key={option.option_id} 
-              option={option} 
-              sensorId={sensorId}
-              onSetOption={onSetOption}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-interface PostProcessingSectionProps {
-  options: OptionInfo[]
-  isExpanded: boolean
-  onToggle: () => void
-  onRestoreDefaults: () => void
-  sensorId: string
-  onSetOption: (sensorId: string, optionId: string, value: number | boolean | string) => Promise<void>
-  hasModifiedOptions: boolean
-}
-
-function PostProcessingSection({ options, isExpanded, onToggle, onRestoreDefaults, sensorId, onSetOption, hasModifiedOptions }: PostProcessingSectionProps) {
-  const [expandedFilters, setExpandedFilters] = useState<Set<string>>(new Set())
-
-  // Group options by filter_name
-  const filterGroups = options.reduce((acc, option) => {
-    const filterName = option.filter_name || 'Other'
-    if (!acc[filterName]) {
-      acc[filterName] = { enableOption: null as OptionInfo | null, paramOptions: [] as OptionInfo[] }
-    }
-    if (option.option_id.endsWith('_Enabled')) {
-      acc[filterName].enableOption = option
-    } else {
-      acc[filterName].paramOptions.push(option)
-    }
-    return acc
-  }, {} as Record<string, { enableOption: OptionInfo | null; paramOptions: OptionInfo[] }>)
-
-  const toggleFilter = (filterName: string) => {
-    setExpandedFilters(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(filterName)) {
-        newSet.delete(filterName)
-      } else {
-        newSet.add(filterName)
+        </>
       }
-      return newSet
-    })
-  }
-
-  return (
-    <div className="border border-gray-700 rounded overflow-hidden">
-      <div className="flex items-center bg-gray-750 hover:bg-gray-700 transition-colors">
-        <button
-          onClick={onToggle}
-          className="flex-1 flex items-center justify-between p-1.5"
-        >
-          <span className="text-xs font-medium text-gray-300">Post-Processing</span>
-          <svg
-            className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        {hasModifiedOptions && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onRestoreDefaults(); }}
-            className="px-1.5 py-0.5 mr-1 text-[10px] text-rs-blue hover:text-blue-400"
-            title="Restore Post-Processing to defaults"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
-        )}
-      </div>
-
-      {isExpanded && (
-        <div className="p-1.5 space-y-1 bg-gray-800/30">
-          {Object.entries(filterGroups).map(([filterName, group]) => (
-            <FilterDropdown
-              key={filterName}
-              filterName={filterName}
-              enableOption={group.enableOption}
-              paramOptions={group.paramOptions}
-              isExpanded={expandedFilters.has(filterName)}
-              onToggle={() => toggleFilter(filterName)}
-              sensorId={sensorId}
-              onSetOption={onSetOption}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-interface FilterDropdownProps {
-  filterName: string
-  enableOption: OptionInfo | null
-  paramOptions: OptionInfo[]
-  isExpanded: boolean
-  onToggle: () => void
-  sensorId: string
-  onSetOption: (sensorId: string, optionId: string, value: number | boolean | string) => Promise<void>
-}
-
-function FilterDropdown({ filterName, enableOption, paramOptions, isExpanded, onToggle, sensorId, onSetOption }: FilterDropdownProps) {
-  const isEnabled = enableOption ? Boolean(enableOption.current_value) : false
-
-  const handleToggleEnable = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (enableOption) {
-      await onSetOption(sensorId, enableOption.option_id, isEnabled ? 0 : 1)
-    }
-  }
-
-  return (
-    <div className="border border-gray-600 rounded overflow-hidden">
-      <div 
-        className="flex items-center justify-between p-1.5 bg-gray-700/50 hover:bg-gray-700 transition-colors cursor-pointer"
-        onClick={onToggle}
-      >
-        <div className="flex items-center gap-1.5">
-          <svg
-            className={`w-2.5 h-2.5 transition-transform text-gray-400 ${isExpanded ? 'rotate-90' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-          <span className="text-xs font-medium text-gray-200">{filterName}</span>
-        </div>
-        
-        {/* Toggle Switch */}
-        {enableOption && (
-          <button
-            onClick={handleToggleEnable}
-            className={`relative w-8 h-4 rounded-full transition-colors ${
-              isEnabled ? 'bg-rs-blue' : 'bg-gray-600'
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
-                isEnabled ? 'translate-x-4' : ''
-              }`}
-            />
-          </button>
-        )}
-      </div>
-
-      {isExpanded && paramOptions.length > 0 && (
-        <div className="p-1.5 space-y-1 bg-gray-800/50">
-          {paramOptions.map((option) => (
+    >
+      <div className="p-1.5 space-y-1 bg-gray-800/30">
+        {matching.map(({ key, group, options }) => {
+          const controls = options.map(option => (
             <OptionControl
               key={option.option_id}
               option={option}
-              sensorId={sensorId}
-              onSetOption={onSetOption}
+              onSet={(optionId, value) => onSet(key, optionId, value)}
             />
-          ))}
-        </div>
-      )}
-    </div>
+          ))
+          return !group.name ? controls : (
+            <Collapsible
+              key={key}
+              variant="group"
+              label={<span className="text-xs font-medium text-gray-200">{optionLabel(group.name)}</span>}
+              forcedOpen={searching}
+              aside={group.enabled !== undefined && (
+                <ToggleSwitch
+                  enabled={group.enabled}
+                  onToggle={() => onToggleGroup(key, !group.enabled)}
+                />
+              )}
+            >
+              <div className="p-1.5 space-y-1 bg-gray-800/50">{controls}</div>
+            </Collapsible>
+          )
+        })}
+      </div>
+    </Collapsible>
   )
+}
+
+/** Whether a writable control sits away from the default the device reports for it. */
+function isModified(option: OptionInfo): boolean {
+  return !option.read_only && option.current_value !== option.default_value
 }
 
 interface OptionControlProps {
   option: OptionInfo
-  sensorId: string
-  onSetOption: (sensorId: string, optionId: string, value: number | boolean | string) => Promise<void>
+  onSet: (optionId: string, value: number | boolean | string) => Promise<void>
 }
 
-function OptionControl({ option, sensorId, onSetOption }: OptionControlProps) {
+function OptionControl({ option, onSet }: OptionControlProps) {
   const [localValue, setLocalValue] = useState(option.current_value)
 
   // Sync with external changes (e.g., from chatbot)
@@ -1231,7 +1047,7 @@ function OptionControl({ option, sensorId, onSetOption }: OptionControlProps) {
   const handleChange = async (value: number | boolean | string) => {
     setLocalValue(value)
     try {
-      await onSetOption(sensorId, option.option_id, value)
+      await onSet(option.option_id, value)
     } catch (error) {
       setLocalValue(option.current_value)
     }
@@ -1242,10 +1058,17 @@ function OptionControl({ option, sensorId, onSetOption }: OptionControlProps) {
   }
 
   const isModified = localValue !== option.default_value
-  const isBoolean = typeof option.current_value === 'boolean' || 
-    (option.min_value === 0 && option.max_value === 1 && option.step === 1 && !option.value_descriptions)
-  const isEnum = option.value_descriptions && Object.keys(option.value_descriptions).length > 0
-  const isSlider = typeof option.min_value === 'number' && typeof option.max_value === 'number'
+  // A dropdown only makes sense when every value the option accepts has a label; the
+  // backend reports the labels the SDK has, which for a slider is a leading few or none.
+  const labelCount = Object.keys(option.value_descriptions || {}).length
+  const isEnum =
+    labelCount > 0 &&
+    option.step === 1 &&
+    labelCount === option.max_value - option.min_value + 1
+  // A whole-numbered control that cannot leave 0..1 is a flag, whether the device reports
+  // the range as 0..1 or - having no range for the group - as the value itself.
+  const isBoolean = option.step === 1 && option.min_value >= 0 && option.max_value <= 1
+  const isSlider = option.min_value !== option.max_value
 
   // Get default value display for enum types
   const getDefaultDisplay = () => {
@@ -1259,7 +1082,7 @@ function OptionControl({ option, sensorId, onSetOption }: OptionControlProps) {
     <div className="bg-gray-800/30 rounded p-1.5 text-xs">
       <div className="flex items-center justify-between mb-0.5">
         <label className="font-medium truncate text-gray-300 flex-1" title={option.description}>
-          {option.name}
+          {optionLabel(option.option_id)}
         </label>
         <div className="flex items-center gap-1">
           {option.units && <span className="text-gray-500">{option.units}</span>}
@@ -1269,9 +1092,7 @@ function OptionControl({ option, sensorId, onSetOption }: OptionControlProps) {
               className="text-gray-500 hover:text-rs-blue transition-colors"
               title={`Restore default (${getDefaultDisplay()})`}
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+              <RefreshCcw className="w-3 h-3" />
             </button>
           )}
         </div>
@@ -1279,16 +1100,6 @@ function OptionControl({ option, sensorId, onSetOption }: OptionControlProps) {
 
       {option.read_only ? (
         <div className="text-gray-400">{String(localValue)}</div>
-      ) : isBoolean ? (
-        <label className="flex items-center gap-1 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={Boolean(localValue)}
-            onChange={(e) => handleChange(e.target.checked)}
-            className="w-3 h-3"
-          />
-          <span className="text-gray-400">{localValue ? 'On' : 'Off'}</span>
-        </label>
       ) : isEnum ? (
         <select
           value={String(Math.round(Number(localValue)))}
@@ -1301,13 +1112,23 @@ function OptionControl({ option, sensorId, onSetOption }: OptionControlProps) {
             </option>
           ))}
         </select>
+      ) : isBoolean ? (
+        <label className="flex items-center gap-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={Boolean(localValue)}
+            onChange={(e) => handleChange(e.target.checked)}
+            className="w-3 h-3"
+          />
+          <span className="text-gray-400">{localValue ? 'On' : 'Off'}</span>
+        </label>
       ) : isSlider ? (
         <div className="flex items-center gap-1">
           <input
             type="range"
             min={option.min_value}
             max={option.max_value}
-            step={option.step || 1}
+            step={option.step ?? 'any'}
             value={Number(localValue)}
             onChange={(e) => setLocalValue(Number(e.target.value))}
             onMouseUp={() => handleChange(Number(localValue))}
@@ -1315,7 +1136,9 @@ function OptionControl({ option, sensorId, onSetOption }: OptionControlProps) {
             className="flex-1 h-1"
           />
           <span className="text-gray-400 w-10 text-right">
-            {typeof localValue === 'number' ? localValue.toFixed(option.step && option.step < 1 ? 1 : 0) : localValue}
+            {typeof localValue === 'number'
+              ? localValue.toFixed((option.step ?? 0) >= 1 ? 0 : 2)
+              : localValue}
           </span>
         </div>
       ) : (

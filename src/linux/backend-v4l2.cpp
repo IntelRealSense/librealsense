@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <map>
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -69,6 +70,7 @@
 #pragma GCC diagnostic ignored "-Woverflow"
 
 const double DEFAULT_KPI_FRAME_DROPS_PERCENTAGE = 0.05;
+constexpr std::chrono::milliseconds DISCONNECT_RETRY_DELAY( 100 );
 
 
 #ifdef ANDROID
@@ -124,6 +126,26 @@ int lockf(int fd, int cmd, off_t length)
 
 namespace librealsense
 {
+    // D5xx product line. The D400 and D500 families share this backend and the d4xx kernel driver,
+    // but not their depth-XU selector tables - see v4l_mipi_logic::xu_to_cid().
+    static bool is_d5xx_product_line( uint16_t pid )
+    {
+        return ( pid == 0x0B56 )                      // D555
+            || ( pid == 0x0B6A ) || ( pid == 0x0B6B ) // D585 legacy / D585S
+            || ( pid >= 0x0C01 && pid <= 0x0C08 );    // D535 / D585 2C+3C
+    }
+
+    // The UVC interface carrying the D5xx mapping streams (occupancy / labeled point
+    // cloud): MI 13 on D585S, MI 11 on every other D5xx. Their payload is a self-sized
+    // MAP1 frame rather than an image, which both the fourcc split and the frame-size
+    // validation below have to account for.
+    static bool is_d5xx_mapping_interface( uint16_t pid, uint16_t mi )
+    {
+        if( ! is_d5xx_product_line( pid ) )
+            return false;
+        return ( pid == 0x0B6B || pid == 0x0B6A ) ? ( mi == 13 ) : ( mi == 11 );
+    }
+
     namespace platform
     {
         named_mutex::named_mutex(const std::string& device_path, unsigned timeout)
@@ -353,8 +375,14 @@ namespace librealsense
             else
             {
                 //_length += (V4L2_BUF_TYPE_VIDEO_CAPTURE==type) ? MAX_META_DATA_SIZE : 0;
+#ifdef RS2_USE_CUDA_ZEROCOPY
+                // USERPTR: GPU-visible buffer so a zero-copy frame aliasing it stays GPU-resident (as MMAP/RSUSB do).
+                _start = static_cast<uint8_t*>(rs_frame_zc_alloc( _length ));
+                if (!_start) throw linux_backend_exception("rs_frame_zc_alloc for USERPTR buffer failed!");
+#else
                 _start = static_cast<uint8_t*>(malloc( _length));
                 if (!_start) throw linux_backend_exception("User_p allocation failed!");
+#endif
                 memset(_start, 0, _length);
             }
         }
@@ -394,7 +422,11 @@ namespace librealsense
             }
             else
             {
+#ifdef RS2_USE_CUDA_ZEROCOPY
+               rs_frame_zc_free( _start );
+#else
                free(_start);
+#endif
             }
         }
 
@@ -804,6 +836,73 @@ namespace librealsense
             return dfu_paths;
         }
 
+        // True iff the string looks like a kernel i2c client id — digits, one
+        // '-', then hex. Kernel uses snprintf("%d-%04x", adapter, addr).
+        static bool is_i2c_id_shape(const std::string& s)
+        {
+            auto sep = s.find('-');
+            if (sep == std::string::npos || sep == 0 || sep + 1 >= s.size())
+                return false;
+            auto is_digit = [](char c) { return c >= '0' && c <= '9'; };
+            auto is_hex   = [](char c) {
+                return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+            };
+            return std::all_of(s.begin(), s.begin() + sep, is_digit)
+                && std::all_of(s.begin() + sep + 1, s.end(), is_hex);
+        }
+
+        // Extract the i2c client id ("<adapter>-<addr>") from a DFU chardev name.
+        // The driver names its CONFIG_OF chardev "d4xx-dfu-<adapter>-<addr>";
+        // the rs-enum path uses the shorter "d4xx-dfu-<index>" form for which
+        // per-i2c resolution is not possible. Returns "" on any non-conforming
+        // name — callers fall back accordingly.
+        static std::string dfu_devname_to_i2c_id(const std::string& dfu_devname)
+        {
+            static const std::string prefix = "d4xx-dfu-";
+            if (dfu_devname.compare(0, prefix.size(), prefix) != 0)
+                return {};
+            std::string rest = dfu_devname.substr(prefix.size());
+            return is_i2c_id_shape(rest) ? rest : std::string{};
+        }
+
+        // Read the DT `compatible` of a DFU chardev's owning i2c client via
+        // /sys/bus/i2c/devices/<adapter>-<addr>/of_node/compatible. Returns
+        // true when any entry equals "realsense,d5xx". `compatible` is a
+        // concatenation of NUL-terminated strings, so we walk tokens rather
+        // than substring-search (avoids matching "realsense,d5xxfoo").
+        // Returns false for rs-enum-style short chardev names that cannot be
+        // resolved to an i2c address.
+        static bool mipi_dfu_devname_is_d5xx(const std::string& dfu_devname)
+        {
+            std::string i2c_id = dfu_devname_to_i2c_id(dfu_devname);
+            if (i2c_id.empty())
+            {
+                LOG_DEBUG("MIPI DFU family detection: cannot parse i2c id from "
+                          << dfu_devname << ", defaulting to D4xx");
+                return false;
+            }
+            std::string compat_path = "/sys/bus/i2c/devices/" + i2c_id + "/of_node/compatible";
+            std::ifstream compat_in(compat_path, std::ios::binary);
+            if (!compat_in)
+            {
+                LOG_DEBUG("MIPI DFU family detection: cannot open " << compat_path
+                          << ", defaulting to D4xx");
+                return false;
+            }
+            std::string compat((std::istreambuf_iterator<char>(compat_in)), std::istreambuf_iterator<char>());
+            static const std::string target = "realsense,d5xx";
+            for (size_t pos = 0; pos < compat.size(); )
+            {
+                size_t end = compat.find('\0', pos);
+                if (end == std::string::npos)
+                    end = compat.size();
+                if (compat.compare(pos, end - pos, target) == 0)
+                    return true;
+                pos = end + 1;
+            }
+            return false;
+        }
+
         void v4l_mipi_device::foreach_mipi_device(
                 std::function<void(const mipi_device_info&,
                                    const std::string&)> action)
@@ -829,8 +928,11 @@ namespace librealsense
                 if (dfu_ver.find("recovery") == std::string::npos)
                     continue;
                 mipi_device_info info{};
-                info.pid = 0xbbcd; // D400 MIPI recovery device ID
-                info.vid = 0x8086; // D400 Intel VID
+                // The DFU chardev read format is identical for D4xx and D5xx in recovery
+                // ("DFU info: recovery: <serial>"); derive the family from the DT compatible.
+                const bool is_d5xx = mipi_dfu_devname_is_d5xx(*it);
+                info.pid = is_d5xx ? 0xbbdd : 0xbbcd;   // D500_MIPI_RECOVERY_PID / RS400_MIPI_RECOVERY_PID
+                info.vid = is_d5xx ? 0x38e5 : 0x8086;   // VID_REALSENSE_CAMERA (D5xx) / VID_INTEL_CAMERA (D4xx)
                 info.id = *it;
                 info.device_path = mipi_dfu_path;
                 info.unique_id = *it;
@@ -1142,6 +1244,46 @@ namespace librealsense
             return uvc_nodes;
         }
 
+        // uvcvideo creates one /dev/videoN per UVC output terminal, numbered in VideoControl descriptor order, so
+        // /dev/videoN order can disagree with VideoStreaming interface order (D585 2C reverses its two color
+        // terminals). Sort by interface - the order Windows enumerates pins in - so a pin index means one endpoint.
+        void v4l_uvc_device::sort_nodes_by_streaming_interface( std::vector<node_info>& nodes )
+        {
+            std::map<std::pair<std::string, uint16_t>, std::vector<size_t>> functions;
+            for (size_t i = 0; i < nodes.size(); ++i)
+                if (!nodes[i].first.is_mipi)  // a MIPI node has no USB descriptor to order by
+                    functions[{ nodes[i].first.unique_id, nodes[i].first.mi }].push_back(i);
+
+            for (auto&& function : functions)
+            {
+                auto& indices = function.second;
+                if (indices.size() < 2)
+                    continue;
+
+                auto interfaces = v4l_usb_logic::read_streaming_interfaces_in_terminal_order(
+                    nodes[indices.front()].first.device_path, function.first.second);
+                if (interfaces.size() != indices.size())
+                    continue;  // descriptor unreadable, or terminals with no node of their own - keep /dev/videoN order
+                if (std::is_sorted(interfaces.begin(), interfaces.end()))
+                    continue;  // terminals listed in interface order, as nearly every firmware does
+
+                std::vector<std::pair<uint8_t, node_info>> group;
+                for (size_t i = 0; i < indices.size(); ++i)
+                    group.emplace_back(interfaces[i], nodes[indices[i]]);
+                std::stable_sort(group.begin(), group.end(),
+                                 [](const std::pair<uint8_t, node_info>& a, const std::pair<uint8_t, node_info>& b)
+                                 { return a.first < b.first; });
+
+                std::ostringstream reordered;
+                for (size_t i = 0; i < indices.size(); ++i)
+                {
+                    nodes[indices[i]] = group[i].second;
+                    reordered << " " << nodes[indices[i]].second;
+                }
+                LOG_DEBUG("Nodes of mi " << function.first.second << " reordered by streaming interface:" << reordered.str());
+            }
+        }
+
         void v4l_uvc_device::foreach_uvc_device( std::function<void(const uvc_device_info&, const std::string&)> action )
         {
             // building vector of /sys/class/video4linux/.../videoX files with path, major, minor
@@ -1156,6 +1298,8 @@ namespace librealsense
 
             // Matching video and metadata nodes
             std::vector<node_info> uvc_devices = match_video_with_metadata_nodes(uvc_nodes);
+
+            sort_nodes_by_streaming_interface(uvc_devices);
 
             try
             {
@@ -1257,12 +1401,17 @@ namespace librealsense
                 v4l2_fmtdesc pixel_format = {};
                 pixel_format.type = _dev.buf_type;
 
+                _variable_frame_size = false;
                 while (ioctl(_fd, VIDIOC_ENUM_FMT, &pixel_format) == 0)
                 {
                     v4l2_frmsizeenum frame_size = {};
                     frame_size.pixel_format = pixel_format.pixelformat;
 
                     uint32_t fourcc = (const big_endian<int> &)pixel_format.pixelformat;
+
+                    // V4L2_FMT_FLAG_COMPRESSED means in v4l2 if the frame size isn't fixed - sizeimage is a maximum, not exact
+                    if (fourcc == profile.format)
+                        _variable_frame_size = (pixel_format.flags & V4L2_FMT_FLAG_COMPRESSED) != 0;
 
                     if (pixel_format.pixelformat == 0)
                     {
@@ -1439,8 +1588,29 @@ namespace librealsense
             return oss.str();
         }
 
+        bool v4l_uvc_device::handle_enodev_on_dqbuf(const char* fd_label, int fd)
+        {
+            if (errno != ENODEV)
+                return false;
+            _device_disconnected = true;
+            LOG_WARNING("Device disconnected: DQBUF failed with ENODEV for " << fd_label << " " << fd);
+            return true;
+        }
+
         void v4l_uvc_device::poll()
         {
+            // A prior iteration observed ENODEV on a real DQBUF/QBUF call (set explicitly at the point of
+            // failure, never inferred from ambient errno). Throttle retries until the device-removal
+            // notification unwinds streaming, instead of spinning select() on an fd the kernel already dropped.
+            // Both flags are read into locals before the check below, so neither is left unconsumed by the ||.
+            bool device_disconnected = _device_disconnected.exchange(false);
+            bool syncer_disconnected = _video_md_syncer.consume_device_disconnected();
+            if (device_disconnected || syncer_disconnected)
+            {
+                std::this_thread::sleep_for(DISCONNECT_RETRY_DELAY);
+                return;
+            }
+
              fd_set fds{};
              FD_ZERO(&fds);
              for (auto fd : _fds)
@@ -1521,7 +1691,16 @@ namespace librealsense
                         }
 
                         // Relax the required frame size for compressed formats, i.e. MJPG, Z16H
-                        bool compressed_format = val_in_range(_profile.format, { 0x4d4a5047U , 0x5a313648U});
+                        // The D5xx mapping streams need the same relaxation: their descriptor
+                        // advertises the occupancy/point-cloud canvas, while the payload on the
+                        // wire is a MAP1 frame whose length is the data, not width*height*bpp.
+                        // Without this every frame is rejected as incomplete.
+                        bool compressed_format = val_in_range(_profile.format, { 0x4d4a5047U , 0x5a313648U})
+                                              || is_d5xx_mapping_interface( _info.pid, _info.mi );
+
+                        // Compressed and kernel-reported variable-size formats deliver frames shorter than the buffer,
+                        // so the size check doesn't apply - this covers the perception stream too.
+                        bool skip_partial_frame_check = compressed_format || _variable_frame_size;
 
                         // METADATA STREAM
                         // Read metadata. Metadata node performs a blocking call to ensure video and metadata sync
@@ -1548,6 +1727,8 @@ namespace librealsense
                             }
                             if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
                             {
+                                if (handle_enodev_on_dqbuf("fd", _fd))
+                                    return;
                                 LOG_DEBUG_V4L("Dequeued empty buf for fd " << std::dec << _fd);
                             }
                             LOG_DEBUG_V4L("Dequeued buf " << std::dec << buf.index << " for fd " << _fd << " seq " << buf.sequence);
@@ -1568,7 +1749,7 @@ namespace librealsense
                                 }
 
                                 // Drop partial and overflow frames (assumes D4XX metadata only)
-                                bool partial_frame = (!compressed_format && (buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE));
+                                bool partial_frame = (!skip_partial_frame_check && (buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE));
                                 bool overflow_frame = (buf.bytesused ==  buffer->get_length_frame_only() + MAX_META_DATA_SIZE);
                                 if (_dev.buf_type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
                                     /* metadata size is one line of profile, temporary disable validation */
@@ -1671,11 +1852,11 @@ namespace librealsense
                                                 uint8_t md_size = buf_mgr.metadata_size();
                                                 void* md_start = buf_mgr.metadata_start();
 
-                                                // D457 development - hid over uvc - md size for IMU is 64
+                                                // IMU node (mi=4) delivers data with no metadata node, synthesize the metadata from the payload.
+                                                // Frame size is 64 bytes on D400 but 256 on D500.
                                                 metadata_hid_raw meta_data{};
-                                                if (md_size == 0 && buffer->get_length_frame_only() <= 64)
+                                                if (md_size == 0 && _info.mi == 4)
                                                 {
-                                                    // Populate HID IMU data - Header
                                                     populate_imu_data(meta_data, buffer->get_frame_start(), md_size, &md_start);
                                                 }
 
@@ -1900,7 +2081,10 @@ namespace librealsense
                                               << static_cast< int >( control ));
             }
 
-            assert(size<=len);
+            if( size > len )
+                throw linux_backend_exception( rsutils::string::from()
+                    << "get_xu_range: UVC_GET_LEN size " << size << " > requested " << len
+                    << " on control " << static_cast< int >( control ) );
 
             std::vector<uint8_t> buf;
             auto buf_size = std::max((size_t)len,sizeof(__u32));
@@ -2107,20 +2291,38 @@ namespace librealsense
                                     static_cast<float>(frame_interval.discrete.denominator) /
                                     static_cast<float>(frame_interval.discrete.numerator);
 
-                                // On D585S, we need to distinguish the occupancy and the label point cloud streams.
-                                // The condition currently support 3 resolutions for LPC
-                                // This needs to be refactored!
-                                if (this->_info.pid == 0X0B6B && frame_size.discrete.width == 2880 && (frame_size.discrete.height == 1040 || frame_size.discrete.height == 260 || frame_size.discrete.height == 32)) // 0x0B6B pid for D585S_PID
+                                // The device reports GREY for both mapping streams, so the
+                                // labeled point cloud is re-tagged here to keep them apart.
+                                // Two layouts: D585S / D585 legacy (0x0B6B / 0x0B6A) carry them
+                                // on MI 13 at 2880-wide payloads; every other D5xx carries them
+                                // on MI 11 with LPCL at 640x360. The MI test matters -- 640x360
+                                // GREY also exists on the depth interface as infrared.
+                                const bool d585s_layout
+                                    = ( this->_info.pid == 0X0B6B || this->_info.pid == 0X0B6A )
+                                   && frame_size.discrete.width == 2880
+                                   && ( frame_size.discrete.height == 1040
+                                     || frame_size.discrete.height == 260
+                                     || frame_size.discrete.height == 32 );
+                                const bool d5xx_mapping_layout
+                                    = ( this->_info.pid != 0X0B6B && this->_info.pid != 0X0B6A )
+                                   && is_d5xx_mapping_interface( this->_info.pid, this->_info.mi )
+                                   && frame_size.discrete.width == 640
+                                   && frame_size.discrete.height == 360;
+                                // Per profile: `fourcc` describes the pixel format and is
+                                // reused for every frame size, so re-tagging it here would
+                                // leak PAL8 onto every later size of the same format.
+                                uint32_t profile_fourcc = fourcc;
+                                if (d585s_layout || d5xx_mapping_layout)
                                 {
-                                    fourcc = 0x50414c38; // PAL8 used instead of GREY in order to distinguish between occupancy and point cloud streams
+                                    profile_fourcc = 0x50414c38; // PAL8 used instead of GREY in order to distinguish between occupancy and point cloud streams
                                 }
 
                                 stream_profile p{};
-                                p.format = fourcc;
+                                p.format = profile_fourcc;
                                 p.width = frame_size.discrete.width;
                                 p.height = frame_size.discrete.height;
                                 p.fps = fps;
-                                if (fourcc != 0) results.push_back(p);
+                                if (profile_fourcc != 0) results.push_back(p);
                             }
                         }
 
@@ -2226,9 +2428,24 @@ namespace librealsense
             }
         }
 
+        static int open_v4l_node( const std::string & name )
+        {
+            auto const deadline = std::chrono::steady_clock::now() + std::chrono::seconds( 5 );
+            int fd, open_errno = 0;
+            // /run/udev/queue exists while udev still has events pending, so a node it has not reached yet
+            // is not really ours to give up on.
+            while( ( fd = open( name.c_str(), O_RDWR | O_NONBLOCK, 0 ) ) < 0  &&  ( open_errno = errno ) == EACCES
+                   &&  ! access( "/run/udev/queue", F_OK )
+                   &&  std::chrono::steady_clock::now() < deadline )
+                std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+            if( fd < 0 )
+                errno = open_errno;  // access() above may have overwritten what the caller reports
+            return fd;
+        }
+
         void v4l_uvc_device::map_device_descriptor()
         {
-            _fd = open(_name.c_str(), O_RDWR | O_NONBLOCK, 0);
+            _fd = open_v4l_node(_name);
             if(_fd < 0)
                 throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " Cannot open '" << _name);
 
@@ -2480,7 +2697,7 @@ namespace librealsense
             if (_md_fd>0)
                 throw linux_backend_exception(rsutils::string::from() << _md_name << " descriptor is already opened");
 
-            _md_fd = open(_md_name.c_str(), O_RDWR | O_NONBLOCK, 0);
+            _md_fd = open_v4l_node(_md_name);
             if(_md_fd < 0)
             {
                 return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
@@ -2632,6 +2849,8 @@ namespace librealsense
                 // W/O multiplexing this will create a blocking call for metadata node
                 if(xioctl(_md_fd, VIDIOC_DQBUF, &buf) < 0)
                 {
+                    if (handle_enodev_on_dqbuf("md fd", _md_fd))
+                        return;
                     LOG_DEBUG_V4L("Dequeued empty buf for md fd " << std::dec << _md_fd);
                 }
 
@@ -2705,7 +2924,7 @@ namespace librealsense
 
         bool v4l_mipi_device::set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size)
         {
-            v4l2_ext_control xctrl{v4l_mipi_logic::xu_to_cid(xu,control), uint32_t(size), 0, 0};
+            v4l2_ext_control xctrl{v4l_mipi_logic::xu_to_cid(xu,control,is_d5xx_product_line(_info.pid)), uint32_t(size), 0, 0};
             switch (size)
             {
                 case 1: xctrl.value   = *(reinterpret_cast<const uint8_t*>(data)); break;
@@ -2737,7 +2956,7 @@ namespace librealsense
 
         bool v4l_mipi_device::get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const
         {
-            v4l2_ext_control xctrl{v4l_mipi_logic::xu_to_cid(xu,control), uint32_t(size), 0, 0};
+            v4l2_ext_control xctrl{v4l_mipi_logic::xu_to_cid(xu,control,is_d5xx_product_line(_info.pid)), uint32_t(size), 0, 0};
             xctrl.p_u8 = data;
 
             v4l2_ext_controls ext {xctrl.id & 0xffff0000, 1, 0, 0, 0, &xctrl};
@@ -2774,7 +2993,7 @@ namespace librealsense
         control_range v4l_mipi_device::get_xu_range(const extension_unit& xu, uint8_t control, int len) const
         {
             v4l2_query_ext_ctrl xctrl_query{};
-            xctrl_query.id = v4l_mipi_logic::xu_to_cid(xu,control);
+            xctrl_query.id = v4l_mipi_logic::xu_to_cid(xu,control,is_d5xx_product_line(_info.pid));
 
             if(0 > ioctl(_fd,VIDIOC_QUERY_EXT_CTRL,&xctrl_query)){
                 throw linux_backend_exception(rsutils::string::from() << "xioctl(VIDIOC_QUERY_EXT_CTRL) failed, errno=" << errno);
@@ -3030,14 +3249,23 @@ namespace librealsense
             return false;
         }
 
-        void v4l2_video_md_syncer::enqueue_buffer_before_throwing_it(const sync_buffer& sb) const
+        void v4l2_video_md_syncer::report_qbuf_failure(int fd)
+        {
+            if (errno == ENODEV)
+            {
+                _qbuf_device_disconnected = true;
+                LOG_WARNING("Device disconnected: QBUF failed with ENODEV for fd " << fd);
+                return;
+            }
+            LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << fd << " error: " << strerror(errno));
+        }
+
+        void v4l2_video_md_syncer::enqueue_buffer_before_throwing_it(const sync_buffer& sb)
         {
             // Enqueue of buffer before throwing its content away
             LOG_DEBUG_V4L("video_md_syncer - Enqueue buf " << std::dec << sb._buffer_index << " for fd " << sb._fd << " before dropping it");
             if (xioctl(sb._fd, VIDIOC_QBUF, sb._v4l2_buf.get()) < 0)
-            {
-                LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << sb._fd << " error: " << strerror(errno));
-            }
+                report_qbuf_failure(sb._fd);
         }
 
         void v4l2_video_md_syncer::enqueue_front_buffer_before_throwing_it(std::queue<sync_buffer>& sync_queue)
@@ -3045,9 +3273,7 @@ namespace librealsense
             // Enqueue of buffer before throwing its content away
             LOG_DEBUG_V4L("video_md_syncer - Enqueue buf " << std::dec << sync_queue.front()._buffer_index << " for fd " << sync_queue.front()._fd << " before dropping it");
             if (xioctl(sync_queue.front()._fd, VIDIOC_QBUF, sync_queue.front()._v4l2_buf.get()) < 0)
-            {
-                LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << sync_queue.front()._fd << " error: " << strerror(errno));
-            }
+                report_qbuf_failure(sync_queue.front()._fd);
             sync_queue.pop();
         }
 

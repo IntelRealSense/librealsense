@@ -17,9 +17,6 @@ pytestmark = [
     pytest.mark.device_each("D585S"),
     pytest.mark.context("nightly"),
     pytest.mark.skipif(sys.platform != "linux", reason="Linux only"),
-    # Disabled: preset 1 danger_collision reports 0 (obstacle not detected in the danger zone)
-    # on the D585S bench. Under investigation (lab scene vs safety algo/FW). Re-enable when fixed.
-    pytest.mark.skip(reason="RSDEV-13164: D585S preset 1 danger_collision not signalled"),
 ]
 
 #############################################################################################
@@ -41,100 +38,30 @@ DANGER_FAR_PAST_WALL   = 1.5   # preset 1: danger ends PAST the wall (wall insid
 ZONE_Y_HALF            = 0.1   # lateral half-width (same for both presets)
 
 
-def create_safety_preset(danger_x_far):
-    """Build a safety preset JSON whose danger zone extends forward to danger_x_far (meters).
+def zone_polygon(x_near, x_far):
+    """Rectangle spanning x_near..x_far forward and +/-ZONE_Y_HALF laterally, clockwise
+    (near+y -> far+y -> far-y -> near-y)."""
+    return {
+        "p0": {"x": x_near, "y": ZONE_Y_HALF},
+        "p1": {"x": x_far, "y": ZONE_Y_HALF},
+        "p2": {"x": x_far, "y": -ZONE_Y_HALF},
+        "p3": {"x": x_near, "y": -ZONE_Y_HALF}
+    }
 
-    The schema/values mirror the known-good preset round-tripped in pytest-preset-get-set.py;
-    only the danger zone's far (forward) edge changes so the two presets differ.
+
+def update_preset_zones(preset_json, danger_x_far):
+    """Return the device's own preset with only the two zone polygons replaced.
+
+    Everything else - masking zones, platform config, environment - is carried over from the
+    device untouched, so a FW/flash table update that changes those fields cannot invalidate
+    the test. warning is the nearer zone (WARNING_X_NEAR -> ZONE_X_MID); danger is farther
+    (ZONE_X_MID -> danger_x_far), and danger_x_far is what makes preset 1 differ from preset 0.
     """
-    return json.dumps({
-        "safety_preset": {
-            "platform_config": {
-                "transformation_link": {
-                    "rotation": [
-                        [0.0, 0.0, 1.0],
-                        [-1.0, 0.0, 0.0],
-                        [0.0, -1.0, 0.0]
-                    ],
-                    "translation": [0.0, 0.0, 0.27]
-                },
-                "robot_height": 1.0,
-                "reserved": [0] * 20
-            },
-            "safety_zones": {
-                # Two adjacent rectangular zones along x (forward distance), sharing the
-                # boundary at ZONE_X_MID. warning is the nearer zone (WARNING_X_NEAR ->
-                # ZONE_X_MID); danger is farther (ZONE_X_MID -> danger_x_far). Points are
-                # ordered clockwise (near+y -> far+y -> far-y -> near-y). danger_x_far sets
-                # how far forward the danger zone reaches, so preset 1 differs from preset 0.
-                "warning_zone": {
-                    "zone_polygon": {
-                        "p0": {"x": WARNING_X_NEAR, "y": ZONE_Y_HALF},
-                        "p1": {"x": ZONE_X_MID, "y": ZONE_Y_HALF},
-                        "p2": {"x": ZONE_X_MID, "y": -ZONE_Y_HALF},
-                        "p3": {"x": WARNING_X_NEAR, "y": -ZONE_Y_HALF}
-                    },
-                    "safety_trigger_confidence": 3,
-                    "reserved": [0] * 7
-                },
-                "danger_zone": {
-                    "zone_polygon": {
-                        "p0": {"x": ZONE_X_MID, "y": ZONE_Y_HALF},
-                        "p1": {"x": danger_x_far, "y": ZONE_Y_HALF},
-                        "p2": {"x": danger_x_far, "y": -ZONE_Y_HALF},
-                        "p3": {"x": ZONE_X_MID, "y": -ZONE_Y_HALF}
-                    },
-                    "safety_trigger_confidence": 3,
-                    "reserved": [0] * 7
-                }
-            },
-            "masking_zones": {
-                # Zone 0 is an active mask (attributes=1) over a specific ROI;
-                # zones 1-7 are inactive placeholders sharing the same default ROI.
-                "0": {
-                    "attributes": 1,
-                    "minimal_range": 0.5,
-                    "region_of_interests": {
-                        "vertex_0": [23, 54],
-                        "vertex_1": [23, 639],
-                        "vertex_2": [325, 639],
-                        "vertex_3": [325, 54]
-                    }
-                },
-                **{
-                    str(i): {
-                        "attributes": 0,
-                        "minimal_range": 0.5,
-                        "region_of_interests": {
-                            "vertex_0": [0, 0],
-                            "vertex_1": [0, 320],
-                            "vertex_2": [200, 320],
-                            "vertex_3": [200, 0]
-                        }
-                    } for i in range(1, 8)
-                }
-            },
-            "reserved": [0] * 16,
-            "environment": {
-                "safety_trigger_duration": 1.0,
-                "zero_safety_monitoring": 0,
-                "hara_history_continuation": 0,
-                "reserved1": [0, 0],
-                "angular_velocity": 0.0,
-                "payload_weight": 0.0,
-                "surface_inclination": 15.0,
-                # Note: surface_height moved to the safety interface config in v0.95;
-                # it is no longer part of the preset environment.
-                "diagnostic_zone_fill_rate_threshold": 90,
-                "floor_fill_threshold": 0,
-                "depth_fill_threshold": 20,
-                "diagnostic_zone_height_median_threshold": 255,
-                "vision_hara_persistency": 2,
-                "crypto_signature": [0] * 32,
-                "reserved2": [0, 0, 0]
-            }
-        }
-    })
+    preset = json.loads(preset_json)
+    zones = preset["safety_preset"]["safety_zones"]
+    zones["warning_zone"]["zone_polygon"] = zone_polygon(WARNING_X_NEAR, ZONE_X_MID)
+    zones["danger_zone"]["zone_polygon"] = zone_polygon(ZONE_X_MID, danger_x_far)
+    return json.dumps(preset)
 
 
 def _hex(value):
@@ -236,11 +163,6 @@ def stream_and_verify(safety_sensor, ctx, active_index, prefix, expected):
         time.sleep(1)  # allow the device to fully release before the next pipeline start
 
 
-# Two presets that differ only in how far forward the danger zone reaches, written to
-# indexes 0 and 1.
-preset_json_0 = create_safety_preset(DANGER_FAR_BEFORE_WALL)
-preset_json_1 = create_safety_preset(DANGER_FAR_PAST_WALL)
-
 # Compare occlusion detection only: is the obstacle inside a safety zone? Controlled scene:
 # the lab WALL a bit beyond 0.8 m is the obstacle. preset 0's danger zone ends before the
 # wall (DANGER_FAR_BEFORE_WALL) so the wall is outside it; preset 1's danger zone reaches past
@@ -290,15 +212,17 @@ def safety_presets(test_device, request):
         finally:
             tw.stop_wrapper(dev)
 
-    # Save each original and schedule its restore before overwriting it, then write the test
-    # preset. Return to run mode afterwards so the safety algorithm computes the signal while
-    # streaming.
+    def write_test_preset(index, danger_x_far):
+        # Save the original and schedule its restore before overwriting the index.
+        original = sensor.get_safety_preset(index)
+        request.addfinalizer(lambda: restore(index, original))
+        sensor.set_safety_preset(index, update_preset_zones(original, danger_x_far))
+
+    # Return to run mode afterwards so the safety algorithm computes the signal while streaming.
     tw.start_wrapper(dev)
     try:
-        for index, preset_json in ((0, preset_json_0), (1, preset_json_1)):
-            original = sensor.get_safety_preset(index)
-            request.addfinalizer(lambda i=index, o=original: restore(i, o))
-            sensor.set_safety_preset(index, preset_json)
+        write_test_preset(0, DANGER_FAR_BEFORE_WALL)
+        write_test_preset(1, DANGER_FAR_PAST_WALL)
     finally:
         tw.stop_wrapper(dev)
 

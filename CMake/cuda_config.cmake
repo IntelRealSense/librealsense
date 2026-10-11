@@ -52,8 +52,18 @@ if(POLICY CMP0104)
     cmake_policy(SET CMP0104 NEW)
     set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
 else()
-    # Fallback for older CMake: build NVCC flags from architecture list
+    # Fallback for older CMake (< 3.18): build NVCC flags from architecture list.
+    #
+    # This must be CMAKE_CUDA_FLAGS, not CUDA_NVCC_FLAGS. CUDA_NVCC_FLAGS is only read by
+    # FindCUDA's cuda_add_library()/cuda_compile(). Here CUDA is a first-class language
+    # (enable_language(CUDA) above) and the .cu files are added with target_sources(), so
+    # CUDA_NVCC_FLAGS never reaches nvcc and every -gencode above is silently dropped --
+    # nvcc then builds for its own default architecture only.
+    #
+    # Emit both the real (sm_) and virtual (compute_) targets so the result matches what
+    # CMAKE_CUDA_ARCHITECTURES produces on the modern path (code=[compute_X,sm_X]), which
+    # keeps PTX in the binary for JIT onto architectures not listed above.
     foreach(ARCH ${CUDA_ARCH_LIST})
-        set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -gencode arch=compute_${ARCH},code=sm_${ARCH}")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_${ARCH},code=sm_${ARCH} -gencode arch=compute_${ARCH},code=compute_${ARCH}")
     endforeach()
 endif()

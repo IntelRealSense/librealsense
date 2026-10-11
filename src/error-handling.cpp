@@ -22,7 +22,7 @@ namespace librealsense
         _decoder(std::move(decoder))
     {
         _active_object = std::make_shared<active_object<>>([this](dispatcher::cancellable_timer cancellable_timer)
-            {  polling(cancellable_timer);  });
+            {  polling(cancellable_timer);  }, "error-polling");
     }
 
     polling_error_handler::~polling_error_handler()
@@ -34,6 +34,9 @@ namespace librealsense
     {
         if( poll_intervals_ms )
             _poll_intervals_ms = poll_intervals_ms;
+        // An explicit re-enable is a request to try again, even if a previous run gave up
+        _silenced = false;
+        _consecutive_failures = 0;
         _active_object->start();
     }
     void polling_error_handler::stop()
@@ -47,11 +50,10 @@ namespace librealsense
         {
             if( ! _silenced )
             {
-                // The owning device sets *_device_alive = false in its destructor body,
-                // before any of its members destruct. That's our signal to exit cleanly
-                // without firing another (failing) FW query. An expired weak_ptr is
-                // treated the same as a false flag for robustness against destruction
-                // ordering changes.
+                // Cleared both when the device is disconnected and when the owning
+                // device destructs, so we exit without firing another (failing) FW
+                // query. An expired weak_ptr is treated the same as a false flag for
+                // robustness against destruction ordering changes.
                 auto alive = _device_alive.lock();
                 if( ! alive || ! alive->load() )
                 {
@@ -62,6 +64,7 @@ namespace librealsense
                 try
                 {
                     auto val = static_cast< uint8_t >( _option->query() );
+                    _consecutive_failures = 0;
 
                     if( val != 0 )
                     {
@@ -101,17 +104,36 @@ namespace librealsense
                 }
                 catch( const std::exception & ex )
                 {
-                    LOG_ERROR( "Error during polling error handler: " << ex.what() );
+                    on_query_failure( ex.what() );
                 }
                 catch( ... )
                 {
-                    LOG_ERROR( "Unknown error during polling error handler!" );
+                    on_query_failure( "unknown error" );
                 }
             }
         }
         else
         {
             LOG_DEBUG( "Notification polling loop is being shut-down" );
+        }
+    }
+
+    // Repeated failures mean the camera stopped answering - typically it was
+    // unplugged while the application still holds it. Report the first one, then
+    // give up instead of logging the same error on every tick, forever.
+    void polling_error_handler::on_query_failure( std::string const & what )
+    {
+        ++_consecutive_failures;
+        if( _consecutive_failures == 1 )
+            LOG_ERROR( "Error during polling error handler: " << what );
+        else
+            LOG_DEBUG( "Error during polling error handler (" << _consecutive_failures << " in a row): " << what );
+
+        if( _consecutive_failures >= MAX_CONSECUTIVE_FAILURES )
+        {
+            LOG_WARNING( "FW error polling failed " << _consecutive_failures
+                                                    << " times in a row; shutting down error polling loop" );
+            _silenced = true;
         }
     }
 

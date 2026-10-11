@@ -44,7 +44,8 @@ namespace librealsense
         stream_profiles init_stream_profiles() override;
         float get_depth_scale() const override;
         void set_depth_scale( float val );
-        void init_hdr_config( const option_range & exposure_range, const option_range & gain_range );
+        void init_hdr_config( const option_range & exposure_range, const option_range & gain_range,
+                              bool use_exposure_restore_workaround );
 
         std::shared_ptr< hdr_config > get_hdr_config() { return _hdr_cfg; }
         float get_stereo_baseline_mm() const override;
@@ -154,12 +155,6 @@ namespace librealsense
         rsutils::lazy< std::vector< uint8_t > > _coefficients_table_raw;
         rsutils::lazy< std::vector< uint8_t > > _new_calib_table_raw;
 
-        // MUST be declared before _polling_error_handler — destruction order matters:
-        // members destruct in reverse declaration order, so _polling_error_handler's
-        // worker thread joins (and dereferences this weak_ptr) while _device_alive is
-        // still alive.
-        std::shared_ptr<std::atomic<bool>> _device_alive
-            = std::make_shared<std::atomic<bool>>(true);
         std::shared_ptr<polling_error_handler> _polling_error_handler;
         std::shared_ptr<ds_thermal_monitor> _thermal_monitor;
         std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _left_right_extrinsics;

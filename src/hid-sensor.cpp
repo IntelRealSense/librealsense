@@ -24,12 +24,6 @@ static const std::map< rs2_stream, fourcc::value_type > stream_and_fourcc
         { RS2_STREAM_ACCEL, fourcc( 'A', 'C', 'C', 'L' ) },
         { RS2_STREAM_GPIO,  fourcc( 'G', 'P', 'I', 'O' ) } };
 
-/*For gyro sensitivity - FW gets 0 for 61 millidegree/s/LSB resolution
- 0.1 for 30.5 millidegree/s/LSB 
- 0.2 for 15.3 millidegree/s/LSB 
- 0.3 for 7.6 millidegree/s/LSB 
- 0.4 for 3.8 millidegree/s/LSB 
- Currently it is intended for D400 devices, when this feature will be added to D500 the convert needs to be checked*/
 static const std::map< float, double > gyro_sensitivity_convert
     = { { 0.0f, 0 }, { 1.0f, 0.1 }, { 2.0f, 0.2 }, { 3.0f, 0.3 }, { 4.0f, 0.4 } };
 
@@ -369,18 +363,32 @@ void hid_sensor::set_gyro_scale_factor(double scale_factor)
     _hid_device->set_gyro_scale_factor( scale_factor );
 }
 
-/*For gyro sensitivity - FW expects 0/0.1/0.2/0.3/0.4 we convert the values from the enum 0/1/2/3/4
-the user chooses to the values FW expects using gyro_sensitivity_convert*/
+void hid_sensor::set_accel_scale_factor(double scale_factor)
+{
+    _hid_device->set_accel_scale_factor( scale_factor );
+}
+
 double hid_sensor::get_imu_sensitivity_values( rs2_stream stream )
 {
     if( _imu_sensitivity_per_rs2_stream.find( stream ) != _imu_sensitivity_per_rs2_stream.end() )
     {
-        return gyro_sensitivity_convert.at( _imu_sensitivity_per_rs2_stream[stream] );
+        const auto value = _imu_sensitivity_per_rs2_stream[stream];
+        if( stream == RS2_STREAM_GYRO )
+        {
+            if( _gyro_sensitivity_uses_range_index )
+                return value;
+            return gyro_sensitivity_convert.at( value );
+        }
+        return value;
     }
-    else
-        //FW recieve 0.1 and adjusts the gyro's sensitivity to its default setting of 1000.
-        //FW recieve 0.001 and adjusts the accel's sensitivity to its default setting of 4g.
-        return stream == RS2_STREAM_GYRO ? 0.1f : 0.001f;
+
+    if( stream == RS2_STREAM_GYRO )
+        // HKR range index 4 selects the default 125 dps range; D400 token 0.1
+        // selects its default 1000 dps range.
+        return _gyro_sensitivity_uses_range_index ? 4. : 0.1;
+
+    // FW receives 0.001 and adjusts the accelerometer sensitivity to its default setting of 4g.
+    return 0.001;
 }
 
 iio_hid_timestamp_reader::iio_hid_timestamp_reader()

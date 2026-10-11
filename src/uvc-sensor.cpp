@@ -11,8 +11,10 @@
 #include "platform/uvc-option.h"
 #include "platform/stream-profile-impl.h"
 #include <src/metadata-parser.h>
+#include <rsutils/string/from.h>
 #include <src/core/time-service.h>
 #include <src/core/frame-continuation.h>
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
@@ -125,6 +127,18 @@ void uvc_sensor::verify_supported_requests( const stream_profiles & requests ) c
         throw( std::runtime_error(
             "Wrong configuration requested - GYRO and ACCEL streams' fps to be equal for this device" ) );
     }
+
+    // A backend pin holds one configuration at a time, so two requests on the same pin can never coexist.
+    std::map< uint32_t, std::shared_ptr< stream_profile_interface > > requests_per_pin;
+    for( auto && req : requests )
+    {
+        auto && req_base = std::dynamic_pointer_cast< stream_profile_base >( req );
+        auto inserted = requests_per_pin.emplace( req_base->get_backend_profile().pin_index, req );
+        if( ! inserted.second )
+            throw std::runtime_error( rsutils::string::from()
+                                      << "Wrong configuration requested - " << inserted.first->second << " and " << req
+                                      << " are served by the same hardware endpoint and cannot stream together" );
+    }
 }
 
 void uvc_sensor::open( const stream_profiles & requests )
@@ -204,7 +218,13 @@ void uvc_sensor::open( const stream_profiles & requests )
                     auto && msp = As< motion_stream_profile, stream_profile_interface >( req_profile );
                     if( msp )
                     {
-                        expected_size = 64;  // 32; // D457 - WORKAROUND - SHOULD BE REMOVED AFTER CORRECTION IN DRIVER
+                        expected_size = 64;
+                        if( f.frame_size < expected_size )
+                        {
+                            LOG_ERROR( "Motion frame is " << f.frame_size << " bytes, expected at least " << expected_size );
+                            continuation();
+                            return;
+                        }
                         //Motion stream on uvc is used only for mipi. Stream frame number counts gyro and accel together.
                         //We override it using 2 seperate counters.
                         auto stream_type = ((uint8_t *)f.pixels)[0];
@@ -251,12 +271,27 @@ void uvc_sensor::open( const stream_profiles & requests )
 
                     auto extension = frame_source::stream_to_frame_types( req_profile_base->get_stream_type() );
                     const bool is_perception = ( extension == RS2_EXTENSION_OBJECT_DETECTION_FRAME );
+                    // The depth-mapping streams are the same case: the profile describes the
+                    // occupancy canvas / point-cloud geometry, while the wire carries a framed
+                    // payload with its own headers, so width*height*bpp is not its length.
+                    const bool is_depth_mapping
+                        = ( extension == RS2_EXTENSION_LABELED_POINTS )
+                       || ( req_profile_base->get_stream_type() == RS2_STREAM_OCCUPANCY );
 
                     if( ! msp )
                         expected_size = compute_frame_expected_size( width, height, bpp );
 
                     // Compressed and perception streams carry variable-length payloads; copy the data as received.
-                    if( val_in_range( req_profile_base->get_format(), { RS2_FORMAT_MJPEG } ) || is_perception )
+                    if( val_in_range( req_profile_base->get_format(), { RS2_FORMAT_MJPEG } )
+                        || is_perception || is_depth_mapping )
+                        expected_size = f.frame_size;
+
+                    // D401 GMSL raw color (pBAA) is packed MIPI RAW10 but sized at 16 bpp
+                    // (unpacked) here; copy the packed payload verbatim, the rggb converter
+                    // unpacks it downstream. Applies to any raw color frame (e.g. Depth + Color 1,
+                    // a single color stream), not only the multi-color path.
+                    if( req_profile_base->get_format() == RS2_FORMAT_RAW10
+                        && req_profile_base->get_stream_type() == RS2_STREAM_COLOR )
                         expected_size = f.frame_size;
 
                     // The MIPI 64-byte width realignment path must copy (it rewrites the pixel
@@ -315,9 +350,12 @@ void uvc_sensor::open( const stream_profiles & requests )
                         // when the resolution's width is not aligned to 64
                         else if( align64 )
                         {
-                            std::vector< uint8_t > pixels = align_width_to_64( width, height, bpp, (uint8_t *)f.pixels );
-                            assert( expected_size == sizeof( uint8_t ) * pixels.size() );
-                            memcpy( (void *)fh->get_frame_data(), pixels.data(), expected_size );
+                            std::vector< uint8_t > pixels = align_width_to_64(
+                                width, height, bpp, req_profile_base->get_format(), (uint8_t *)f.pixels );
+                            // Clamp rather than trust the layout: a short repack would otherwise read past the buffer
+                            if( pixels.size() < expected_size )
+                                LOG_ERROR( "Realigned frame is " << pixels.size() << " bytes, expected " << expected_size );
+                            memcpy( (void *)fh->get_frame_data(), pixels.data(), std::min( expected_size, pixels.size() ) );
                         }
                         else
                         {
@@ -329,7 +367,8 @@ void uvc_sensor::open( const stream_profiles & requests )
                                 if( ( ( expected_size >> 2 ) * 3 ) == sizeof( uint8_t ) * f.frame_size )
                                     expected_size = sizeof( uint8_t ) * f.frame_size;
 
-                            assert( is_perception || expected_size == sizeof( uint8_t ) * f.frame_size );
+                            assert( is_perception || msp
+                                    || expected_size == sizeof( uint8_t ) * f.frame_size );
                             memcpy( (void *)fh->get_frame_data(), f.pixels, expected_size );
                         }
 
@@ -399,6 +438,24 @@ void uvc_sensor::open( const stream_profiles & requests )
     try
     {
         _device->stream_on( [&]( const notification & n ) { _notifications_processor->raise_notification( n ); } );
+    }
+    catch( const backend_exception & )          // e.g. "Device or resource busy" - keep its type
+    {
+        for( auto && profile : _internal_config )
+        {
+            try
+            {
+                _device->close( profile );
+            }
+            catch( ... )
+            {
+            }
+        }
+        reset_streaming();
+        _power.reset();
+        _is_opened = false;
+
+        throw;
     }
     catch( ... )
     {

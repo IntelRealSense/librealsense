@@ -24,8 +24,15 @@ ExternalProject_Add(
 )
 
 add_library(usb INTERFACE)
-target_include_directories(usb INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/libusb>)
-target_link_libraries(usb INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}libusb-1.0${CMAKE_STATIC_LIBRARY_SUFFIX})
+target_include_directories(usb INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/libusb_install/include/libusb-1.0>
+)
+if(WIN32)
+    target_link_libraries(usb INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}libusb-1.0${CMAKE_STATIC_LIBRARY_SUFFIX})
+else()
+    # libusb-cmake installs libusb-1.0.a; the archive name already includes the Unix prefix.
+    target_link_libraries(usb INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib/libusb-1.0${CMAKE_STATIC_LIBRARY_SUFFIX})
+endif()
 set(USE_EXTERNAL_USB ON) # INTERFACE libraries can't have real deps, so targets that link with usb need to also depend on libusb
 
 set_target_properties( libusb PROPERTIES FOLDER "3rd Party")
@@ -33,5 +40,9 @@ set_target_properties( libusb PROPERTIES FOLDER "3rd Party")
 if (APPLE)
   find_library(corefoundation_lib CoreFoundation)
   find_library(iokit_lib IOKit)
-  target_link_libraries(usb INTERFACE objc ${corefoundation_lib} ${iokit_lib})
+  find_library(security_lib Security)
+  if(NOT corefoundation_lib OR NOT iokit_lib OR NOT security_lib)
+    message(FATAL_ERROR "CoreFoundation, IOKit, and Security frameworks are required on macOS")
+  endif()
+  target_link_libraries(usb INTERFACE objc ${corefoundation_lib} ${iokit_lib} ${security_lib})
 endif()

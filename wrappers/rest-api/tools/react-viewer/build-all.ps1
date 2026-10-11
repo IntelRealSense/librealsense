@@ -5,7 +5,12 @@
 
 param(
     [switch]$Clean,
-    [switch]$Help
+    [switch]$Help,
+    # "msi" (default) produces the standalone Windows installer via WiX.
+    # "none" skips the Tauri bundler and just runs cargo build; use this on CI
+    # agents where WiX hits MAX_PATH on the deeply-nested PyInstaller _internal/
+    # tree, and where a downstream packager (InnoSetup) produces the installer.
+    [string]$Bundles = "msi"
 )
 
 if ($Help) {
@@ -22,11 +27,11 @@ Output Locations:
     - FastAPI executable:    ./build/rest-api-dist/realsense_api/
   - React build:           ./dist/
   - Tauri bundles:         ./build/tauri/release/bundle/
-                          (msi and nsis installers)
+                          (msi installer)
 
 Requirements:
   - Node.js 18+
-  - Python 3.13+
+  - Python 3.10+
   - Rust 1.56+
   - PyInstaller (pip install pyinstaller)
 
@@ -45,6 +50,10 @@ function Write-Error { Write-Host -ForegroundColor $ErrorColor "[ERROR] $args" }
 function Write-Warning { Write-Host -ForegroundColor $WarningColor "[WARN] $args" }
 function Write-Info { Write-Host -ForegroundColor $InfoColor "[INFO] $args" }
 
+# Suppress ANSI color escapes from child tools (npm/vite/cargo) so Jenkins/CI
+# logs read as plain text instead of literal [XXm sequences.
+$env:NO_COLOR = "1"
+
 # Track timing
 $StartTime = Get-Date
 
@@ -56,19 +65,24 @@ function Measure-Duration {
     return $Duration
 }
 
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host "  RealSense Viewer - Complete Build" -ForegroundColor Cyan
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Resolve project root for shared output locations
-$ProjectRoot = Resolve-Path "..\..\..\..\""
+$ScriptDir = $PSScriptRoot
+if (-not $ScriptDir) {
+    Write-Error "This script must be run as a file (.\\build-all.ps1 or powershell -File), not dot-sourced or piped via -Command."
+    exit 1
+}
+$ProjectRoot = Resolve-Path (Join-Path $ScriptDir "..\..\..\..")
 $RestApiOutput = Join-Path $ProjectRoot "build\rest-api-dist"
 $RestApiWork = Join-Path $ProjectRoot "build\rest-api-work"
 
 # Step 1: Build FastAPI Executable
 Write-Info "Step 1/3: Building FastAPI executable with PyInstaller..."
-Push-Location "..\.."
+Push-Location (Join-Path $ScriptDir "..\..")
 
 if ($Clean) {
     Write-Warning "Cleaning FastAPI build artifacts..."
@@ -84,14 +98,37 @@ $Duration = Measure-Duration {
     }
     else {
         Write-Warning "rest-api\\build\\build.ps1 not found; invoking PyInstaller directly..."
-        if (-not (Get-Command pyinstaller -ErrorAction SilentlyContinue)) {
-            Write-Error "PyInstaller not found. Please install with 'pip install pyinstaller'"
-            throw "PyInstaller missing"
+        # Pick a python: $env:PYTHON override, else python on PATH, else py launcher,
+        # else common Windows install locations (Jenkins agents park it under C:\Python*_64).
+        $PyBin = $env:PYTHON
+        if (-not $PyBin) {
+            foreach ($cand in @("python", "py", "C:/Python310_64/python.exe", "C:/Python311_64/python.exe", "C:/Python313_64/python.exe")) {
+                if (Get-Command $cand -ErrorAction SilentlyContinue) { $PyBin = $cand; break }
+            }
+        }
+        if (-not $PyBin) {
+            Write-Error "Python not found. Tried: python, py, C:/Python31*_64/python.exe. Set `$env:PYTHON to override."
+            throw "Python missing"
+        }
+        Write-Info "Using Python: $PyBin"
+        & $PyBin -c "import PyInstaller" 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "PyInstaller not importable for $PyBin; installing via pip..."
+            & $PyBin -m pip install pyinstaller | ForEach-Object { Write-Host $_ }
+            if ($LASTEXITCODE -ne 0) { throw "pip install pyinstaller failed" }
+        }
+        # Install runtime deps (fastapi, uvicorn, aiortc, pyrealsense2, ...) so
+        # PyInstaller's Analysis actually finds them; otherwise the produced bundle
+        # is missing modules and crashes at first import.
+        if (Test-Path "install.py") {
+            Write-Info "Installing rest-api runtime requirements via install.py..."
+            & $PyBin install.py | ForEach-Object { Write-Host $_ }
+            if ($LASTEXITCODE -ne 0) { throw "install.py failed" }
         }
         if (-not (Test-Path $RestApiOutput)) { New-Item -ItemType Directory -Path $RestApiOutput | Out-Null }
         if (-not (Test-Path $RestApiWork)) { New-Item -ItemType Directory -Path $RestApiWork | Out-Null }
-        & pyinstaller main.py --name realsense_api --distpath $RestApiOutput --workpath $RestApiWork -y 2>&1 | ForEach-Object { Write-Host $_ }
-        # Verify build output rather than relying on $?
+        & $PyBin -m PyInstaller main.py --name realsense_api --distpath $RestApiOutput --workpath $RestApiWork -y | ForEach-Object { Write-Host $_ }
+        # Verify build output rather than relying on $LASTEXITCODE alone
         $builtExe = Get-ChildItem -Path $RestApiOutput -Filter "realsense_api.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
         if (-not $builtExe) { throw "PyInstaller build failed: executable not found under $RestApiOutput" }
     }
@@ -105,13 +142,8 @@ if (-not (Test-Path $BundleDir)) {
     Write-Error "FastAPI bundle directory not found at $BundleDir"; Pop-Location; exit 1
 }
 
-$ProjectRoot = Resolve-Path "..\..\..\..\""
-$TauriResources = Join-Path $ProjectRoot "build\tauri-resources"
+$TauriResources = Join-Path $ScriptDir "src-tauri\resources"
 if (-not (Test-Path $TauriResources)) { New-Item -ItemType Directory -Path $TauriResources | Out-Null }
-
-# Clean old in-source copy to keep repo clean
-$LegacyResources = ".\src-tauri\resources\realsense_api"
-if (Test-Path $LegacyResources) { Remove-Item $LegacyResources -Recurse -Force }
 
 # Remove previous staged bundle and copy fresh (exe + _internal/ with DLLs)
 $TargetBundle = Join-Path $TauriResources "realsense_api"
@@ -123,17 +155,27 @@ Pop-Location
 
 # Step 2: Build React UI
 Write-Info "Step 2/3: Building React UI..."
-Push-Location "."
+Push-Location $ScriptDir
 
 if ($Clean) {
     Write-Warning "Cleaning Node modules cache..."
     if (Test-Path "dist") { Remove-Item "dist" -Recurse -Force }
 }
 
+if (-not (Test-Path "node_modules")) {
+    Write-Info "node_modules missing; running npm ci..."
+    & npm ci | ForEach-Object { Write-Host $_ }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "npm ci failed"
+        Pop-Location
+        exit 1
+    }
+}
+
 $Duration = Measure-Duration {
     Write-Host "Running npm build..." -ForegroundColor Gray
-    & npm run build 2>&1 | ForEach-Object { Write-Host $_ }
-    if (-not $?) {
+    & npm run build | ForEach-Object { Write-Host $_ }
+    if ($LASTEXITCODE -ne 0) {
         Write-Error "React build failed!"
         Pop-Location
         exit 1
@@ -144,8 +186,38 @@ Write-Success "React UI built in $($Duration.TotalSeconds)s"
 # Step 3: Build Tauri Bundles
 Write-Info "Step 3/3: Building Tauri production bundles..."
 
+# Ensure cargo is available. rustup installs to %USERPROFILE%\.cargo\bin but
+# fresh, non-login shells (e.g. Jenkins agents) may not have it on PATH. If
+# rustup isn't installed at all, download rustup-init.exe directly and run it
+# non-interactively - one-time ~2 min per agent, then ~/.cargo/bin sticks
+# around for every subsequent run. win.rustup.rs is the official redirector.
+$CargoBin = Join-Path $env:USERPROFILE ".cargo\bin"
+if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
+    if (Test-Path (Join-Path $CargoBin "cargo.exe")) {
+        Write-Warning "cargo not on PATH; adding $CargoBin"
+        $env:PATH = $env:PATH.TrimEnd(';') + ';' + $CargoBin
+    }
+    else {
+        Write-Warning "cargo not found; downloading rustup-init (one-time per agent, ~2 min)..."
+        $rustupInit = Join-Path $env:TEMP "rustup-init.exe"
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Invoke-WebRequest -UseBasicParsing -Uri "https://win.rustup.rs/x86_64" -OutFile $rustupInit
+            & $rustupInit -y --default-toolchain stable --default-host x86_64-pc-windows-msvc --profile minimal | ForEach-Object { Write-Host $_ }
+        } catch {
+            Write-Warning "rustup-init download/run failed: $_"
+        }
+        if (Test-Path (Join-Path $CargoBin "cargo.exe")) {
+            $env:PATH = $env:PATH.TrimEnd(';') + ';' + $CargoBin
+        }
+    }
+}
+if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
+    Write-Error "cargo not found and could not auto-install. Install Rust from https://rustup.rs/ and retry."
+    throw "cargo missing"
+}
+
 # Ensure Cargo outputs to project-level build/tauri-target
-$ProjectRoot = Resolve-Path "..\..\..\..\""
 $CargoTarget = Join-Path $ProjectRoot "build\tauri-target"
 Write-Info "Setting CARGO_TARGET_DIR to: $CargoTarget"
 if (-not (Test-Path $CargoTarget)) { New-Item -ItemType Directory -Path $CargoTarget | Out-Null }
@@ -158,12 +230,55 @@ if (Test-Path "src-tauri\target") {
 }
 
 $Duration = Measure-Duration {
-    Write-Host "This will compile Rust and create installers (this may take 2-5 minutes)..." -ForegroundColor Gray
-    & npm run tauri:build 2>&1 | ForEach-Object { Write-Host $_ }
-    if (-not $?) {
-        Write-Error "Tauri build failed!"
+    if ($Bundles -eq "none") {
+        # CI path: skip Tauri's bundler (WiX hits MAX_PATH on Jenkins with PyInstaller
+        # _internal/). Cargo build produces the exe; resources are copied manually
+        # from the staging dir so downstream packagers (e.g. InnoSetup) find them.
+        Write-Host "cargo build --release (Tauri bundler skipped, -Bundles none)..." -ForegroundColor Gray
+        Push-Location (Join-Path $ScriptDir "src-tauri")
+        # --features custom-protocol is what tauri-cli would add for a bundled build;
+        # without it the exe falls back to devPath (http://localhost:3000) and the
+        # frontend isn't embedded, causing "can't reach this page" at launch.
+        & cargo build --release --features custom-protocol | ForEach-Object { Write-Host $_ }
+        $cargoExit = $LASTEXITCODE
         Pop-Location
-        exit 1
+        if ($cargoExit -ne 0) {
+            Write-Error "cargo build failed!"
+            exit 1
+        }
+        # tauri-cli renames the exe from Cargo's `<package name>.exe` to the
+        # productName from tauri.conf.json at bundle time. Since we skipped the
+        # bundler, do that rename here so downstream consumers (InnoSetup .iss)
+        # find the expected filename.
+        $cargoExe = Join-Path $CargoTarget "release\realsense-viewer.exe"
+        $productExe = Join-Path $CargoTarget "release\RealSense Viewer.exe"
+        if (Test-Path $cargoExe) {
+            if (Test-Path $productExe) { Remove-Item $productExe -Force }
+            Move-Item $cargoExe $productExe
+        } else {
+            Write-Error "Expected cargo output not found at $cargoExe - check Cargo.toml [package] name."
+            exit 1
+        }
+        # Stage the FastAPI bundle beside the exe so the app finds it at runtime.
+        $stagedResources = Join-Path $CargoTarget "release\resources"
+        if (-not (Test-Path $stagedResources)) { New-Item -ItemType Directory -Path $stagedResources | Out-Null }
+        $srcApi = Join-Path $ScriptDir "src-tauri\resources\realsense_api"
+        if (Test-Path $srcApi) {
+            $dstApi = Join-Path $stagedResources "realsense_api"
+            if (Test-Path $dstApi) { Remove-Item $dstApi -Recurse -Force }
+            Copy-Item $srcApi -Destination $stagedResources -Recurse -Force
+        } else {
+            Write-Error "FastAPI bundle not found at $srcApi - Step 1 (PyInstaller) may have failed."
+            exit 1
+        }
+    } else {
+        Write-Host "This will compile Rust and create installers (this may take 2-5 minutes)..." -ForegroundColor Gray
+        & npm run tauri:build -- --bundles $Bundles | ForEach-Object { Write-Host $_ }
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Tauri build failed!"
+            Pop-Location
+            exit 1
+        }
     }
 }
 Write-Success "Tauri bundles created in $($Duration.TotalSeconds)s"
@@ -172,9 +287,9 @@ Pop-Location
 
 # Summary
 Write-Host ""
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Green
+Write-Host "============================================================" -ForegroundColor Green
 Write-Host "  BUILD COMPLETE!" -ForegroundColor Green
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Green
+Write-Host "============================================================" -ForegroundColor Green
 
 $TotalDuration = (Get-Date) - $StartTime
 Write-Success "Total build time: $($TotalDuration.TotalSeconds)s"
@@ -183,8 +298,6 @@ Write-Host ""
 Write-Host "Output Artifacts:" -ForegroundColor Cyan
 Write-Host "  MSI Installer:  " -NoNewline
 Write-Host "build/tauri-target/release/bundle/msi/" -ForegroundColor Yellow
-Write-Host "  NSIS Installer: " -NoNewline
-Write-Host "build/tauri-target/release/bundle/nsis/" -ForegroundColor Yellow
 Write-Host "  Portable EXE:   " -NoNewline
 Write-Host "build/tauri-target/release/" -ForegroundColor Yellow
 

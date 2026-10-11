@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import { mockDeviceList, mockDevice } from './fixtures/devices'
-import { mockSensors, mockDepthOptions, mockColorOptions, mockMotionOptions } from './fixtures/sensors'
+import { mockSensors, mockDepthOptions, mockColorOptions, mockMotionOptions, mockFilters } from './fixtures/sensors'
 
 const API_BASE = '/api/v1'
 
@@ -49,47 +49,47 @@ export const handlers = [
     return HttpResponse.json(options)
   }),
 
-  // Set sensor option
-  http.put(`${API_BASE}/devices/:deviceId/sensors/:sensorId/options/:optionId`, async ({ request }) => {
-    const body = await request.json() as any
-    return HttpResponse.json({ success: true, value: body.value })
+  // Set sensor option; answers it as the device now holds it, as every control write does
+  http.put(`${API_BASE}/devices/:deviceId/sensors/:sensorId/options/:optionId`, async ({ params, request }) => {
+    const body = await request.json() as { value: number }
+    return HttpResponse.json({ option_id: params.optionId, current_value: body.value, read_only: false })
   }),
 
-  // Start streaming (pipeline mode)
-  http.post(`${API_BASE}/devices/:deviceId/stream/start`, () => {
-    return HttpResponse.json({
-      is_streaming: true,
-      active_streams: ['depth'],
-      timings: {
-        refresh_devices: 0.0,
-        device_lookup: 0.001,
-        pipeline_config_init: 0.2,
-        stream_enable: 0.001,
-        pipeline_start: 0.5,
-        post_start_setup: 0.001,
-        thread_start: 0.001,
-        total: 0.7,
-      },
-    })
+  // Post-processing filters, keyed by name; only the depth sensor has any
+  http.get(`${API_BASE}/devices/:deviceId/sensors/:sensorId/filters/`, ({ params }) => {
+    const sensorId = params.sensorId as string
+    return HttpResponse.json(sensorId.endsWith('sensor-0') ? mockFilters : {})
   }),
 
-  // Stop streaming (pipeline mode)
-  http.post(`${API_BASE}/devices/:deviceId/stream/stop`, () => {
-    return HttpResponse.json({
-      is_streaming: false,
-      active_streams: [],
-      stopping: false,
-    })
-  }),
+  // Bypass or apply one filter; answers the state it now holds
+  http.put(
+    `${API_BASE}/devices/:deviceId/sensors/:sensorId/filters/:filterName/enabled/`,
+    async ({ params, request }) => {
+      const body = await request.json() as { value: boolean }
+      return HttpResponse.json({ name: params.filterName, enabled: body.value })
+    }
+  ),
 
-  // Get stream status
-  http.get(`${API_BASE}/devices/:deviceId/stream/status`, () => {
+  // Device-level controls: a list to read, one option at a time to write
+  http.get(`${API_BASE}/devices/:deviceId/colorizer/`, () => HttpResponse.json([])),
+  http.put(`${API_BASE}/devices/:deviceId/colorizer/:field/`, async ({ params, request }) => {
+    const body = await request.json() as { value: number }
     return HttpResponse.json({
-      is_streaming: false,
-      active_streams: [],
-      stopping: false,
+      option_id: params.field, current_value: body.value,
+      default_value: body.value, min_value: 0, max_value: 100, read_only: false,
     })
   }),
+  http.get(`${API_BASE}/devices/:deviceId/advanced_mode/controls/`, () => HttpResponse.json({})),
+  http.put(
+    `${API_BASE}/devices/:deviceId/advanced_mode/controls/:group/:field/`,
+    async ({ params, request }) => {
+      const body = await request.json() as { value: number }
+      return HttpResponse.json({
+        option_id: params.field, current_value: body.value,
+        default_value: body.value, min_value: 0, max_value: 100, read_only: false,
+      })
+    }
+  ),
 
   // Get depth range
   http.get(`${API_BASE}/devices/:deviceId/stream/depth-range`, () => {
@@ -164,49 +164,7 @@ export const handlers = [
     })
   }),
 
-  // Batch sensor start
-  http.post(`${API_BASE}/devices/:deviceId/sensors/batch/start`, async ({ params }) => {
-    const deviceId = params.deviceId as string
-    return HttpResponse.json({
-      device_id: deviceId,
-      mode: 'sensor',
-      sensors: [],
-      errors: [],
-    })
-  }),
-
-  // Batch sensor stop
-  http.post(`${API_BASE}/devices/:deviceId/sensors/batch/stop`, async ({ params }) => {
-    const deviceId = params.deviceId as string
-    return HttpResponse.json({
-      device_id: deviceId,
-      mode: 'idle',
-      sensors: [],
-      errors: [],
-    })
-  }),
-
-  // Batch sensor status
-  http.get(`${API_BASE}/devices/:deviceId/sensors/batch/status`, async ({ params }) => {
-    const deviceId = params.deviceId as string
-    return HttpResponse.json({
-      device_id: deviceId,
-      mode: 'idle',
-      sensors: [],
-      errors: [],
-    })
-  }),
-
-  // Firmware status (bundled FW removed; recommended is always null)
-  http.get(`${API_BASE}/devices/:deviceId/status`, ({ params }) => {
-    const device = mockDeviceList.find((d) => d.device_id === params.deviceId)
-    return HttpResponse.json({
-      device_id: params.deviceId,
-      current: device?.firmware_version || '5.16.0.1',
-      recommended: null,
-      status: 'unknown',
-      file_available: false,
-    })
-  }),
+  // Recommended firmware (none, unless a test says otherwise)
+  http.get(`${API_BASE}/devices/:deviceId/firmware/`, () => HttpResponse.json({ recommended: null })),
 ]
 

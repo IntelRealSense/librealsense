@@ -10,7 +10,8 @@
 namespace librealsense
 {
     hdr_config::hdr_config(hw_monitor& hwm, std::shared_ptr<sensor_base> depth_ep,
-        const option_range& exposure_range, const option_range& gain_range, hwmon_response_type no_data_to_return_opcode) :
+        const option_range& exposure_range, const option_range& gain_range, hwmon_response_type no_data_to_return_opcode,
+        bool use_workaround) :
         _hwm(hwm),
         _sensor(depth_ep),
         _is_enabled(false),
@@ -22,7 +23,7 @@ namespace librealsense
         _sequence_size(DEFAULT_HDR_SEQUENCE_SIZE),
         _exposure_range(exposure_range),
         _gain_range(gain_range),
-        _use_workaround(true),
+        _use_workaround(use_workaround),
         _pre_hdr_exposure(0.f),
         _no_data_to_return_opcode(no_data_to_return_opcode)
     {
@@ -266,12 +267,14 @@ namespace librealsense
                     // so that they could be reenabled after hdr disable
                     set_options_to_be_restored_after_disable();
 
+                    // option-routing reset - sends exposure/gain get/set to the UVC option instead
+                    // of one of the hdr's configuration slots. Not part of the exposure workaround,
+                    // so it must happen for every FW version.
+                    set_sequence_index(0.f);
+
                     if (_use_workaround)
                     {
                         try {
-                            // the following statement is needed in order to get/set the UVC exposure 
-                            // instead of one of the hdr's configuration exposure
-                            set_sequence_index(0.f);
                             _pre_hdr_exposure = _sensor.lock()->get_option(RS2_OPTION_EXPOSURE).query();
                             _sensor.lock()->get_option(RS2_OPTION_EXPOSURE).set(PRE_ENABLE_HDR_EXPOSURE);
                         } catch (...) {
@@ -299,6 +302,13 @@ namespace librealsense
             disable();
             _is_enabled = false;
 
+            // option-routing reset - sends exposure/gain get/set back to the UVC option instead of
+            // one of the hdr's configuration slots. disable() only sends the empty sub preset and
+            // resets nothing, so without this an app that configured HDR through sequence_id != 0
+            // keeps querying/setting the cached slot value after HDR is off. Not part of the
+            // exposure workaround, so it must happen for every FW version.
+            set_sequence_index(0.f);
+
             if (_use_workaround)
             {
                 // this sleep is needed to let the fw restore the manual exposure
@@ -307,9 +317,6 @@ namespace librealsense
                 if (_pre_hdr_exposure >= _exposure_range.min && _pre_hdr_exposure <= _exposure_range.max)
                 {
                     try {
-                        // the following statement is needed in order to get the UVC exposure 
-                        // instead of one of the hdr's configuration exposure
-                        set_sequence_index(0.f);
                         _sensor.lock()->get_option(RS2_OPTION_EXPOSURE).set(_pre_hdr_exposure);
                     } catch (...) {
                         LOG_WARNING("HDR failed to restore manual exposure");

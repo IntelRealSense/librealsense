@@ -4,6 +4,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Any
+from starlette.concurrency import run_in_threadpool
 
 
 from app.models.option import OptionInfo, OptionUpdate
@@ -22,11 +23,11 @@ async def get_options(
     Get a list of all options for a specific sensor.
     """
     try:
-        return rs_manager.get_sensor_options(device_id, sensor_id)
+        return await run_in_threadpool(rs_manager.get_sensor_options, device_id, sensor_id)
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-@router.get("/{option_id}", response_model=OptionInfo)
+@router.get("/{option_id}/", response_model=OptionInfo)
 async def get_option(
     device_id: str,
     sensor_id: str,
@@ -37,11 +38,11 @@ async def get_option(
     Get details of a specific option for a sensor.
     """
     try:
-        return rs_manager.get_sensor_option(device_id, sensor_id, option_id)
+        return await run_in_threadpool(rs_manager.get_sensor_option, device_id, sensor_id, option_id)
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-@router.put("/{option_id}", response_model=dict)
+@router.put("/{option_id}/", response_model=OptionInfo)
 async def update_option(
     device_id: str,
     sensor_id: str,
@@ -50,11 +51,12 @@ async def update_option(
     rs_manager: RealSenseManager = Depends(get_realsense_manager),
 ):
     """
-    Update the value of a specific option for a sensor.
+    Update the value of a specific option for a sensor; returns it as the device holds it.
     """
     try:
-        result = rs_manager.set_sensor_option(device_id, sensor_id, option_id, option_update.value)
-        return {"success": result}
+        return await run_in_threadpool(
+            rs_manager.set_sensor_option, device_id, sensor_id, option_id, option_update.value
+        )
     except RealSenseError as e:
         # Preserve the original status code from RealSenseError
         raise HTTPException(status_code=e.status_code, detail=e.detail)

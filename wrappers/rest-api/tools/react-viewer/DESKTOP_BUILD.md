@@ -38,7 +38,7 @@ FastAPI Backend
 
 - Node.js 18+
 - Rust 1.56+ (install from https://rustup.rs/)
-- Python 3.8+ (for FastAPI backend)
+- Python 3.10+ (for FastAPI backend)
 - **Linux only:** the apt prerequisites listed in the README
   (`libwebkit2gtk-4.0-dev`, `libgtk-3-dev`, `libsoup2.4-dev`,
   `libayatana-appindicator3-dev`, `librsvg2-dev`, `libssl-dev`,

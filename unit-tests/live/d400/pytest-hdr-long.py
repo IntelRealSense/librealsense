@@ -33,6 +33,20 @@ def _skip_if_fw_unsupported(dev):
     require_min_fw_version(dev, rsutils.version(5, 17, 2, 11))
 
 
+# First FW that restores the pre-HDR manual exposure AND gain into the UVC control DB itself when the
+# HDR sub-preset is disabled, so a query after HDR off reports them.
+#
+# Below this version librealsense compensates host-side (hdr_config::_use_workaround) and that
+# workaround restores EXPOSURE ONLY -- there is no _pre_hdr_gain -- so the queried gain legitimately
+# still reads the last HDR sub-preset gain, which for the default config is gain_range.min (16 on
+# D435). Whether the FW happens to restore it below this version varies by FW build, so the queried
+# values are only a contract from here up.
+#
+# Keep in sync with hdr_exposure_restore_firmware_version in src/ds/d400/d400-device.cpp -- that gate
+# decides who performs the restore, this one decides whether the test may assert on it.
+FW_RESTORES_QUERIED_EXPOSURE_AND_GAIN = rsutils.version(5, 17, 4, 13)
+
+
 def retry_on_exception(func, max_retries=10):
     last_exception = None
     for attempt in range(max_retries):
@@ -198,6 +212,7 @@ def _check_hdr_frame_counter(pipe, num_of_frames, merging_filter):
     :return: False if some metadata could not be read - otherwise, True
     """
     prev_depth_counter = -1
+    skipped = 0
     for i in range(num_of_frames):
         data = pipe.wait_for_frames()
         # get depth frame data
@@ -224,8 +239,21 @@ def _check_hdr_frame_counter(pipe, num_of_frames, merging_filter):
         log.info(f"prev_depth_counter: {prev_depth_counter}")
         log.info(f"depth_counter: {depth_counter}")
         log.info(f"hdr counter: {hdr_counter}")
-        check.is_true(depth_counter - 2 <= hdr_counter <= depth_counter)
+        # The pipeline holds a single frameset, so a slow consumer (this test) loses one and the depth
+        # counter jumps. hdr_merge emits only from a consecutive pair, so its counter cannot advance and
+        # the lag exceeds the 2 allowed below -- skip the whole check for that iteration.
+        if prev_depth_counter != -1 and depth_counter > prev_depth_counter + 1:
+            skipped += 1
+            log.info(f"frameset dropped ({prev_depth_counter}->{depth_counter}), skipping hdr lag check")
+        else:
+            check.is_true(depth_counter - 2 <= hdr_counter <= depth_counter)
         prev_depth_counter = depth_counter
+
+    # Skipping is only meant to absorb the occasional drop. Dropping this much means the rig or
+    # device is in a bad state and the lag went mostly unchecked, so fail rather than pass silently.
+    max_skips = max(1, num_of_frames // 2)
+    check.is_true(skipped < max_skips,
+                  f"{skipped}/{num_of_frames} iterations dropped a frameset")
 
 
 def _hdr_running_hdr_merge_after_hdr_restart(dev, ctx):
@@ -476,8 +504,15 @@ def _hdr_start_stop_recover_manual_exposure_and_gain(dev, ctx):
     # connected device; without enable_device(sn) the pipeline picks the first match.
     cfg.enable_device(dev.get_info(rs.camera_info.serial_number))
     cfg.enable_stream(rs.stream.depth)
+    # Who restores the queried exposure/gain depends on the FW - see the constant's comment.
+    fw_version = rsutils.version(dev.get_info(rs.camera_info.firmware_version))
+    expect_queried_restore = fw_version >= FW_RESTORES_QUERIED_EXPOSURE_AND_GAIN
+    log.info(f"FW {fw_version}: queried exposure/gain restore is "
+             f"{'asserted (FW restores it)' if expect_queried_restore else 'not asserted (SDK workaround restores exposure only)'}")
+
     pipe = rs.pipeline(ctx)
     pipe.start(cfg)
+    queried_values_checked = False
     try:
         iteration_for_disable = 50
         iteration_to_check_after_disable = iteration_for_disable + 5  # Was 2, aligned to validation KPI's [DSO-18682]
@@ -505,8 +540,26 @@ def _hdr_start_stop_recover_manual_exposure_and_gain(dev, ctx):
                     log.info(f"iteration: {iteration}")
                     log.info(f"iteration_to_check_after_disable: {iteration_to_check_after_disable}")
                     check.is_true(frame_exposure == exposure_before_hdr)
+
+                    if expect_queried_restore and not queried_values_checked:
+                        # The frames already carry the restored exposure/gain at this point, but the
+                        # queried (UVC control-DB) value is restored by a separate FW path. Query it
+                        # too, or the test stays green on FW that leaves the query stuck at the last
+                        # HDR sub-preset value.
+                        # Run on the first iteration at-or-past the threshold that actually reaches
+                        # here - pinning it to one exact iteration would silently skip the check if
+                        # that single frame carried no metadata.
+                        check.equal(depth_sensor.get_option(rs.option.exposure), exposure_before_hdr)
+                        check.equal(depth_sensor.get_option(rs.option.gain), gain_before_hdr)
+                        queried_values_checked = True
     finally:
         pipe.stop()
+
+    # On FW that performs the restore, the queried check is the only one that measures it - a run in
+    # which it never executed proves nothing, so fail loudly instead of reporting a green test.
+    if expect_queried_restore:
+        assert queried_values_checked, "queried exposure/gain check never ran - no depth frame " \
+                                       "after HDR disable carried sequence_id metadata"
 
 
 def test_hdr_start_stop_recover_manual_exposure_and_gain(function_scoped_device, test_context):

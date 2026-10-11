@@ -11,6 +11,9 @@ namespace librealsense
     {
         usb_device_libusb::usb_device_libusb(libusb_device* device, const libusb_device_descriptor& desc, const usb_device_info& info, std::shared_ptr<usb_context> context) :
                 _device(device), _usb_device_descriptor(desc), _info(info), _context(context)
+#if defined(__APPLE__)
+                , _capture(darwin_device_capture::acquire(context, device, info.mi))
+#endif
         {
             usb_descriptor ud = {desc.bLength, desc.bDescriptorType, std::vector<uint8_t>(desc.bLength)};
             memcpy(ud.data.data(), &desc, desc.bLength);

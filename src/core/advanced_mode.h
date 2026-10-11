@@ -77,6 +77,9 @@ namespace librealsense
         virtual void get_census_radius(STCensusRadius* ptr, int mode = 0) const = 0;
         virtual void get_amp_factor(STAFactor* ptr, int mode = 0) const = 0;
 
+        // Reads every group, for every mode, under a single bulk operation
+        virtual void get_all_controls( STAdvancedModeControls * ptr ) const = 0;
+
         virtual void set_depth_control_group(const STDepthControlGroup& val) = 0;
         virtual void set_rsm(const STRsm& val) = 0;
         virtual void set_rau_support_vector_control(const STRauSupportVectorControl& val) = 0;
@@ -109,6 +112,10 @@ namespace librealsense
         void apply_preset(const std::vector<platform::stream_profile>& configuration,
                           rs2_rs400_visual_preset preset, uint16_t device_pid) override;
 
+        // Whether the connected device supports the given preset at all (independent of the
+        // option's numeric range, which is not granular enough to exclude a single mid-range value)
+        bool is_preset_supported( rs2_rs400_visual_preset preset, uint16_t device_pid ) const;
+
         void get_depth_control_group(STDepthControlGroup* ptr, int mode = 0) const override;
         void get_rsm(STRsm* ptr, int mode = 0) const override;
         void get_rau_support_vector_control(STRauSupportVectorControl* ptr, int mode = 0) const override;
@@ -122,6 +129,8 @@ namespace librealsense
         void get_ae_control(STAEControl* ptr, int mode = 0) const override;
         void get_census_radius(STCensusRadius* ptr, int mode = 0) const override;
         void get_amp_factor(STAFactor* ptr, int mode = 0) const override;
+
+        void get_all_controls( STAdvancedModeControls * ptr ) const override;
 
         void set_depth_control_group(const STDepthControlGroup& val) override;
         void set_rsm(const STRsm& val) override;

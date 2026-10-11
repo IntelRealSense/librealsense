@@ -37,6 +37,7 @@ PYBIND11_MODULE(NAME, m) {
     init_serializable_device(m);
     init_util(m);
     init_eth_config(m);
+    init_rum(m);
     
     /** rs_export.hpp **/
     py::class_<rs2::save_to_ply, rs2::filter>(m, "save_to_ply")
@@ -126,7 +127,7 @@ PYBIND11_MODULE(NAME, m) {
     class py_async_log_callback : public rs2_log_callback
     {
         py::function _fn;
-        dispatcher _dispatcher{ 4096 };  // bounded; oldest dropped on overflow
+        dispatcher _dispatcher{ 4096, "py-log-callback" };  // bounded; oldest dropped on overflow
 
     public:
         explicit py_async_log_callback( py::function fn )

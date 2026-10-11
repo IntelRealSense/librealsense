@@ -463,7 +463,7 @@ namespace librealsense
               _sampling_frequency_name(""),
               _callback(nullptr),
               _is_capturing(false),
-              _pm_dispatcher(16)    // queue for async power management commands
+              _pm_dispatcher(16, "hid-power-mgmt")    // queue for async power management commands
         {
             init(frequency, sensitivity);
         }
@@ -492,6 +492,8 @@ namespace librealsense
             if (_is_capturing)
                 return;
 
+            // Drop reports retained by the IIO kfifo during HID enumeration, even if it is now disabled.
+            clear_buffer();
             set_power(true);
             std::ostringstream iio_read_device_path;
             iio_read_device_path << "/dev/" << IIO_DEVICE_PREFIX << _iio_device_number;

@@ -34,6 +34,13 @@ void options_container::update( std::shared_ptr< extension_snapshot > ext )
             _ordered_options.push_back( id );
         opt = ctr->_options_by_id[id];
     }
+    for( auto id : ctr->_ordered_composite_options )
+    {
+        auto & opt = _composite_options_by_id[id];
+        if( ! opt )
+            _ordered_composite_options.push_back( id );
+        opt = ctr->_composite_options_by_id[id];
+    }
 }
 
 
@@ -75,6 +82,59 @@ std::vector< rs2_option > options_container::get_supported_options() const
 
 
 std::string const & options_container::get_option_name( rs2_option option ) const
+{
+    return get_string( option );
+}
+
+
+const composite_option_interface & options_container::get_composite_option( rs2_composite_option_id id ) const
+{
+    auto it = _composite_options_by_id.find( id );
+    if( it == _composite_options_by_id.end() )
+    {
+        throw invalid_value_exception( rsutils::string::from()
+                                       << "composite option '" << get_composite_option_name( id ) << "' not supported" );
+    }
+    return *it->second;
+}
+
+
+void options_container::register_composite_option( rs2_composite_option_id id, std::shared_ptr< composite_option_interface > option )
+{
+    auto & opt = _composite_options_by_id[id];
+    if( ! opt )
+        _ordered_composite_options.push_back( id );
+    opt = option;
+    _recording_function( *this );
+}
+
+
+void options_container::unregister_composite_option( rs2_composite_option_id id )
+{
+    for( auto it = _ordered_composite_options.begin(); it != _ordered_composite_options.end(); ++it )
+    {
+        if( *it == id )
+        {
+            _ordered_composite_options.erase( it );
+            break;
+        }
+    }
+    _composite_options_by_id.erase( id );
+}
+
+
+std::vector< rs2_composite_option_id > options_container::get_supported_composite_options() const
+{
+    // Return composite options ordered by their ID values, mirroring get_supported_options().
+    std::vector< rs2_composite_option_id > options;
+    for( auto option : _composite_options_by_id )
+        options.push_back( option.first );
+
+    return options;
+}
+
+
+std::string const & options_container::get_composite_option_name( rs2_composite_option_id option ) const
 {
     return get_string( option );
 }

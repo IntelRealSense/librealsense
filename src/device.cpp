@@ -38,8 +38,8 @@ librealsense::find_profile( rs2_stream stream, int index, std::vector< stream_in
 
 device::device( std::shared_ptr< const device_info > const & dev_info,
                 bool device_changed_notifications )
-    : _dev_info( dev_info )
-    , _is_alive( std::make_shared< std::atomic< bool > >( true ) )
+    : _is_alive( std::make_shared< std::atomic< bool > >( true ) )
+    , _dev_info( dev_info )
     , _profiles_tags( [this]() { return get_profiles_tags(); } )
     , _format_conversion(
           [this]

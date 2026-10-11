@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { render, createMockDevice, createMockDeviceState } from '../../utils/test-utils'
+import { render, createMockDevice, createMockDeviceState, createMockSensor, createMockOption } from '../../utils/test-utils'
 import { DevicePanel } from '@/components/DevicePanel'
 import { useAppStore } from '@/store'
 
@@ -244,8 +244,273 @@ describe('DevicePanel', () => {
   describe('Header', () => {
     it('renders "Devices" header', () => {
       render(<DevicePanel />)
-      
+
       expect(screen.getByText('Devices')).toBeInTheDocument()
+    })
+  })
+
+  describe('Firmware Update Proposal', () => {
+    const outdated = (overrides = {}) => {
+      const device = createMockDevice({
+        serial_number: '123456789012',
+        firmware_version: '5.17.0.10',
+        ...overrides,
+      })
+      const ds = createMockDeviceState(device, { firmware: { recommended: '5.17.3.10' } })
+      return { device, ds }
+    }
+
+    it('toasts an update proposal naming the device and serial when firmware is outdated', async () => {
+      const { device, ds } = outdated()
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+
+      const toast = await screen.findByText(/firmware 5\.17\.0\.10 → 5\.17\.3\.10 is available/)
+      expect(toast).toHaveTextContent(`S/N ${device.serial_number}`)
+      expect(toast).toHaveTextContent(device.name)
+      expect(screen.getByRole('button', { name: 'Update' })).toBeInTheDocument()
+    })
+
+    it('the toast Update action starts the recommended update for that device', async () => {
+      const updateFirmwareFromRecommended = vi.fn().mockResolvedValue(undefined)
+      useAppStore.setState({ updateFirmwareFromRecommended })
+      const { device, ds } = outdated()
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Update' }))
+      expect(updateFirmwareFromRecommended).toHaveBeenCalledWith(device.device_id)
+    })
+
+    it('does not toast when firmware is up to date', async () => {
+      const device = createMockDevice({ firmware_version: '5.17.3.10' })
+      const ds = createMockDeviceState(device, { firmware: { recommended: '5.17.3.10' } })
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+
+      await waitFor(() => expect(screen.getByText('Devices')).toBeInTheDocument())
+      expect(screen.queryByText(/is available/)).not.toBeInTheDocument()
+    })
+
+    it('toasts only once per recommended version', async () => {
+      const { device, ds } = outdated()
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+      await screen.findByText(/is available/)
+
+      // A re-enumeration that reports the same recommendation must not re-prompt.
+      useAppStore.setState({
+        deviceStates: { [device.device_id]: { ...ds, firmware: { ...ds.firmware! } } },
+      })
+
+      await waitFor(() => expect(screen.getAllByText(/is available/)).toHaveLength(1))
+    })
+
+    it('keeps firmware state off the card entirely — the toast owns it', () => {
+      const device = createMockDevice()
+      const ds = createMockDeviceState(device, {
+        firmware: { current: '5.17.3.10', recommended: '5.17.3.10', status: 'up_to_date' },
+      })
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+
+      expect(screen.queryByText(/up to date/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Download firmware/)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Advanced Mode', () => {
+    const withAdvancedMode = (overrides: Partial<ReturnType<typeof createMockDeviceState>> = {}) => {
+      const device = createMockDevice()
+      const ds = createMockDeviceState(device, {
+        isActive: true,
+        advancedMode: { supported: true, enabled: false },
+        ...overrides,
+      })
+      return { device, ds }
+    }
+
+    const openMenu = async () =>
+      userEvent.click(await screen.findByTitle('Device actions'))
+
+    it('hides the toggle on devices that do not support advanced mode', async () => {
+      const { device, ds } = withAdvancedMode({ advancedMode: { supported: false, enabled: false } })
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+
+      await openMenu()
+      expect(screen.queryByRole('button', { name: /Advanced Mode/ })).not.toBeInTheDocument()
+    })
+
+    it('toggles without a confirmation prompt', async () => {
+      const toggleAdvancedMode = vi.fn().mockResolvedValue(undefined)
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+      useAppStore.setState({ toggleAdvancedMode })
+      const { device, ds } = withAdvancedMode()
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+
+      await openMenu()
+      await userEvent.click(screen.getByRole('button', { name: 'Enable Advanced Mode' }))
+
+      expect(confirmSpy).not.toHaveBeenCalled()
+      expect(toggleAdvancedMode).toHaveBeenCalledWith(device.device_id, true)
+      confirmSpy.mockRestore()
+    })
+
+    it('disables the toggle while streaming, as the C++ viewer does', async () => {
+      const toggleAdvancedMode = vi.fn().mockResolvedValue(undefined)
+      useAppStore.setState({ toggleAdvancedMode })
+      const { device, ds } = withAdvancedMode({ isStreaming: true })
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+
+      await openMenu()
+      const item = screen.getByRole('button', { name: 'Enable Advanced Mode' })
+      expect(item).toBeDisabled()
+
+      await userEvent.click(item)
+      expect(toggleAdvancedMode).not.toHaveBeenCalled()
+    })
+
+    it('offers to disable once advanced mode is on', async () => {
+      const toggleAdvancedMode = vi.fn().mockResolvedValue(undefined)
+      useAppStore.setState({ toggleAdvancedMode })
+      const { device, ds } = withAdvancedMode({ advancedMode: { supported: true, enabled: true } })
+      render(<DevicePanel />, {
+        initialStoreState: { devices: [device], deviceStates: { [device.device_id]: ds } },
+      })
+
+      await openMenu()
+      await userEvent.click(screen.getByRole('button', { name: 'Disable Advanced Mode' }))
+      expect(toggleAdvancedMode).toHaveBeenCalledWith(device.device_id, false)
+    })
+  })
+
+  describe('Control Search', () => {
+    // The search covers one sensor's controls and lives inside its panel, so the sensor
+    // has to be expanded before there is a box to type in.
+    async function renderWithControls(overrides: {
+      options?: ReturnType<typeof createMockOption>[]
+      setControl?: ReturnType<typeof vi.fn>
+    } = {}) {
+      const device = createMockDevice()
+      const sensor = createMockSensor({ sensor_id: 'sensor-a', name: 'Stereo Module' })
+      const options = overrides.options ?? [
+        createMockOption({ option_id: 'Exposure', name: 'Exposure' }),
+        createMockOption({ option_id: 'Gain', name: 'Gain' }),
+        createMockOption({ option_id: 'Laser_Power', name: 'Laser Power' }),
+      ]
+      const deviceState = createMockDeviceState(device, {
+        isActive: true,
+        sensors: [sensor],
+        controls: {
+          'sensors/sensor-a/options': {
+            section: 'Controls', sensorId: 'sensor-a', name: '', options,
+          },
+        },
+      })
+      render(<DevicePanel />, {
+        initialStoreState: {
+          devices: [device],
+          deviceStates: { [device.device_id]: deviceState },
+          ...(overrides.setControl ? { setControl: overrides.setControl } : {}),
+        },
+      })
+      await userEvent.click(screen.getByText('Stereo Module'))
+    }
+
+    it('renders the control search box for an active device', async () => {
+      await renderWithControls()
+      expect(screen.getByPlaceholderText('Search controls…')).toBeInTheDocument()
+    })
+
+    it('filters to matching controls and auto-expands, hiding non-matches', async () => {
+      await renderWithControls()
+      await userEvent.type(screen.getByPlaceholderText('Search controls…'), 'gain')
+
+      await waitFor(() => expect(screen.getByText('Gain')).toBeInTheDocument())
+      expect(screen.queryByText('Exposure')).not.toBeInTheDocument()
+      expect(screen.queryByText('Laser Power')).not.toBeInTheDocument()
+    })
+
+    it('matches a control name mid-word, case-insensitively', async () => {
+      await renderWithControls()
+      await userEvent.type(screen.getByPlaceholderText('Search controls…'), 'POWER')
+
+      await waitFor(() => expect(screen.getByText('Laser Power')).toBeInTheDocument())
+      expect(screen.queryByText('Gain')).not.toBeInTheDocument()
+    })
+
+    it('shows no results for a term that appears in no control label', async () => {
+      await renderWithControls()
+      await userEvent.type(screen.getByPlaceholderText('Search controls…'), 'option')
+
+      await waitFor(() => expect(screen.getByText(/No controls match/)).toBeInTheDocument())
+      expect(screen.queryByText('Exposure')).not.toBeInTheDocument()
+      expect(screen.queryByText('Gain')).not.toBeInTheDocument()
+    })
+
+    it('restores every option of a category, including ones the search hides', async () => {
+      const setControl = vi.fn().mockResolvedValue(undefined)
+      await renderWithControls({
+        setControl,
+        options: [
+          createMockOption({
+            option_id: 'Exposure', name: 'Exposure',
+            current_value: 100, default_value: 50,
+          }),
+          createMockOption({
+            option_id: 'Gain', name: 'Gain',
+            current_value: 32, default_value: 16,
+          }),
+        ],
+      })
+      await userEvent.type(screen.getByPlaceholderText('Search controls…'), 'gain')
+      await waitFor(() => expect(screen.getByText('Gain')).toBeInTheDocument())
+
+      await userEvent.click(screen.getByTitle('Restore Controls to defaults'))
+
+      await waitFor(() => expect(setControl).toHaveBeenCalledTimes(2))
+      expect(setControl).toHaveBeenCalledWith('test-device-1', 'sensors/sensor-a/options', 'Exposure', 50)
+      expect(setControl).toHaveBeenCalledWith('test-device-1', 'sensors/sensor-a/options', 'Gain', 16)
+    })
+
+    it('shows a no-match message and collapses the section again on X', async () => {
+      await renderWithControls()
+      const input = screen.getByPlaceholderText('Search controls…')
+      await userEvent.type(input, 'zzzqqq')
+
+      await waitFor(() => expect(screen.getByText(/No controls match/)).toBeInTheDocument())
+
+      await userEvent.click(screen.getByTitle('Clear search'))
+      expect(screen.queryByText(/No controls match/)).not.toBeInTheDocument()
+      // The search force-opened the Controls section; clearing it returns the section to
+      // the state the user left it in, which is closed.
+      expect(screen.queryByText('Exposure')).not.toBeInTheDocument()
+    })
+
+    // Firmware reports no range for some advanced-mode groups, so a flag in one arrives
+    // as min == max == its value rather than as 0..1. It is still a flag.
+    it('draws a whole-numbered control that cannot leave 0..1 as a checkbox', async () => {
+      await renderWithControls({
+        options: [createMockOption({
+          option_id: 'ignoreSAD', current_value: 0, default_value: 0,
+          min_value: 0, max_value: 0, step: 1,
+        })],
+      })
+      await userEvent.type(screen.getByPlaceholderText('Search controls…'), 'ignore')
+
+      await waitFor(() => expect(screen.getByText('Ignore SAD')).toBeInTheDocument())
+      expect(screen.getByRole('checkbox')).toBeInTheDocument()
     })
   })
 })

@@ -6,11 +6,23 @@
 
 option(ENABLE_CCACHE "Build with ccache." ON)
 option(BUILD_WITH_CUDA "Enable CUDA" OFF)
+
 # Zero-copy GPU memory path (Jetson / integrated-GPU only). Requires BUILD_WITH_CUDA.
 # Eliminates the per-frame CPU->frame copy (capture) and the GPU host<->device round-trips.
 # Activates at runtime only on integrated GPUs; discrete GPUs keep the copy path. Default OFF
 # so a plain CUDA build is byte-for-byte identical to today.
-option(BUILD_WITH_CUDA_ZEROCOPY "Enable zero-copy GPU memory path (Jetson/integrated GPU only, requires BUILD_WITH_CUDA)" OFF)
+option(BUILD_WITH_CUDA_ZEROCOPY "Enable zero-copy GPU memory path (Jetson/integrated GPU only, requires BUILD_WITH_CUDA)" ${BUILD_WITH_CUDA})
+option(BUILD_WITH_HIP "Enable HIP/ROCm for AMD GPUs" OFF)
+# Zero-copy GPU memory path for HIP (unified-memory AMD APUs, e.g. Ryzen AI / MI300A,
+# only -- not applicable to discrete RDNA3/CDNA3 GPUs). Requires BUILD_WITH_HIP. Mirrors
+# BUILD_WITH_CUDA_ZEROCOPY: shares the same RS2_USE_CUDA_ZEROCOPY macro and the vendor-
+# neutral try_device_ptr() fast path in rscuda_utils.cuh/cuda-pointcloud.cu, which fall
+# back to the persistent-buffer copy path whenever a buffer is not pinned/mapped -- so
+# enabling this on discrete GPUs is safe (falls back every time) but pointless.
+option(BUILD_WITH_HIP_ZEROCOPY "Enable zero-copy GPU memory path (unified-memory AMD APUs only, requires BUILD_WITH_HIP)" OFF)
+
+
+
 option(BUILD_GLSL_EXTENSIONS "Build GLSL extensions API" ON)
 option(BUILD_WITH_OPENMP "Use OpenMP" OFF)
 option(BUILD_EASYLOGGINGPP "Build EasyLogging++ as a part of the build" ON)
@@ -43,9 +55,15 @@ option(FORCE_WINUSB_UVC "Explicitly turn-on winusb_uvc (for win7) backend - depr
 option(ANDROID_USB_HOST_UVC "Build UVC backend for Android - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
 # This feature requires OpenSSL installation on Linux/OSX, OSX normally does not come with OpenSSL integrated(Thats why default is OFF on OSX)
 if (NOT APPLE)
-    option(CHECK_FOR_UPDATES "Checks for versions updates" ON) 
+    option(CHECK_FOR_UPDATES "Checks for versions updates" ON)
 else()
-    option(CHECK_FOR_UPDATES "Checks for versions updates" OFF) 
+    option(CHECK_FOR_UPDATES "Checks for versions updates" OFF)
+endif()
+# Same libcurl/OpenSSL dependency profile as CHECK_FOR_UPDATES above, so the same per-OS default applies.
+if (NOT APPLE)
+    option(ENABLE_AI_ASSISTANT "Build the AI Assistant chat panel into the viewer" ON)
+else()
+    option(ENABLE_AI_ASSISTANT "Build the AI Assistant chat panel into the viewer" OFF)
 endif()
 option(BUILD_WITH_CPU_EXTENSIONS "Enable compiler optimizations using CPU extensions (such as AVX)" ON)
 # Enable NEON option only on 64-bit ARM platforms (ARM64/AArch64)
@@ -68,4 +86,5 @@ option(USE_EXTERNAL_LZ4 "Use externally build LZ4 library instead of building an
 option(USE_EXTERNAL_NLOHMANN_JSON "Use an externally built nlohmann-json development package instead of downloading it as part of this build" OFF)
 option(BUILD_ASAN "Enable AddressSanitizer" OFF)
 option(BUILD_ROSBAG2 "Build and use rosbag2 recording system" ON) # temporary flag, should be removed when deprecated ROSBAG1 recording system is removed
+option(ENABLE_STATS "Enable RUM (Real User Monitoring) usage-statistics collection" ON)
 mark_as_advanced(BUILD_ASAN)

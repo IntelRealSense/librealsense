@@ -58,6 +58,10 @@ void init_c_files(py::module &m) {
 
     m.def( "option_from_string", &rs2_option_from_string );
 
+    // rs2_composite_option_id is a completely separate identity space from rs2_option above -
+    // a multi-field control's own id, not a scalar option. No from_string() reverse lookup.
+    BIND_ENUM(m, rs2_composite_option_id, RS2_COMPOSITE_OPTION_COUNT, "Identifies a composite (multi-field, atomically-exchanged) control - a completely separate identity space from rs2_option.")
+
     BIND_ENUM(m, rs2_option_type, RS2_OPTION_TYPE_COUNT, "The different types option values can take on")
     BIND_ENUM(m, rs2_l500_visual_preset, RS2_L500_VISUAL_PRESET_COUNT, "For L500 devices: provides optimized settings (presets) for specific types of usage.")
     BIND_ENUM(m, rs2_rs400_visual_preset, RS2_RS400_VISUAL_PRESET_COUNT, "For D400 devices: provides optimized settings (presets) for specific types of usage.")
@@ -65,6 +69,8 @@ void init_c_files(py::module &m) {
     BIND_ENUM(m, rs2_calibration_type, RS2_CALIBRATION_TYPE_COUNT, "Calibration type for use in device_calibration")
     BIND_ENUM_CUSTOM(m, rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST, "Calibration callback status for use in device_calibration.trigger_device_calibration")
     BIND_ENUM(m, rs2_d500_intercam_sync_mode, RS2_D500_INTERCAM_SYNC_COUNT, "For D500: intercamera synchronization mode")
+    BIND_ENUM(m, rs2_colored_ir_auto_exposure_mode, RS2_COLORED_IR_AUTO_EXPOSURE_COUNT, "For colored-IR devices: how auto exposure is arbitrated between the color and depth pipelines")
+    BIND_ENUM(m, rs2_emitter_mode, RS2_EMITTER_MODE_COUNT, "Values for the emitter mode option")
 
     /** rs_types.h **/
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics", "Video stream intrinsics.");

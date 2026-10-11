@@ -1,19 +1,18 @@
 import axios, { AxiosInstance } from 'axios'
 import { socketService } from './socket'
+import { visibleOptions } from './types'
 import type {
+  AdvancedControls,
+  AdvancedModeStatus,
   DeviceInfo,
+  SensorFilters,
   SensorInfo,
   OptionInfo,
-  StreamStartRequest,
-  StreamStatus,
   WebRTCOffer,
   WebRTCSession,
   ICECandidate,
   SensorStreamConfig,
   SensorStreamStatus,
-  BatchSensorStartRequest,
-  BatchSensorStopRequest,
-  BatchSensorStatus,
 } from './types'
 
 // Detect if running in Tauri desktop app
@@ -31,7 +30,7 @@ const getApiBase = () => {
 
 const API_BASE = getApiBase()
 
-type FirmwareProgressCallback = (progress: number) => void
+type FirmwareProgressCallback = (progress: number, phase?: 'downloading' | 'installing') => void
 type FirmwareErrorCallback = (error: string) => void
 type FirmwareSuccessCallback = (firmwareVersion: string | null) => void
 
@@ -52,7 +51,10 @@ class ApiClient {
 
   onFirmwareProgress(deviceId: string, callback: FirmwareProgressCallback): () => void {
     const eventName = `firmware_progress_${deviceId}`
-    const handler = (data: unknown) => callback((data as { progress: number }).progress)
+    const handler = (data: unknown) => {
+      const d = data as { progress: number; phase?: 'downloading' | 'installing' }
+      callback(d.progress, d.phase)
+    }
     socketService.on(eventName, handler as (...args: unknown[]) => void)
     return () => socketService.off(eventName, handler as (...args: unknown[]) => void)
   }
@@ -74,10 +76,13 @@ class ApiClient {
 
   // ============ Health ============
 
-  async getHealth(): Promise<{ status: string; service: string; sdk_version: string }> {
-    const response = await this.client.get<{ status: string; service: string; sdk_version: string }>(
-      '/health'
-    )
+  async getHealth(): Promise<{ status: string; service: string; sdk_version: string; warnings?: string[] }> {
+    const response = await this.client.get<{
+      status: string
+      service: string
+      sdk_version: string
+      warnings?: string[]
+    }>('/health')
     return response.data
   }
 
@@ -90,24 +95,63 @@ class ApiClient {
     return response.data
   }
 
-  async getDevice(deviceId: string): Promise<DeviceInfo> {
-    const response = await this.client.get<DeviceInfo>(`/devices/${deviceId}/`)
-    return response.data
-  }
-
-  async getFirmwareStatus(deviceId: string): Promise<{
-    device_id: string
-    current?: string
-    recommended?: string
-    status: string
-    file_available?: boolean
-  }> {
-    const response = await this.client.get(`/devices/${deviceId}/status`)
+  /** The firmware version the online DB recommends for this device, if any. */
+  async getRecommendedFirmware(deviceId: string): Promise<{ recommended?: string }> {
+    const response = await this.client.get(`/devices/${deviceId}/firmware/`)
     return response.data
   }
 
   async resetDevice(deviceId: string): Promise<void> {
     await this.client.post(`/devices/${deviceId}/hw_reset/`)
+  }
+
+  async getAdvancedMode(deviceId: string): Promise<AdvancedModeStatus> {
+    const response = await this.client.get(`/devices/${deviceId}/advanced_mode/`)
+    return response.data
+  }
+
+  async setAdvancedMode(deviceId: string, enable: boolean): Promise<AdvancedModeStatus> {
+    const response = await this.client.post(`/devices/${deviceId}/advanced_mode/`, { enable })
+    return response.data
+  }
+
+  async getAdvancedControls(deviceId: string): Promise<AdvancedControls> {
+    const response = await this.client.get(`/devices/${deviceId}/advanced_mode/controls/`)
+    return response.data
+  }
+
+  /**
+   * Write one control and get it back as the device now holds it. `key` is the group's
+   * path under the device (`colorizer`, `advanced_mode/controls/depth_table`,
+   * `sensors/<id>/filters/Spatial Filter`), which is all that separates the four sources.
+   */
+  async setControl(
+    deviceId: string,
+    key: string,
+    field: string,
+    value: number | boolean | string
+  ): Promise<OptionInfo> {
+    const response = await this.client.put(`/devices/${deviceId}/${key}/${field}/`, { value })
+    return response.data
+  }
+
+  /** Bypass or apply one post-processing filter; `key` is the filter's own path. */
+  async setFilterEnabled(deviceId: string, key: string, enabled: boolean): Promise<void> {
+    await this.client.put(`/devices/${deviceId}/${key}/enabled/`, { value: enabled })
+  }
+
+  async getSensorFilters(deviceId: string, sensorId: string): Promise<SensorFilters> {
+    const response = await this.client.get<SensorFilters>(
+      `/devices/${deviceId}/sensors/${sensorId}/filters/`
+    )
+    return Object.fromEntries(
+      Object.entries(response.data).map(([name, f]) => [name, { ...f, options: visibleOptions(f.options) }])
+    )
+  }
+
+  async getColorizerOptions(deviceId: string): Promise<OptionInfo[]> {
+    const response = await this.client.get(`/devices/${deviceId}/colorizer/`)
+    return visibleOptions(response.data)
   }
 
   async updateFirmwareFromFile(
@@ -128,61 +172,18 @@ class ApiClient {
     return response.data
   }
 
+  async updateFirmwareFromRecommended(
+    deviceId: string
+  ): Promise<{ status: string; firmware_version?: string | null; progress?: number }> {
+    const response = await this.client.post(`/devices/${deviceId}/firmware/update_from_recommended`)
+    return response.data
+  }
+
   // ============ Sensors ============
 
   async getSensors(deviceId: string): Promise<SensorInfo[]> {
     const response = await this.client.get<SensorInfo[]>(`/devices/${deviceId}/sensors/`)
-    return response.data
-  }
-
-  async getSensor(deviceId: string, sensorId: string): Promise<SensorInfo> {
-    const response = await this.client.get<SensorInfo>(`/devices/${deviceId}/sensors/${sensorId}/`)
-    return response.data
-  }
-
-  // ============ Options ============
-
-  async getOptions(deviceId: string, sensorId: string): Promise<OptionInfo[]> {
-    const response = await this.client.get<OptionInfo[]>(
-      `/devices/${deviceId}/sensors/${sensorId}/options/`
-    )
-    return response.data
-  }
-
-  async getOption(deviceId: string, sensorId: string, optionId: string): Promise<OptionInfo> {
-    const response = await this.client.get<OptionInfo>(
-      `/devices/${deviceId}/sensors/${sensorId}/options/${optionId}/`
-    )
-    return response.data
-  }
-
-  async setOption(
-    deviceId: string,
-    sensorId: string,
-    optionId: string,
-    value: number | boolean | string
-  ): Promise<{ success: boolean }> {
-    const response = await this.client.put<{ success: boolean }>(
-      `/devices/${deviceId}/sensors/${sensorId}/options/${optionId}/`,
-      { value }
-    )
-    return response.data
-  }
-
-  // ============ Streams ============
-
-  async startStreaming(deviceId: string, request: StreamStartRequest): Promise<void> {
-    await this.client.post(`/devices/${deviceId}/stream/start/`, request)
-  }
-
-  async stopStreaming(deviceId: string): Promise<StreamStatus> {
-    const response = await this.client.post<StreamStatus>(`/devices/${deviceId}/stream/stop/`)
-    return response.data
-  }
-
-  async getStreamStatus(deviceId: string): Promise<StreamStatus> {
-    const response = await this.client.get<StreamStatus>(`/devices/${deviceId}/stream/status/`)
-    return response.data
+    return response.data.map((s) => ({ ...s, options: visibleOptions(s.options) }))
   }
 
   async getDepthAtPixel(
@@ -231,42 +232,6 @@ class ApiClient {
     return response.data
   }
 
-  async getSensorStatus(deviceId: string, sensorId: string): Promise<SensorStreamStatus> {
-    const response = await this.client.get<SensorStreamStatus>(
-      `/devices/${deviceId}/sensors/${sensorId}/status`
-    )
-    return response.data
-  }
-
-  async batchStartSensors(
-    deviceId: string,
-    request: BatchSensorStartRequest
-  ): Promise<BatchSensorStatus> {
-    const response = await this.client.post<BatchSensorStatus>(
-      `/devices/${deviceId}/sensors/batch/start`,
-      request
-    )
-    return response.data
-  }
-
-  async batchStopSensors(
-    deviceId: string,
-    request?: BatchSensorStopRequest
-  ): Promise<BatchSensorStatus> {
-    const response = await this.client.post<BatchSensorStatus>(
-      `/devices/${deviceId}/sensors/batch/stop`,
-      request || {}
-    )
-    return response.data
-  }
-
-  async getBatchSensorStatus(deviceId: string): Promise<BatchSensorStatus> {
-    const response = await this.client.get<BatchSensorStatus>(
-      `/devices/${deviceId}/sensors/batch/status`
-    )
-    return response.data
-  }
-
   // ============ Point Cloud ============
 
   async enablePointCloud(deviceId: string): Promise<void> {
@@ -275,13 +240,6 @@ class ApiClient {
 
   async disablePointCloud(deviceId: string): Promise<void> {
     await this.client.post(`/devices/${deviceId}/point_cloud/deactivate/`)
-  }
-
-  async getPointCloudStatus(deviceId: string): Promise<{ enabled: boolean }> {
-    const response = await this.client.get<{ enabled: boolean }>(
-      `/devices/${deviceId}/point_cloud/status/`
-    )
-    return response.data
   }
 
   // ============ WebRTC ============
@@ -310,11 +268,6 @@ class ApiClient {
 
   async getICECandidates(sessionId: string): Promise<ICECandidate[]> {
     const response = await this.client.get<ICECandidate[]>(`/webrtc/sessions/${sessionId}/ice-candidates/`)
-    return response.data
-  }
-
-  async getWebRTCStatus(sessionId: string): Promise<{ status: string }> {
-    const response = await this.client.get<{ status: string }>(`/webrtc/sessions/${sessionId}/`)
     return response.data
   }
 

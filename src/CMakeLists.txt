@@ -11,6 +11,8 @@ include(${_rel_path}/usb/CMakeLists.txt)
 include(${_rel_path}/fw-logs/CMakeLists.txt)
 include(${_rel_path}/fw-update/CMakeLists.txt)
 
+include(${_rel_path}/rum/CMakeLists.txt)
+
 message(STATUS "using ${BACKEND}")
 
 if(UNIX OR (ANDROID_NDK_TOOLCHAIN_INCLUDED AND (${BACKEND} STREQUAL RS2_USE_V4L2_BACKEND)))
@@ -49,7 +51,7 @@ if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
     include(${_rel_path}/libuvc/CMakeLists.txt)
 endif()
 
-if(BUILD_WITH_CUDA)
+if(BUILD_WITH_CUDA OR BUILD_WITH_HIP)
     include(${_rel_path}/cuda/CMakeLists.txt)
 endif()
 
@@ -155,6 +157,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/platform-camera.h"
         "${CMAKE_CURRENT_LIST_DIR}/pose.h"
         "${CMAKE_CURRENT_LIST_DIR}/safety-sensor.h"
+        "${CMAKE_CURRENT_LIST_DIR}/composite-option-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/hid-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/uvc-sensor.h"

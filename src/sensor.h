@@ -7,6 +7,7 @@
 #include "source.h"
 #include "core/extension.h"
 #include "proc/formats-converter.h"
+#include "rum/rum-hooks.h"  // rum::stream_timer
 #include <src/synthetic-options-watcher.h>
 #include <src/platform/stream-profile.h>
 #include <src/platform/frame-object.h>
@@ -14,6 +15,7 @@
 #include <rsutils/lazy.h>
 #include <rsutils/signal.h>
 #include <rsutils/deferred.h>
+#include <rsutils/time/stopwatch.h>
 
 #include <chrono>
 #include <memory>
@@ -132,6 +134,9 @@ namespace librealsense
 
         void sort_profiles( stream_profiles & );
 
+        void record_rum_stream_duration();  // hand any in-flight streamed interval to RUM; no-op when not streaming
+        rum::stream_timer _rum_timer;       // owns the streamed-duration stopwatch + reporting
+
         std::shared_ptr< frame > generate_frame_from_data( const platform::frame_object & fo,
                                                            rs2_time_t system_time,
                                                            frame_timestamp_reader * timestamp_reader,
@@ -144,7 +149,7 @@ namespace librealsense
             return width * height * bpp >> 3;
         }
 
-        std::vector<uint8_t> align_width_to_64(int width, int height, int bpp, uint8_t * pix) const;
+        std::vector<uint8_t> align_width_to_64(int width, int height, int bpp, rs2_format format, uint8_t * pix) const;
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;

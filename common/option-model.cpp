@@ -30,11 +30,13 @@ namespace rs2
         option.opt = opt->id;
         option.endpoint = options;
         option.label = rsutils::string::from() << option_name << "##" << option.id;
+        auto const title = alternative_option_title( opt->id );
+        option.name = title ? title : option_name;   // the search matches what the control is titled
         option.invalidate_flag = options_invalidated;
         option.dev = model;
         option.value = opt;
         option.supported = opt->is_valid;  // i.e., supported-and-enabled!
-        option.range = options->get_option_range( opt->id );
+        option.range = opt.range();
         option.read_only = options->is_option_read_only( opt->id );
         option.last_slider_hold_stopwatch.reset( {} ); // Avoids seeming as if a slider was dragged and just released.
         return option;
@@ -64,12 +66,12 @@ bool option_model::draw( std::string & error_message,
         // The option's rendering model supports an alternative option title derived from its
         // description rather than name. This is applied to the Holes Filling as its display must
         // conform with the names used by a 3rd-party tools for consistency.
-        if (opt == RS2_OPTION_HOLES_FILL)
+        if (auto title = alternative_option_title(opt))
         {
             use_option_name = false;
             // Below change is instead of the long description provided with DDS
             // which is useful when user does not know what are the options' possible values
-            desc_str = "Persistency mode"; 
+            desc_str = title;
         }
 
         // Device D405 is for short range, therefore, its units are in cm - for better UX
@@ -251,21 +253,25 @@ bool option_model::is_enum() const
     if( range.step < 0.9f )
         return false;
 
+    // A value with no description is hidden for this device (see get_combo_labels), not evidence
+    // that the option isn't an enum — only bail if not a single value describes itself.
     for( auto i = range.min; i <= range.max; i += range.step )
     {
-        if( endpoint->get_option_value_description( opt, i ) == nullptr )
-            return false;
+        if( endpoint->get_option_value_description( opt, i ) != nullptr )
+            return true;
     }
-    return true;
+    return false;
 }
 
-std::vector< const char * > option_model::get_combo_labels( int * p_selected ) const
+std::vector< const char * > option_model::get_combo_labels( int * p_selected, std::vector< float > * p_values ) const
 {
     int selected = 0, counter = 0;
     std::vector< const char * > labels;
-    for( auto i = range.min; i <= range.max; i += range.step, counter++ )
+    for( auto i = range.min; i <= range.max; i += range.step )
     {
         auto label = endpoint->get_option_value_description( opt, i );
+        if( ! label )
+            continue;
 
         switch( value->type )
         {
@@ -281,6 +287,9 @@ std::vector< const char * > option_model::get_combo_labels( int * p_selected ) c
         }
 
         labels.push_back( label );
+        if( p_values )
+            p_values->push_back( i );
+        counter++;
     }
     if( p_selected )
         *p_selected = selected;
@@ -313,14 +322,15 @@ bool option_model::draw_combobox( notifications_model & model,
     ImGui::PushItemWidth( new_line ? ImGui::GetContentRegionAvail().x - 25 : 100.f );
 
     int selected;
-    std::vector< const char * > labels = get_combo_labels( &selected );
+    std::vector< float > values;
+    std::vector< const char * > labels = get_combo_labels( &selected, &values );
     ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, { 1, 1, 1, 1 } );
 
     try
     {
         if( RsImGui::CustomComboBox( id.c_str(), &selected, labels.data(), static_cast< int >( labels.size() ) ) )
         {
-            float tmp_value = range.min + range.step * selected;
+            float tmp_value = values[selected];
             model.add_log( rsutils::string::from()
                            << "Setting " << opt << " to " << tmp_value << " (" << labels[selected] << ")" );
             write_value( tmp_value, error_message );
@@ -659,6 +669,10 @@ bool option_model::draw_checkbox( notifications_model & model,
 
     bool bool_value = value_as_float() > 0.f;
 
+    // Read-only options are not interactive - a slider draws itself as a progress bar, a checkbox greys out
+    if( read_only )
+        ImGui::BeginDisabled();
+
     if( ImGui::Checkbox( label.c_str(), &bool_value ) )
     {
         checkbox_was_clicked = true;
@@ -667,7 +681,14 @@ bool option_model::draw_checkbox( notifications_model & model,
 
         write_value( bool_value ? 1.f : 0.f, error_message );
     }
-    if( ImGui::IsItemHovered() && description )
+
+    // Read the hover before ending the disabled block, and allow it there so the tooltip still shows
+    bool const hovered = ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled );
+
+    if( read_only )
+        ImGui::EndDisabled();
+
+    if( hovered && description )
     {
         RsImGui::CustomTooltip( "%s", description );
     }
@@ -997,7 +1018,8 @@ void option_model::set_option_sync( float req_value )
             }
             c.try_sleep( std::chrono::milliseconds( 50 ) );
         },
-        []() { return false; } );
+        []() { return false; },
+        true );
 }
 
 void option_model::update_value( const rs2::option_value & updated_value, notifications_model & model )

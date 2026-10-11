@@ -66,18 +66,6 @@ describe('API Client', () => {
     })
   })
 
-  describe('getDevice', () => {
-    it('fetches a single device by ID', async () => {
-      const device = await apiClient.getDevice(mockDevice.device_id)
-      
-      expect(device).toEqual(mockDevice)
-    })
-
-    it('throws error for non-existent device', async () => {
-      await expect(apiClient.getDevice('non-existent-id')).rejects.toThrow()
-    })
-  })
-
   describe('getSensors', () => {
     it('fetches sensors for a device', async () => {
       const sensors = await apiClient.getSensors(mockDevice.device_id)
@@ -102,66 +90,24 @@ describe('API Client', () => {
     })
   })
 
-  describe('getOptions', () => {
-    it('fetches options for a sensor', async () => {
-      const options = await apiClient.getOptions(mockDevice.device_id, mockDevice.device_id + '-sensor-0')
-      
-      expect(options).toHaveLength(mockDepthOptions.length)
-    })
-
-    it('returns option properties correctly', async () => {
-      const options = await apiClient.getOptions(mockDevice.device_id, mockDevice.device_id + '-sensor-0')
-      const exposureOption = options.find((o: any) => o.option_id === 'exposure')
-      
-      expect(exposureOption).toBeDefined()
-      expect(exposureOption.name).toBe('Exposure')
-      expect(exposureOption.current_value).toBe(8500)
-      expect(exposureOption.min_value).toBe(1)
-      expect(exposureOption.max_value).toBe(165000)
-    })
-
-    it('returns post-processing filter options with category', async () => {
-      const options = await apiClient.getOptions(mockDevice.device_id, mockDevice.device_id + '-sensor-0')
-      const ppOptions = options.filter((o: any) => o.category === 'Post-Processing')
-      
-      expect(ppOptions.length).toBeGreaterThan(0)
-      expect(ppOptions[0].filter_name).toBeDefined()
+  describe('getSensorFilters', () => {
+    it('answers the filter chain, keyed by filter name', async () => {
+      const filters = await apiClient.getSensorFilters(mockDevice.device_id, mockDevice.device_id + '-sensor-0')
+      expect(Object.keys(filters).length).toBeGreaterThan(0)
+      expect(filters['Decimation Filter'].options[0].option_id).toBe('filter_magnitude')
     })
   })
 
-  describe('setOption', () => {
-    it('sets an option value', async () => {
-      const result = await apiClient.setOption(mockDevice.device_id, 'sensor-0', 'exposure', 10000)
-      
-      expect(result.success).toBe(true)
+  describe('setControl', () => {
+    it('answers the option as the device now holds it', async () => {
+      const result = await apiClient.setControl(
+        mockDevice.device_id, 'sensors/sensor-0/options', 'exposure', 10000
+      )
+
+      expect(result).toMatchObject({ option_id: 'exposure', current_value: 10000 })
     })
   })
 
-  describe('startStreaming', () => {
-    it('starts streaming for a device', async () => {
-      await expect(apiClient.startStreaming(mockDevice.device_id, {
-        streams: [{ stream_type: 'depth', width: 640, height: 480, format: 'Z16', fps: 30 }],
-      })).resolves.not.toThrow()
-    })
-  })
-
-  describe('stopStreaming', () => {
-    it('stops streaming for a device', async () => {
-      const status = await apiClient.stopStreaming(mockDevice.device_id)
-      
-      expect(status.is_streaming).toBe(false)
-      expect(status.active_streams).toEqual([])
-    })
-  })
-
-  describe('getStreamStatus', () => {
-    it('returns stream status', async () => {
-      const status = await apiClient.getStreamStatus(mockDevice.device_id)
-      
-      expect(status).toHaveProperty('is_streaming')
-      expect(status).toHaveProperty('active_streams')
-    })
-  })
 
   describe('getDepthRange', () => {
     it('returns depth range for a device', async () => {
@@ -212,23 +158,16 @@ describe('API Client', () => {
   })
 
   describe('Firmware', () => {
-    it('fetches firmware status', async () => {
+    it('fetches the recommended version for a device', async () => {
       server.use(
-        http.get('/api/v1/devices/:deviceId/status', () => {
-          return HttpResponse.json({
-            device_id: mockDevice.device_id,
-            current: '5.16.0.1',
-            recommended: '5.16.0.1',
-            status: 'up_to_date',
-            file_available: true,
-          })
-        })
+        http.get('/api/v1/devices/:deviceId/firmware/', () =>
+          HttpResponse.json({ recommended: '5.17.3.10' })
+        )
       )
 
-      const status = await apiClient.getFirmwareStatus(mockDevice.device_id)
-      
-      expect(status.status).toBe('up_to_date')
-      expect(status.current).toBe('5.16.0.1')
+      const { recommended } = await apiClient.getRecommendedFirmware(mockDevice.device_id)
+
+      expect(recommended).toBe('5.17.3.10')
     })
   })
 

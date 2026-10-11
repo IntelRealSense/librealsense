@@ -233,6 +233,13 @@ endif()
 include(../tools_common.cmake)
 tools_target_config(${PROJECT_NAME})
 
+if(APPLE)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        INSTALL_RPATH "@loader_path;@loader_path/../lib"
+        INSTALL_RPATH_USE_LINK_PATH FALSE
+        MACOSX_RPATH ON)
+endif()
+
 if(OPENVINO2019)
     target_compile_definitions(realsense-viewer PRIVATE OPENVINO2019)
 endif()

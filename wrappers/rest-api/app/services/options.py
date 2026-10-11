@@ -1,0 +1,64 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2026 RealSense, Inc. All Rights Reserved.
+
+"""Reading and writing the options of anything implementing rs2::options: a sensor, a
+post-processing filter, the colorizer."""
+
+from typing import List
+
+from app.models.option import OptionInfo
+
+
+def _value_descriptions(obj, opt, rng):
+    """The SDK's label for each value of an option, as far as it has them.
+
+    There is no "this is an enum" flag, so labels can only be learned value by value.
+    Stopping at the first value without one keeps a wide slider like exposure from being
+    probed 165,000 times; a partial set is reported rather than dropped, since whether
+    labels mean "dropdown" is the viewer's call.
+    """
+    if rng.step != 1.0 or rng.min != int(rng.min) or rng.max != int(rng.max):
+        return None
+    descs = {}
+    for val in range(int(rng.min), int(rng.max) + 1):
+        try:
+            desc = obj.get_option_value_description(opt, float(val))
+        except RuntimeError:
+            break  # a value the option refuses to describe is where its labels end
+        if not desc:
+            break
+        descs[str(val)] = desc
+    return descs
+
+
+def _info(obj, opt, rng) -> OptionInfo:
+    return OptionInfo(
+        option_id=opt.name,
+        description=obj.get_option_description(opt),
+        current_value=obj.get_option(opt),
+        default_value=rng.default,
+        min_value=rng.min,
+        max_value=rng.max,
+        step=rng.step,
+        read_only=obj.is_option_read_only(opt),
+        value_descriptions=_value_descriptions(obj, opt, rng),
+    )
+
+
+def all_options(obj) -> List[OptionInfo]:
+    """Every option the object holds."""
+    options = []
+    for opt in obj.get_supported_options():
+        try:
+            options.append(_info(obj, opt, obj.get_option_range(opt)))
+        except RuntimeError:
+            pass  # an option the device refuses to describe is one we cannot show
+    return options
+
+
+def set_option(obj, field: str, value: float) -> OptionInfo:
+    """Set one option and report it as the object holds it."""
+    opt = next(o for o in obj.get_supported_options() if o.name == field)
+    rng = obj.get_option_range(opt)
+    obj.set_option(opt, float(value))
+    return _info(obj, opt, rng)

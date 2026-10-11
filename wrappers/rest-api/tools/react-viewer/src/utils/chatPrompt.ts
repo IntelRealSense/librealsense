@@ -1,6 +1,7 @@
 // System prompt builder and response parser for AI camera configuration chat
 
-import type { DeviceState, SensorInfo, OptionInfo, StreamConfig } from '../api/types'
+import { optionLabel } from '../api/types'
+import type { ControlGroup, DeviceState, SensorInfo, StreamConfig } from '../api/types'
 
 /**
  * Proposed settings from AI response
@@ -102,7 +103,7 @@ function buildDeviceContext(deviceStates: Record<string, DeviceState>): string {
   const deviceDescriptions: string[] = []
   
   for (const [serial, state] of Object.entries(deviceStates)) {
-    const { device, sensors, options, streamConfigs, isStreaming } = state
+    const { device, sensors, controls, streamConfigs, isStreaming } = state
     
     let desc = `### ${device.name} (Serial: ${serial})
 - Status: ${isStreaming ? 'STREAMING' : 'STOPPED'}
@@ -116,7 +117,7 @@ ${formatSensors(sensors)}
 ${formatStreamConfigs(streamConfigs)}
 
 **Available Options:**
-${formatOptions(options)}
+${formatOptions(controls)}
 `
     deviceDescriptions.push(desc)
   }
@@ -154,17 +155,20 @@ function formatStreamConfigs(configs: StreamConfig[]): string {
   ).join('\n')
 }
 
-function formatOptions(options: Record<string, OptionInfo[]>): string {
+function formatOptions(controls: Record<string, ControlGroup>): string {
   const formatted: string[] = []
-  
-  for (const [sensorId, opts] of Object.entries(options)) {
+
+  // A sensor's own controls only: the chatbot sets options by sensor and option name.
+  for (const group of Object.values(controls)) {
+    if (group.section !== 'Controls') continue
     // Only show key options to keep context manageable
-    const keyOptions = opts.filter(o => isKeyOption(o.name))
+    const keyOptions = group.options.filter(o => isKeyOption(optionLabel(o.option_id)))
     if (keyOptions.length) {
-      formatted.push(`  ${sensorId}:`)
+      formatted.push(`  ${group.sensorId}:`)
       keyOptions.forEach(o => {
-        const range = o.min_value !== undefined ? ` [${o.min_value}-${o.max_value}]` : ''
-        formatted.push(`    - ${o.name}: ${o.current_value}${range}`)
+        formatted.push(
+          `    - ${optionLabel(o.option_id)}: ${o.current_value} [${o.min_value}-${o.max_value}]`
+        )
       })
     }
   }

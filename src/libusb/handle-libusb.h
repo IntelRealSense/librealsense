@@ -42,7 +42,8 @@ namespace librealsense
         {
         public:
             handle_libusb(std::shared_ptr<usb_context> context, libusb_device* device, std::shared_ptr<usb_interface_libusb> interface) :
-                    _first_interface(interface), _context(context), _handle(nullptr)
+                    _first_interface(interface), _context(context), _handle(nullptr),
+                    _event_handler_started(false)
             {
                 auto sts = libusb_open(device, &_handle);
                 if(sts != LIBUSB_SUCCESS)
@@ -54,30 +55,43 @@ namespace librealsense
                     throw std::runtime_error(msg.str());
                 }
 
-                sts = libusb_set_auto_detach_kernel_driver(_handle, true); // detach from kernel driver when claimed and re-attach when released.
-                if(sts != LIBUSB_SUCCESS)
+                try
                 {
-                    auto rs_sts =  libusb_status_to_rs(sts);
-                    std::stringstream msg;
-                    msg << "failed to set kernel driver auto detach: " << (int)interface->get_number() << ", error: " << usb_status_to_string.at(rs_sts);
-                    LOG_ERROR(msg.str());
-                    throw std::runtime_error(msg.str());
+#if defined(__APPLE__)
+                    sts = libusb_set_auto_detach_kernel_driver(_handle, false);
+#else
+                    sts = libusb_set_auto_detach_kernel_driver(_handle, true);
+#endif
+                    if(sts != LIBUSB_SUCCESS)
+                    {
+                        auto rs_sts = libusb_status_to_rs(sts);
+                        std::stringstream msg;
+                        msg << "failed to configure kernel driver detach for interface: "
+                            << (int)interface->get_number() << ", error: "
+                            << usb_status_to_string.at(rs_sts);
+                        LOG_ERROR(msg.str());
+                        throw std::runtime_error(msg.str());
+                    }
+
+                    claim_interface_or_throw(interface->get_number());
+                    for(auto&& i : interface->get_associated_interfaces())
+                        claim_interface_or_throw(i->get_number());
+
+                    _context->start_event_handler();
+                    _event_handler_started = true;
                 }
-
-                claim_interface_or_throw(interface->get_number());
-                for(auto&& i : interface->get_associated_interfaces())
-                    claim_interface_or_throw(i->get_number());
-
-                _context->start_event_handler();
+                catch(...)
+                {
+                    cleanup();
+                    throw;
+                }
             }
 
             ~handle_libusb()
             {
-                _context->stop_event_handler();
-                for(auto&& i : _first_interface->get_associated_interfaces())
-                    libusb_release_interface(_handle, i->get_number());
-                libusb_release_interface(_handle, _first_interface->get_number());
-                libusb_close(_handle);
+                if(_event_handler_started)
+                    _context->stop_event_handler();
+                cleanup();
             }
 
             libusb_device_handle* get()
@@ -91,6 +105,20 @@ namespace librealsense
                 auto rs_sts = claim_interface(interface);
                 if(rs_sts != RS2_USB_STATUS_SUCCESS)
                     throw std::runtime_error(rsutils::string::from() << "Unable to claim interface " << (int)interface << ", error: " << usb_status_to_string.at(rs_sts));
+                _claimed_interfaces.push_back(interface);
+            }
+
+            void cleanup() noexcept
+            {
+                if(!_handle)
+                    return;
+
+                for(auto it = _claimed_interfaces.rbegin(); it != _claimed_interfaces.rend(); ++it)
+                    libusb_release_interface(_handle, *it);
+                _claimed_interfaces.clear();
+
+                libusb_close(_handle);
+                _handle = nullptr;
             }
 
             usb_status claim_interface(uint8_t interface)
@@ -134,6 +162,8 @@ namespace librealsense
             std::shared_ptr<usb_context> _context;
             std::shared_ptr<usb_interface_libusb> _first_interface;
             libusb_device_handle* _handle;
+            bool _event_handler_started;
+            std::vector<uint8_t> _claimed_interfaces;
         };
     }
 }

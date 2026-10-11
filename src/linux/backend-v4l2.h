@@ -279,15 +279,22 @@ namespace librealsense
             inline void start() {_is_ready = true;}
             void stop();
 
+            // true if a buffer discarded via QBUF revealed the device was physically removed (ENODEV).
+            // Consumed (and reset) once by the owning device's poll(), so a real disconnect is reported exactly once.
+            inline bool consume_device_disconnected() { return _qbuf_device_disconnected.exchange(false); }
+
         private:
-            void enqueue_buffer_before_throwing_it(const sync_buffer& sb) const;
+            void enqueue_buffer_before_throwing_it(const sync_buffer& sb);
             void enqueue_front_buffer_before_throwing_it(std::queue<sync_buffer>& sync_queue);
             void flush_queues();
+            // Call immediately after a failed QBUF, before anything else touches errno.
+            void report_qbuf_failure(int fd);
 
             std::mutex _syncer_mutex;
             std::queue<sync_buffer> _video_queue;
             std::queue<sync_buffer> _md_queue;
             bool _is_ready;
+            std::atomic<bool> _qbuf_device_disconnected{ false };
         };
 
         // The aim of the frame_drop_monitor is to check the frames drops kpi - which requires
@@ -392,6 +399,9 @@ namespace librealsense
             bool pend_for_ctrl_status_event();
             void upload_video_and_metadata_from_syncer(buffers_mgr& buf_mgr);
             void populate_imu_data(metadata_hid_raw& meta_data, uint8_t* frame_start, uint8_t& md_size, void** md_start) const;
+            // Call immediately after a failed DQBUF, before anything else touches errno. Returns true (and
+            // marks the device disconnected) if the failure was ENODEV; the caller should bail out on true.
+            bool handle_enodev_on_dqbuf(const char* fd_label, int fd);
             // checking if metadata is streamed
             virtual inline bool is_metadata_streamed() const { return false;}
             virtual inline std::shared_ptr<buffer> get_video_buffer(__u32 index) const {return _buffers[index];}
@@ -422,6 +432,7 @@ namespace librealsense
             static std::vector<node_info> collect_uvc_nodes(const std::vector<path_and_identifier>& v4l_videos,
                                                             const std::vector<std::pair <std::string, std::string>>& v4l_to_dev_video_paths);
             static std::vector<node_info> match_video_with_metadata_nodes(const std::vector<node_info>& uvc_nodes);
+            static void sort_nodes_by_streaming_interface(std::vector<node_info>& nodes);
             static bool get_info_from_v4l_video_path(const std::string& v4l_video_path, const std::string& dev_name, uvc_device_info& info, bool is_mipi_rs_enum_nodes_empty,
                                                  camera_identifier_v4l_mipi& mipi_id);
             static std::vector<node_info> get_mipi_rs_enum_nodes();
@@ -438,6 +449,7 @@ namespace librealsense
 
             std::vector<std::shared_ptr<buffer>> _buffers;
             stream_profile _profile;
+            bool _variable_frame_size = false; // some frames may arrive in shorter size than the buffer - skip the partial frame check
             frame_callback _callback;
             std::atomic<bool> _is_capturing;
             std::atomic<bool> _is_alive;
@@ -458,6 +470,9 @@ namespace librealsense
             frame_drop_monitor _frame_drop_monitor;           // used to check the frames drops kpi
             v4l2_video_md_syncer _video_md_syncer;
             bool _are_device_capabilities_assigned;
+            // true if a video or metadata buffer DQBUF revealed the device was physically removed (ENODEV).
+            // Consumed (and reset) once at the top of the next poll(), see poll() for details.
+            std::atomic<bool> _device_disconnected{ false };
 
         private:
             int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]

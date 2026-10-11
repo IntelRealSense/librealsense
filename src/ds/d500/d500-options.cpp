@@ -7,6 +7,38 @@
 
 namespace librealsense
 {
+    d500_mipi_gyro_sensitivity_option::d500_mipi_gyro_sensitivity_option(
+        const std::weak_ptr< uvc_sensor > & ep )
+        : uvc_pu_option( ep, RS2_OPTION_GYRO_SENSITIVITY )
+    {
+    }
+
+    void d500_mipi_gyro_sensitivity_option::set( float value )
+    {
+        auto sensor = _ep.lock();
+        if( ! sensor )
+            throw invalid_value_exception( "MIPI IMU sensor is not alive for setting" );
+        (void)gyro_sensitivity_to_scale( value );
+        sensor->invoke_if_closed( [this, value]() { uvc_pu_option::set( value ); } );
+    }
+
+    bool d500_mipi_gyro_sensitivity_option::is_read_only() const
+    {
+        if( auto sensor = _ep.lock() )
+            return sensor->is_opened();
+        return false;
+    }
+
+    const char * d500_mipi_gyro_sensitivity_option::get_description() const
+    {
+        return "gyro sensitivity resolutions, lowers the dynamic range for a more accurate readings";
+    }
+
+    const char * d500_mipi_gyro_sensitivity_option::get_value_description( float value ) const
+    {
+        return get_gyro_sensitivity_value_description( value );
+    }
+
     rgb_tnr_option::rgb_tnr_option(std::shared_ptr<hw_monitor> hwm, const std::weak_ptr< sensor_base > & ep)
         : _hwm(hwm), _sensor(ep)
     {
@@ -137,6 +169,79 @@ namespace librealsense
         }
     }
 
+    dual_rgb_rectification_option::dual_rgb_rectification_option( std::shared_ptr< hw_monitor > hwm,
+                                                                  const std::weak_ptr< sensor_base > & ep )
+        : bool_option( false )
+        , _hwm( hwm )
+        , _sensor( ep )
+    {
+    }
+
+    void dual_rgb_rectification_option::set( float value )
+    {
+        auto strong_sensor = _sensor.lock();
+        if( ! strong_sensor )
+            throw invalid_value_exception( "Cannot set option as sensor is not alive" );
+
+        if( strong_sensor->is_streaming() )
+            throw std::runtime_error( "Cannot change dual RGB rectification while streaming!" );
+
+        // Validate before reaching FW, so a rejected value never changes the device state
+        if( ! is_valid( value ) )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "set(...) failed! " << value << " is not a valid value" );
+
+        command cmd( ds::d500_fw_cmd::CUSTOM_CMD, DUAL_RGB_RECTIFY_SUB_CMD, static_cast< uint32_t >( value ) );
+        _hwm->send( cmd );
+
+        bool_option::set( value );
+    }
+
+    d500_enable_aligned_depth_option::d500_enable_aligned_depth_option( const std::weak_ptr< uvc_sensor > & raw_ep )
+        : uvc_xu_option< uint8_t >( raw_ep,
+                                    ds::depth_xu,
+                                    ds::d500_xu_id::ALIGN_DEPTH,
+                                    "Device-side depth-to-color alignment. Returns Z16 in the color viewport.",
+                                    false ) // Not settable while streaming
+        , _sensor( raw_ep )
+        , _aligned( uvc_xu_option< uint8_t >::query() != 0.f )
+    {
+    }
+
+    void d500_enable_aligned_depth_option::set( float value )
+    {
+        auto sensor = _sensor.lock();
+        if( sensor && sensor->is_opened() )
+            throw wrong_api_call_sequence_exception( "Align Depth cannot be changed while the sensor is open!" );
+
+        uvc_xu_option< uint8_t >::set( value );
+
+        // Read back rather than cache what we asked for (in case of failure). The cache is what is_aligned() reports
+        // so it has to be what the firmware ended up with.
+        update( uvc_xu_option< uint8_t >::query() != 0.f );
+    }
+
+    float d500_enable_aligned_depth_option::query() const
+    {
+        // cache is updated by set(), not here, so the intrinsics hot path stays free of FW round trips and of observer side effects
+        return uvc_xu_option< uint8_t >::query();
+    }
+
+    bool d500_enable_aligned_depth_option::is_read_only() const
+    {
+        auto sensor = _sensor.lock();
+        return sensor && sensor->is_opened();
+    }
+
+    // Called from set() and the constructor only, so the observers run on the caller's thread with no frame or extrinsics work in flight
+    void d500_enable_aligned_depth_option::update( bool aligned ) const
+    {
+        if( _aligned.exchange( aligned ) == aligned )
+            return;
+        for( auto & observer : _observers )
+            observer( aligned );
+    }
+
     power_line_freq_option::power_line_freq_option(const std::weak_ptr< uvc_sensor >& ep, rs2_option id,
         const std::map< float, std::string >& description_per_value) :
         uvc_pu_option(ep, id, description_per_value) {}
@@ -147,10 +252,10 @@ namespace librealsense
         , _sensor( ep )
         , _description_per_value( description_per_value )
     {
-        _range = { RS2_D500_INTERCAM_SYNC_NONE,
+        _range = { RS2_D500_INTERCAM_SYNC_PWM_MASTER,
                    RS2_D500_INTERCAM_SYNC_EXTERNAL_MASTER,
                    1,
-                   RS2_D500_INTERCAM_SYNC_NONE };
+                   RS2_D500_INTERCAM_SYNC_PWM_MASTER };
     }
 
     void d500_external_sync_mode::set( float value )
@@ -162,7 +267,7 @@ namespace librealsense
         if( strong_sensor->is_streaming() )
             throw std::runtime_error( "Cannot change external sync mode while streaming!" );
 
-        if( ! is_valid( static_cast < rs2_d500_intercam_sync_mode >( value ) ) )
+        if( value != RS2_D500_INTERCAM_SYNC_PWM_MASTER && value != RS2_D500_INTERCAM_SYNC_EXTERNAL_MASTER )
             throw invalid_value_exception( rsutils::string::from()
                                            << "d500_external_sync_mode::set invalid value " << value );
 

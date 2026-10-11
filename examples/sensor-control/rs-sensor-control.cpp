@@ -96,6 +96,25 @@ void control_sensor_options(rs2::device device, rs2::sensor sensor)
     rs2_option sensor_option = how_to::get_sensor_option(sensor);
     how_to::change_sensor_option(sensor, sensor_option);
 }
+void control_composite_options(rs2::device device, rs2::sensor sensor)
+{
+    // Composite options are a completely separate identity space from the ordinary (scalar)
+    // options above, and live on one of the sensor's embedded filters rather than the sensor
+    // itself - see rs2::embedded_filter / rs_composite_option.h.
+    rs2::embedded_filter filter = how_to::get_an_embedded_filter_from_a_sensor(sensor);
+    rs2_composite_option_id id = how_to::get_a_composite_option(filter);
+
+    std::cout << "\nCurrent value:" << std::endl;
+    how_to::print_composite_option_value(filter, id);
+
+    if (prompt_yes_no("Change this composite option's value?"))
+    {
+        how_to::change_composite_option(filter, id);
+
+        std::cout << "\nValue after change:" << std::endl;
+        how_to::print_composite_option_value(filter, id);
+    }
+}
 void display_live_stream(rs2::device device, rs2::sensor sensor)
 {
     // The rs2::sensor allows you to control its streams
@@ -130,6 +149,7 @@ std::vector<sensor_action> create_sensor_actions()
     // and perform some specific action
     return std::vector<sensor_action> {
             std::make_pair(&control_sensor_options, "Control sensor's options"),
+            std::make_pair(&control_composite_options, "Control sensor's composite options"),
             std::make_pair(&display_live_stream, "Control sensor's streams"),
             std::make_pair(&show_stream_intrinsics, "Show stream intrinsics"),
             std::make_pair(&show_extrinsics_between_streams, "Display extrinsics")

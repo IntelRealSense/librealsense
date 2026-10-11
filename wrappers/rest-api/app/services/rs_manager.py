@@ -7,31 +7,26 @@ import struct
 import threading
 import time
 import logging
-from collections import deque
+from collections import defaultdict, deque
 from typing import Callable, Deque, Dict, List, Optional, Any, Tuple, Set
 import pyrealsense2 as rs
 import numpy as np
 import cv2
 from app.core.errors import RealSenseError
+from app.services import advanced_mode, options
 from app.models.device import Device, DeviceInfo
 from app.models.sensor import Sensor, SensorInfo, SupportedStreamProfile
 from app.models.option import Option, OptionInfo
 from app.models.stream import PointCloudStatus, StreamConfig, StreamStatus, Resolution
-from app.models.sensor_streaming import (
-    SensorStreamConfig,
-    SensorStartItem,
-    SensorStreamStatus,
-    BatchSensorStatus,
-)
+from app.models.sensor_streaming import SensorStreamConfig, SensorStreamStatus
 import socketio
 from datetime import datetime
 
 from app.services.metadata_socket_server import MetadataSocketServer
+from app.services import firmware as fw
 
 
 _IS_WINDOWS = platform.system() == "Windows"
-
-FW_STATUS_UNKNOWN = "unknown"
 
 # Recent color frames retained per device for texturing the 3D point cloud.
 # Five frames at 30 fps covers the typical depth/color SDK-latency offset
@@ -66,6 +61,13 @@ class RealSenseManager:
         )  # device_id -> stream_type -> list of metadata dicts
         self.lock = threading.Lock()
         self.max_queue_size = 5
+
+        # Frame-arrival signalling for async consumers (WebRTC). ``_frame_seq``
+        # counts frames pushed per "<device_id>:<stream_type>"; collection
+        # threads bump it and set the matching asyncio.Event on the main loop,
+        # so waiters block without occupying an executor thread.
+        self._frame_seq: Dict[str, int] = {}
+        self._frame_events: Dict[str, asyncio.Event] = {}
         self.is_pointcloud_enabled: Dict[str, bool] = {}
         # One rs.pointcloud() per device: pc.map_to(color) mutates internal
         # state, and depth/color threads from different devices would race on
@@ -122,6 +124,9 @@ class RealSenseManager:
         # Stores filter instances per device/sensor: device_id -> sensor_id -> list of filter dicts
         # Each filter dict: { "filter": rs.filter, "name": str, "enabled": bool }
         self.processing_blocks: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
+        # One colorizer per device so depth-visualization options (color scheme,
+        # min/max distance, histogram eq) set on it affect the streamed depth image.
+        self.colorizers: Dict[str, "rs.colorizer"] = defaultdict(rs.colorizer)
         self.sensor_metadata_queues: Dict[str, Dict[str, List[Dict]]] = {}
         # Per-sensor rs.frame_queue objects: device_id -> sensor_id -> rs.frame_queue
         self.sensor_rs_queues: Dict[str, Dict[str, Any]] = {}
@@ -171,6 +176,7 @@ class RealSenseManager:
         # doesn't silently resume emitting PC metadata that the UI thinks is
         # off (frontend resets to off on disconnect).
         self.is_pointcloud_enabled.pop(serial, None)
+        self.colorizers.pop(serial, None)
         self.devices.pop(serial, None)
         self.device_infos.pop(serial, None)
         self._supported_md_by_profile.pop(serial, None)
@@ -210,9 +216,6 @@ class RealSenseManager:
             name=_info(rs.camera_info.name, "Unknown Device"),
             serial_number=device_id,
             firmware_version=_info(rs.camera_info.firmware_version),
-            recommended_firmware_version=None,
-            firmware_status=FW_STATUS_UNKNOWN,
-            firmware_file_available=False,
             physical_port=_info(rs.camera_info.physical_port),
             usb_type=_info(rs.camera_info.usb_type_descriptor),
             product_id=_info(rs.camera_info.product_id),
@@ -300,16 +303,48 @@ class RealSenseManager:
                 return device
         raise RealSenseError(status_code=404, detail=f"Device {device_id} not found")
 
-    def get_firmware_status(self, device_id: str) -> Dict[str, Any]:
-        """Return firmware status metadata for a device."""
+    def get_recommended_firmware(self, device_id: str) -> Dict[str, Any]:
+        """Return the firmware version the online DB recommends for a device, if any."""
         device = self.get_device(device_id)
-        return {
-            "device_id": device_id,
-            "current": device.firmware_version,
-            "recommended": None,
-            "status": device.firmware_status or FW_STATUS_UNKNOWN,
-            "file_available": False,
-        }
+        recommended, _link = fw.recommended_firmware(device.name)
+        return {"recommended": recommended}
+
+    def update_firmware_from_recommended(self, device_id: str) -> Dict[str, Any]:
+        """Download the device's recommended firmware image and flash it.
+
+        Looks up the recommended .bin from the online versions DB, downloads it into
+        memory, and reuses the standard DFU flash flow — so Socket.IO
+        progress/success/failure events are emitted exactly as for a user-supplied file.
+        """
+        device = self.get_device(device_id)
+        recommended, link = fw.recommended_firmware(device.name)
+        if not link:
+            raise RealSenseError(status_code=404, detail="No recommended firmware available for this device")
+        # Refuse before downloading ~2 MiB to flash a version the device already has or beats.
+        if fw.is_newer_or_same(device.firmware_version, recommended):
+            raise RealSenseError(
+                status_code=409,
+                detail=f"Device already runs firmware {device.firmware_version}; recommended is {recommended}",
+            )
+        # Claim before emitting: a duplicate request must not put events on this device's
+        # channel, where they would rewrite the modal of the update already running.
+        self._claim_fw_update_slot(device_id)
+        # Emit download progress under the "downloading" phase so the UI can show it
+        # before the (separate) install phase begins.
+        _holder, on_download = self._make_fw_progress_callback(device_id, phase="downloading")
+        try:
+            fw_bytes = fw.download_firmware(link, on_progress=on_download)
+        except Exception as exc:
+            # Surface download failures on the same channel as flash failures so the
+            # progress modal shows the error instead of hanging.
+            self._emit_socket_event(
+                f"firmware_update_failed_{device_id}",
+                {"device_id": device_id, "error": str(exc)},
+            )
+            with self.lock:
+                self._fw_updates_in_progress.discard(device_id)
+            raise
+        return self.update_firmware_from_bytes(device_id, fw_bytes, slot_held=True)
 
     @staticmethod
     def _is_update_device(dev: rs.device) -> bool:
@@ -325,14 +360,15 @@ class RealSenseManager:
         except Exception:
             return False
 
-    def update_firmware_from_bytes(self, device_id: str, fw_bytes: bytes) -> Dict[str, Any]:
+    def update_firmware_from_bytes(self, device_id: str, fw_bytes: bytes, slot_held: bool = False) -> Dict[str, Any]:
         """Run firmware update using a user-supplied image blob.
 
         Reuses the DFU flow: check_firmware_compatibility -> enter_update_state ->
         wait for DFU device -> update_dev.update(image, on_progress) -> wait for reconnect.
         Emits the same Socket.IO progress / success / failure events as a bundled-image update.
         """
-        self._claim_fw_update_slot(device_id)
+        if not slot_held:
+            self._claim_fw_update_slot(device_id)
         try:
             self._ensure_fw_update_allowed(device_id)
             # pyrealsense2 accepts bytes-like objects; bytearray keeps memory
@@ -354,11 +390,9 @@ class RealSenseManager:
             firmware_update_id = self._resolve_firmware_update_id(target_dev, device_id)
 
             progress_holder, on_progress = self._make_fw_progress_callback(device_id)
-            # Always emit a starting progress so the UI doesn't stay at 0% forever
-            self._emit_socket_event(
-                f"firmware_progress_{device_id}",
-                {"device_id": device_id, "progress": 0.0},
-            )
+            # Mark the install phase up front: the one-click path has been showing download
+            # progress, and the SDK's first flash tick only arrives after DFU re-enumeration.
+            on_progress(0.0)
 
             try:
                 update_dev = self._enter_dfu_and_get_update_dev(
@@ -397,23 +431,23 @@ class RealSenseManager:
                 raise RealSenseError(status_code=500, detail=f"Firmware update failed: {exc}")
 
             updated_info = self._refresh_until_device_returns(device_id)
+            if not updated_info:
+                # Written, but a device that never came back is not a success we can report.
+                raise RealSenseError(
+                    status_code=504,
+                    detail="Firmware written, but the device did not reconnect. "
+                           "Power-cycle it and check its version.",
+                )
 
             self._emit_socket_event(
-                f"firmware_progress_{device_id}",
-                {"device_id": device_id, "progress": 1.0},
-            )
-            self._emit_socket_event(
                 f"firmware_update_success_{device_id}",
-                {
-                    "device_id": device_id,
-                    "firmware_version": updated_info.firmware_version if updated_info else None,
-                },
+                {"device_id": device_id, "firmware_version": updated_info.firmware_version},
             )
 
             return {
                 "device_id": device_id,
                 "progress": progress_holder["value"],
-                "firmware_version": updated_info.firmware_version if updated_info else None,
+                "firmware_version": updated_info.firmware_version,
                 "status": "success",
             }
         except RealSenseError as exc:
@@ -493,11 +527,12 @@ class RealSenseManager:
         return firmware_update_id
 
     def _make_fw_progress_callback(
-        self, device_id: str,
+        self, device_id: str, phase: str = "installing",
     ) -> Tuple[Dict[str, float], Callable[[float], None]]:
         """Build the on_progress callback and a holder dict that records the latest value.
 
         Rate-limits emissions to ~10/sec but always lets the final 100% through.
+        `phase` ("downloading" | "installing") lets the UI label what's happening.
         """
         progress_holder = {"value": 0.0}
         last_emit_ts = {"value": 0.0}
@@ -510,7 +545,7 @@ class RealSenseManager:
             last_emit_ts["value"] = now
             self._emit_socket_event(
                 f"firmware_progress_{device_id}",
-                {"device_id": device_id, "progress": float(p)},
+                {"device_id": device_id, "progress": float(p), "phase": phase},
             )
 
         return progress_holder, _on_progress
@@ -850,14 +885,14 @@ class RealSenseManager:
                 stream_profiles_list.append(stream_profile)
 
             # Get options
-            options = self.get_sensor_options(device_id, sensor_id)
+            sensor_options = self.get_sensor_options(device_id, sensor_id)
 
             sensor_info = SensorInfo(
                 sensor_id=sensor_id,
                 name=name,
                 type=sensor_type,
                 supported_stream_profiles=stream_profiles_list,  # Use correct field name
-                options=options,
+                options=sensor_options,
             )
 
             sensors.append(sensor_info)
@@ -872,146 +907,20 @@ class RealSenseManager:
                 return sensor
         raise RealSenseError(status_code=404, detail=f"Sensor {sensor_id} not found")
 
+    def _find_sensor(self, device_id: str, sensor_id: str):
+        """Resolve a sensor by its "<serial>-sensor-<index>" id."""
+        dev = self._require_device(device_id)
+        try:
+            index = int(sensor_id.split("-")[-1])
+        except ValueError:
+            raise RealSenseError(status_code=404, detail=f"Invalid sensor ID format: {sensor_id}")
+        if index < 0 or index >= len(dev.sensors):
+            raise RealSenseError(status_code=404, detail=f"Sensor {sensor_id} not found")
+        return dev.sensors[index]
+
     def get_sensor_options(self, device_id: str, sensor_id: str) -> List[OptionInfo]:
         """Get all options for a sensor"""
-        if device_id not in self.devices:
-            self.refresh_devices()
-            if device_id not in self.devices:
-                raise RealSenseError(
-                    status_code=404, detail=f"Device {device_id} not found"
-                )
-
-        dev = self.devices[device_id]
-
-        # Parse sensor index from sensor_id
-        try:
-            sensor_index = int(sensor_id.split("-")[-1])
-            if sensor_index < 0 or sensor_index >= len(dev.sensors):
-                raise RealSenseError(
-                    status_code=404, detail=f"Sensor {sensor_id} not found"
-                )
-        except (ValueError, IndexError):
-            raise RealSenseError(
-                status_code=404, detail=f"Invalid sensor ID format: {sensor_id}"
-            )
-
-        sensor = dev.sensors[sensor_index]
-        options = []
-        
-        # 1. Add native sensor options (Basic Controls)
-        for option in sensor.get_supported_options():
-            try:
-                opt_name = option.name
-                current_value = sensor.get_option(option)
-                option_range = sensor.get_option_range(option)
-
-                option_info = OptionInfo(
-                    option_id=opt_name,
-                    name=opt_name.replace("_", " ").title(),
-                    description=sensor.get_option_description(option),
-                    current_value=current_value,
-                    default_value=option_range.default,
-                    min_value=option_range.min,
-                    max_value=option_range.max,
-                    step=option_range.step,
-                    read_only=sensor.is_option_read_only(option),
-                    category="Basic Controls",
-                )
-                options.append(option_info)
-            except RuntimeError as e:
-                # Skip options that can't be read
-                pass
-
-        # 2. Add post-processing filter options
-        filters = self._get_or_create_processing_blocks(device_id, sensor_id, sensor)
-        for filter_info in filters:
-            filter_obj = filter_info["filter"]
-            filter_name = filter_info["name"]
-            # Use URL-safe name for option_id (replace spaces with underscores)
-            safe_filter_name = filter_name.replace(" ", "_")
-            is_enabled = filter_info["enabled"]
-            
-            # Add enable/disable toggle for the filter
-            options.append(OptionInfo(
-                option_id=f"PP_{safe_filter_name}_Enabled",
-                name=f"{filter_name}",
-                description=f"Enable/Disable {filter_name}",
-                current_value=1.0 if is_enabled else 0.0,
-                default_value=filter_info["default_enabled"],
-                min_value=0.0,
-                max_value=1.0,
-                step=1.0,
-                read_only=False,
-                category="Post-Processing",
-                filter_name=filter_name,
-            ))
-            
-            # Hidden options that shouldn't be shown to users (same as legacy viewer)
-            hidden_options = {
-                'frames_queue_size',
-                'stream_filter', 
-                'stream_format_filter',
-                'stream_index_filter',
-                'noise_estimation',
-                'region_of_interest',
-            }
-            
-            # Add filter-specific options (excluding hidden ones)
-            for opt in filter_obj.get_supported_options():
-                try:
-                    opt_name = opt.name
-                    # Skip hidden options
-                    if opt_name in hidden_options:
-                        continue
-                        
-                    current_value = filter_obj.get_option(opt)
-                    option_range = filter_obj.get_option_range(opt)
-                    opt_description = filter_obj.get_option_description(opt)
-                    
-                    # For holes_fill option, use description as display name (matches legacy viewer)
-                    # This is because holes_fill has different meanings per filter:
-                    # - Spatial: "Holes filling mode"
-                    # - Temporal: "Persistency mode"  
-                    # - Hole Filling: "Hole Filling mode"
-                    if opt_name == 'holes_fill':
-                        display_name = opt_description
-                    else:
-                        display_name = opt_name.replace('_', ' ').title()
-                    
-                    # Check for enum-type options (step of 1, integer range)
-                    # and collect value descriptions if available
-                    value_descs = None
-                    if option_range.step == 1.0 and option_range.min == int(option_range.min) and option_range.max == int(option_range.max):
-                        # Might be an enum, try to get value descriptions
-                        descs = {}
-                        for val in range(int(option_range.min), int(option_range.max) + 1):
-                            try:
-                                desc = filter_obj.get_option_value_description(opt, float(val))
-                                if desc:
-                                    descs[str(val)] = desc
-                            except RuntimeError:
-                                pass
-                        if descs:
-                            value_descs = descs
-                    
-                    options.append(OptionInfo(
-                        option_id=f"PP_{safe_filter_name}_{opt_name}",
-                        name=display_name,
-                        description=opt_description,
-                        current_value=current_value,
-                        default_value=option_range.default,
-                        min_value=option_range.min,
-                        max_value=option_range.max,
-                        step=option_range.step,
-                        read_only=filter_obj.is_option_read_only(opt),
-                        category="Post-Processing",
-                        filter_name=filter_name,
-                        value_descriptions=value_descs,
-                    ))
-                except RuntimeError:
-                    pass
-
-        return options
+        return options.all_options(self._find_sensor(device_id, sensor_id))
 
     def _get_or_create_processing_blocks(self, device_id: str, sensor_id: str, sensor) -> List[Dict[str, Any]]:
         """Get or create post-processing filter blocks for a sensor.
@@ -1050,142 +959,96 @@ class RealSenseManager:
         
         return self.processing_blocks[device_id][sensor_id]
 
+    def get_sensor_filters(self, device_id: str, sensor_id: str) -> Dict[str, Any]:
+        """The sensor's post-processing filters, keyed by filter name.
+
+        Keyed rather than flat because filters share option names - holes_fill exists on
+        Spatial, Temporal and Hole Filling with a different meaning on each.
+        """
+        sensor = self._find_sensor(device_id, sensor_id)
+        filters = {}
+        for filter_info in self._get_or_create_processing_blocks(device_id, sensor_id, sensor):
+            filters[filter_info["name"]] = {
+                "enabled": filter_info["enabled"],
+                "default_enabled": bool(filter_info["default_enabled"]),
+                "options": options.all_options(filter_info["filter"]),
+            }
+        return filters
+
+    def _filters_by_name(self, device_id: str, sensor_id: str) -> Dict[str, Dict[str, Any]]:
+        sensor = self._find_sensor(device_id, sensor_id)
+        return {f["name"]: f for f in self._get_or_create_processing_blocks(device_id, sensor_id, sensor)}
+
+    def set_filter_option(
+        self, device_id: str, sensor_id: str, filter_name: str, field: str, value: float
+    ) -> OptionInfo:
+        """Set one option on one filter of the sensor's chain."""
+        filters = self._filters_by_name(device_id, sensor_id)
+        return options.set_option(filters[filter_name]["filter"], field, value)
+
+    def set_filter_enabled(
+        self, device_id: str, sensor_id: str, filter_name: str, enabled: float
+    ) -> None:
+        """Bypass or apply one filter of the sensor."""
+        self._filters_by_name(device_id, sensor_id)[filter_name]["enabled"] = bool(enabled)
+
+    def get_colorizer_options(self, device_id: str) -> List[OptionInfo]:
+        """The device colorizer's controls."""
+        self._require_device(device_id)
+        return options.all_options(self.colorizers[device_id])
+
+    def set_colorizer_option(self, device_id: str, field: str, value: float) -> OptionInfo:
+        """Set one colorizer option."""
+        self._require_device(device_id)
+        return options.set_option(self.colorizers[device_id], field, value)
+
+    def _require_device(self, device_id: str):
+        if device_id not in self.devices:
+            self.refresh_devices()
+        dev = self.devices.get(device_id)
+        if dev is None:
+            raise RealSenseError(status_code=404, detail=f"Device {device_id} not found")
+        return dev
+
+    def get_advanced_mode_status(self, device_id: str) -> Dict[str, bool]:
+        """Whether the device supports RS400 advanced mode, and whether it is on."""
+        return advanced_mode.status(self._require_device(device_id))
+
+    def set_advanced_mode(self, device_id: str, enable: bool) -> Dict[str, bool]:
+        """Enable/disable advanced mode. This RESTARTS the device; wait for it to return."""
+        advanced_mode.toggle(self._require_device(device_id), enable)
+        # Re-resolve the re-enumerated device, then report what it says rather than what
+        # was asked for.
+        self._refresh_until_device_returns(device_id)
+        return self.get_advanced_mode_status(device_id)
+
+    def get_advanced_controls(self, device_id: str) -> Dict[str, List[OptionInfo]]:
+        return advanced_mode.controls(self._require_device(device_id))
+
+    def set_advanced_control(self, device_id: str, group: str, field: str, value: float) -> OptionInfo:
+        return advanced_mode.set_control(self._require_device(device_id), group, field, value)
+
     def get_sensor_option(
         self, device_id: str, sensor_id: str, option_id: str
     ) -> OptionInfo:
         """Get a specific option for a sensor"""
-        options = self.get_sensor_options(device_id, sensor_id)
-        for option in options:
+        for option in self.get_sensor_options(device_id, sensor_id):
             if option.option_id == option_id:
                 return option
         raise RealSenseError(status_code=404, detail=f"Option {option_id} not found")
 
     def set_sensor_option(
         self, device_id: str, sensor_id: str, option_id: str, value: Any
-    ) -> bool:
-        """Set an option value for a sensor"""
-        if device_id not in self.devices:
-            self.refresh_devices()
-            if device_id not in self.devices:
-                raise RealSenseError(
-                    status_code=404, detail=f"Device {device_id} not found"
-                )
+    ) -> OptionInfo:
+        """Set one option of a sensor.
 
-        dev = self.devices[device_id]
-
-        # Parse sensor index from sensor_id
-        try:
-            sensor_index = int(sensor_id.split("-")[-1])
-            if sensor_index < 0 or sensor_index >= len(dev.sensors):
-                raise RealSenseError(
-                    status_code=404, detail=f"Sensor {sensor_id} not found"
-                )
-        except (ValueError, IndexError):
-            raise RealSenseError(
-                status_code=404, detail=f"Invalid sensor ID format: {sensor_id}"
-            )
-
-        sensor = dev.sensors[sensor_index]
-
-        # Check if this is a post-processing filter option (starts with "PP_")
-        if option_id.startswith("PP_"):
-            return self._set_filter_option(device_id, sensor_id, sensor, option_id, value)
-
-        # Find the option by name (case-insensitive comparison)
-        # Match against both raw option name and display name
-        option_value = None
-        supported_options = list(sensor.get_supported_options())
-        option_id_lower = option_id.lower().replace(" ", "_")  # Normalize spaces to underscores
-        
-        for option in supported_options:
-            opt_name_lower = option.name.lower()
-            # Match by raw name or by normalized display name
-            if opt_name_lower == option_id_lower or opt_name_lower == option_id.lower():
-                option_value = option
-                break
-
-        if option_value is None:
-            # Provide helpful error with available options
-            available_names = [opt.name for opt in supported_options]
-            raise RealSenseError(
-                status_code=404, 
-                detail=f"Option '{option_id}' not found. Available options: {', '.join(available_names)}"
-            )
-
-        # Check value range (only for numeric values)
-        option_range = sensor.get_option_range(option_value)
-        
-        # Convert boolean to float (RealSense uses 0/1 for booleans)
-        if isinstance(value, bool):
-            value = 1.0 if value else 0.0
-        
-        # Ensure value is numeric for range check
-        try:
-            numeric_value = float(value)
-            if numeric_value < option_range.min or numeric_value > option_range.max:
-                raise RealSenseError(
-                    status_code=400,
-                    detail=f"Value {value} is out of range [{option_range.min}, {option_range.max}] for option {option_id}",
-                )
-            value = numeric_value
-        except (ValueError, TypeError):
-            # Non-numeric value, skip range check
-            pass
-
-        # Set the option value
-        try:
-            sensor.set_option(option_value, value)
-            return True
-        except RuntimeError as e:
-            raise RealSenseError(
-                status_code=500, detail=f"Failed to set option: {str(e)}"
-            )
-
-    def _set_filter_option(self, device_id: str, sensor_id: str, sensor, option_id: str, value: Any) -> bool:
-        """Set a post-processing filter option.
-        
-        option_id format: PP_{SafeFilterName}_Enabled or PP_{SafeFilterName}_{OptionName}
-        where SafeFilterName has spaces replaced with underscores.
+        The option is matched by its SDK name or by a display label of it, since the
+        chatbot proposes settings by the name the user sees ("Laser Power").
         """
-        filters = self._get_or_create_processing_blocks(device_id, sensor_id, sensor)
-        
-        # Find the filter by matching URL-safe name
-        target_filter = None
-        remaining_option = None
-        
-        for filter_info in filters:
-            filter_name = filter_info["name"]
-            # Use URL-safe name for matching (spaces replaced with underscores)
-            safe_filter_name = filter_name.replace(" ", "_")
-            prefix = f"PP_{safe_filter_name}_"
-            if option_id.startswith(prefix):
-                target_filter = filter_info
-                remaining_option = option_id[len(prefix):]
-                break
-        
-        if target_filter is None:
-            raise RealSenseError(status_code=404, detail=f"Filter not found for option: {option_id}")
-        
-        # Handle enable/disable toggle
-        if remaining_option == "Enabled":
-            target_filter["enabled"] = bool(value) if isinstance(value, bool) else float(value) > 0
-            logging.info(f"[PP] Filter '{target_filter['name']}' enabled={target_filter['enabled']}")
-            return True
-        
-        # Handle filter-specific option
-        filter_obj = target_filter["filter"]
-        for opt in filter_obj.get_supported_options():
-            if opt.name == remaining_option:
-                try:
-                    # Convert boolean to float
-                    if isinstance(value, bool):
-                        value = 1.0 if value else 0.0
-                    filter_obj.set_option(opt, float(value))
-                    return True
-                except RuntimeError as e:
-                    raise RealSenseError(status_code=500, detail=f"Failed to set filter option: {str(e)}")
-        
-        raise RealSenseError(status_code=404, detail=f"Filter option not found: {remaining_option}")
+        sensor = self._find_sensor(device_id, sensor_id)
+        wanted = {option_id.lower(), option_id.lower().replace(" ", "_")}
+        name = next(o.name for o in sensor.get_supported_options() if o.name.lower() in wanted)
+        return options.set_option(sensor, name, value)
 
     def _apply_depth_filters(self, device_id: str, frame: rs.depth_frame) -> rs.depth_frame:
         """Apply enabled post-processing filters to a depth frame.
@@ -1207,7 +1070,7 @@ class RealSenseManager:
             return frame
         
         filters = self.processing_blocks[device_id].get(depth_sensor_id, [])
-        
+
         # Quick check: if no filters are enabled, return early
         if not any(f["enabled"] for f in filters):
             return frame
@@ -1595,9 +1458,49 @@ class RealSenseManager:
             stopping=stopping,
         )
 
+    def _publish_frames(self, device_id: str, stream_types) -> None:
+        """Bump the arrival counter for each stream and wake async waiters.
+
+        Runs on collection threads; the events are set via the main loop so
+        waiters need no executor thread.
+        """
+        loop = RealSenseManager._main_loop
+        for stream_type in stream_types:
+            key = f"{device_id}:{stream_type.lower()}"
+            self._frame_seq[key] = self._frame_seq.get(key, 0) + 1
+            event = self._frame_events.get(key)
+            if event is not None and loop is not None and not loop.is_closed():
+                loop.call_soon_threadsafe(event.set)
+
+    async def wait_for_frame_after(
+        self, device_id: str, stream_type: str, last_seq: int, timeout: float = 1.0
+    ) -> Tuple[Optional[np.ndarray], int]:
+        """Wait until a frame newer than ``last_seq`` arrives, then return it.
+
+        Returns ``(frame, seq)``; ``frame`` is None on timeout. The seq is read
+        after the frame is fetched, so a frame landing in between skips ahead
+        rather than being re-delivered.
+        """
+        key = f"{device_id}:{stream_type.lower()}"
+        event = self._frame_events.setdefault(key, asyncio.Event())
+        deadline = time.monotonic() + timeout
+        while self._frame_seq.get(key, 0) <= last_seq:
+            event.clear()
+            if self._frame_seq.get(key, 0) > last_seq:
+                break
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return None, last_seq
+            try:
+                await asyncio.wait_for(event.wait(), remaining)
+            except asyncio.TimeoutError:
+                return None, last_seq
+        frame = self.get_latest_frame(device_id, stream_type)
+        return frame, self._frame_seq.get(key, 0)
+
     def get_latest_frame(
         self, device_id: str, stream_type: str
-    ) -> Tuple[np.ndarray, dict]:
+    ) -> np.ndarray:
         """Get the latest frame from a specific stream (supports both pipeline and sensor modes)"""
         with self.lock:
             mode = self.streaming_mode.get(device_id, "idle")
@@ -1920,9 +1823,9 @@ class RealSenseManager:
                 ir_index = int(stream_name_list[1]) if len(stream_name_list) > 1 else 1
                 stream_mappings[active_stream] = (rs_stream, ir_index)
         
-        # Create a single colorizer instance for depth (reuse for performance)
-        colorizer = rs.colorizer()
-        
+        # Cached per-device colorizer so Depth Visualization options apply live
+        colorizer = self.colorizers[device_id]
+
         try:
             while device_id in self.pipelines:
                 try:
@@ -2041,6 +1944,8 @@ class RealSenseManager:
                             metadata_queue.append(metadata)
                             while len(metadata_queue) > self.max_queue_size:
                                 metadata_queue.pop(0)
+
+                    self._publish_frames(device_id, processed_frames.keys())
 
                 except RuntimeError as e:
                     # Handle timeout or other error
@@ -2390,9 +2295,9 @@ class RealSenseManager:
             stream_types: List of stream types this sensor is producing
         """
         logging.info(f"[SENSOR] Frame collection thread started for {device_id}/{sensor_id} streams: {stream_types}")
-        
-        colorizer = rs.colorizer()
-        
+
+        colorizer = self.colorizers[device_id]
+
         try:
             while True:
                 # Check if we should stop
@@ -2454,7 +2359,9 @@ class RealSenseManager:
                             mqueue.append(metadata)
                             while len(mqueue) > self.max_queue_size:
                                 mqueue.pop(0)
-                    
+
+                    self._publish_frames(device_id, (target_stream_type,))
+
                 except Exception as e:
                     if "timeout" not in str(e).lower():
                         logging.debug(f"[SENSOR] Frame collection error: {e}")
@@ -2801,121 +2708,6 @@ class RealSenseManager:
                 error=info.get("error"),
                 started_at=info.get("started_at"),
             )
-
-    def batch_start_sensors(
-        self,
-        device_id: str,
-        sensors: List[SensorStartItem]
-    ) -> BatchSensorStatus:
-        """
-        Start multiple sensors atomically.
-        
-        If any sensor fails to start, all previously started sensors are stopped.
-        
-        Args:
-            device_id: The device ID
-            sensors: List of sensor configurations to start
-            
-        Returns:
-            BatchSensorStatus with status of all sensors
-        """
-        # Check mode compatibility
-        self._check_streaming_mode(device_id, "sensor")
-        
-        started = []
-        errors = []
-        
-        for item in sensors:
-            try:
-                status = self.start_sensor(device_id, item.sensor_id, item.config)
-                if status.error:
-                    raise Exception(status.error)
-                started.append(item.sensor_id)
-            except Exception as e:
-                errors.append(f"Failed to start {item.sensor_id}: {str(e)}")
-                # Rollback: stop all successfully started sensors
-                for started_sensor_id in started:
-                    try:
-                        self.stop_sensor(device_id, started_sensor_id)
-                    except:
-                        pass
-                break
-        
-        return self.get_batch_status(device_id)
-
-    def batch_stop_sensors(
-        self,
-        device_id: str,
-        sensor_ids: Optional[List[str]] = None
-    ) -> BatchSensorStatus:
-        """
-        Stop multiple sensors.
-        
-        Args:
-            device_id: The device ID
-            sensor_ids: List of sensor IDs to stop, or None to stop all
-            
-        Returns:
-            BatchSensorStatus with status of all sensors
-        """
-        with self.lock:
-            if device_id not in self.sensor_streams:
-                return BatchSensorStatus(
-                    device_id=device_id,
-                    mode=self.streaming_mode.get(device_id, "idle"),
-                    sensors=[],
-                    errors=[],
-                )
-            
-            # Get sensor IDs to stop
-            if sensor_ids is None:
-                sensor_ids = list(self.sensor_streams[device_id].keys())
-        
-        errors = []
-        for sensor_id in sensor_ids:
-            try:
-                self.stop_sensor(device_id, sensor_id)
-            except Exception as e:
-                errors.append(f"Failed to stop {sensor_id}: {str(e)}")
-        
-        status = self.get_batch_status(device_id)
-        status.errors = errors
-        return status
-
-    def get_batch_status(
-        self,
-        device_id: str
-    ) -> BatchSensorStatus:
-        """
-        Get streaming status for all sensors on a device.
-        
-        Args:
-            device_id: The device ID
-            
-        Returns:
-            BatchSensorStatus with status of all sensors
-        """
-        if device_id not in self.devices:
-            self.refresh_devices()
-            if device_id not in self.devices:
-                raise RealSenseError(
-                    status_code=404, detail=f"Device {device_id} not found"
-                )
-        
-        # Get all sensors for the device
-        sensors_info = self.get_sensors(device_id)
-        
-        sensor_statuses = []
-        for sensor_info in sensors_info:
-            status = self.get_sensor_status(device_id, sensor_info.sensor_id)
-            sensor_statuses.append(status)
-        
-        return BatchSensorStatus(
-            device_id=device_id,
-            mode=self.streaming_mode.get(device_id, "idle"),
-            sensors=sensor_statuses,
-            errors=[],
-        )
 
     def get_sensor_frame(
         self,

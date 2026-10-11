@@ -22,6 +22,8 @@ using rs_fourcc = rsutils::type::fourcc;
 
 namespace librealsense
 {
+    // 'Y8  ' is not listed here: uvc-types.h's fourcc_map already normalizes it to 'GREY'
+    // in the mf-uvc and uvc-device backends before it ever reaches this map.
     const std::map< uint32_t, rs2_format > od_fourcc_to_rs2_format = {
         { rs_fourcc( 'G', 'R', 'E', 'Y' ), RS2_FORMAT_Y8 },
     };
@@ -34,8 +36,10 @@ namespace librealsense
         , d500_device( dev_info )
         , _object_detection_stream( new stream( RS2_STREAM_OBJECT_DETECTION ) )
     {
-        static const uint32_t od_stream_mi = 9; // UVC interface index of the object-detection stream.
-        auto od_devs_info = filter_by_mi( dev_info->get_group().uvc_devices, od_stream_mi );
+        // OD VideoControl is MI 9 on all currently supported layouts (D555/D555e,
+        // D585 0x0C08 and legacy 0x0B6A) - confirmed with the HKR firmware team.
+        constexpr uint32_t od_control_mi = 9;
+        auto od_devs_info = filter_by_mi( dev_info->get_group().uvc_devices, od_control_mi );
 
         // Skip if the device does not expose the stream; the rest of the device enumerates normally.
         if( od_devs_info.empty() )
@@ -81,11 +85,14 @@ namespace librealsense
 
         od_ep->register_option( RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option );
 
-        auto detection_distance = std::make_shared< uvc_xu_option< uint8_t > >(raw_od_ep,
-                                                                               ds::inference_xu,
-                                                                               ds::d500_xu_id::DETECTION_DISTANCE,
-                                                                               "Enable firmware distance calculation for detections" );
-        od_ep->register_option( RS2_OPTION_DETECTION_DISTANCE, detection_distance );
+        if( _fw_version >= firmware_version( "7.58.40802.12738" ) )
+        {
+            auto detection_distance = std::make_shared< uvc_xu_option< uint8_t > >(raw_od_ep,
+                                                                                   ds::inference_xu,
+                                                                                   ds::d500_xu_id::DETECTION_DISTANCE,
+                                                                                   "Enable firmware distance calculation for detections" );
+            od_ep->register_option( RS2_OPTION_DETECTION_DISTANCE, detection_distance );
+        }
 
         od_ep->register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, od_devices_info.front().device_path );
 
@@ -109,23 +116,6 @@ namespace librealsense
         od_ep->register_processing_block( od_pbf );
     }
 
-    static void set_align_depth_xu( std::shared_ptr< uvc_sensor > raw_depth, bool enable )
-    {
-        if( !raw_depth )
-            return;
-        try
-        {
-            raw_depth->invoke_powered( [enable]( platform::uvc_device & dev )
-            {
-                uint8_t val = enable ? 1 : 0;
-                if( !dev.set_xu( ds::depth_xu, ds::d500_xu_id::ALIGN_DEPTH, &val, sizeof( val ) ) )
-                    LOG_WARNING( "Failed to " << ( enable ? "enable" : "disable" ) << " Align_Depth XU" );
-            } );
-        }
-        catch( std::exception const & e ) { LOG_WARNING( "Align_Depth XU exception: " << e.what() ); }
-        catch( ... )                       { LOG_WARNING( "Align_Depth XU: unknown exception" ); }
-    }
-
     void d500_object_detection_sensor::open( const stream_profiles & requests )
     {
         // Perception and some embedded filters cannot run together. Reject here before the device is touched.
@@ -135,21 +125,18 @@ namespace librealsense
 
     void d500_object_detection_sensor::start( rs2_frame_callback_sptr callback )
     {
-        // TODO: FW does not yet support the Align_Depth XU — re-enable once FW is ready.
-        // set_align_depth_xu( _owner->get_raw_depth_sensor(), true );
         synthetic_sensor::start( callback );
     }
 
     void d500_object_detection_sensor::stop()
     {
         synthetic_sensor::stop();
-        // TODO: FW does not yet support the Align_Depth XU — re-enable once FW is ready.
-        // set_align_depth_xu( _owner->get_raw_depth_sensor(), false );
     }
 
     stream_profiles d500_object_detection_sensor::init_stream_profiles()
     {
-        // TODO - check if needed. Registers extrinsics, but not sure it is needed for the OD stream, which is not a physical stream.
+        // No extrinsics registered for this stream: FW reports detections as color-frame pixels,
+        // so it has no pose of its own and nothing transforms through it.
         auto results = synthetic_sensor::init_stream_profiles();
         for( auto p : results )
         {

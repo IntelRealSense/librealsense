@@ -191,7 +191,7 @@ Both scripts produce, under the repository root:
   - Linux: `.deb` + `.AppImage`
   - macOS: `.dmg`
 
-Prerequisites: Node.js 18+, Python 3.8+, Rust 1.56+ (https://rustup.rs/), PyInstaller
+Prerequisites: Node.js 18+, Python 3.10+, Rust 1.56+ (https://rustup.rs/), PyInstaller
 (`pip install pyinstaller`).
 
 **Linux distro support (Tauri 1.5).** This project currently uses Tauri 1.5, which

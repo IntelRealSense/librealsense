@@ -8,7 +8,10 @@
 #include <thread>
 #include <atomic>
 #include <functional>
+#include <memory>
 #include <cassert>
+#include <exception>
+#include <string>
 
 const int QUEUE_MAX_SIZE = 10;
 // Simplest implementation of a blocking concurrent queue for thread messaging
@@ -310,14 +313,100 @@ public:
     // An action is any functor that accepts a cancellable timer
     typedef std::function<void(cancellable_timer const &)> action;
 
+private:
+    struct invocation_state
+    {
+        std::mutex mutex;
+        std::condition_variable cv;
+        bool started = false;
+        bool done = false;
+        bool cancelled = false;
+        std::exception_ptr error;
+    };
+
+    static void finish_invocation(
+        std::shared_ptr< invocation_state > const & state,
+        std::exception_ptr error = nullptr )
+    {
+        {
+            std::lock_guard< std::mutex > lock( state->mutex );
+            state->error = std::move( error );
+            state->done = true;
+        }
+        state->cv.notify_all();
+    }
+
+    template< class T >
+    static action make_invocation_action( std::shared_ptr< invocation_state > state, T func )
+    {
+        return [state, func = std::move( func )]( cancellable_timer const & c ) mutable {
+            {
+                std::lock_guard< std::mutex > lock( state->mutex );
+                if( state->cancelled )
+                {
+                    state->done = true;
+                    state->cv.notify_all();
+                    return;
+                }
+                state->started = true;
+            }
+
+            try
+            {
+                func( c );
+            }
+            catch( ... )
+            {
+                finish_invocation( state, std::current_exception() );
+                return;
+            }
+            finish_invocation( state );
+        };
+    }
+
+    template< class ExitCondition >
+    void wait_for_invocation(
+        std::shared_ptr< invocation_state > const & state,
+        ExitCondition const & exit_condition )
+    {
+        std::unique_lock< std::mutex > lock( state->mutex );
+        while( ! state->done )
+        {
+            if( ( _was_stopped || exit_condition() ) && ! state->started )
+            {
+                state->cancelled = true;
+                return;
+            }
+            state->cv.wait_for( lock, std::chrono::milliseconds( 10 ) );
+        }
+    }
+
+    static void rethrow_invocation_error( std::shared_ptr< invocation_state > const & state )
+    {
+        std::exception_ptr error;
+        {
+            std::lock_guard< std::mutex > lock( state->mutex );
+            error = state->error;
+        }
+        if( error )
+            std::rethrow_exception( error );
+    }
+
+public:
+
     // Certain conditions (see invoke()) may cause actions to be lost, e.g. when the queue gets full
     // and we're non-blocking. The on_drop_callback allows caputring of these instances, if we
     // want...
     //
+    // The name is logged alongside our address, which distinguishes the many same-named instances.
+    //
     dispatcher( unsigned int queue_capacity,
+                std::string name,
                 std::function< void( action ) > on_drop_callback = nullptr );
 
     ~dispatcher();
+
+    std::string const & name() const { return _name; }
 
     bool empty() const { return _queue.empty(); }
 
@@ -329,38 +418,33 @@ public:
     // in line (the oldest) for dispatch!
     //
     template<class T>
-    void invoke(T item, bool is_blocking = false)
+    bool invoke(T item, bool is_blocking = false)
     {
         if (!_was_stopped)
         {
             if(is_blocking)
-                _queue.blocking_enqueue(std::move(item));
+                return _queue.blocking_enqueue(std::move(item));
             else
-                _queue.enqueue(std::move(item));
+                return _queue.enqueue(std::move(item));
         }
+        return false;
     }
 
     // Like above, but synchronous: will return only when the action has actually been dispatched.
     //
     template<class T>
-    void invoke_and_wait(T item, std::function<bool()> exit_condition, bool is_blocking = false)
+    void invoke_and_wait(T item, std::function<bool()> exit_condition, bool is_blocking = true)
     {
-        bool done = false;
+        if( exit_condition() )
+            return;
 
-        //action
-        auto func = std::move(item);
-        invoke([&, func](dispatcher::cancellable_timer c)
-        {
-            std::lock_guard<std::mutex> lk(_blocking_invoke_mutex);
-            func(c);
+        auto state = std::make_shared< invocation_state >();
+        auto queued = invoke( make_invocation_action( state, std::move( item ) ), is_blocking );
 
-            done = true;
-            _blocking_invoke_cv.notify_one();
-        }, is_blocking);
-
-        //wait
-        std::unique_lock<std::mutex> lk(_blocking_invoke_mutex);
-        _blocking_invoke_cv.wait(lk, [&](){ return done || exit_condition(); });
+        if( ! queued )
+            return;
+        wait_for_invocation( state, exit_condition );
+        rethrow_invocation_error( state );
     }
 
     // Stops the dispatcher. This is not a pause: it will clear out the queue, losing any pending
@@ -387,6 +471,7 @@ private:
 
     friend cancellable_timer;
 
+    std::string const _name;
     single_consumer_queue<std::function<void(cancellable_timer)>> _queue;
     std::thread _thread;
 
@@ -396,9 +481,6 @@ private:
 
     std::mutex _dispatch_mutex;
 
-    std::condition_variable _blocking_invoke_cv;
-    std::mutex _blocking_invoke_mutex;
-
     std::atomic<bool> _is_alive;
 };
 
@@ -406,8 +488,8 @@ template<class T = std::function<void(dispatcher::cancellable_timer)>>
 class active_object
 {
 public:
-    active_object(T operation)
-        : _operation(std::move(operation)), _dispatcher(1), _stopped(true)
+    active_object( T operation, std::string name )
+        : _operation(std::move(operation)), _dispatcher(1, std::move(name)), _stopped(true)
     {
     }
 
@@ -469,7 +551,7 @@ public:
                 std::lock_guard<std::mutex> lk(_m);
                 _kicked = false;
             }
-        });
+        }, "watchdog" );
     }
 
     ~watchdog()

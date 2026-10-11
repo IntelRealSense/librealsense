@@ -933,6 +933,7 @@ namespace rs2
         _hidden_options.emplace(RS2_OPTION_NOISE_ESTIMATION);
         _hidden_options.emplace(RS2_OPTION_REGION_OF_INTEREST);
         _hidden_options.emplace(RS2_OPTION_READOUT_SHAPING);
+        _hidden_options.emplace(RS2_OPTION_ENABLE_ALIGNED_DEPTH);  // drawn with the stream selection instead
         // Rendered as a "more" popup Selectable in device-model.cpp instead of a sensor
         // control, so it doesn't need to appear in the sensor's Controls tree.
         _hidden_options.emplace(RS2_OPTION_SENSORS_CONFIG_MODE);
@@ -1828,17 +1829,64 @@ namespace rs2
         }
     }
 
+    namespace {
+        // Two ladders, deliberately different scopes:
+        //
+        // k_snap_ladder — used by nice_step_for_range for the *bounds smoothing*
+        // snap grid. Its finest entry is 0.05 m; a finer snap grid would make
+        // the deadband very tight (½·step) and let sub-cm smoothed jitter cross
+        // it, defeating the hysteresis. So the snap grid stays coarse.
+        //
+        // k_label_ladder — used by the *tick-label picker* in draw_color_ruler.
+        // Extended with sub-cm steps so a narrow ruler (~1 cm) still gets 3-6
+        // labeled ticks instead of a single "5.00" floating alone. The label
+        // grid can safely be finer than the snap grid — labels are cosmetic and
+        // change only when the snapped bounds themselves cross a snap-step.
+        static constexpr float k_snap_ladder[] = {
+            0.05f, 0.10f, 0.25f, 0.5f, 1.f, 2.f, 5.f, 10.f, 20.f, 50.f, 100.f
+        };
+        static constexpr float k_label_ladder[] = {
+            0.001f, 0.002f, 0.005f, 0.01f, 0.02f,
+            0.05f, 0.10f, 0.25f, 0.5f, 1.f, 2.f, 5.f, 10.f, 20.f, 50.f, 100.f
+        };
+
+        // Snap grid: coarsest step that keeps ~≤10 grid cells across the range.
+        // Verified to match the previous hardcoded thresholds through 20 m; beyond
+        // that, extrapolates sensibly (100 m → 10 m step instead of the old 5 m).
+        float nice_step_for_range(float range)
+        {
+            for (float s : k_snap_ladder)
+            {
+                if (range <= s * 10.f) return s;
+            }
+            return k_snap_ladder[sizeof(k_snap_ladder)/sizeof(k_snap_ladder[0]) - 1];
+        }
+
+        // p in [0,1]. Modifies the vector via nth_element — cheap and avoids a full sort.
+        float percentile(std::vector<float>& v, float p)
+        {
+            if (v.empty()) return 0.f;
+            if (p < 0.f) p = 0.f;
+            if (p > 1.f) p = 1.f;
+            size_t idx = static_cast<size_t>(p * (v.size() - 1));
+            std::nth_element(v.begin(), v.begin() + idx, v.end());
+            return v[idx];
+        }
+    }
+
     void viewer_model::draw_color_ruler(const mouse_info& mouse,
                                         const stream_model& s_model,
                                         const rect& stream_rect,
                                         std::vector<rgb_per_distance> rgb_per_distance_vec,
-                                        float ruler_length,
+                                        const ruler_bounds& bounds,
                                         const std::string& ruler_units)
     {
-        if (rgb_per_distance_vec.empty() || (ruler_length <= 0.f))
+        const float ruler_min = bounds.min;
+        const float ruler_max = bounds.max;
+        const float ruler_range = ruler_max - ruler_min;
+        if (rgb_per_distance_vec.empty() || (ruler_range <= 0.f))
             return;
 
-        ruler_length = std::ceil(ruler_length);
         std::sort(rgb_per_distance_vec.begin(), rgb_per_distance_vec.end(), [](const rgb_per_distance& a,
             const rgb_per_distance& b) {
             return a.depth_val < b.depth_val;
@@ -1866,12 +1914,10 @@ namespace rs2
         const auto left_x_colored_ruler = stream_width - left_x_colored_ruler_offset;
         const auto right_x_colored_ruler = stream_width - (left_x_colored_ruler_offset - colored_ruler_width);
         assert((bottom_y_ruler - top_y_ruler) != 0.f);
-        const auto ratio = (bottom_y_ruler - top_y_ruler) / ruler_length;
+        // px per meter for depth->y mapping (independent of ruler start offset).
+        const auto ratio = (bottom_y_ruler - top_y_ruler) / ruler_range;
 
-        // Draw numbered ruler
-        float y_ruler_val = top_y_ruler;
         static const auto numbered_ruler_width = 20.f;
-
         const auto right_x_numbered_ruler = right_x_colored_ruler + numbered_ruler_width;
         static const auto hovered_numbered_ruler_opac = 0.8f;
         static const auto unhovered_numbered_ruler_opac = 0.6f;
@@ -1889,7 +1935,7 @@ namespace rs2
             std::stringstream ss;
             auto relative_mouse_y = ImGui::GetMousePos().y - top_y_ruler;
             auto y = (bottom_y_ruler - top_y_ruler) - relative_mouse_y;
-            ss << std::fixed << std::setprecision(2) << (y / ratio) << ruler_units;
+            ss << std::fixed << std::setprecision(2) << (ruler_min + y / ratio) << ruler_units;
             RsImGui::CustomTooltip("%s", ss.str().c_str());
             colored_ruler_opac = 1.f;
             numbered_ruler_background_opac = hovered_numbered_ruler_opac;
@@ -1906,26 +1952,63 @@ namespace rs2
         glVertex2f(right_x_colored_ruler, bottom_y_ruler);
         glEnd();
 
-
+        // Numbered ruler. Labels sit only on nice-step multiples that fall inside
+        // the bar — no forced min/max, no rounded-off duplicate at either end.
+        // Aim for 3-6 labels; walk the ladder fine→coarse and take the smallest
+        // step whose tick count is ≤ 6. If that step happens to give < 3 labels
+        // (only possible when the range is under the finest ladder entry), fall
+        // back one entry (finer) so a narrow ruler still gets ~7-11 sub-cm
+        // labels rather than a single lonely one.
         const float x_ruler_val = right_x_colored_ruler + 4.0f;
-        ImGui::SetCursorScreenPos({ x_ruler_val, y_ruler_val });
-        const auto font_size = ImGui::GetFontSize();
-        ImGui::TextUnformatted(std::to_string(static_cast<int>(ruler_length)).c_str());
-        const auto skip_numbers = ((ruler_length / 10.f) - 1.f);
-        auto to_skip = (skip_numbers < 0.f)?0.f: skip_numbers;
-        for (int i = static_cast<int>(ruler_length - 1); i > 0; --i)
-        {
-            y_ruler_val += ((bottom_y_ruler - top_y_ruler) / ruler_length);
-            ImGui::SetCursorScreenPos({ x_ruler_val, y_ruler_val - font_size / 2 });
-            if (((to_skip--) > 0))
-                continue;
+        const auto  font_size   = ImGui::GetFontSize();
+        const int   n_ladder    = static_cast<int>(sizeof(k_label_ladder)/sizeof(k_label_ladder[0]));
 
-            ImGui::TextUnformatted(std::to_string(i).c_str());
-            to_skip = skip_numbers;
+        auto tick_count = [ruler_min, ruler_max](float s) {
+            const float first = std::ceil(ruler_min / s - 1e-4f) * s;
+            if (first > ruler_max + 1e-4f) return 0;
+            return static_cast<int>(std::floor((ruler_max + 1e-4f - first) / s)) + 1;
+        };
+
+        float draw_step = k_label_ladder[0];
+        for (int i = 0; i < n_ladder; ++i)
+        {
+            const int n = tick_count(k_label_ladder[i]);
+            if (n > 6) continue;
+            draw_step = (n >= 3 || i == 0) ? k_label_ladder[i] : k_label_ladder[i - 1];
+            break;
         }
-        y_ruler_val += ((bottom_y_ruler - top_y_ruler) / ruler_length);
-        ImGui::SetCursorScreenPos({ x_ruler_val, y_ruler_val - font_size });
-        ImGui::Text("0");
+
+        // Decimals: fewest that still distinguish adjacent step multiples.
+        // ≥1 m → 0; ≥0.1 → 1; ≥0.01 → 2; smaller (0.001/0.002/0.005) → 3.
+        const int decimals = (draw_step >= 1.f   - 1e-5f) ? 0
+                           : (draw_step >= 0.1f  - 1e-5f) ? 1
+                           : (draw_step >= 0.01f - 1e-6f) ? 2
+                                                         : 3;
+        auto fmt_label = [decimals](float v) {
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(decimals) << v;
+            return ss.str();
+        };
+
+        // Overlap guard: skip a tick if its glyph would collide with the last
+        // placed one. Loop runs small v → large v, i.e. bottom → top in screen
+        // space, so `last_ly` (previous, larger y) is always below the next.
+        const float first_tick   = std::ceil(ruler_min / draw_step - 1e-4f) * draw_step;
+        const float min_vertical = font_size + 2.f;
+        float       last_ly      = 1e30f;   // sentinel; first tick always passes the gap check
+        for (float v = first_tick; v <= ruler_max + 1e-4f; v += draw_step)
+        {
+            const float y = bottom_y_ruler - (v - ruler_min) * ratio;
+            if (y < top_y_ruler || y > bottom_y_ruler) continue;
+            // Keep the label glyph inside the bar even for ticks flush at either edge.
+            float ly = y - font_size / 2.f;
+            if (ly < top_y_ruler)                ly = top_y_ruler;
+            if (ly > bottom_y_ruler - font_size) ly = bottom_y_ruler - font_size;
+            if (last_ly - ly < min_vertical) continue;
+            ImGui::SetCursorScreenPos({ x_ruler_val, ly });
+            ImGui::TextUnformatted(fmt_label(v).c_str());
+            last_ly = ly;
+        }
 
         auto total_depth_scale = rgb_per_distance_vec.back().depth_val - rgb_per_distance_vec.front().depth_val;
         static const auto sensitivity_factor = 0.01f;
@@ -1954,9 +2037,12 @@ namespace rs2
             last_depth_value = curr_depth;
             last_index = i;
 
-            auto y = bottom_y_ruler - ((rgb_per_distance_vec[i].depth_val) * ratio);
-            if ((i == (rgb_per_distance_vec.size() - 1)) || (std::ceil(curr_depth) > ruler_length))
-                y = top_y_ruler;
+            // Map depth into the [top_y_ruler, bottom_y_ruler] strip, clipping any
+            // pixels that fall outside the current [ruler_min, ruler_max] window.
+            float y = bottom_y_ruler - (curr_depth - ruler_min) * ratio;
+            if (y < top_y_ruler)    y = top_y_ruler;
+            if (y > bottom_y_ruler) y = bottom_y_ruler;
+            if (i == (rgb_per_distance_vec.size() - 1)) y = top_y_ruler;
 
             glColor4f(rgb_per_distance_vec[i].rgb_val.r / 255.f,
                       rgb_per_distance_vec[i].rgb_val.g / 255.f,
@@ -1981,23 +2067,88 @@ namespace rs2
         glEnd();
     }
 
-    float viewer_model::calculate_ruler_max_distance(const std::vector<float>& distances) const
+    viewer_model::ruler_bounds viewer_model::calculate_ruler_bounds(
+        std::vector<float> distances, stream_model& s_model)
     {
         assert(!distances.empty());
 
-        float mean = std::accumulate(distances.begin(),
-            distances.end(), 0.0f) / distances.size();
-
-        float e = 0;
-        float inverse = 1.f / distances.size();
-        for (auto elem : distances)
+        // 1) User override short-circuits the data-driven path.
+        if (s_model.ruler_mode == ruler_range_mode::fixed_user)
         {
-            e += static_cast<float>(pow(elem - mean, 2));
+            float lo = std::max(0.f, s_model.ruler_fixed_min);
+            float hi = std::max(lo + k_min_ruler_gap, s_model.ruler_fixed_max);
+            s_model.ruler_state.snapped_min = lo;
+            s_model.ruler_state.snapped_max = hi;
+            s_model.ruler_state.smoothed_min = lo;
+            s_model.ruler_state.smoothed_max = hi;
+            s_model.ruler_state.initialized = true;
+            return { lo, hi };
         }
 
-        auto standard_deviation = sqrt(inverse * e);
-        static const auto length_jump = 4.f;
-        return std::ceil((mean + 1.5f * standard_deviation) / length_jump) * length_jump;
+        // 2) Auto: percentile-driven raw bounds with symmetric 5% headroom on
+        //    each side. Cache the span before mutating either endpoint — else
+        //    the second line's headroom would ride the already-shrunk raw_lo.
+        float raw_lo = percentile(distances, 0.05f);
+        float raw_hi = percentile(distances, 0.95f);
+        const float span = std::max(raw_hi - raw_lo, 0.05f);
+        raw_lo = std::max(0.f, raw_lo - 0.05f * span);
+        raw_hi = raw_hi + 0.05f * span;
+        if (raw_hi <= raw_lo) raw_hi = raw_lo + 0.05f;
+
+        // 3) Asymmetric EMA hysteresis. "Expand" (max moves up, min moves down)
+        //    tracks fast so the ruler grows immediately when a farther object
+        //    appears; "contract" tracks slowly so a brief close-up doesn't
+        //    collapse the ruler. Attack/release, the same trick a compressor uses.
+        auto& st = s_model.ruler_state;
+        constexpr float alpha_fast = 0.25f;   // ~4-frame attack
+        constexpr float alpha_slow = 0.03f;   // ~30-frame release (~1 s @ 30 fps)
+
+        auto ema = [](float& state, float target, float alpha_expand, float alpha_contract, bool max_edge)
+        {
+            const bool expanding = max_edge ? (target > state) : (target < state);
+            const float a = expanding ? alpha_expand : alpha_contract;
+            state = (1.f - a) * state + a * target;
+        };
+
+        if (!st.initialized)
+        {
+            st.smoothed_min = raw_lo;
+            st.smoothed_max = raw_hi;
+            float step0 = nice_step_for_range(std::max(0.05f, st.smoothed_max - st.smoothed_min));
+            st.snapped_min = std::max(0.f, std::floor(st.smoothed_min / step0) * step0);
+            st.snapped_max = std::ceil(st.smoothed_max / step0) * step0;
+            if (st.snapped_max <= st.snapped_min) st.snapped_max = st.snapped_min + step0;
+            st.initialized = true;
+            return { st.snapped_min, st.snapped_max };
+        }
+        ema(st.smoothed_max, raw_hi, alpha_fast, alpha_slow, /*max_edge=*/true);
+        ema(st.smoothed_min, raw_lo, alpha_fast, alpha_slow, /*max_edge=*/false);
+
+        // 4) Asymmetric deadband: expand at ½·step (snap up quickly when needed),
+        //    contract only at 1½·step (three times harder to shrink than grow),
+        //    so a bound sitting near a tick edge doesn't ping-pong.
+        const float cur_range = std::max(0.05f, st.snapped_max - st.snapped_min);
+        const float cur_step  = nice_step_for_range(cur_range);
+
+        auto needs_resnap = [cur_step](float snapped, float smoothed, bool max_edge)
+        {
+            const float diff = smoothed - snapped;
+            const bool expanding = max_edge ? (diff > 0.f) : (diff < 0.f);
+            const float threshold = expanding ? 0.5f * cur_step : 1.5f * cur_step;
+            return std::fabs(diff) > threshold;
+        };
+        const bool re_snap = needs_resnap(st.snapped_max, st.smoothed_max, true)
+                          || needs_resnap(st.snapped_min, st.smoothed_min, false);
+
+        if (re_snap)
+        {
+            const float new_range = std::max(0.05f, st.smoothed_max - st.smoothed_min);
+            const float step      = nice_step_for_range(new_range);
+            st.snapped_min = std::max(0.f, std::floor(st.smoothed_min / step) * step);
+            st.snapped_max = std::ceil(st.smoothed_max / step) * step;
+            if (st.snapped_max <= st.snapped_min) st.snapped_max = st.snapped_min + step;
+        }
+        return { st.snapped_min, st.snapped_max };
     }
 
     void viewer_model::render_2d_view(const rect& view_rect,
@@ -2046,7 +2197,12 @@ namespace rs2
             auto&& view_rect = kvp.second;
             auto stream = kvp.first;
             auto&& stream_mv = streams[stream];
-            auto&& stream_size = stream_mv.size;
+            auto stream_size = stream_mv.size;
+            // MAP1 frames are transposed for display, so fit the tile to the actual texture size,
+            // not stream_mv.size (which stays native - it also drives "Display Size" UI text).
+            auto occ_geom = stream_mv.texture->last_occupancy_geometry;
+            if (stream_mv.profile.stream_type() == RS2_STREAM_OCCUPANCY && occ_geom.valid)
+                stream_size = { static_cast<float>(occ_geom.tex_cols), static_cast<float>(occ_geom.tex_rows) };
             auto stream_rect = view_rect.adjust_ratio(stream_size).grow(-3);
 
             if (should_render_frame(stream_mv)) {
@@ -2072,7 +2228,7 @@ namespace rs2
             stream_mv.show_stream_footer(font1, stream_rect, active_mouse, streams, *this);
 
 
-            if (val_in_range(stream_mv.profile.format(), { RS2_FORMAT_RAW10 , RS2_FORMAT_RAW16, RS2_FORMAT_MJPEG }))
+            if (val_in_range(stream_mv.profile.format(), { RS2_FORMAT_RAW10, RS2_FORMAT_MJPEG }))
             {
                 show_rendering_not_supported(font2, static_cast<int>(stream_rect.x), static_cast<int>(stream_rect.y), static_cast<int>(stream_rect.w),
                     static_cast<int>(stream_rect.h), stream_mv.profile.format());
@@ -2159,11 +2315,23 @@ namespace rs2
                             draw_zone_2d(Zone::Warning, stream_rect, frame);
                             draw_zone_2d(Zone::Danger, stream_rect, frame);
                         }
+                        if (frame && frame.get_data() && streams[stream].show_distance_grid_2d
+                            && streams[stream].dev && device_has_depth_mapping(streams[stream].dev->dev))
+                        {
+                            auto geom = streams[stream].texture->last_occupancy_geometry;
+                            if (geom.valid && geom.cell_size_cm > 0.f)
+                            {
+                                draw_distance_grid_2d(stream_rect, streams[stream].distance_grid_cell_size_cm,
+                                                       streams[stream].dev->normalized_zoom,
+                                                       geom.tex_cols, geom.tex_rows, geom.cell_size_cm);
+                            }
+                        }
                         break;
                 }
             }
 
-            //switch( stream_mv.profile.stream_type() )
+            // Detection overlays only make sense on the color stream; bbox coords are in color-frame space.
+            if( stream_mv.profile.stream_type() == RS2_STREAM_COLOR )
             {
                 static std::vector< std::pair< ImColor, bool > > colors =
                 {
@@ -2237,10 +2405,7 @@ namespace rs2
 
                 for( object_in_frame & object : *p_objects )
                 {
-                    rect const & normalized_bbox = stream_mv.profile.stream_type() == RS2_STREAM_DEPTH
-                        ? object.normalized_depth_bbox
-                        : object.normalized_color_bbox;
-                    rect const unbbox = normalized_bbox.unnormalize( stream_rect );
+                    rect const unbbox = object.normalized_color_bbox.unnormalize( stream_rect );
                     rect bbox = unbbox.grow( 10, 5 );  // Allow more text, and easier identification of the face
 
                     float a = 0.75f;
@@ -2264,17 +2429,17 @@ namespace rs2
                     if( fabs(object.mean_depth) > 0.f )
                     {
                         ImGui::PushFont( font2 );
-                        std::string str = rsutils::string::from() << std::setprecision( 2 ) << object.mean_depth << " m";
-                        auto size = ImGui::CalcTextSize( str.c_str() );
-                        if( size.y < h  &&  size.x < bbox.w )
+                        std::string const depth_str = rsutils::string::from() << std::setprecision( 2 ) << object.mean_depth << " m";
+                        auto const depth_size = ImGui::CalcTextSize( depth_str.c_str() );
+                        if( depth_size.y < h && depth_size.x < bbox.w )
                         {
                             ImGui::GetWindowDrawList()->AddRectFilled(
                                 { bbox.x + 1, bbox.y + 1 },
-                                { bbox.x + size.x + 20, bbox.y + size.y + 6 },
+                                { bbox.x + depth_size.x + 20, bbox.y + depth_size.y + 6 },
                                 bg );
                             ImGui::SetCursorScreenPos( { bbox.x + 10, bbox.y + 3 } );
-                            ImGui::Text("%s",  str.c_str() );
-                            h -= size.y;
+                            ImGui::Text( "%s", depth_str.c_str() );
+                            h -= depth_size.y;
                         }
                         ImGui::PopFont();
                     }
@@ -2317,12 +2482,14 @@ namespace rs2
                 if(RS2_FORMAT_RGB8 == textured_frame.get_profile().format())
                 {
                     static const std::string depth_units = "m";
-                    float ruler_length = 0.f;
                     auto depth_vid_profile = stream_mv.profile.as<video_stream_profile>();
                     auto depth_width = depth_vid_profile.width();
                     auto depth_height = depth_vid_profile.height();
                     auto depth_data = static_cast<const uint16_t*>(frame.get_data());
                     auto textured_depth_data = static_cast<const uint8_t*>(textured_frame.get_data());
+                    // Take the scale off the frame, like the colorizer does: sensors that don't
+                    // expose RS2_OPTION_DEPTH_UNITS (DDS) leave the cached value at its 1.0 default.
+                    const float depth_scale = frame.as<depth_frame>().get_units();
                     static const auto skip_pixels_factor = 30;
                     std::vector<rgb_per_distance> rgb_per_distance_vec;
                     std::vector<float> distances;
@@ -2331,7 +2498,7 @@ namespace rs2
                         for (uint64_t j = 0; j < depth_width; j+= skip_pixels_factor)
                         {
                             auto depth_index = i*depth_width + j;
-                            auto length = depth_data[depth_index] * stream_mv.dev->depth_units;
+                            auto length = depth_data[depth_index] * depth_scale;
                             if (length > 0.f)
                             {
                                 auto textured_depth_index = depth_index * 3;
@@ -2346,8 +2513,10 @@ namespace rs2
 
                     if (!distances.empty())
                     {
-                        ruler_length = calculate_ruler_max_distance(distances);
-                        draw_color_ruler(active_mouse, streams[stream], stream_rect, rgb_per_distance_vec, ruler_length, depth_units);
+                        auto bounds = calculate_ruler_bounds(std::move(distances),
+                                                             streams[stream]);
+                        draw_color_ruler(active_mouse, streams[stream], stream_rect,
+                                         rgb_per_distance_vec, bounds, depth_units);
                     }
                 }
             }
@@ -2425,11 +2594,15 @@ namespace rs2
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        clear_gl_errors();
+
         glLoadIdentity();
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        gluPerspective(45, non_negative(viewer_rect.w / win.framebuf_height()), 0.001f, 100.0f);
+        const auto aspect = non_negative( viewer_rect.w )
+            / std::max( 1.f, non_negative( win.framebuf_height() ) );
+        gluPerspective( 45, aspect > 0.f ? aspect : 1.f, 0.001f, 100.0f );
         matrix4 perspective_mat;
         glGetFloatv(GL_PROJECTION_MATRIX, perspective_mat);
         glPopMatrix();
@@ -2960,19 +3133,21 @@ namespace rs2
                     temp_cfg.set(configurations::viewer::settings_tab, tab);
                 }
                 ImGui::PopStyleColor(2);
+#ifdef BUILD_WITH_LIBCURL
+                // One "Online Services" tab hosting both curl-backed features (updates + usage stats);
+                // each section renders only if its feature is compiled in.
                 ImGui::SameLine();
-
                 ImGui::PushStyleColor(ImGuiCol_Text, tab != 3 ? light_grey : light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, tab != 3 ? light_grey : light_blue);
-
-                if (ImGui::Button("Updates", { 120, 30 }))
+                if (ImGui::Button("Online Services", { 160, 30 }))
                 {
                     tab = 3;
                     config_file::instance().set(configurations::viewer::settings_tab, tab);
                     temp_cfg.set(configurations::viewer::settings_tab, tab);
                 }
-
                 ImGui::PopStyleColor(2);
+#endif
+
                 ImGui::PopFont();
                 ImGui::PopStyleColor(2); // button color
 
@@ -3015,7 +3190,7 @@ namespace rs2
 
                     ImGui::Text("ROS-bag Compression:");
                     int recording_compression = temp_cfg.get(configurations::record::compression_mode);
-                    if (ImGui::RadioButton("Always Compress (only playable using the SDK, might cause frame drops)", recording_compression == 0))
+                    if (ImGui::RadioButton("Always Compress (smaller file size, might cause frame drops)", recording_compression == 0))
                     {
                         recording_compression = 0;
                         temp_cfg.set(configurations::record::compression_mode, recording_compression);
@@ -3376,8 +3551,6 @@ namespace rs2
                 if (tab == 3)
                 {
 #ifdef CHECK_FOR_UPDATES
-                    ImGui::Separator();
-
                     ImGui::Text("%s", "SW/FW Updates From Server:");
                     if (ImGui::IsItemHovered())
                     {
@@ -3419,6 +3592,64 @@ namespace rs2
                             temp_cfg.set(configurations::update::sw_updates_url, url_str);
                         }
                     }
+
+                    ImGui::Separator();
+#endif
+
+#ifdef ENABLE_STATS
+                    ImGui::Text("Real User Monitoring (RUM)");
+                    ImGui::Text("Anonymous usage statistics are collected locally. Cloud upload happens only with your consent.");
+
+                    bool cloud_enabled = temp_cfg.get_or_default(configurations::stats::rum_cloud_enabled, false);
+                    if (ImGui::Checkbox("Enable anonymous cloud upload", &cloud_enabled))
+                        temp_cfg.set(configurations::stats::rum_cloud_enabled, cloud_enabled);
+
+                    if (ImGui::Button("Export RUM data..."))
+                    {
+                        // The accumulated on-disk report (prior sessions); the live session is not
+                        // persisted until this context is destroyed, so it isn't included here. Skip
+                        // if there's no usage yet (missing file, or a post-upload reset stub).
+                        if (!_rum_uploader.saved_report_has_usage())
+                            not_model->add_notification({ "No RUM report saved yet", RS2_LOG_SEVERITY_INFO,
+                                RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                        else if (auto ret = file_dialog_open(save_file, "JSON\0*.json\0", NULL, NULL))
+                        {
+                            try
+                            {
+                                std::ofstream(ret) << _rum_uploader.saved_report();
+                            }
+                            catch (const std::exception& e) { LOG_ERROR("RUM export failed: " << e.what()); }
+                        }
+                    }
+                    ImGui::SameLine();
+                    // TODO: "Upload now" (and rum_uploader::upload_async) is a testing affordance to send
+                    // the accumulated on-disk report on demand; boot upload is the product path. Drop it once RUM is fully merged.
+                    // Gate on the saved consent, not the checkbox: upload() reads the persisted value,
+                    // so the button must stay disabled until the choice is applied (OK/Apply).
+                    bool consent_saved = config_file::instance().get_or_default(configurations::stats::rum_cloud_enabled, false);
+                    RsImGui::RsImButton([&]() {
+                        if (ImGui::Button("Upload now"))
+                        {
+                            if (!_rum_uploader.saved_report_has_usage())
+                                not_model->add_notification({ "No RUM report saved yet", RS2_LOG_SEVERITY_INFO,
+                                    RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                            else
+                                // Off the UI thread; the uploader skips if one is already in flight.
+                                // Capture not_model by value so the callback (on the upload thread) stays valid.
+                                _rum_uploader.upload_async(_rum_uploader.saved_report(),
+                                    [not_model = not_model](bool ok) {
+                                        not_model->add_notification({ ok ? "RUM report uploaded" : "RUM upload failed",
+                                            ok ? RS2_LOG_SEVERITY_INFO : RS2_LOG_SEVERITY_ERROR,
+                                            RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                                    });
+                        }
+                    }, !consent_saved);
+                    // AllowWhenDisabled: the button is disabled until consent is applied, but the
+                    // hint explaining why must still show on hover.
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                        RsImGui::CustomTooltip(consent_saved
+                            ? "Upload the saved report now"
+                            : "Enable cloud upload above and click Apply first");
 #endif
                 }
                 }
@@ -3773,10 +4004,14 @@ namespace rs2
 
     void viewer_model::begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p)
     {
+        {
+            std::lock_guard< std::mutex > lock( streams_mutex );
+            streams[p.unique_id()].begin_stream(d, p, *this);
+            ppf.frames_queue.emplace(p.unique_id(), rs2::frame_queue(5));
+        }
+
         // Starting post processing filter rendering thread
         ppf.start();
-        streams[p.unique_id()].begin_stream(d, p, *this);
-        ppf.frames_queue.emplace(p.unique_id(), rs2::frame_queue(5));
     }
 
     bool viewer_model::is_3d_texture_source(frame f) const
@@ -4029,23 +4264,8 @@ namespace rs2
                                       float( det.bottom_right_y - det.top_left_y ) };
                 rs2::rect normalized_color_bbox = color_bbox.normalize( color_frame_rect );
 
-                // depth_bbox_full: simple resolution scaling of the color bbox.
-                // COM runs within this region for a stable, deterministic depth measurement.
-                // The depth-view dot position is corrected for sensor parallax separately
-                // by projecting the single COM pixel through rs2_project_color_pixel_to_depth_pixel.
-                float const depth_scale_x = float( depth_intrin.width  ) / float( color_intrin.width  );
-                float const depth_scale_y = float( depth_intrin.height ) / float( color_intrin.height );
-                // depth_bbox_full: unclipped scaled bbox — used for com_rel_u/v normalization.
-                // Clipping only affects the actual ROI sampled.
-                rs2::rect depth_bbox_full{
-                    color_bbox.x * depth_scale_x, color_bbox.y * depth_scale_y,
-                    color_bbox.w * depth_scale_x, color_bbox.h * depth_scale_y };
-                rs2::rect depth_bbox = depth_bbox_full.intersection( depth_frame_rect );
-                rs2::rect normalized_depth_bbox = depth_bbox.normalize( depth_frame_rect );
-
                 float const hkr_depth_m = det.depth;
                 float viewer_depth_m = 0.f;
-                float com_rel_u = 0.5f, com_rel_v = 0.5f;
 
                 // TODO: temporary fallback — viewer-side COM runs only when HKR firmware
                 // returns 0 (XU command not supported or device not ready).
@@ -4059,6 +4279,12 @@ namespace rs2
                         com::center_of_mass_calculator::create_depth_8u( com_raw, com_depth8u );
                         depth8u_ready = true;
                     }
+                    // COM ROI: scale the color bbox to depth resolution, clipped to the frame.
+                    float const depth_scale_x = float( depth_intrin.width  ) / float( color_intrin.width  );
+                    float const depth_scale_y = float( depth_intrin.height ) / float( color_intrin.height );
+                    rs2::rect depth_bbox = rs2::rect{
+                        color_bbox.x * depth_scale_x, color_bbox.y * depth_scale_y,
+                        color_bbox.w * depth_scale_x, color_bbox.h * depth_scale_y }.intersection( depth_frame_rect );
                     int const com_x = (int)depth_bbox.x;
                     int const com_y = (int)depth_bbox.y;
                     com::rect  com_bbox{ com_x, com_y,
@@ -4092,22 +4318,14 @@ namespace rs2
                     com::center_of_mass_calculator::calculate( com_raw, com_depth8u, com_bbox, com_center,
                                                                &com_intrin, com_result, { shift_x, shift_y } );
                     if( com_result.mean_body_depth > 0.f )
-                    {
                         viewer_depth_m = com_result.mean_body_depth / 1000.f;
-                        auto clamp01 = []( float v ) { return v < 0.f ? 0.f : v > 1.f ? 1.f : v; };
-                        if( depth_bbox_full.w > 0.f && depth_bbox_full.h > 0.f )
-                        {
-                            com_rel_u = clamp01( ( com_result.image_pos.x - depth_bbox_full.x ) / depth_bbox_full.w );
-                            com_rel_v = clamp01( ( com_result.image_pos.y - depth_bbox_full.y ) / depth_bbox_full.h );
-                        }
-                    }
                 }
 
                 float const mean_depth = hkr_depth_m > 0.f ? hkr_depth_m : viewer_depth_m;
 
                 std::string name = object_type_to_string( static_cast< object_type >( det.class_id ) );
-                new_objects.emplace_back( obj_id++, name, normalized_color_bbox, normalized_depth_bbox, mean_depth,
-                                          hkr_depth_m, com_rel_u, com_rel_v, det.score,
+                new_objects.emplace_back( obj_id++, name, normalized_color_bbox, mean_depth,
+                                          hkr_depth_m, det.score,
                                           static_cast< object_type >( det.class_id ) );
             }
 
@@ -4290,11 +4508,15 @@ namespace rs2
 
     void viewer_model::draw_zone_3d(Zone zone, const rs2::labeled_points& frame)
     {
+        const auto MM_TO_METER_SCALE = 0.001f; // coords are in mm, converts to meters
+        auto zone_to_draw = init_zone(zone, frame, MM_TO_METER_SCALE);
+        // Nothing to draw, and nothing opened: an exception between glBegin and glEnd would
+        // leave the GL state machine mid-primitive and fail every later call.
+        if( zone_to_draw.empty() )
+            return;
+
         glLineWidth(4.0f);
         glBegin(GL_LINE_LOOP);
-
-        const auto MM_TO_METER_SCALE = 0.001f; // coords are in mm, converts to meters
-        auto zone_to_draw = init_zone(zone, frame, MM_TO_METER_SCALE); 
         set_polygon_color(zone);
 
         for (vertex& v : zone_to_draw)
@@ -4345,25 +4567,35 @@ namespace rs2
             draw_zone_3d(Zone::Diagnostic, labeled_points);
         }
 
-        glBegin(GL_POINTS);
+        const rs2::vertex* vertices = nullptr;
+        const uint8_t* labels = nullptr;
+        size_t vertices_size = 0;
+        try
         {
-            auto vertices = last_labeled_points.get_vertices();
-            auto vertices_size = last_labeled_points.size();
-            auto labels = last_labeled_points.get_labels();
-            auto label_to_color3f = labeled_point_cloud_utilities::get_label_to_color3f();
+            vertices = last_labeled_points.get_vertices();
+            labels = last_labeled_points.get_labels();
+            vertices_size = last_labeled_points.size();
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR("Failed to read labeled point cloud data: " << e.what());
+            return;
+        }
 
-            /* this segment actually renders the labeled pointcloud */
-            for (int i = 0; i < vertices_size; ++i)
-            {
-                // Set the vertex color from the label value
-                auto label = labels[i];
-                auto color = label_to_color3f[static_cast<rs2_point_cloud_label>(label)];
-                glColor3f(color.x, color.y, color.z);
+        auto label_to_color3f = labeled_point_cloud_utilities::get_label_to_color3f();
 
-                // Draw the vertex
-                rs2::vertex vtx = { vertices[i].x, vertices[i].y, vertices[i].z };
-                glVertex3fv(std::move(vtx));
-            }
+        glBegin(GL_POINTS);
+        /* this segment actually renders the labeled pointcloud */
+        for (size_t i = 0; i < vertices_size; ++i)
+        {
+            // Set the vertex color from the label value
+            auto label = labels[i];
+            auto color = label_to_color3f[static_cast<rs2_point_cloud_label>(label)];
+            glColor3f(color.x, color.y, color.z);
+
+            // Draw the vertex
+            rs2::vertex vtx = { vertices[i].x, vertices[i].y, vertices[i].z };
+            glVertex3fv(std::move(vtx));
         }
         glEnd();
 
@@ -4418,6 +4650,15 @@ namespace rs2
             return points;
         }
 
+        // The polygons come from metadata that only the safety product supplies; the D500
+        // Mapping stream has none. get_frame_metadata() throws on an unsupported value, and
+        // this runs per frame from inside a glBegin block, so probe before reading.
+        for( int i = 0; i < 8; ++i )
+        {
+            if( ! frame.supports_frame_metadata( static_cast< rs2_frame_metadata_value >( md_value + i ) ) )
+                return points;   // empty -> caller draws nothing
+        }
+
         // assuming all md values are subsequent 
         vertex x0 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value))) * scale_factor,
                         static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 1))) * scale_factor, 0 };
@@ -4457,11 +4698,13 @@ namespace rs2
 
     void viewer_model::draw_zone_2d(Zone zone, const rect& draw_within, const frame& frame)
     {
-        glLineWidth(3.0f);
-        glBegin(GL_LINE_LOOP);
-
         auto MM_TO_CM_SCALE = 0.1f;  // coords are in mm, converts to cm
         auto zone_to_draw = init_zone(zone, frame, MM_TO_CM_SCALE);
+        if( zone_to_draw.empty() )
+            return;
+
+        glLineWidth(3.0f);
+        glBegin(GL_LINE_LOOP);
         set_polygon_color(zone);
 
         constexpr GLfloat width = 512; // range of Y values for polygons - -2.56 - +2.56 meters
@@ -4477,5 +4720,100 @@ namespace rs2
         glLineWidth(1.0f);
     }
 
-        
+    // Cartesian grid over the occupancy view, rviz Grid-display style, spaced by line_spacing_cm.
+    // Extent and origin come from the last-uploaded occupancy frame's real geometry, not an
+    // assumed constant. normalized_zoom is remapped the same way texture_buffer::show() remaps
+    // texture coordinates when zoomed, so the grid tracks the zoomed image.
+    void viewer_model::draw_distance_grid_2d(const rect& draw_within, int line_spacing_cm, const rect& normalized_zoom,
+                                              int tex_cols, int tex_rows, float phys_cell_size_cm)
+    {
+        constexpr int label_step_cm = 100; // labels always every 1m, independent of the line spacing
+        if (line_spacing_cm < 1 || tex_cols <= 0 || tex_rows <= 0 || phys_cell_size_cm <= 0.f)
+            return;
+        // tex_cols = lateral axis, tex_rows = depth/forward (decode_occupancy_cells' layout).
+        // Depth starts at 0; lateral is centered on 0 (camera boresight).
+        const float width_cm = tex_cols * phys_cell_size_cm;
+        const float height_cm = tex_rows * phys_cell_size_cm;
+        rect grid_rect = { -width_cm / 2, 0, width_cm, height_cm };
+        const rect unit_rect = { 0, 0, 1, 1 };
+
+        // Depth (v.x) only ever affects the normalized Y; lateral (v.y) only ever affects the
+        // normalized X - transform_vertex keeps them independent, so each can be solved alone.
+        auto depth_frac = [&](float depth_cm_v) { return transform_vertex({ depth_cm_v, 0, 0 }, grid_rect, unit_rect).y; };
+        auto lateral_frac = [&](float lateral_cm_v) { return transform_vertex({ 0, lateral_cm_v, 0 }, grid_rect, unit_rect).x; };
+
+        // Map a normalized full-view fraction into the currently zoomed sub-window's fraction,
+        // the same remapping texture_buffer::draw_texture() applies to texture coordinates.
+        auto zoom_x = [&](float f) { return (f - normalized_zoom.x) / normalized_zoom.w; };
+        auto zoom_y = [&](float f) { return (f - normalized_zoom.y) / normalized_zoom.h; };
+
+        auto to_screen_x = [&](float f) { return draw_within.x + clamp(f, 0.f, 1.f) * draw_within.w; };
+        auto to_screen_y = [&](float f) { return draw_within.y + clamp(f, 0.f, 1.f) * draw_within.h; };
+
+        // Smallest multiple of step strictly greater than min_val.
+        auto first_multiple_after = [](float min_val, int step) {
+            return (int(std::floor(min_val / step)) + 1) * step;
+        };
+        const float lateral_min = -width_cm / 2;
+        const float lateral_max = width_cm / 2;
+
+        // Loop-invariant screen-space edges, hoisted out of the per-line loops below.
+        const float lateral_min_x = to_screen_x(zoom_x(lateral_frac(lateral_min)));
+        const float lateral_max_x = to_screen_x(zoom_x(lateral_frac(lateral_max)));
+        const float depth_min_y = to_screen_y(zoom_y(depth_frac(0.f)));
+        const float depth_max_y = to_screen_y(zoom_y(depth_frac(height_cm)));
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glColor4f(1.f, 1.f, 1.f, 0.6f);
+        glLineWidth(1.0f);
+        glBegin(GL_LINES);
+        for (int depth_cm = line_spacing_cm; depth_cm < height_cm; depth_cm += line_spacing_cm)
+        {
+            float zy = zoom_y(depth_frac(float(depth_cm)));
+            if (zy < 0.f || zy > 1.f)
+                continue; // this depth isn't in the current zoom window at all
+            float y = to_screen_y(zy);
+            glVertex2f(lateral_min_x, y);
+            glVertex2f(lateral_max_x, y);
+        }
+        for (int lateral_cm = first_multiple_after(lateral_min, line_spacing_cm); lateral_cm < lateral_max; lateral_cm += line_spacing_cm)
+        {
+            float zx = zoom_x(lateral_frac(float(lateral_cm)));
+            if (zx < 0.f || zx > 1.f)
+                continue; // this lateral offset isn't in the current zoom window at all
+            float x = to_screen_x(zx);
+            glVertex2f(x, depth_min_y);
+            glVertex2f(x, depth_max_y);
+        }
+        glEnd();
+        glDisable(GL_BLEND);
+        glColor4f(1.f, 1.f, 1.f, 1.f);
+
+        // Depth-axis labels, pinned to the visible view's own left edge (not the physical
+        // lateral edge, which may be scrolled out of view while zoomed).
+        auto draw_list = ImGui::GetWindowDrawList();
+        for (int depth_cm = label_step_cm; depth_cm < height_cm; depth_cm += label_step_cm)
+        {
+            float zy = zoom_y(depth_frac(float(depth_cm)));
+            if (zy < 0.f || zy > 1.f)
+                continue;
+            float y = to_screen_y(zy);
+            std::string label = rsutils::string::from() << (depth_cm / 100) << "m";
+            draw_list->AddText({ draw_within.x + 4, y - 7 }, ImColor(0.f, 0.f, 0.f, 0.95f), label.c_str());
+        }
+
+        // Lateral-axis labels, pinned to the visible view's own bottom edge.
+        for (int lateral_cm = first_multiple_after(lateral_min, label_step_cm); lateral_cm < lateral_max; lateral_cm += label_step_cm)
+        {
+            float zx = zoom_x(lateral_frac(float(lateral_cm)));
+            if (zx < 0.f || zx > 1.f)
+                continue;
+            float x = to_screen_x(zx);
+            std::string label = rsutils::string::from() << (lateral_cm / 100) << "m";
+            draw_list->AddText({ x - 10, draw_within.y + draw_within.h - 16 }, ImColor(0.f, 0.f, 0.f, 0.95f), label.c_str());
+        }
+    }
+
+
 }

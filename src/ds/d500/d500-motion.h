@@ -18,6 +18,7 @@ namespace librealsense
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
 
+        bool is_imu_high_accuracy() const override;
         double get_gyro_default_scale() const override;
 
         std::shared_ptr<synthetic_sensor> create_hid_device( std::shared_ptr<context> ctx,
@@ -41,6 +42,7 @@ namespace librealsense
 
         ds_motion_sensor & get_motion_sensor();
         std::shared_ptr< hid_sensor > get_raw_motion_sensor();
+        bool supports_physical_units() const;
         void register_gyro_sensitivity();
 
     private:

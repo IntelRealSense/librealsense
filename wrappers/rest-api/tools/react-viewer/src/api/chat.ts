@@ -16,7 +16,7 @@ interface ProviderConfig {
 const PROVIDERS: Record<Provider, ProviderConfig> = {
   groq: {
     url: 'https://api.groq.com/openai/v1/chat/completions',
-    model: 'llama-3.3-70b-versatile', // Fast and capable, free tier
+    model: 'openai/gpt-oss-120b', // Groq retires models; check /models if this 404s
     modelsEndpoint: 'https://api.groq.com/openai/v1/models',
   },
   openai: {
@@ -115,7 +115,8 @@ export function getActiveProviderName(): string | null {
  */
 export async function sendChatMessage(
   messages: ChatMessage[],
-  deviceStates: Record<string, DeviceState>
+  deviceStates: Record<string, DeviceState>,
+  signal?: AbortSignal
 ): Promise<ChatResponse> {
   const active = getActiveProvider()
   if (!active) {
@@ -142,6 +143,7 @@ export async function sendChatMessage(
       temperature: 0.7,
       max_tokens: 2048,
     }),
+    signal,
   })
 
   if (!response.ok) {

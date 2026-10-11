@@ -12,6 +12,9 @@ namespace librealsense
     class d500_safety_sensor;
     class ds_advanced_mode_base;
 
+    std::string read_safety_interface_config( std::shared_ptr< hw_monitor_extended_buffers > const & hw_monitor,
+                                               rs2_calib_location loc = RS2_CALIB_LOCATION_RAM );
+
     class d500_safety : public virtual d500_device
     {
     public:
@@ -19,11 +22,6 @@ namespace librealsense
             const std::vector<platform::uvc_device_info>& safety_devices_info);
 
         d500_safety( std::shared_ptr< const d500_info > const & dev_info );
-
-        synthetic_sensor& get_safety_sensor()
-        {
-            return dynamic_cast<synthetic_sensor&>(get_sensor(_safety_device_idx));
-        }
 
         void set_advanced_mode_device( ds_advanced_mode_base * advanced_mode );
         void gate_depth_options();

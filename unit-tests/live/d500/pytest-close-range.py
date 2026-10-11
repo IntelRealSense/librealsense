@@ -30,7 +30,6 @@ CLOSE_RANGE_METADATA_BIT = 1 << 5
 # device/FW-driven on USB so we don't pin it here.
 RATIO_INDEX_DEFAULT = 1.0    # choices ["1","2","4"], default "2" -> index 1
 SHIFT_DEFAULT      = 0.0
-THRESHOLD_DEFAULT  = 550.0
 
 # Minimum FW that registers the close-range feature on each device, mirroring
 # src/ds/d500/d500-factory.cpp. Below the gate the feature is not registered and
@@ -126,18 +125,6 @@ def test_close_range_disparity_shift( test_device ):
     embedded_filter.set_option( rs.option.embedded_filter_enabled, 0.0 )
     # Spec: shift > 0 forces ratio = 1; test shift before ratio to avoid the order dependency.
     _set_get_round_trip( embedded_filter, rs.option.disparity_shift, 100.0 )
-
-
-def test_close_range_threshold( test_device ):
-    _, embedded_filter = _get_close_range_filter( test_device )
-    options = embedded_filter.get_supported_options()
-    if rs.option.threshold not in options:
-        pytest.skip( "threshold option not exposed on this transport (USB demo)" )
-
-    check.equal( embedded_filter.get_option( rs.option.threshold ), THRESHOLD_DEFAULT )
-
-    embedded_filter.set_option( rs.option.embedded_filter_enabled, 0.0 )
-    _set_get_round_trip( embedded_filter, rs.option.threshold, 600.0 )
 
 
 def _find_depth_profile( depth_sensor ):

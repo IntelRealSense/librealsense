@@ -5,6 +5,10 @@
 
 #include "messenger-libusb.h"
 
+#if defined(__APPLE__)
+#include "darwin-device-capture.h"
+#endif
+
 namespace librealsense
 {
     namespace platform
@@ -29,6 +33,9 @@ namespace librealsense
             std::vector<std::shared_ptr<usb_interface>> _interfaces;
             std::vector<usb_descriptor> _descriptors;
             std::shared_ptr<usb_context> _context;
+#if defined(__APPLE__)
+            std::shared_ptr<darwin_device_capture> _capture;
+#endif
 
             std::shared_ptr<handle_libusb> get_handle(uint8_t interface_number);
         };
