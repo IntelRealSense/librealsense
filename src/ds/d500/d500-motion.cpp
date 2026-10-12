@@ -39,11 +39,7 @@ namespace librealsense
         constexpr double RAW_TO_DPS_SCALE = 10000.0;
 
         // First FW that sends the true int32 IMU record on GMSL, with accel at 10 ug per count on USB and GMSL.
-        const firmware_version & min_fw_int32_imu()
-        {
-            static const firmware_version v( "7.59.46582.16434" );
-            return v;
-        }
+        const firmware_version MIN_FW_INT32_IMU( "7.59.46582.16434" );
 
         // First FW that sends the GMSL gyro in 0.0001 dps per count, independent of the range option.
         const firmware_version MIN_FW_PHYSICAL_GYRO_GMSL( "7.59.46653.0" );
@@ -67,14 +63,14 @@ namespace librealsense
     {
         static const firmware_version min_fw_supporting_physical_units( "7.58.40672.12546" );
         return get_pid() != ds::D585S_PID
-            && _fw_version >= ( _is_mipi_device ? min_fw_int32_imu()
+            && _fw_version >= ( _is_mipi_device ? MIN_FW_INT32_IMU
                                                 : min_fw_supporting_physical_units );
     }
 
     bool d500_motion::supports_accel_range() const
     {
         // The FW acts on the accel level from the same release that reports accel at 10 ug per count. Not on D585S.
-        return supports_physical_units() && _fw_version >= min_fw_int32_imu();
+        return supports_physical_units() && _fw_version >= MIN_FW_INT32_IMU;
     }
 
     bool d500_motion::supports_physical_gyro() const
