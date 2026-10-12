@@ -79,7 +79,8 @@ namespace
         el::Configurations conf;
         conf.setGlobally( el::ConfigurationType::Format,
                           " %datetime{%d/%M %H:%m:%s,%g} %level [%thread] (%fbase:%line) %msg" );
-        if( ! st.filename.empty() )
+        // ELPP opens any configured Filename, so only set it when logging to a file
+        if( st.file != RS2_LOG_SEVERITY_NONE && ! st.filename.empty() )
             conf.setGlobally( el::ConfigurationType::Filename, st.filename );
         for( auto const & l : levels )
         {
@@ -90,7 +91,10 @@ namespace
             conf.set( l.level, el::ConfigurationType::ToStandardOutput, to_console ? "true" : "false" );
             conf.set( l.level, el::ConfigurationType::ToFile, to_file ? "true" : "false" );
         }
-        el::Loggers::reconfigureLogger( LIBREALSENSE_ELPP_ID, conf );
+        // Same serialization as the library's logger_type::reconfigure_locked (src/log.h)
+        auto * logger = el::Loggers::getLogger( LIBREALSENSE_ELPP_ID );
+        el::base::threading::ScopedLock lock( logger->lock() );
+        el::Loggers::reconfigureLogger( logger, conf );
     }
 }
 #endif  // ELPP_PER_MODULE_STORAGE
