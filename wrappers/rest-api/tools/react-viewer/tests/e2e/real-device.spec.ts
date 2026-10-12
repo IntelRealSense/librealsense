@@ -25,10 +25,10 @@ function depthSensorModule(page: Page): Locator {
 async function openDeviceCard(page: Page, device: DeviceInfo): Promise<void> {
   const deviceCard = page.locator('[data-testid="device-card"]')
     .filter({ hasText: device.serial_number })
-  // Drive the toggle, not the card: a lone camera auto-activates, and an active card has no
-  // click handler, so clicking it delivers the click to whatever control is at its centre.
-  const activate = deviceCard.locator('[title="Activate device"]')
-  if (await activate.count()) await activate.click()
+  // Drive the toggle, not the card: an active card has no click handler, so clicking it
+  // delivers the click to whatever control sits at its centre.
+  const toggle = deviceCard.locator('button[title$="device"]')
+  if (await toggle.getAttribute('title') === 'Activate device') await toggle.click()
   await expect(deviceCard.locator('[title="Deactivate device"]')).toBeVisible()
   await expect(page.locator('[title="Loading..."]')).toHaveCount(0, { timeout: 15000 })
   await dismissToasts(page)
@@ -107,9 +107,11 @@ test.describe('@real-device Real Device Tests', () => {
       .poll(async () => Number(await frameNumber.textContent()), { timeout: 15000 })
       .toBeGreaterThan(first)
 
-    const decoded = await page.locator('video.stream-video').first()
-      .evaluate((v: HTMLVideoElement) => v.getVideoPlaybackQuality().totalVideoFrames)
-    expect(decoded).toBeGreaterThan(0)
+    // The tile renders before WebRTC has negotiated, so this has to be polled
+    await expect
+      .poll(() => page.locator('video.stream-video').first()
+        .evaluate((v: HTMLVideoElement) => v.getVideoPlaybackQuality().totalVideoFrames))
+      .toBeGreaterThan(0)
 
     await stopDepthStream(page)
   })

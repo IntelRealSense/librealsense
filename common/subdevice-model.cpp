@@ -100,6 +100,19 @@ namespace rs2
             && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D500";
     }
 
+    bool is_beta_stream(rs2_stream type)
+    {
+        return type == RS2_STREAM_OCCUPANCY
+            || type == RS2_STREAM_LABELED_POINT_CLOUD
+            || type == RS2_STREAM_OBJECT_DETECTION;
+    }
+
+    static void draw_beta_badge()
+    {
+        ImGui::SameLine();
+        RsImGui::BetaBadge("Beta feature - still maturing, behavior and output may change");
+    }
+
     void subdevice_model::populate_options( const std::string & opt_base_label,
                                             bool * options_invalidated,
                                             std::string & error_message )
@@ -814,6 +827,7 @@ namespace rs2
                 continue;
 
             auto formats_chars = get_string_pointers(f.second);
+            const bool beta = is_beta_stream(stream_type_of(f.first));
             if (!streaming || (streaming && stream_enabled[f.first]))
             {
                 if (streaming)
@@ -878,6 +892,8 @@ namespace rs2
                     }
                     if (mode_locked) ImGui::EndDisabled();
                 }
+                if (beta)
+                    draw_beta_badge();
             }
 
             if (stream_enabled[f.first])
@@ -885,7 +901,9 @@ namespace rs2
                 if (show_single_fps_list)
                 {
                     ImGui::SameLine();
-                    ImGui::SetCursorPosX(col1);
+                    // A long stream name (plus the BETA badge) can run past the column; the combo then starts after it
+                    if (ImGui::GetCursorPosX() < col1)
+                        ImGui::SetCursorPosX(col1);
                 }
 
                 label = rsutils::string::from()
@@ -1111,6 +1129,7 @@ namespace rs2
                 continue;
 
             auto formats_chars = get_string_pointers(f.second);
+            const bool beta = is_beta_stream(stream_type_of(f.first));
             if (!streaming || (streaming && stream_enabled[f.first]))
             {
                 if (streaming)
@@ -1142,6 +1161,8 @@ namespace rs2
                     }
                     if (mode_locked) ImGui::EndDisabled();
                 }
+                if (beta)
+                    draw_beta_badge();
             }
 
             if (stream_enabled[f.first])
@@ -1149,7 +1170,9 @@ namespace rs2
                 if (show_single_fps_list)
                 {
                     ImGui::SameLine();
-                    ImGui::SetCursorPosX(col1);
+                    // A long stream name (plus the BETA badge) can run past the column; the combo then starts after it
+                    if (ImGui::GetCursorPosX() < col1)
+                        ImGui::SetCursorPosX(col1);
                 }
 
                 label = rsutils::string::from()

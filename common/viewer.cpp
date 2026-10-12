@@ -4359,10 +4359,6 @@ namespace rs2
         }
         objects->ticks_without_od_frame = 0;
 
-        // OD frame arrived but depth not yet available — skip without clearing
-        if( ! df )
-            return;
-
         // Fresh OD frame with no detections — clear
         if( odf.get_detection_count() == 0 )
         {
@@ -4374,17 +4370,22 @@ namespace rs2
         try
         {
             auto color_vsp = cf.get_profile().as< rs2::video_stream_profile >();
-            auto depth_vsp = df.get_profile().as< rs2::video_stream_profile >();
-
             rs2_intrinsics color_intrin = color_vsp.get_intrinsics();
-            rs2_intrinsics depth_intrin = depth_vsp.get_intrinsics();
-            rs2_extrinsics color_to_depth = color_vsp.get_extrinsics_to( depth_vsp );
-            rs2_extrinsics depth_to_color = depth_vsp.get_extrinsics_to( color_vsp );
-
             rs2::rect color_frame_rect{ 0.f, 0.f, float( color_intrin.width ), float( color_intrin.height ) };
-            rs2::rect depth_frame_rect{ 0.f, 0.f, float( depth_intrin.width ), float( depth_intrin.height ) };
 
-            uint16_t const * const depth_data = reinterpret_cast< uint16_t const * >( df.get_data() );
+            // Depth is optional: only the viewer-side distance fallback below needs it
+            rs2_intrinsics depth_intrin{};
+            rs2_extrinsics color_to_depth{}, depth_to_color{};
+            uint16_t const * depth_data = nullptr;
+            if( df )
+            {
+                auto depth_vsp = df.get_profile().as< rs2::video_stream_profile >();
+                depth_intrin = depth_vsp.get_intrinsics();
+                color_to_depth = color_vsp.get_extrinsics_to( depth_vsp );
+                depth_to_color = depth_vsp.get_extrinsics_to( color_vsp );
+                depth_data = reinterpret_cast< uint16_t const * >( df.get_data() );
+            }
+            rs2::rect depth_frame_rect{ 0.f, 0.f, float( depth_intrin.width ), float( depth_intrin.height ) };
 
             com::depth_image_16 com_raw{ depth_data, depth_intrin.width, depth_intrin.height };
             std::vector< uint8_t > depth8u_buf( depth_intrin.width * depth_intrin.height );
@@ -4446,7 +4447,7 @@ namespace rs2
                 // Checked per-detection intentionally: firmware could return 0 for individual
                 // detections (e.g. out-of-range) even when HKR COM is otherwise working.
                 // Remove once HKR COM is fully implemented and reliable on all devices.
-                if( hkr_depth_m == 0.f )
+                if( hkr_depth_m == 0.f && df )
                 {
                     if( !depth8u_ready )
                     {

@@ -4,39 +4,81 @@
 
 #include "d500-options.h"
 #include "d500-private.h"
+#include <src/hid-sensor.h>
 
 namespace librealsense
 {
-    d500_mipi_gyro_sensitivity_option::d500_mipi_gyro_sensitivity_option(
-        const std::weak_ptr< uvc_sensor > & ep )
-        : uvc_pu_option( ep, RS2_OPTION_GYRO_SENSITIVITY )
+    d500_mipi_imu_sensitivity_option::d500_mipi_imu_sensitivity_option( const std::weak_ptr< uvc_sensor > & ep,
+                                                                        rs2_option id )
+        : uvc_pu_option( ep, id )
+        , _is_accel( id == RS2_OPTION_ACCEL_SENSITIVITY )
     {
     }
 
-    void d500_mipi_gyro_sensitivity_option::set( float value )
+    void d500_mipi_imu_sensitivity_option::set( float value )
     {
         auto sensor = _ep.lock();
         if( ! sensor )
             throw invalid_value_exception( "MIPI IMU sensor is not alive for setting" );
-        (void)gyro_sensitivity_to_scale( value );
+        (void)get_value_description( value );
         sensor->invoke_if_closed( [this, value]() { uvc_pu_option::set( value ); } );
     }
 
-    bool d500_mipi_gyro_sensitivity_option::is_read_only() const
+    bool d500_mipi_imu_sensitivity_option::is_read_only() const
     {
         if( auto sensor = _ep.lock() )
             return sensor->is_opened();
         return false;
     }
 
-    const char * d500_mipi_gyro_sensitivity_option::get_description() const
+    const char * d500_mipi_imu_sensitivity_option::get_description() const
     {
-        return "gyro sensitivity resolutions, lowers the dynamic range for a more accurate readings";
+        return _is_accel ? "accel sensitivity (dynamic range), selects the saturation point without changing the unit scale"
+                         : "gyro sensitivity resolutions, lowers the dynamic range for a more accurate readings";
     }
 
-    const char * d500_mipi_gyro_sensitivity_option::get_value_description( float value ) const
+    const char * d500_mipi_imu_sensitivity_option::get_value_description( float value ) const
     {
-        return get_gyro_sensitivity_value_description( value );
+        return _is_accel ? get_accel_sensitivity_value_description( value ) : get_gyro_sensitivity_value_description( value );
+    }
+
+    d500_hid_accel_sensitivity_option::d500_hid_accel_sensitivity_option( const std::weak_ptr< hid_sensor > & sensor )
+        : option_base( { 0.f, RS2_ACCEL_SENSITIVITY_COUNT - 1.f, 1.f, 0.f } )
+        , _value( 0.f )
+        , _sensor( sensor )
+    {
+    }
+
+    void d500_hid_accel_sensitivity_option::set( float value )
+    {
+        auto sensor = _sensor.lock();
+        if( ! sensor )
+            throw invalid_value_exception( "Hid sensor is not alive for setting" );
+        if( sensor->is_opened() )
+            throw invalid_value_exception( "setting this option while the sensor is open is not allowed!" );
+        if( ! is_valid( value ) )
+            throw invalid_value_exception( "set(accel_sensitivity) failed! Invalid accel sensitivity request " + std::to_string( value ) );
+
+        sensor->set_imu_sensitivity( RS2_STREAM_ACCEL, value );
+        _value = value;
+        _record_action( *this );
+    }
+
+    bool d500_hid_accel_sensitivity_option::is_read_only() const
+    {
+        if( auto sensor = _sensor.lock() )
+            return sensor->is_opened();
+        return false;
+    }
+
+    const char * d500_hid_accel_sensitivity_option::get_description() const
+    {
+        return "accel sensitivity (dynamic range), selects the saturation point without changing the unit scale";
+    }
+
+    const char * d500_hid_accel_sensitivity_option::get_value_description( float value ) const
+    {
+        return get_accel_sensitivity_value_description( value );
     }
 
     rgb_tnr_option::rgb_tnr_option(std::shared_ptr<hw_monitor> hwm, const std::weak_ptr< sensor_base > & ep)

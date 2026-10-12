@@ -473,3 +473,57 @@ void RsImGui::CustomTooltip(const char* fmt, float value)
     ImGui::PopStyleColor(2);
     ImGui::PopStyleVar();
 }
+namespace {
+    const char* BETA_BADGE_TEXT = "BETA";
+    const float BETA_BADGE_PAD_X = 4.f, BETA_BADGE_PAD_Y = 1.f;
+
+    ImVec2 beta_badge_size(float font_size, float pad_y)
+    {
+        const ImVec2 text_size = ImGui::GetFont()->CalcTextSizeA(font_size, FLT_MAX, 0.f, BETA_BADGE_TEXT);
+        return ImVec2(text_size.x + 2 * BETA_BADGE_PAD_X, text_size.y + 2 * pad_y);
+    }
+
+    // Blue-to-violet gradient on the frame and a lighter one on the text; the alpha stays from the white base color
+    void draw_beta_badge(ImDrawList* dl, const ImRect& bb, float font_size, float pad_y)
+    {
+        const ImU32 frame_top = IM_COL32(0x3E, 0x5C, 0xFF, 0xFF), frame_bottom = IM_COL32(0x8A, 0x3E, 0xFF, 0xFF);
+        const ImU32 text_top = IM_COL32(0x9C, 0xC4, 0xFF, 0xFF), text_bottom = IM_COL32(0xCC, 0xB2, 0xFF, 0xFF);
+        const ImVec2 grad_p0(bb.Min.x, bb.Min.y), grad_p1(bb.Min.x, bb.Max.y);
+
+        int vtx_start = dl->VtxBuffer.Size;
+        dl->AddRect(bb.Min, bb.Max, IM_COL32_WHITE, 3.f, 0, 1.f);
+        ImGui::ShadeVertsLinearColorGradientKeepAlpha(dl, vtx_start, dl->VtxBuffer.Size, grad_p0, grad_p1, frame_top, frame_bottom);
+
+        vtx_start = dl->VtxBuffer.Size;
+        dl->AddText(ImGui::GetFont(), font_size, ImVec2(bb.Min.x + BETA_BADGE_PAD_X, bb.Min.y + pad_y), IM_COL32_WHITE, BETA_BADGE_TEXT);
+        ImGui::ShadeVertsLinearColorGradientKeepAlpha(dl, vtx_start, dl->VtxBuffer.Size, grad_p0, grad_p1, text_top, text_bottom);
+    }
+}
+
+// Smaller than the surrounding text so the badge reads as a tag, not as part of the label
+static float beta_badge_inline_font_size() { return ImGui::GetFontSize() * 0.7f; }
+
+float RsImGui::BetaBadgeWidth()
+{
+    return beta_badge_size(beta_badge_inline_font_size(), BETA_BADGE_PAD_Y).x;
+}
+
+void RsImGui::BetaBadge(const char* tooltip)
+{
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+
+    const float font_size = beta_badge_inline_font_size();
+    const ImVec2 size = beta_badge_size(font_size, BETA_BADGE_PAD_Y);
+    // Center the badge on the current text line so it sits next to a label or checkbox
+    const ImVec2 pos(window->DC.CursorPos.x, window->DC.CursorPos.y + (window->DC.CurrLineSize.y > 0 ? (window->DC.CurrLineSize.y - size.y) * 0.5f : 0.f));
+    const ImRect bb(pos, ImVec2(pos.x + size.x, pos.y + size.y));
+    ImGui::ItemSize(size);
+    if (!ImGui::ItemAdd(bb, 0))
+        return;
+
+    draw_beta_badge(window->DrawList, bb, font_size, BETA_BADGE_PAD_Y);
+    if (tooltip && ImGui::IsItemHovered())
+        RsImGui::CustomTooltip(tooltip);
+}

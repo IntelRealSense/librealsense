@@ -541,6 +541,9 @@ namespace rs2
         ImGui::SetCursorScreenPos({ stream_rect.x + 4 + offset, stream_rect.y - top_bar_height + 7 });
 
         std::string tooltip;
+        // Keep room next to the label for the BETA badge of maturing perception streams
+        const bool beta = is_beta_stream(profile.stream_type());
+        const float beta_badge_width = beta ? RsImGui::BetaBadgeWidth() + ImGui::GetStyle().ItemSpacing.x : 0.f;
         if (dev->dev.supports(RS2_CAMERA_INFO_NAME) &&
             dev->dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) &&
             dev->s->supports(RS2_CAMERA_INFO_NAME))
@@ -556,7 +559,7 @@ namespace rs2
 
             tooltip = rsutils::string::from() << dev_name << " s.n:" << dev_serial << " | " << sensor_name << ", " << stream_name << stream_index_str << " stream";
             const auto approx_char_width = 12;
-            if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size() + stream_index_str.size()) * approx_char_width)
+            if (stream_rect.w - 32 * num_of_buttons - beta_badge_width >= (dev_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size() + stream_index_str.size()) * approx_char_width)
                 label = tooltip;
             else
             {
@@ -569,7 +572,7 @@ namespace rs2
                 auto short_sn = dev_serial;
                 short_sn.erase(0, dev_serial.size() - 5).replace(0, 2, "..");
 
-                auto label_length = stream_rect.w - 32 * num_of_buttons;
+                auto label_length = stream_rect.w - 32 * num_of_buttons - beta_badge_width;
                 
 
                 if (label_length >= (short_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size() + stream_index_str.size()) * approx_char_width)
@@ -590,11 +593,17 @@ namespace rs2
             tooltip = label;
         }
 
-        ImGui::PushTextWrapPos(stream_rect.x + stream_rect.w - 32 * num_of_buttons - 5);
+        ImGui::PushTextWrapPos(stream_rect.x + stream_rect.w - 32 * num_of_buttons - beta_badge_width - 5);
         ImGui::Text("%s", label.c_str());
         if (tooltip != label && ImGui::IsItemHovered())
             RsImGui::CustomTooltip("%s", tooltip.c_str());
         ImGui::PopTextWrapPos();
+        // A narrow window can leave no room between the label and the buttons; the badge is dropped rather than drawn under them
+        if (beta && ImGui::GetItemRectMax().x + beta_badge_width <= stream_rect.x + stream_rect.w - 32 * num_of_buttons)
+        {
+            ImGui::SameLine();
+            RsImGui::BetaBadge("Beta feature - still maturing, behavior and output may change");
+        }
 
         ImGui::SetCursorScreenPos({ stream_rect.x + stream_rect.w - 32 * num_of_buttons, stream_rect.y - top_bar_height });
         
