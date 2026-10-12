@@ -390,6 +390,7 @@ namespace rs2
         rs2::frame_queue last_queue[2];
         mutable rs2::frame last[2];
         std::vector< uint8_t > raw16_preview;
+        std::vector< uint8_t > blank_preview;  // never written, stays zeroed
     public:
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
@@ -726,8 +727,8 @@ namespace rs2
                 default:
                 {
                     // Blank texture from a local buffer: the frame may be smaller than width*height (e.g. MJPEG)
-                    std::vector< uint8_t > blank( width * height );
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, blank.data());
+                    blank_preview.resize( width * height );
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, blank_preview.data());
                 }
                 }
 
