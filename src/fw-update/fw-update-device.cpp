@@ -9,6 +9,7 @@
 
 #include <rsutils/string/hexdump.h>
 #include <rsutils/time/stopwatch.h>
+#include <rsutils/time/timer.h>
 
 #include <chrono>
 #include <iomanip>
@@ -174,7 +175,16 @@ namespace librealsense
         , _product_line( product_line )
         , _connection_type( "USB" )
     {
-        if (auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER))
+        // On Linux the node of a device that just entered DFU is root-only until udev relabels it, so a first
+        // open can fail with an access error; retry for a short while before giving up.
+        rsutils::time::timer open_timer( std::chrono::seconds( 5 ) );
+        auto messenger = _usb_device->open( FW_UPDATE_INTERFACE_NUMBER );
+        while( ! messenger  &&  ! open_timer.has_expired() )
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+            messenger = _usb_device->open( FW_UPDATE_INTERFACE_NUMBER );
+        }
+        if( messenger )
         {
             read_device_info( messenger );
         }
