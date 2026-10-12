@@ -44,6 +44,13 @@ namespace librealsense
             static const firmware_version v( "7.59.46582.16434" );
             return v;
         }
+
+        // First FW that sends the GMSL gyro in 0.0001 dps per count, independent of the range option.
+        const firmware_version & min_fw_physical_gyro_gmsl()
+        {
+            static const firmware_version v( "7.59.46591.16482" );
+            return v;
+        }
     }
 
     const std::map<fourcc::value_type, rs2_format> d500_motion_fourcc_to_rs2_format = {
@@ -74,6 +81,11 @@ namespace librealsense
         return supports_physical_units() && _fw_version >= min_fw_int32_imu();
     }
 
+    bool d500_motion::supports_physical_gyro() const
+    {
+        return supports_physical_units() && ( ! _is_mipi_device || _fw_version >= min_fw_physical_gyro_gmsl() );
+    }
+
     bool d500_motion::is_imu_high_accuracy() const
     {
         return supports_physical_units();
@@ -81,8 +93,8 @@ namespace librealsense
 
     double d500_motion::get_gyro_default_scale() const
     {
-        // GMSL FW still sends the gyro as the raw BMI08x register value, so only the HID path has a physical scale.
-        if( supports_physical_units() && ! _is_mipi_device )
+        // Older GMSL FW sends the gyro as the raw BMI08x register value, so only HID and newer GMSL FW have a fixed scale.
+        if( supports_physical_gyro() )
             return 1. / RAW_TO_DPS_SCALE;
 
         // Legacy D500 reports signed 16-bit raw samples at a fixed 125 dps assumption.
@@ -240,14 +252,15 @@ namespace librealsense
         double gyro_scale_factor = get_gyro_default_scale();
         double accel_scale_factor = get_accel_default_scale();
         bool high_accuracy = is_imu_high_accuracy();
+        bool raw_gyro = ! supports_physical_gyro();
         motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL}, {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            [mm_calib, high_accuracy, mm_correct_opt, gyro_scale_factor, accel_scale_factor, gyro_sensitivity_option]()
+            [mm_calib, high_accuracy, mm_correct_opt, gyro_scale_factor, accel_scale_factor, gyro_sensitivity_option, raw_gyro]()
             {
                 double scale = gyro_scale_factor;
-                // MIPI gyro is a raw register value, its scale follows the selected range.
-                if( gyro_sensitivity_option )
+                // Older MIPI FW gyro is a raw register value, its scale follows the selected range.
+                if( raw_gyro && gyro_sensitivity_option )
                 {
                     try
                     {
