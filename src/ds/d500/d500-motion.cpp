@@ -46,11 +46,7 @@ namespace librealsense
         }
 
         // First FW that sends the GMSL gyro in 0.0001 dps per count, independent of the range option.
-        const firmware_version & min_fw_physical_gyro_gmsl()
-        {
-            static const firmware_version v( "7.59.46653.0" );
-            return v;
-        }
+        const firmware_version MIN_FW_PHYSICAL_GYRO_GMSL( "7.59.46653.0" );
     }
 
     const std::map<fourcc::value_type, rs2_format> d500_motion_fourcc_to_rs2_format = {
@@ -83,7 +79,7 @@ namespace librealsense
 
     bool d500_motion::supports_physical_gyro() const
     {
-        return supports_physical_units() && ( ! _is_mipi_device || _fw_version >= min_fw_physical_gyro_gmsl() );
+        return supports_physical_units() && ( ! _is_mipi_device || _fw_version >= MIN_FW_PHYSICAL_GYRO_GMSL );
     }
 
     bool d500_motion::is_imu_high_accuracy() const
