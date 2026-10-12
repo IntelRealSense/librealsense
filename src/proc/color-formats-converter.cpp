@@ -1241,7 +1241,8 @@ namespace librealsense
     void unpack_mjpeg( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         int w, h, bpp;
-        auto uncompressed_rgb = stbi_load_from_memory(source, actual_size, &w, &h, &bpp, false);
+        // input_size is the compressed payload length; actual_size is the decoded target size
+        auto uncompressed_rgb = stbi_load_from_memory(source, input_size ? input_size : actual_size, &w, &h, &bpp, false);
         if (uncompressed_rgb)
         {
             auto uncompressed_size = w * h * bpp;
