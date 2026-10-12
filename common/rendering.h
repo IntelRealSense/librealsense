@@ -395,6 +395,7 @@ namespace rs2
         std::shared_ptr<yuy_decoder> yuy2rgb;
         std::shared_ptr<m420_decoder> m420_to_rgb;
         std::shared_ptr<nv12_decoder> nv12_to_rgb;
+        std::shared_ptr<mjpeg_decoder> mjpeg_to_rgb;
         std::shared_ptr<y411_decoder> y411;
         bool zoom_preview = false;
         rect curr_preview_rect{};
@@ -467,6 +468,20 @@ namespace rs2
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
             glBindTexture(GL_TEXTURE_2D, 0);
+        }
+
+        // Decode to RGB and upload; GPU decoders already render into the texture
+        void upload_decoded(const filter& decoder, const rs2::frame& frame, rs2::frame& rendered_frame)
+        {
+            if (auto decoded = decoder.process(frame).as<video_frame>())
+            {
+                if (!decoded.is<gl::gpu_frame>())
+                {
+                    glBindTexture(GL_TEXTURE_2D, texture);
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, decoded.get_width(), decoded.get_height(), 0, GL_RGB, GL_UNSIGNED_BYTE, decoded.get_data());
+                }
+                rendered_frame = decoded;
+            }
         }
 
         void upload(rs2::frame frame, rs2_format prefered_format = RS2_FORMAT_ANY)
@@ -569,23 +584,7 @@ namespace rs2
                     break;
                 case RS2_FORMAT_YUYV:
                     if (yuy2rgb)
-                    {
-                        if (auto colorized_frame = yuy2rgb->process(frame).as<video_frame>())
-                        {
-                            if (!colorized_frame.is<gl::gpu_frame>())
-                            {
-                                glBindTexture(GL_TEXTURE_2D, texture);
-                                data = colorized_frame.get_data();
-
-                                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                                    colorized_frame.get_width(),
-                                    colorized_frame.get_height(),
-                                    0, GL_RGB, GL_UNSIGNED_BYTE,
-                                    colorized_frame.get_data());
-                            }
-                            rendered_frame = colorized_frame;
-                        }
-                    }
+                        upload_decoded(*yuy2rgb, frame, rendered_frame);
                     else
                     {
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
@@ -593,63 +592,19 @@ namespace rs2
                     break;
                 case RS2_FORMAT_M420:
                     if (m420_to_rgb)
-                    {
-                        if (auto colorized_frame = m420_to_rgb->process(frame).as<video_frame>())
-                        {
-                            if (!colorized_frame.is<gl::gpu_frame>())
-                            {
-                                glBindTexture(GL_TEXTURE_2D, texture);
-                                data = colorized_frame.get_data();
-
-                                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                                    colorized_frame.get_width(),
-                                    colorized_frame.get_height(),
-                                    0, GL_RGB, GL_UNSIGNED_BYTE,
-                                    colorized_frame.get_data());
-                            }
-                            rendered_frame = colorized_frame;
-                        }
-                    }
+                        upload_decoded(*m420_to_rgb, frame, rendered_frame);
                     break;
                 case RS2_FORMAT_NV12:
                     if (nv12_to_rgb)
-                    {
-                        if (auto colorized_frame = nv12_to_rgb->process(frame).as<video_frame>())
-                        {
-                            if (!colorized_frame.is<gl::gpu_frame>())
-                            {
-                                glBindTexture(GL_TEXTURE_2D, texture);
-                                data = colorized_frame.get_data();
-
-                                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                                    colorized_frame.get_width(),
-                                    colorized_frame.get_height(),
-                                    0, GL_RGB, GL_UNSIGNED_BYTE,
-                                    colorized_frame.get_data());
-                            }
-                            rendered_frame = colorized_frame;
-                        }
-                    }
+                        upload_decoded(*nv12_to_rgb, frame, rendered_frame);
+                    break;
+                case RS2_FORMAT_MJPEG:
+                    if (mjpeg_to_rgb)
+                        upload_decoded(*mjpeg_to_rgb, frame, rendered_frame);
                     break;
                 case RS2_FORMAT_Y411:
                     if (y411)
-                    {
-                        if (auto colorized_frame = y411->process(frame).as<video_frame>())
-                        {
-                            if (!colorized_frame.is<gl::gpu_frame>())
-                            {
-                                glBindTexture(GL_TEXTURE_2D, texture);
-                                data = colorized_frame.get_data();
-
-                                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                                    colorized_frame.get_width(),
-                                    colorized_frame.get_height(),
-                                    0, GL_RGB, GL_UNSIGNED_BYTE,
-                                    colorized_frame.get_data());
-                            }
-                            rendered_frame = colorized_frame;
-                        }
-                    }
+                        upload_decoded(*y411, frame, rendered_frame);
                     else
                     {
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);

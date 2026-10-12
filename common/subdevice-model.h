@@ -235,6 +235,7 @@ namespace rs2
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
         std::shared_ptr<rs2::m420_decoder> m420_to_rgb;
         std::shared_ptr<rs2::nv12_decoder> nv12_to_rgb;
+        std::shared_ptr<rs2::mjpeg_decoder> mjpeg_to_rgb;
         std::shared_ptr<rs2::y411_decoder> y411;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
