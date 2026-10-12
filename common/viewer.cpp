@@ -4283,18 +4283,36 @@ namespace rs2
             rs2::video_frame cf{ rs2::frame{} };
             rs2::depth_frame df{ rs2::frame{} };
             std::shared_ptr< subdevice_model > color_sub;
+            bool fresh_depth = false;
         };
         std::map< device_model *, device_frames > per_device;
+        auto const now = std::chrono::high_resolution_clock::now();
+        static constexpr auto FRAME_CACHE_TIMEOUT = std::chrono::milliseconds( 500 );
 
         // Seed an entry per camera that shows a color stream, so a camera that stopped delivering frames
         // (sensor stopped, cable pulled) still ages its overlay out instead of leaving it frozen on screen.
         for( auto const & s : streams )
         {
             auto const & sm = s.second;
-            if( sm.profile.stream_type() != RS2_STREAM_COLOR || ! sm.dev || ! sm.dev->dev_model )
+            if( ! sm.dev || ! sm.dev->dev_model )
                 continue;
-            if( sm.profile.stream_index() == od_color_stream_index( sm.dev->dev_model ) )
-                per_device[sm.dev->dev_model].color_sub = sm.dev;
+            auto const stype = sm.profile.stream_type();
+            bool const is_od_color = stype == RS2_STREAM_COLOR
+                && sm.profile.stream_index() == od_color_stream_index( sm.dev->dev_model );
+            if( ! is_od_color && stype != RS2_STREAM_DEPTH )
+                continue;
+            auto & frames = per_device[sm.dev->dev_model];
+            if( is_od_color )
+                frames.color_sub = sm.dev;
+            // Reuse the displayed frame cache: USB sensors need not arrive in the same render tick.
+            // Stopped/stalled streams must not supply stale inputs to a later OD session.
+            if( ! sm.dev->streaming || ! sm.texture || now - sm.last_frame > FRAME_CACHE_TIMEOUT )
+                continue;
+            auto cached = sm.texture->get_last_frame();
+            if( is_od_color )
+                frames.cf = cached.as< rs2::video_frame >();
+            else if( ! frames.df )
+                frames.df = cached.as< rs2::depth_frame >();
         }
 
         for( auto & kv : last_frames )
@@ -4323,9 +4341,10 @@ namespace rs2
                 if( frame.get_profile().stream_index() == od_color_stream_index( sub->dev_model ) )
                     frames.cf = frame.as< rs2::video_frame >();
             }
-            else if( ! frames.df )
+            else if( ! frames.fresh_depth )
             {
                 frames.df = frame.as< rs2::depth_frame >();
+                frames.fresh_depth = true;
             }
         }
 
@@ -4344,20 +4363,20 @@ namespace rs2
                                                  rs2::depth_frame const & df,
                                                  std::shared_ptr< atomic_objects_in_frame > const & objects )
     {
-        // Nothing to place detections against this tick. When OD fps < render fps this is normal
-        // (e.g. OD@15fps, RGB@30fps), so keep the last ones to avoid flicker - but age them out, or a
-        // camera that stopped delivering would leave its overlay frozen on screen.
-        static constexpr int MAX_STALE_OD_TICKS = 3;
+        // A render tick without new OD is normal. Expire by elapsed time, not display refresh rate.
+        // Color may come from its recent displayed-frame cache; Depth is optional.
+        auto const now = std::chrono::steady_clock::now();
+        static constexpr auto OD_TIMEOUT = std::chrono::milliseconds( 500 );
         if( ! odf || ! cf )
         {
-            if( ++objects->ticks_without_od_frame > MAX_STALE_OD_TICKS )
+            if( ! cf || now - objects->last_od_frame_time > OD_TIMEOUT )
             {
                 std::lock_guard< std::mutex > lock( objects->mutex );
                 objects->clear();
             }
             return;
         }
-        objects->ticks_without_od_frame = 0;
+        objects->last_od_frame_time = now;
 
         // Fresh OD frame with no detections — clear
         if( odf.get_detection_count() == 0 )
