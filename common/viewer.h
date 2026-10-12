@@ -318,6 +318,11 @@ namespace rs2
         // converted to host-style points (vertices + texture coordinates) over a color texture.
         rs2::points make_host_points(rs2::frame source);
         void prepare_device_cloud();
+        texture_buffer * device_cloud_texture();
+        int selected_texture_stream( rs2::video_frame & frame );
+        bool project_to_texture( const rs2::stream_profile & from, const rs2::vertex * vertices,
+                                 const rs2::video_frame & tex );
+        texture_buffer * labeled_cloud_texture();
         void prepare_labeled_cloud();
         bool render_hkr_cloud(rs2::gl::pointcloud_renderer& renderer, rs2::points pts, texture_buffer& tex, float point_size,
                               const rect& viewer_rect, ux_window& win, matrix4 camera, matrix4 projection, bool pick);
@@ -369,10 +374,15 @@ namespace rs2
         std::shared_ptr< texture_buffer > _device_pc_texture;
         unsigned long long _device_pc_frame_number = 0;
         double _device_pc_timestamp = 0.;
+        int _device_pc_tex_uid = -1;          // streams key of the Color / IR texture of the device cloud, -1 = depth colors
+        rs2::frame _device_pc_tex_frame;      // texture of the device cloud, for export
+        std::shared_ptr< rs2::filter > _device_pc_frameset_maker;  // device cloud + texture, for export
+        std::vector< rs2::texture_coordinate > _host_points_uv;  // optional input of _host_points_maker
         rs2::points _lpcl_host_points;
         std::shared_ptr< texture_buffer > _lpcl_texture;
         std::vector< uint8_t > _lpcl_rgb;
         unsigned long long _lpcl_frame_number = 0;
+        int _lpcl_tex_uid = -1;  // streams key of the Color / IR texture of the labeled cloud, -1 = label colors
         double _lpcl_timestamp = 0.;
         std::shared_ptr< rs2::filter > _host_points_maker;
         std::map< int, rs2::stream_profile > _host_points_profiles;

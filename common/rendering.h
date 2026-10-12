@@ -52,6 +52,12 @@
 
 namespace rs2
 {
+    // Stream name shown in the viewer: the SDK name, shortened where the UI needs it
+    inline std::string viewer_stream_name( const std::string & sdk_name )
+    {
+        return sdk_name == "Labeled Point Cloud" ? "Labeled PCL" : sdk_name;
+    }
+
     class fps_calc
     {
     public:
