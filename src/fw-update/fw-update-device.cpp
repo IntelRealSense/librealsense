@@ -178,12 +178,16 @@ namespace librealsense
         // On Linux the node of a device that just entered DFU is root-only until udev relabels it, so a first
         // open can fail with an access error; retry for a short while before giving up.
         rsutils::time::timer open_timer( std::chrono::seconds( 5 ) );
-        auto messenger = _usb_device->open( FW_UPDATE_INTERFACE_NUMBER );
-        while( ! messenger  &&  ! open_timer.has_expired() )
+        std::shared_ptr< platform::usb_messenger > messenger;
+        do
         {
-            std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
             messenger = _usb_device->open( FW_UPDATE_INTERFACE_NUMBER );
+            if( messenger )
+                break;
+            LOG_DEBUG( "DFU device not accessible yet, retrying..." );
+            std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
         }
+        while( ! open_timer.has_expired() );
         if( messenger )
         {
             read_device_info( messenger );
