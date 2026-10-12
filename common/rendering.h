@@ -770,8 +770,9 @@ namespace rs2
                 //break;
                 default:
                 {
-                    memset((void*)data, 0, height*width);
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+                    // Blank texture from a local buffer: the frame may be smaller than width*height (e.g. MJPEG)
+                    std::vector< uint8_t > blank( width * height );
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, blank.data());
                 }
                 }
 
