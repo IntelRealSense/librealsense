@@ -48,7 +48,7 @@ namespace librealsense
         // First FW that sends the GMSL gyro in 0.0001 dps per count, independent of the range option.
         const firmware_version & min_fw_physical_gyro_gmsl()
         {
-            static const firmware_version v( "7.59.46591.16482" );
+            static const firmware_version v( "7.59.46653.0" );
             return v;
         }
     }
