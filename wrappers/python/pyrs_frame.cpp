@@ -42,9 +42,10 @@ void init_frame(py::module &m) {
         if (auto vf = self.as<rs2::video_frame>()) {
             // Framed payloads (e.g. the depth-mapping streams) are larger than height*stride and compressed
             // ones (MJPEG) are smaller. Hand those back flat and whole instead of truncating or over-reading.
-            if (static_cast<size_t>(self.get_data_size())
-                != static_cast<size_t>(vf.get_height()) * static_cast<size_t>(vf.get_stride_in_bytes()))
-                return BufData(const_cast<void*>(self.get_data()), 1, std::string("@B"), self.get_data_size());
+            // Software-device frames report size 0 (unknown); shape those from width/height/stride.
+            auto size = static_cast<size_t>(self.get_data_size());
+            if (size && size != static_cast<size_t>(vf.get_height()) * static_cast<size_t>(vf.get_stride_in_bytes()))
+                return BufData(const_cast<void*>(self.get_data()), 1, std::string("@B"), size);
 
             std::map<size_t, std::string> bytes_per_pixel_to_format = { { 1, std::string("@B") },{ 2, std::string("@H") },{ 3, std::string("@I") },{ 4, std::string("@I") } };
             switch (vf.get_profile().format()) {
