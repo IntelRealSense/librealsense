@@ -263,13 +263,14 @@
             const auto y_plane = s;
             const auto uv_plane = s + width * height;
             // Zero-copy capture buffers are uncached, where 16-byte loads are ~7x slower than a bulk copy
-            std::vector<uint8_t> cached_rows(2 * width);
+            thread_local std::vector<uint8_t> cached_rows;
+            cached_rows.resize(2 * width);
             auto y = cached_rows.data();
             auto uv = y + width;
             for (int row = 0; row < height; ++row)
             {
                 memcpy(y, y_plane + row * width, width);
-                if (row % 2 == 0)
+                if (row % 2 == 0) // a UV row is shared by two Y rows
                     memcpy(uv, uv_plane + (row / 2) * width, width);
                 auto output = d[0] + row * width * bpp;
                 for (int column = 0; column < width; column += 16)
