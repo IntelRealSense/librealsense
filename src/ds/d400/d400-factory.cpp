@@ -914,7 +914,9 @@ namespace librealsense
             , firmware_logger_device( dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command())
         {
             ds_advanced_mode_base::initialize_advanced_mode( this );
+#if !defined(__APPLE__) // Motion sensors not supported on macOS
             register_gyro_sensitivity();
+#endif
         }
 
 
