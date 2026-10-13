@@ -79,8 +79,9 @@ macro( _using_easyloggingpp include_dir )
     #       [STATIC] only initialize when BUILD_SHARED_LIBS is OFF
     #
     # Projects that depend on realsense2 (and want to use ELPP themselves) need [SHARED]
-    # because realsense2 always includes the initialization. On Linux, realsense2 exports it
-    # and they share it, so [SHARED] does nothing there: a second definition would be destroyed twice at exit.
+    # because realsense2 always includes the initialization. On Linux, realsense2 exports it and
+    # the target, which must link realsense2, shares it, so [SHARED] does nothing there: a second
+    # definition would be destroyed twice at exit.
     #
     function( using_easyloggingpp target_name )
         set( func_ARGN ARGN )  # otherwise we get the outside macro's ARGN
