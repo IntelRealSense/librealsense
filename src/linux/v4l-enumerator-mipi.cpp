@@ -342,7 +342,8 @@ namespace librealsense
             std::string first_available_dfu;
             unsigned openable_dfu_count = 0;
             bool dfu_has_i2c_id = false;
-            for (const auto& dfu_device_path : get_mipi_dfu_paths())
+            const auto dfu_paths = get_mipi_dfu_paths();
+            for (const auto& dfu_device_path : dfu_paths)
             {
                 const std::string dfu_i2c_id = dfu_devname_to_i2c_id(dfu_device_path);
                 dfu_has_i2c_id |= !dfu_i2c_id.empty();
@@ -363,10 +364,11 @@ namespace librealsense
             }
             if (info.dfu_device_path.empty())
             {
-                if (!cam_i2c_id.empty() && dfu_has_i2c_id)
+                if (!cam_i2c_id.empty() && dfu_has_i2c_id && dfu_paths.size() > 1)
                 {
                     // The camera is identifiable and so are the chardevs, so a fallback could only
                     // pick another camera's chardev - leave DFU unavailable instead.
+                    // With a single chardev it can't be the wrong camera, so that case takes the fallback.
                     LOG_WARNING("MIPI DFU: no openable chardev owned by i2c id " << cam_i2c_id
                                 << " for camera " << dev_name << ", DFU not available for it");
                 }
