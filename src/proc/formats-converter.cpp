@@ -416,12 +416,22 @@ formats_converter::find_pbf_matching_most_profiles( const stream_profiles & from
     return { best_match_processing_block_factory, best_match_profiles };
 }
 
+rs2_frame_callback_sptr formats_converter::get_frames_callback() const
+{
+    std::lock_guard< std::mutex > lock( _callback_mutex );
+    return _converted_frames_callback;
+}
+
 void formats_converter::set_frames_callback( rs2_frame_callback_sptr callback )
 {
+    std::lock_guard< std::mutex > lock( _callback_mutex );
     _converted_frames_callback = callback;
 
-    // After processing callback
-    auto output_cb = make_frame_callback( [&]( frame_holder f ) {
+    // After processing callback. Created once: the converters are invoked from the capture threads, which may be
+    // inside this callback when set_frames_callback() is called (the record sensor unhooks during stop(), before the
+    // capture threads are joined in close()), so replacing it here would free it under a running thread.
+    if( ! _output_cb )
+        _output_cb = make_frame_callback( [this]( frame_holder f ) {
         std::vector< frame_interface * > frames_to_be_processed;
         frames_to_be_processed.push_back( f.frame );
 
@@ -459,20 +469,22 @@ void formats_converter::set_frames_callback( rs2_frame_callback_sptr callback )
                     continue;
 
                 fr->acquire();
-                if( _converted_frames_callback )
-                    _converted_frames_callback->on_frame( (rs2_frame *)fr );
+                // Our own reference keeps the callback alive for the call even if it is swapped meanwhile
+                auto converted_frames_callback = get_frames_callback();
+                if( converted_frames_callback )
+                    converted_frames_callback->on_frame( (rs2_frame *)fr );
             }
         }
     } );
 
-    // Set callbacks for all of the relevant processing blocks
+    // Set callbacks for all of the relevant processing blocks (they are re-created on every prepare_to_convert)
     for( const auto & entry : _raw_profile_to_converters )
     {
         auto & converters = entry.second;
         for( auto & converter : converters )
             if( converter )
             {
-                converter->set_output_callback( output_cb );
+                converter->set_output_callback( _output_cb );
             }
     }
 }

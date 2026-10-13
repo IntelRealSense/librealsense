@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
+#include <mutex>
 
 namespace librealsense
 {
@@ -42,7 +43,7 @@ namespace librealsense
         std::vector< std::shared_ptr< processing_block > > get_active_converters() const;
 
         void set_frames_callback( rs2_frame_callback_sptr callback );
-        rs2_frame_callback_sptr get_frames_callback() const { return _converted_frames_callback; }
+        rs2_frame_callback_sptr get_frames_callback() const;
         void convert_frame( frame_holder & f );
 
         // A raw profile can carry several streams at once (e.g. dual-color streams multiplexed on one pin, told apart by metadata).
@@ -76,6 +77,11 @@ namespace librealsense
                             std::unordered_set< std::shared_ptr< processing_block > > > _raw_profile_to_converters;
         std::unordered_map< rs2_format, stream_profiles > _format_mapping_to_from_profiles;
 
+        // The user-facing callback can be swapped while frames are in flight (a record sensor hooks and unhooks it
+        // around start/stop), so it is only read under the mutex and the converters' output callback is created once
+        // and never replaced - a converter thread may still be inside it when the swap happens.
+        mutable std::mutex _callback_mutex;
         rs2_frame_callback_sptr _converted_frames_callback;
+        rs2_frame_callback_sptr _output_cb;
     };
 }
