@@ -527,17 +527,16 @@ namespace librealsense
                 // version.
                 if( _pid != ds::D585S_PID && _fw_version >= firmware_version( "7.58.40929.13516" ) )
                 {
-                    // GMSL: d4xx kernel driver exposes the D457-style range 0..2 (0:Internal, 1:Master, 2:External);
+                    // GMSL: the d4xx driver exposes range 0..2 and skip-masks 1 (Master) for D5xx, so only 0:Internal, 2:External are labeled;
                     // USB: FW register 0x2C uses the D500-native 2:Internal, 3:External. Different range → different
                     // labels are needed for the viewer to render this as an enum combo rather than a slider.
                     std::map< float, std::string > description_per_value = _is_mipi_device
                         ? std::map< float, std::string >{ { 0.f, "Internal" },
-                                                          { 1.f, "Master" },
                                                           { 2.f, "External" } }
                         : std::map< float, std::string >{ { 2.f, "Internal" },
                                                           { 3.f, "External" } };
                     const char * desc = _is_mipi_device
-                        ? "Inter-camera synchronization mode: 0:Internal, 1:Master, 2:External"
+                        ? "Inter-camera synchronization mode: 0:Internal, 2:External"
                         : "Inter-camera synchronization mode: 2:Internal, 3:External";
                     depth_sensor.register_option( RS2_OPTION_INTER_CAM_SYNC_MODE,
                                                   std::make_shared< uvc_xu_option< uint16_t > >(
