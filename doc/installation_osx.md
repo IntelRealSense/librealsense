@@ -15,7 +15,6 @@ sudo examples/rs-depth
 
 **Current Limitations:**
 - **RealSense Viewer is not supported** on macOS in the current release
-- **Motion sensors (IMU) are disabled** on macOS in the current release
 
 ## Building from Source
 
