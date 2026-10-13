@@ -67,7 +67,8 @@ def find_dot_blobs(diff_image):
     can't swamp a global threshold. Returns the dot-sized connected components plus the
     binary mask used, for debugging.
     """
-    local = diff_image - cv2.blur(diff_image, (BACKGROUND_KERNEL_PX, BACKGROUND_KERNEL_PX))
+    diff = np.clip(diff_image, 0, None)  # negatives are noise (OFF > ON); they'd drag the local background down
+    local = diff - cv2.blur(diff, (BACKGROUND_KERNEL_PX, BACKGROUND_KERNEL_PX))
     sigma = max(1.4826 * np.median(np.abs(local - np.median(local))), MIN_NOISE_SIGMA)  # robust std via MAD
     mask = (local > DOT_SIGMA_THRESHOLD * sigma).astype(np.uint8) * 255
     _, _, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
