@@ -13,7 +13,7 @@
 // With static linkage, ELPP is initialized by librealsense, so doing it here will
 // create errors. When we're using the shared .so/.dll, the two are separate and we have
 // to initialize ours if we want to use the APIs!
-INITIALIZE_EASYLOGGINGPP
+RSUTILS_INITIALIZE_EASYLOGGINGPP
 #endif
 
 

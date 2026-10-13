@@ -23,6 +23,52 @@
 
 #define LIBREALSENSE_ELPP_ID "librealsense"
 
+#include <atomic>
+#include <chrono>
+#include <thread>
+
+namespace rsutils {
+namespace easylogging {
+// Process-exit guard for the log macros below.
+//
+// The ELPP storage is a static object, destroyed during static destruction. A librealsense thread (device
+// watcher, dispatcher) can still be running at that point when the application keeps a global rs2 object
+// (pipeline, context, device) alive past main(): the context, and the threads with it, are then torn down
+// after the logger, and a log call from such a thread used to be a use-after-free. The sentinel defined by
+// RSUTILS_INITIALIZE_EASYLOGGINGPP - in the same translation unit as the storage, right after it, so it is
+// destroyed right before it - flips shutting_down and waits for the calls already in flight; every later
+// call is a no-op. Both globals are trivially destructible, so reading them after that is well-defined.
+extern std::atomic< bool > shutting_down;
+extern std::atomic< int > calls_in_flight;
+
+struct log_call_guard
+{
+    bool const ok;
+    log_call_guard() : ok( ( ++calls_in_flight, ! shutting_down.load() ) ) {}
+    ~log_call_guard() { --calls_in_flight; }
+};
+}  // namespace easylogging
+}  // namespace rsutils
+
+// Use in place of INITIALIZE_EASYLOGGINGPP (see log_call_guard above)
+#define RSUTILS_INITIALIZE_EASYLOGGINGPP                                                                                \
+    INITIALIZE_EASYLOGGINGPP                                                                                           \
+    namespace rsutils {                                                                                                \
+    namespace easylogging {                                                                                            \
+    std::atomic< bool > shutting_down{ false };                                                                        \
+    std::atomic< int > calls_in_flight{ 0 };                                                                           \
+    static struct shutdown_sentinel                                                                                    \
+    {                                                                                                                  \
+        ~shutdown_sentinel()                                                                                           \
+        {                                                                                                              \
+            shutting_down = true;                                                                                      \
+            for( int i = 0; i < 1000 && calls_in_flight > 0; ++i )                                                     \
+                std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );                                         \
+        }                                                                                                              \
+    } const shutdown_sentinel_instance;                                                                                \
+    }                                                                                                                  \
+    }
+
 
 #ifdef __ANDROID__  
 #include <android/log.h>
@@ -67,6 +113,9 @@ inline bool elpp_enabled( el::Logger * logger__, el::Level level )
 #define LIBRS_LOG_STR_( LEVEL, STR )                                                                                   \
     do                                                                                                                 \
     {                                                                                                                  \
+        rsutils::easylogging::log_call_guard guard__;                                                                  \
+        if( ! guard__.ok )                                                                                             \
+            break;                                                                                                     \
         auto logger__ = el::Loggers::getLogger( rsutils::g_librealsense_elpp_id );                                     \
         if( rsutils::elpp_enabled( logger__, el::Level::LEVEL ) )                                                      \
         {                                                                                                              \
@@ -81,6 +130,9 @@ inline bool elpp_enabled( el::Logger * logger__, el::Level level )
 #define LIBRS_LOG_( LEVEL, ... )                                                                                       \
     do                                                                                                                 \
     {                                                                                                                  \
+        rsutils::easylogging::log_call_guard guard__;                                                                  \
+        if( ! guard__.ok )                                                                                             \
+            break;                                                                                                     \
         auto logger__ = el::Loggers::getLogger( rsutils::g_librealsense_elpp_id );                                     \
         if( rsutils::elpp_enabled( logger__, el::Level::LEVEL ) )                                                      \
         {                                                                                                              \

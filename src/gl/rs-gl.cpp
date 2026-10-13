@@ -298,7 +298,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
 #ifdef BUILD_EASYLOGGINGPP
 #ifdef SHARED_LIBS
-INITIALIZE_EASYLOGGINGPP
+RSUTILS_INITIALIZE_EASYLOGGINGPP
 #endif
 char log_gl_name[] = LIBREALSENSE_ELPP_ID;
 static logger_type<log_gl_name> logger_gl;
