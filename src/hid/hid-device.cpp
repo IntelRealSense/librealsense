@@ -313,7 +313,6 @@ namespace librealsense
             return res;
         }
 
-
         rs_usb_interface rs_hid_device::get_hid_interface()
         {
             auto intfs = _usb_device->get_interfaces();
