@@ -3,7 +3,7 @@
         "rotation": [[0.0, 0.0, 1.0],
                      [-1.0, 0.0, 0.0],
                      [0.0, -1.0, 0.0]],
-        "translation": [0.0, 0.0, 0.18]
+        "translation": [0.0, 0.0, 0.27]
     },
     "occupancy_grid_params": {
         "grid_cell_size": 50,
