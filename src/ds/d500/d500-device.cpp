@@ -527,7 +527,7 @@ namespace librealsense
                 // version.
                 if( _pid != ds::D585S_PID && _fw_version >= firmware_version( "7.58.40929.13516" ) )
                 {
-                    // GMSL: d4xx kernel driver exposes the D457-style range 0..2 with 1 (Master) masked out for D5xx;
+                    // GMSL: the d4xx driver exposes range 0..2 and skip-masks 1 (Master) for D5xx, so only 0:Internal, 2:External are labeled;
                     // USB: FW register 0x2C uses the D500-native 2:Internal, 3:External. Different range → different
                     // labels are needed for the viewer to render this as an enum combo rather than a slider.
                     std::map< float, std::string > description_per_value = _is_mipi_device
