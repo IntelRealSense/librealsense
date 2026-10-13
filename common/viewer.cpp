@@ -4287,7 +4287,6 @@ namespace rs2
         };
         std::map< device_model *, device_frames > per_device;
         auto const now = std::chrono::high_resolution_clock::now();
-        static constexpr auto FRAME_CACHE_TIMEOUT = std::chrono::milliseconds( 500 );
 
         // Seed an entry per camera that shows a color stream, so a camera that stopped delivering frames
         // (sensor stopped, cable pulled) still ages its overlay out instead of leaving it frozen on screen.
@@ -4306,7 +4305,9 @@ namespace rs2
                 frames.color_sub = sm.dev;
             // Reuse the displayed frame cache: USB sensors need not arrive in the same render tick.
             // Stopped/stalled streams must not supply stale inputs to a later OD session.
-            if( ! sm.dev->streaming || ! sm.texture || now - sm.last_frame > FRAME_CACHE_TIMEOUT )
+            auto const fps = sm.profile.fps();
+            if( ! sm.dev->streaming || ! sm.texture || fps <= 0
+                || now - sm.last_frame > std::chrono::duration< double >( 3. / fps ) )
                 continue;
             auto cached = sm.texture->get_last_frame();
             if( is_od_color )
@@ -4366,7 +4367,7 @@ namespace rs2
         // A render tick without new OD is normal. Expire by elapsed time, not display refresh rate.
         // Color may come from its recent displayed-frame cache; Depth is optional.
         auto const now = std::chrono::steady_clock::now();
-        static constexpr auto OD_TIMEOUT = std::chrono::milliseconds( 500 );
+        static constexpr auto OD_TIMEOUT = std::chrono::milliseconds( 200 );
         if( ! odf || ! cf )
         {
             if( ! cf || now - objects->last_od_frame_time > OD_TIMEOUT )
