@@ -28,6 +28,7 @@ using rs_fourcc = rsutils::type::fourcc;
 #include <rsutils/number/crc32.h>
 #include <rsutils/time/timer.h>
 #include <thread>
+#include <set>
 #include <cstring>
 
 namespace librealsense
@@ -669,11 +670,31 @@ void d500_depth_mapping::register_processing_blocks( std::shared_ptr< d500_depth
         auto json = reply.data() + sizeof( header );
         if( header.version != ds::DEPTH_MAPPING_PARAMS_VERSION )
             throw io_exception( rsutils::string::from() << "Unsupported depth mapping params version " << header.version );
-        if( header.json_size > ds::DEPTH_MAPPING_PARAMS_LEN - sizeof( header ) )
+        if( header.json_size == 0 || header.json_size > ds::DEPTH_MAPPING_PARAMS_LEN - sizeof( header ) )
             throw io_exception( rsutils::string::from() << "Invalid depth mapping params JSON size " << header.json_size );
         if( rsutils::number::calc_crc32( json, header.json_size ) != header.json_crc )
             throw io_exception( "Depth mapping params CRC mismatch" );
-        return rsutils::json::parse( std::string( json, json + header.json_size ) );
+        auto reply_json = rsutils::json::parse( std::string( json, json + header.json_size ), nullptr, false );
+        if( reply_json.is_discarded() || ! reply_json.is_object() )
+            throw io_exception( "Depth mapping params reply is not a JSON object" );
+        return reply_json;
+    }
+
+    // A missing key means FW broke the reply contract; say which key instead of surfacing a bare json error
+    static rsutils::json const & depth_mapping_reply_field( rsutils::json const & j, char const * key )
+    {
+        auto it = j.find( key );
+        if( it == j.end() )
+            throw io_exception( rsutils::string::from() << "Depth mapping params reply is missing '" << key << "'" );
+        return *it;
+    }
+
+    static bool is_depth_mapping_write_pending( rsutils::json const & reply )
+    {
+        auto & pending = depth_mapping_reply_field( depth_mapping_reply_field( reply, "result" ), "pending" );
+        if( ! pending.is_boolean() )
+            throw io_exception( "Depth mapping params reply has a non-boolean 'pending'" );
+        return pending.get< bool >();
     }
 
     // Polls until FW is done with any in-flight write, so the reply carries "configured" and "params"
@@ -683,10 +704,11 @@ void d500_depth_mapping::register_processing_blocks( std::shared_ptr< d500_depth
         rsutils::time::timer timer( std::chrono::seconds( 5 ) );
         timer.start();
         auto reply = read_depth_mapping_reply( raw_ep );
-        while( reply.at( "result" ).at( "pending" ).get< bool >() )
+        while( is_depth_mapping_write_pending( reply ) )
         {
             if( timer.has_expired() )
-                throw io_exception( "Timed out waiting for depth mapping params to be applied" );
+                throw io_exception( "Timed out waiting for depth mapping params to be applied; the write may still "
+                                    "complete, call get_depth_mapping_params() to check" );
             std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
             reply = read_depth_mapping_reply( raw_ep );
         }
@@ -697,7 +719,9 @@ void d500_depth_mapping::register_processing_blocks( std::shared_ptr< d500_depth
     {
         if( ! _raw_depth_mapping_ep )
             throw not_implemented_exception( "Depth mapping params are not supported on this device" );
-        return wait_for_depth_mapping_reply( *_raw_depth_mapping_ep ).at( "params" ).dump();
+        std::lock_guard< std::mutex > lock( _depth_mapping_params_mutex );
+        auto reply = wait_for_depth_mapping_reply( *_raw_depth_mapping_ep );
+        return depth_mapping_reply_field( reply, "params" ).dump();
     }
 
     void d500_depth_mapping::set_depth_mapping_params( const std::string & params_json_str ) const
@@ -716,6 +740,8 @@ void d500_depth_mapping::register_processing_blocks( std::shared_ptr< d500_depth
         header.json_size = static_cast< uint16_t >( params_json_str.size() );
         header.json_crc = rsutils::number::calc_crc32( json, params_json_str.size() );
 
+        // Held across SET_CUR and the poll, so the poll reads this call's result and not another thread's
+        std::lock_guard< std::mutex > lock( _depth_mapping_params_mutex );
         auto & raw_ep = *_raw_depth_mapping_ep;
         std::vector< uint8_t > data( ds::DEPTH_MAPPING_PARAMS_LEN, 0 );
         std::memcpy( data.data(), &header, sizeof( header ) );
@@ -728,10 +754,19 @@ void d500_depth_mapping::register_processing_blocks( std::shared_ptr< d500_depth
         } );
 
         // FW marks the write pending before acking SET_CUR, so this cannot see the previous write's result
-        auto result = wait_for_depth_mapping_reply( raw_ep ).at( "result" );
-        auto code = result.at( "code" ).get< std::string >();
-        if( code != "OK" )
-            throw invalid_value_exception( rsutils::string::from() << "Failed to set depth mapping params: " << code
-                                                                   << ": " << result.at( "message" ).get< std::string >() );
+        auto reply = wait_for_depth_mapping_reply( raw_ep );
+        auto & result = depth_mapping_reply_field( reply, "result" );
+        auto code = depth_mapping_reply_field( result, "code" ).get< std::string >();
+        if( code == "OK" )
+            return;
+
+        std::string error = rsutils::string::from() << "Failed to set depth mapping params: " << code << ": "
+                                                    << result.value( "message", std::string() );
+        // Codes caused by the caller's JSON are invalid values; header, CRC and flash failures are I/O errors
+        static const std::set< std::string > invalid_input_codes
+            = { "PARSE_ERROR", "UNKNOWN_KEY", "WRONG_TYPE", "OUT_OF_RANGE", "MISSING_MANDATORY" };
+        if( invalid_input_codes.count( code ) )
+            throw invalid_value_exception( error );
+        throw io_exception( error );
     }
 }
