@@ -392,8 +392,12 @@ namespace rs2
 
         bool show_advanced_mode_popup = false;
         
-        bool subdevice_has_perception_stream_enabled( const subdevice_model & sub ) const;
-        bool are_color_and_depth_streaming() const;
+        bool subdevice_has_stream_enabled( const subdevice_model & sub, rs2_stream type ) const;
+        bool is_stream_active( rs2_stream type ) const;  // enabled on a streaming subdevice
+        bool subdevice_has_perception( const subdevice_model & sub ) const;  // object detection or occupancy enabled
+        bool subdevice_needs_color( const subdevice_model & sub ) const;
+        bool subdevice_needs_depth( const subdevice_model & sub ) const;
+        bool is_depth_resolution_valid_for_occupancy() const;
         void stop_perception_if_video_stopped( viewer_model & viewer );
         // Perception and the decimation/temporal embedded filters are mutually exclusive.
         bool is_perception_streaming() const;

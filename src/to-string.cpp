@@ -394,6 +394,22 @@ const char * get_string( rs2_gyro_sensitivity value )
 #undef CASE
 }
 
+const char * get_string( rs2_accel_sensitivity value )
+{
+#define CASE( X ) STRCASE( ACCEL_SENSITIVITY, X )
+    switch( value )
+    {
+        CASE( 3G )
+        CASE( 6G )
+        CASE( 12G )
+        CASE( 24G )
+    default:
+        assert( ! is_valid( value ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
 const char * get_string( rs2_extension value )
 {
 #define CASE( X ) STRCASE( EXTENSION, X )
@@ -636,6 +652,7 @@ std::string const & get_string_( rs2_option value )
         CASE( DUAL_RGB_ENABLE_AUTO_EXPOSURE )
         CASE( DUAL_RGB_EXPOSURE )
         CASE( DUAL_RGB_GAIN )
+        CASE( ACCEL_SENSITIVITY )
 #undef CASE
         return arr;
     }();
@@ -1124,5 +1141,6 @@ const char * rs2_point_cloud_label_to_string(rs2_point_cloud_label label) { retu
 const char * rs2_calib_location_to_string(rs2_calib_location calib_location) { return librealsense::get_string(calib_location); }
 const char * rs2_embedded_filter_type_to_string(rs2_embedded_filter_type embedded_filter_type) { return librealsense::get_string(embedded_filter_type); }
 const char * rs2_gyro_sensitivity_to_string( rs2_gyro_sensitivity mode ){return librealsense::get_string( mode );}
+const char * rs2_accel_sensitivity_to_string( rs2_accel_sensitivity mode ){return librealsense::get_string( mode );}
 const char * rs2_eth_link_priority_to_string( rs2_eth_link_priority priority ){return librealsense::get_string( priority );}
 const char * rs2_composite_option_id_to_string( rs2_composite_option_id id ) { return librealsense::get_string( id ).c_str(); }

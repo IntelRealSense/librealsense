@@ -457,6 +457,7 @@ bool option_model::draw_slider( notifications_model & model,
             ImGui::PopStyleColor( 4 );
         }
     }
+    flush_arrow_nudge( error_message );
     float customWidth = 295 - ImGui::GetCursorPosX(); //set slider width from the current Xpos to the right border at 295 (the edit button pos)
     ImGui::PushItemWidth(customWidth);
     ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, black);
@@ -571,6 +572,9 @@ bool option_model::draw_slider( notifications_model & model,
             else
             {
                 slider_clicked = slider_unselected( opt, static_cast< float >( int_value ), error_message, model );
+                float nudged = static_cast< float >( int_value );
+                if( RsImGui::SliderArrowNudge( &nudged, range.min, range.max, range.step ) )
+                    queue_arrow_nudge( nudged );
             }
         }
         else
@@ -629,6 +633,8 @@ bool option_model::draw_slider( notifications_model & model,
             else
             {
                 slider_clicked = slider_unselected( opt, tmp_value, error_message, model );
+                if( RsImGui::SliderArrowNudge( &tmp_value, range.min, range.max, range.step ) )
+                    queue_arrow_nudge( tmp_value );
             }
         }
     }
@@ -686,6 +692,7 @@ bool option_model::slider_selected( rs2_option opt,
                                     notifications_model & /*model*/ )
 {
     check_opt( opt, __func__ );
+    _arrow_nudge_pending = false;  // a drag supersedes a queued arrow nudge
     // Async (FW) path: dispatch every UI tick — the dispatcher action coalesces (per-option
     // _latest_pending_value) and its try_sleep enforces the FW-write floor, so per-tick calls
     // are cheap; invalidate + add_log fire later from draw_option once a write completes.
@@ -693,6 +700,27 @@ bool option_model::slider_selected( rs2_option opt,
     // this fires a handful of times per drag, each an instant in-process write with readback.
     write_value( value, error_message );
     return true;
+}
+
+void option_model::queue_arrow_nudge( float value )
+{
+    _arrow_nudge_value = value;
+    _arrow_nudge_pending = true;
+    _arrow_nudge_stopwatch.reset();
+    _user_request_value = value;
+    _user_request_stopwatch.reset();
+    _has_user_request->store( true );
+    last_slider_hold_stopwatch.reset();  // keep the periodic readback from overwriting the nudged value
+}
+
+void option_model::flush_arrow_nudge( std::string & error_message )
+{
+    constexpr long long quiet_ms = 300;  // longer than the key-repeat interval, so a held key is one write
+    if( ! _arrow_nudge_pending || _arrow_nudge_stopwatch.get_elapsed_ms() < quiet_ms )
+        return;
+    _arrow_nudge_pending = false;
+    write_value( _arrow_nudge_value, error_message );
+    RsImGui::ClearItemFocus();
 }
 
 bool option_model::slider_unselected( rs2_option opt,

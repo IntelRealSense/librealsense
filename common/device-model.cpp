@@ -28,6 +28,7 @@
 #include "d500-on-chip-calib.h"
 #include "subdevice-model.h"
 #include "device-model.h"
+#include "fw-update-common.h"
 
 using namespace rs400;
 using rsutils::json;
@@ -375,52 +376,72 @@ namespace rs2
         }
     }
 
-    bool device_model::subdevice_has_perception_stream_enabled( const subdevice_model & sub ) const
+    bool device_model::subdevice_has_stream_enabled( const subdevice_model & sub, rs2_stream type ) const
     {
         for( auto const & kv : sub.stream_enabled )
         {
             if( ! kv.second ) continue;
             for( auto const & p : sub.profiles )
-                if( p.unique_id() == kv.first && p.stream_type() == RS2_STREAM_OBJECT_DETECTION )
+                if( p.unique_id() == kv.first && p.stream_type() == type )
                     return true;
         }
         return false;
     }
 
-    bool device_model::are_color_and_depth_streaming() const
+    bool device_model::is_stream_active( rs2_stream type ) const
     {
-        bool has_color = false, has_depth = false;
         for( auto const & sub : subdevices )
-        {
-            if( ! sub->streaming ) continue;
-            for( auto const & p : sub->profiles )
-            {
-                if( p.stream_type() == RS2_STREAM_COLOR ) has_color = true;
-                if( p.stream_type() == RS2_STREAM_DEPTH ) has_depth = true;
-            }
-            if( has_color && has_depth ) return true;
-        }
+            if( sub->streaming && subdevice_has_stream_enabled( *sub, type ) )
+                return true;
+        return false;
+    }
+
+    bool device_model::subdevice_has_perception( const subdevice_model & sub ) const
+    {
+        return subdevice_has_stream_enabled( sub, RS2_STREAM_OBJECT_DETECTION )
+            || subdevice_has_stream_enabled( sub, RS2_STREAM_OCCUPANCY );
+    }
+
+    bool device_model::subdevice_needs_color( const subdevice_model & sub ) const
+    {
+        // Object detection results are drawn on the color stream
+        return subdevice_has_stream_enabled( sub, RS2_STREAM_OBJECT_DETECTION );
+    }
+
+    bool device_model::subdevice_needs_depth( const subdevice_model & sub ) const
+    {
+        // Over GMSL the camera builds occupancy from the running depth stream
+        return fw_update::is_mipi_device( dev ) && subdevice_has_stream_enabled( sub, RS2_STREAM_OCCUPANCY );
+    }
+
+    bool device_model::is_depth_resolution_valid_for_occupancy() const
+    {
+        // Over GMSL the camera computes occupancy only from these depth resolutions
+        for( auto const & sub : subdevices )
+            if( sub->streaming )
+                for( auto const & p : sub->s->get_active_streams() )
+                    if( auto vp = p.as< video_stream_profile >() )
+                        if( p.stream_type() == RS2_STREAM_DEPTH )
+                            return ( vp.width() == 1280 && vp.height() == 720 ) || ( vp.width() == 640 && vp.height() == 360 );
         return false;
     }
 
     void device_model::stop_perception_if_video_stopped( viewer_model & viewer )
     {
-        // If color or depth are no longer both streaming, stop any perception subdevice that is still running.
-        if( are_color_and_depth_streaming() )
-            return;
+        // Stop a perception stream whose input stopped: color for object detection, depth for GMSL occupancy
+        bool const color_active = is_stream_active( RS2_STREAM_COLOR );
+        bool const depth_active = is_stream_active( RS2_STREAM_DEPTH );
         for( auto & sub : subdevices )
         {
-            if( sub->streaming && subdevice_has_perception_stream_enabled( *sub ) )
+            if( sub->streaming && ( ( ! color_active && subdevice_needs_color( *sub ) )
+                                    || ( ! depth_active && subdevice_needs_depth( *sub ) ) ) )
                 sub->stop( viewer.not_model );
         }
     }
 
     bool device_model::is_perception_streaming() const
     {
-        for( auto const & sub : subdevices )
-            if( sub->streaming && subdevice_has_perception_stream_enabled( *sub ) )
-                return true;
-        return false;
+        return is_stream_active( RS2_STREAM_OBJECT_DETECTION );
     }
 
     bool device_model::is_perception_blocking_filter_enabled() const
@@ -2484,8 +2505,9 @@ namespace rs2
         if (_allow_remove)
         {
             ImGui::Columns(1);
-            float horizontal_distance_from_right_side_of_panel = 47;
-            ImGui::SetCursorPos({ panel_width - horizontal_distance_from_right_side_of_panel, pos.y + 9 + (header_h - panel_height) / 2 });
+            // From the content edge, so it stays aligned with the sensor toggles
+            float horizontal_distance_from_right_side_of_panel = 33;
+            ImGui::SetCursorPos({ windows_width - horizontal_distance_from_right_side_of_panel, pos.y + 9 + (header_h - panel_height) / 2 });
             std::string remove_source_button_label = rsutils::string::from() << textual_icons::times << "##" << id;
             if (ImGui::Button(remove_source_button_label.c_str(), { 33,35 }))
             {
@@ -2680,11 +2702,16 @@ namespace rs2
                         }
                         if (can_stream)
                         {
-                            // Disable the start button for perception streams unless color and depth are already
-                            // streaming, and while a decimation/temporal embedded filter is enabled (mutually exclusive).
-                            bool sub_has_perception = subdevice_has_perception_stream_enabled( *sub );
-                            bool blocking_filter_enabled = sub_has_perception && is_perception_blocking_filter_enabled();
-                            bool disable_perception = ( sub_has_perception && ! are_color_and_depth_streaming() ) || blocking_filter_enabled;
+                            // Disable the start button for object detection unless color streams, for GMSL occupancy unless
+                            // depth streams at a supported resolution, and for object detection while a decimation/temporal
+                            // embedded filter is enabled. Over GMSL perception and infrared share the IR channel.
+                            bool blocking_filter_enabled = subdevice_has_stream_enabled( *sub, RS2_STREAM_OBJECT_DETECTION )
+                                                        && is_perception_blocking_filter_enabled();
+                            bool blocking_ir_active = subdevice_has_perception( *sub ) && fw_update::is_mipi_device( dev )
+                                                   && is_stream_active( RS2_STREAM_INFRARED );
+                            bool missing_color = subdevice_needs_color( *sub ) && ! is_stream_active( RS2_STREAM_COLOR );
+                            bool missing_depth = subdevice_needs_depth( *sub ) && ! is_depth_resolution_valid_for_occupancy();
+                            bool disable_perception = missing_color || missing_depth || blocking_filter_enabled || blocking_ir_active;
                             if( disable_perception )
                                 ImGui::BeginDisabled();
 
@@ -2727,7 +2754,11 @@ namespace rs2
                                 if( ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) )
                                     RsImGui::CustomTooltip( blocking_filter_enabled
                                         ? "Disable the decimation/temporal embedded filter before starting perception (cannot run together)"
-                                        : "Color and Depth streams must be streaming before starting perception" );
+                                        : blocking_ir_active
+                                        ? "Stop the Infrared streams before starting perception (they share the GMSL IR channel)"
+                                        : missing_color
+                                        ? "Object detection needs a Color stream running; detections are drawn on it"
+                                        : "Occupancy needs Depth streaming at 1280x720 or 640x360" );
                             }
                             else if (ImGui::IsItemHovered())
                             {
@@ -3062,8 +3093,7 @@ namespace rs2
             //Left line
             ImGui::GetWindowDrawList()->AddLine({ initial_screen_pos.x + left_space,initial_screen_pos.y + upper_space }, { end_screen_pos.x + left_space, end_screen_pos.y }, ImColor(header_color));
             //Right line
-            const float compenstaion_right = 17.f;;
-            ImGui::GetWindowDrawList()->AddLine({ initial_screen_pos.x + panel_width - compenstaion_right, initial_screen_pos.y + upper_space }, { end_screen_pos.x + panel_width - compenstaion_right, end_screen_pos.y }, ImColor(header_color));
+            ImGui::GetWindowDrawList()->AddLine({ initial_screen_pos.x + windows_width - 1, initial_screen_pos.y + upper_space }, { end_screen_pos.x + windows_width - 1, end_screen_pos.y }, ImColor(header_color));
             //Button line
             const float compenstaion_button = 1.0f;
             ImGui::GetWindowDrawList()->AddLine({ end_screen_pos.x + left_space, end_screen_pos.y - compenstaion_button }, { end_screen_pos.x + left_space + panel_width, end_screen_pos.y - compenstaion_button }, ImColor(header_color));
@@ -3315,14 +3345,6 @@ namespace rs2
                         int font_size = window.get_font_size();
                         const ImVec2 button_size = { font_size * 2.f, font_size * 1.5f };
 
-                        // While this filter's composite editor has a debounced commit pending,
-                        // tint the toggle with the same gold->blue ramp the editor's own
-                        // framed box fades through, so the row header echoes "about to send".
-                        float dirty_progress = 0.0f;
-                        const bool composite_dirty = pb->has_pending_composite_commit(dirty_progress);
-                        ImVec4 dirty_tint = composite_control_dirty_blend(dirty_progress);
-                        dirty_tint.w = 1.0f;   // full opacity for text - the fill's own alpha ramp doesn't apply here
-
                         if (!pb->is_enabled())
                         {
                             std::string label = rsutils::string::from()
@@ -3330,9 +3352,8 @@ namespace rs2
                                 << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ","
                                 << pb->get_name();
 
-                            const ImVec4 text_color = composite_dirty ? dirty_tint : redish;
-                            ImGui::PushStyleColor(ImGuiCol_Text, text_color);
-                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, text_color + 0.1f);
+                            ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
 
                             if (ImGui::Button(label.c_str(), button_size))
                             {
@@ -3351,9 +3372,8 @@ namespace rs2
                                 << " " << textual_icons::toggle_on << "##" << id << ","
                                 << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ","
                                 << pb->get_name();
-                            const ImVec4 text_color = composite_dirty ? dirty_tint : light_blue;
-                            ImGui::PushStyleColor(ImGuiCol_Text, text_color);
-                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, text_color + 0.1f);
+                            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
                             if (ImGui::Button(label.c_str(), button_size))
                             {

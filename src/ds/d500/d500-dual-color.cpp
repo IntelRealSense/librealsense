@@ -159,25 +159,6 @@ namespace librealsense
         }
     }
 
-    void d500_dual_color::register_ae_policy_option()
-    {
-        if( _fw_version < firmware_version( "7.58.45946.14332" ) )
-            return;
-
-        // IR imagers feed both RGB and depth at once, so AE has to be arbitrated between the IPU (color priority) and the SDP (depth priority).
-        auto options_map = std::map< float, std::string >{ { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_AUTO ), "Auto" },
-                                                           { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_DEPTH_PRIORITY ), "Depth Priority" },
-                                                           { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_COLOR_PRIORITY ), "Color Priority" },
-                                                           { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_HYBRID ), "Hybrid" } };
-        auto ae_policy = std::make_shared< colored_ir_ae_policy_option >( get_raw_depth_sensor(),
-                                                                          options_map,
-                                                                          _passive_depth_mode );
-        get_depth_sensor().register_option( RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE, ae_policy );
-
-        if( _passive_depth_mode )
-            _passive_depth_mode->set_ae_policy_option( ae_policy );
-    }
-
     static int32_t range_field( const std::vector< uint8_t > & raw )
     {
         int32_t value = 0;
@@ -228,6 +209,31 @@ namespace librealsense
             LOG_DEBUG( "Control " << id << " not published: " << e.what() );
             return false;
         }
+    }
+
+    void d500_dual_color::register_ae_policy_option()
+    {
+        if( _fw_version < firmware_version( "7.58.45946.14332" ) )
+            return;
+        if( ! is_xu_published( get_raw_depth_sensor(), ds::depth_xu, ds::d500_xu_id::COLORED_IR_AE_POLICY,
+                               sizeof( uint8_t ), RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE ) )
+        {
+            LOG_ERROR( "Auto exposure policy control not available, " << RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE << " is not registered" );
+            return;
+        }
+
+        // IR imagers feed both RGB and depth at once, so AE has to be arbitrated between the IPU (color priority) and the SDP (depth priority).
+        auto options_map = std::map< float, std::string >{ { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_AUTO ), "Auto" },
+                                                           { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_DEPTH_PRIORITY ), "Depth Priority" },
+                                                           { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_COLOR_PRIORITY ), "Color Priority" },
+                                                           { static_cast< float >( RS2_COLORED_IR_AUTO_EXPOSURE_HYBRID ), "Hybrid" } };
+        auto ae_policy = std::make_shared< colored_ir_ae_policy_option >( get_raw_depth_sensor(),
+                                                                          options_map,
+                                                                          _passive_depth_mode );
+        get_depth_sensor().register_option( RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE, ae_policy );
+
+        if( _passive_depth_mode )
+            _passive_depth_mode->set_ae_policy_option( ae_policy );
     }
 
     // Selects which exposure classes produce depth. Reaching here means a dual-RGB device; the GMSL driver

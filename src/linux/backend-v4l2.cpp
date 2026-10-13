@@ -7,6 +7,7 @@
 #include "v4l-enumerator.h"        // foreach_uvc_device()
 #include "v4l-enumerator-mipi.h"   // foreach_mipi_device()
 #include "v4l-mipi-device.h"
+#include "v4l-mipi-mux.h"
 #include "v4l-uvc-device.h"
 #include "v4l-uvc-meta-device.h"
 #if defined(USING_UDEV)
@@ -28,6 +29,9 @@ namespace librealsense
     {
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
+            if (auto mux_device = v4l_mipi_mux::create_device(info))
+                return std::make_shared<platform::retry_controls_work_around>(mux_device);
+
             bool mipi_device = info.is_mipi;
 
             auto v4l_uvc_dev =        mipi_device ?         std::make_shared<v4l_mipi_device>(info) :

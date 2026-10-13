@@ -100,7 +100,7 @@ namespace librealsense
         {
             for(auto&& p : hid_profiles)
             {
-                set_feature_report( DEVICE_POWER_D0, _sensor_to_id[p.sensor_name], p.frequency, p.sensitivity );
+                set_feature_report( DEVICE_POWER_D0, _sensor_to_id[p.sensor_name], p.frequency, p.sensitivity, p.apply_sensitivity_to_accel );
             }
             _configured_profiles = hid_profiles;
         }
@@ -299,7 +299,7 @@ namespace librealsense
 #endif
         }
 
-        usb_status rs_hid_device::set_feature_report( unsigned char power, int report_id, int fps, double sensitivity)
+        usb_status rs_hid_device::set_feature_report( unsigned char power, int report_id, int fps, double sensitivity, bool apply_to_accel )
         {
             uint32_t transferred;
 
@@ -334,8 +334,9 @@ namespace librealsense
             if(fps > 0)
                 featureReport.report = (1000 / fps);
 
-            //we want to change the sensitivity values only in gyro, for FW version >= 5.16
-            if( featureReport.reportId == REPORT_ID_GYROMETER_3D
+            //we want to change the sensitivity values only in gyro (and accel when explicitly set), for FW version >= 5.16
+            if( ( featureReport.reportId == REPORT_ID_GYROMETER_3D
+                  || ( apply_to_accel && featureReport.reportId == REPORT_ID_ACCELEROMETER_3D ) )
                 && _realsense_hid_report_actual_size == sizeof( REALSENSE_HID_REPORT ) )
                 featureReport.sensitivity = static_cast<unsigned short>(sensitivity);
 

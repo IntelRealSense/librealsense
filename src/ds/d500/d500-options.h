@@ -264,15 +264,38 @@ namespace librealsense
         }
     };
 
-    class d500_mipi_gyro_sensitivity_option : public uvc_pu_option
+    class d500_mipi_imu_sensitivity_option : public uvc_pu_option
     {
     public:
-        explicit d500_mipi_gyro_sensitivity_option( const std::weak_ptr< uvc_sensor > & ep );
+        d500_mipi_imu_sensitivity_option( const std::weak_ptr< uvc_sensor > & ep, rs2_option id );
 
         void set( float value ) override;
         bool is_read_only() const override;
         const char * get_description() const override;
         const char * get_value_description( float value ) const override;
+
+    private:
+        bool _is_accel;
+    };
+
+    class hid_sensor;
+    class d500_hid_accel_sensitivity_option : public option_base
+    {
+    public:
+        explicit d500_hid_accel_sensitivity_option( const std::weak_ptr< hid_sensor > & sensor );
+
+        void set( float value ) override;
+        float query() const override { return _value; }
+        bool is_enabled() const override { return true; }
+        bool is_read_only() const override;
+        const char * get_description() const override;
+        const char * get_value_description( float value ) const override;
+        void enable_recording( std::function< void( const option & ) > record_action ) override { _record_action = record_action; }
+
+    private:
+        float _value;
+        std::weak_ptr< hid_sensor > _sensor;
+        std::function< void( const option & ) > _record_action = []( const option & ) {};
     };
 
 } // namespace librealsense
