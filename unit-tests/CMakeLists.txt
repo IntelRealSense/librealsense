@@ -28,32 +28,49 @@ function(is_file_empty empty filename)
     set(empty ${res} PARENT_SCOPE)
 endfunction()
 
+# Test data (recordings etc.) is downloaded from here; CI can point it at an internal mirror
+set( RS_TEST_DATA_URL "https://librealsense.realsenseai.com/rs-tests" CACHE STRING "Base URL of the unit-test data" )
+# Optional directory shared between build dirs: each file is downloaded into it once and copied to the build dir
+set( RS_TEST_DATA_CACHE "" CACHE PATH "Download cache for the unit-test data" )
+
 # General function for downloading files
 function(dl_file src dir filename sha1)
     get_filename_component( dest ${dir} ABSOLUTE BASE_DIR ${CMAKE_CURRENT_BINARY_DIR} )
     is_file_empty( empty ${dest}/${filename} )
     #message(STATUS "empty= ${empty}")
     if( ${empty} )
-        message(STATUS "Downloading '${filename}' into '${dest}'")
-        #message(STATUS "... from '${src}/${filename}'")
-        if( NOT sha1 )
-            file( DOWNLOAD "${src}/${filename}" "${dest}/${filename}"
-                  STATUS status )
-        else()
-            file(DOWNLOAD "${src}/${filename}" "${dest}/${filename}"
-                EXPECTED_HASH SHA1=${sha1}
-                STATUS status)
+        set( dl_dir ${dest} )
+        if( RS_TEST_DATA_CACHE )
+            set( dl_dir ${RS_TEST_DATA_CACHE} )
+            is_file_empty( empty ${dl_dir}/${filename} )
         endif()
-        list( GET status 0 code )
-        list( GET status 1 message )
-        #message( STATUS " status = ${status}  code = ${code}  message = ${message}" )
-        if( code )
-            #message( STATUS "... from '${src}/${filename}'" )
-            message( SEND_ERROR " ${message}")
+        set( code 0 )
+        if( ${empty} )
+            message(STATUS "Downloading '${filename}' into '${dl_dir}'")
+            #message(STATUS "... from '${src}/${filename}'")
+            if( NOT sha1 )
+                file( DOWNLOAD "${src}/${filename}" "${dl_dir}/${filename}"
+                      STATUS status )
+            else()
+                file(DOWNLOAD "${src}/${filename}" "${dl_dir}/${filename}"
+                    EXPECTED_HASH SHA1=${sha1}
+                    STATUS status)
+            endif()
+            list( GET status 0 code )
+            list( GET status 1 message )
+            #message( STATUS " status = ${status}  code = ${code}  message = ${message}" )
+            if( code )
+                #message( STATUS "... from '${src}/${filename}'" )
+                file( REMOVE "${dl_dir}/${filename}" )
+                message( SEND_ERROR " ${message}")
+            endif()
+        endif()
+        if( RS_TEST_DATA_CACHE AND NOT code )
+            message(STATUS "Copying '${filename}' from the cache into '${dest}'")
+            execute_process( COMMAND ${CMAKE_COMMAND} -E copy "${dl_dir}/${filename}" "${dest}/${filename}" )
         endif()
     endif()
 endfunction()
-
 
 if(BUILD_UNIT_TESTS)
     # Unit tests such as test-algo-projection-distortion/-yuy2-conversion/-cuda-align
