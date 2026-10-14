@@ -111,3 +111,14 @@ def test_depth_allowed_while_pcl_streams( pcl ):
         sensor.stop()
         sensor.close()
     check.greater( len( pcl_frames ), 0 )
+
+
+def test_pipeline_rejects_depth_and_pcl( pcl ):
+    dev, _, _ = pcl
+    cfg = rs.config()
+    cfg.enable_device( dev.get_info( rs.camera_info.serial_number ) )
+    cfg.enable_stream( rs.stream.depth )
+    cfg.enable_stream( rs.stream.point_cloud )
+    pipe = rs.pipeline()
+    with pytest.raises( Exception ):
+        pipe.start( cfg )
