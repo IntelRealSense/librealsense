@@ -77,11 +77,9 @@ namespace librealsense
                             std::unordered_set< std::shared_ptr< processing_block > > > _raw_profile_to_converters;
         std::unordered_map< rs2_format, stream_profiles > _format_mapping_to_from_profiles;
 
-        // The user-facing callback can be swapped while frames are in flight (a record sensor hooks and unhooks it
-        // around start/stop), so it is only read under the mutex and the converters' output callback is created once
-        // and never replaced - a converter thread may still be inside it when the swap happens.
+        // Swapped from the record sensor's start/stop while converter threads may be using it; copy it under the
+        // mutex (get_frames_callback) before calling it.
         mutable std::mutex _callback_mutex;
         rs2_frame_callback_sptr _converted_frames_callback;
-        rs2_frame_callback_sptr _output_cb;
     };
 }
