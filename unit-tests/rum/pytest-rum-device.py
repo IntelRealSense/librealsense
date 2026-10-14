@@ -67,17 +67,19 @@ def test_opened_stream_appears_in_report( test_device, rum_report ):
     sensor = dev.first_depth_sensor()
     profile = streamable_depth_profile( sensor )
     sensor.open( profile )                            # triggers the stream hook
-    # Stream briefly before closing: on D585 FW 7.58 an open + close with no streaming in between leaves the
-    # device in a state where the next stream start delivers no frames (the following test then times out).
-    queue = rs.frame_queue( 1 )
-    sensor.start( queue )
     try:
-        queue.wait_for_frame()
-        stream = recorded_stream( device_entry( rum_report(), dev ), profile )
-        assert stream is not None                     # the profile we opened is in the report
-        assert stream.get( "count", 0 ) >= 1
+        # Stream briefly before closing: on D585 FW 7.58 an open + close with no streaming in between leaves the
+        # device in a state where the next stream start delivers no frames (the following test then times out).
+        queue = rs.frame_queue( 1 )
+        sensor.start( queue )
+        try:
+            queue.wait_for_frame()
+            stream = recorded_stream( device_entry( rum_report(), dev ), profile )
+            assert stream is not None                 # the profile we opened is in the report
+            assert stream.get( "count", 0 ) >= 1
+        finally:
+            sensor.stop()
     finally:
-        sensor.stop()
         sensor.close()
 
 
