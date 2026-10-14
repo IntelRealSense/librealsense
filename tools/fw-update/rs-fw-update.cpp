@@ -389,7 +389,7 @@ try
     cmd.add(backup_arg);
 
     auto settings = cmd.process(argc, argv);
-    device_discovery dd;  // before ctx, so the devices it holds are released after the context handle
+    device_discovery dd;  // declared before ctx so it is destroyed after it, still inside main()
     rs2::context ctx(settings.dump());
 
     if (!list_devices_arg.isSet() && !recover_arg.isSet() && !unsigned_arg.isSet() &&
