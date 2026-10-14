@@ -34,8 +34,8 @@ SETTLE_FRAMES_TO_DISCARD = 5  # frames dropped after toggling the emitter, to le
 MIN_DOT_AREA_PX = 1  # smallest connected component counted as a dot
 MAX_DOT_AREA_PX = 50  # above this, treat it as a brightness blob, not a laser dot
 BACKGROUND_KERNEL_PX = 15  # box-blur size for the local background; much wider than a dot
-DOT_SIGMA_THRESHOLD = 4  # a dot pixel must exceed the local background by this many noise sigmas
-MIN_NOISE_SIGMA = 0.5  # floor on the noise estimate, so a near-zero diff doesn't threshold at ~0
+DOT_MIN_NOISE_STDS = 4  # a dot pixel must exceed the local background by at least this many noise standard deviations
+MIN_NOISE_STD = 0.5  # floor on the noise estimate, so a near-zero diff doesn't threshold at ~0
 MIN_DOT_COUNT = 1000  # need at least this many dot-sized blobs in the diff image
 GRID_SIZE = 4  # frame divided into GRID_SIZE x GRID_SIZE cells to check spread
 MIN_GRID_CELLS_COVERED = 6  # dots must be spread across at least this many cells (of GRID_SIZE**2)
@@ -67,10 +67,14 @@ def find_dot_blobs(diff_image):
     can't swamp a global threshold. Returns the dot-sized connected components plus the
     binary mask used, for debugging.
     """
+    MAD_SCALE_FACTOR = 1.4826  # converts median absolute deviation to standard deviation, for Gaussian noise
     diff = np.clip(diff_image, 0, None)  # negatives are noise (OFF > ON); they'd drag the local background down
-    local = diff - cv2.blur(diff, (BACKGROUND_KERNEL_PX, BACKGROUND_KERNEL_PX))
-    sigma = max(1.4826 * np.median(np.abs(local - np.median(local))), MIN_NOISE_SIGMA)  # robust std via MAD
-    mask = (local > DOT_SIGMA_THRESHOLD * sigma).astype(np.uint8) * 255
+    # subtract each pixel's neighbourhood average: wide bright areas flatten to ~0, small sharp dots stay above it
+    above_background = diff - cv2.blur(diff, (BACKGROUND_KERNEL_PX, BACKGROUND_KERNEL_PX))
+    # median-based noise estimate, so the bright dots themselves don't inflate it
+    noise_mad = np.median(np.abs(above_background - np.median(above_background)))
+    noise_std = max(MAD_SCALE_FACTOR * noise_mad, MIN_NOISE_STD)
+    mask = (above_background > DOT_MIN_NOISE_STDS * noise_std).astype(np.uint8) * 255
     _, _, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
 
     dots = [(centroids[i], stats[i, cv2.CC_STAT_AREA]) for i in range(1, len(stats))  # skip background label 0
