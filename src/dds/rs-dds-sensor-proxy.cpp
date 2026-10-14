@@ -181,8 +181,8 @@ void dds_sensor_proxy::register_converters()
         }
         _formats_converter.register_converter( { { RS2_FORMAT_MJPEG, RS2_STREAM_COLOR } }, target_profiles,
                                                []() { return std::make_shared< mjpeg_converter >( RS2_FORMAT_RGB8 ); } );
-        _formats_converter.register_converter( { { { RS2_FORMAT_MJPEG, RS2_STREAM_COLOR } }, passthrough_profiles,
-                                               []() { return std::make_shared< identity_processing_block >(); } } );
+        _formats_converter.register_converter( { { RS2_FORMAT_MJPEG, RS2_STREAM_COLOR } }, passthrough_profiles,
+                                               []() { return std::make_shared< identity_processing_block >(); } );
     }
 
     // Depth. A device can expose more than one, e.g. raw depth next to device-aligned depth, so the

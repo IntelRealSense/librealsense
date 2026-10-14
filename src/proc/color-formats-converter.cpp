@@ -1242,7 +1242,7 @@ namespace librealsense
     {
         int w, h, bpp;
         // input_size is the compressed payload length; actual_size is the decoded target size
-        auto uncompressed_rgb = stbi_load_from_memory(source, input_size ? input_size : actual_size, &w, &h, &bpp, 3);
+        auto uncompressed_rgb = stbi_load_from_memory(source, input_size, &w, &h, &bpp, 3);
         if (uncompressed_rgb)
         {
             auto uncompressed_size = w * h * 3;  // bpp reports the source channel count, not the requested 3
