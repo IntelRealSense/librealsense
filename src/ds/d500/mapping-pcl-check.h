@@ -11,12 +11,9 @@
 
 namespace librealsense
 {
-// Host validation of a D5xx EP12 device point-cloud (PCL XYZ) frame. Two wire forms exist:
-// - Pure payload (design contract): the bare W x H float32 x,y,z array; geometry, identity and
-//   integrity travel in the point-cloud UVC metadata block (md_point_cloud). Checks on fields that
-//   older FW does not send run only when the field's validity bit is set.
-// - MAP1 (FW before the pure-payload contract): a 20-byte common header and a 16-byte point-cloud
-//   sub-header in front of the vertices carry the same identity and integrity; no UVC metadata.
+// Host validation of a D5xx EP12 device point-cloud (PCL XYZ) frame, in one of two wire forms:
+// - Pure payload: W x H float32 x,y,z; identity and integrity in md_point_cloud (checked when their validity bit is set).
+// - MAP1 (older FW, compatibility only): 20-byte common + 16-byte point-cloud headers before the vertices; no metadata.
 
 enum class pcl_frame_check
 {
@@ -155,13 +152,12 @@ inline bool pcl_has( uint32_t flags, md_point_cloud_attributes a )
 // FW restarts the Mapping stream on its own when the pipeline is rebuilt (for example, host Depth
 // opening at another profile): the generation changes and the source counters restart while the
 // host session goes on. Follow the new generation instead of rejecting the rest of the session.
-inline pcl_frame_check check_pcl_generation( uint16_t generation, pcl_session & session )
+inline void track_pcl_generation( uint16_t generation, pcl_session & session )
 {
     if( session.has_generation && session.generation != generation )
         ++session.restarts;
     session.has_generation = true;
     session.generation = generation;
-    return pcl_frame_check::ok;
 }
 
 inline pcl_frame_check check_map1_pcl_frame( const uint8_t * data,
@@ -192,7 +188,8 @@ inline pcl_frame_check check_map1_pcl_frame( const uint8_t * data,
     if( h.profile_id != expected.profile_id )
         return pcl_frame_check::profile_mismatch;
 
-    return check_pcl_generation( h.stream_generation, session );
+    track_pcl_generation( h.stream_generation, session );
+    return pcl_frame_check::ok;
 }
 
 // `md` / `md_size`: the metadata block after the UVC header, or nullptr / 0 when the frame has
@@ -250,7 +247,7 @@ inline pcl_frame_check check_pcl_frame( const uint8_t * payload,
         return pcl_frame_check::profile_mismatch;
 
     if( pcl_has( m.flags, md_point_cloud_attributes::stream_generation_attribute ) )
-        return check_pcl_generation( m.stream_generation, session );
+        track_pcl_generation( m.stream_generation, session );
 
     return pcl_frame_check::ok;
 }

@@ -314,6 +314,8 @@ namespace rs2
         void init_depth_uid(int& selected_depth_source, std::vector<std::string>& depth_sources_str, std::vector<int>& depth_sources);
         void init_labeled_points_uid();
         void draw_3d_labeled_points(const rect& viewer_rect, rs2::labeled_points labeled_points);
+        // Label color legend of the labeled point cloud; (x, y) is the corner given by right / bottom
+        static void draw_label_legend(float x, float y, bool right, bool bottom);
         // HKR clouds (device point cloud, labeled point cloud) are drawn by the host point-cloud renderer:
         // converted to host-style points (vertices + texture coordinates) over a color texture.
         rs2::points make_host_points(rs2::frame source);
@@ -322,6 +324,8 @@ namespace rs2
         int selected_texture_stream( rs2::video_frame & frame );
         bool project_to_texture( const rs2::stream_profile & from, const rs2::vertex * vertices,
                                  const rs2::video_frame & tex );
+        rs2::points make_textured_host_points( rs2::frame cloud, const rs2::vertex * vertices,
+                                               const rs2::video_frame & tex, int & tex_uid );
         texture_buffer * labeled_cloud_texture();
         void prepare_labeled_cloud();
         bool render_hkr_cloud(rs2::gl::pointcloud_renderer& renderer, rs2::points pts, texture_buffer& tex, float point_size,

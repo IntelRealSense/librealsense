@@ -302,10 +302,10 @@ void uvc_sensor::open( const stream_profiles & requests )
                     // Zero-copy capture is taken only on the clean branch where the frame is a
                     // verbatim view of the backend buffer (sizes match exactly, not motion, not
                     // realigned) and we have not already pinned too many ring buffers.
-                    // Mapping streams stay on the copy path: their frame classes and the point-cloud block
-                    // read and reshape the payload in `data`, which a zero-copy frame leaves empty.
+                    // PCL stays on the copy path: its processing block strips the MAP1 headers in `data`,
+                    // which a zero-copy frame leaves empty.
                     const bool do_zc = capture_zerocopy_enabled()
-                                       && ! is_depth_mapping
+                                       && req_profile_base->get_stream_type() != RS2_STREAM_POINT_CLOUD
                                        && ! msp
                                        && ! align64
                                        && expected_size == sizeof( uint8_t ) * f.frame_size

@@ -60,9 +60,9 @@ void points::export_to_ply( const std::string & fname, const frame_holder & text
         if( fabs( vertices[i].x ) >= MIN_DISTANCE || fabs( vertices[i].y ) >= MIN_DISTANCE
             || fabs( vertices[i].z ) >= MIN_DISTANCE )
         {
-            index2reducedIndex[i] = (int)new_vertices.size();
+            index2reducedIndex[int( i )] = (int)new_vertices.size();
             new_vertices.push_back( { vertices[i].x, -1 * vertices[i].y, -1 * vertices[i].z } );
-            if( texture && texcoords )
+            if( texture )
             {
                 auto color = get_texcolor( texture, texcoords[i].x, texcoords[i].y );
                 new_tex.push_back( color );

@@ -74,6 +74,6 @@ namespace librealsense
         void open(const stream_profiles& requests) override;
 
     protected:
-        const d500_depth_mapping* _owner;
+        d500_depth_mapping* _owner;
     };
 }

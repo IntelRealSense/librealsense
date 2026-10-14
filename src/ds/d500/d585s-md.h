@@ -87,7 +87,7 @@ namespace librealsense
         danger_zone = (1u << 12),
         warning_zone = (1u << 13),
         diagnostic_zone = (1u << 14),
-        // D5xx EP12 Mapping (metadata layout 0x0002, revision 2+); see the D585 PointCloud design
+        // D5xx EP12 Mapping (metadata layout 0x0002, revision 2+)
         profile_id_attribute = (1u << 15),
         stream_generation_attribute = (1u << 16),
         point_stride_attribute = (1u << 17),

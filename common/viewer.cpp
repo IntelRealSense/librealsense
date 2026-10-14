@@ -2671,6 +2671,14 @@ namespace rs2
                 draw_color_ruler(active_mouse, streams[stream], stream_rect,
                                  rgb_per_distance_vec, bounds, depth_units);
             }
+
+            if (stream_mv.profile.stream_type() == RS2_STREAM_LABELED_POINT_CLOUD)
+            {
+                float top = stream_rect.y + 50;
+                if (streams[stream].show_stream_details)
+                    top = streams[stream].curr_info_rect.y + streams[stream].curr_info_rect.h + 10;
+                draw_label_legend(stream_rect.x + stream_rect.w - 10, top, true, false);
+            }
         }
 
         // Re-arrange mode: outline the tiles and show drag-to-swap feedback. The grab area
@@ -3035,6 +3043,12 @@ namespace rs2
             glPushMatrix();
             draw_3d_labeled_points(viewer_rect, last_labeled_points);  // safety zones
             glPopMatrix();
+
+            if (_lpcl_tex_uid < 0)  // drawn in label colors; viewer_rect is in framebuffer pixels, the legend in window pixels
+            {
+                const float sx = float(win.width()) / win.framebuf_width(), sy = float(win.height()) / win.framebuf_height();
+                draw_label_legend((viewer_rect.x + 10) * sx, (viewer_rect.y + viewer_rect.h - 10) * sy, false, true);
+            }
         }
 
         _measurements.draw(win);
@@ -4812,6 +4826,41 @@ namespace rs2
         glLineWidth(1.0f);
     }
 
+    void viewer_model::draw_label_legend(float x, float y, bool right, bool bottom)
+    {
+        struct entry { const char * name; rs2_point_cloud_label label; };
+        static const entry entries[] = {
+            { "Ground", RS2_POINT_CLOUD_LABEL_GROUND },
+            { "Obstacle", RS2_POINT_CLOUD_LABEL_OBSTACLE },
+            { "Overhead", RS2_POINT_CLOUD_LABEL_OVERHEAD },
+            { "Unknown / invalid", RS2_POINT_CLOUD_LABEL_UNKNOWN },
+        };
+        static const auto colors = labeled_point_cloud_utilities::get_label_to_color3f();
+
+        const float font = ImGui::GetFontSize();
+        const float pad = 6.f, swatch = font * 0.8f, gap = 6.f, line = font + 3.f;
+        float text_w = 0.f;
+        for (auto& e : entries)
+            text_w = std::max(text_w, ImGui::CalcTextSize(e.name).x);
+        const float w = pad * 2 + swatch + gap + text_w;
+        const float h = pad * 2 + line * (sizeof(entries) / sizeof(entries[0])) - 3.f;
+        const float x0 = right ? x - w : x;
+        const float y0 = bottom ? y - h : y;
+
+        auto dl = ImGui::GetForegroundDrawList();
+        dl->AddRectFilled({ x0, y0 }, { x0 + w, y0 + h }, ImColor(0.f, 0.f, 0.f, 0.6f), 3.f);
+        float ly = y0 + pad;
+        for (auto& e : entries)
+        {
+            auto c = colors.find(e.label);
+            const float3 col = c != colors.end() ? c->second : float3{ 1.f, 1.f, 1.f };
+            const float sy = ly + (font - swatch) / 2;
+            dl->AddRectFilled({ x0 + pad, sy }, { x0 + pad + swatch, sy + swatch }, ImColor(col.x, col.y, col.z));
+            dl->AddText({ x0 + pad + swatch + gap, ly }, ImColor(1.f, 1.f, 1.f), e.name);
+            ly += line;
+        }
+    }
+
     // Safety zones of the labeled point cloud, in its mapping frame; the points themselves are drawn by the
     // point-cloud renderer (render_hkr_cloud)
     void viewer_model::draw_3d_labeled_points(const rect& viewer_rect, rs2::labeled_points labeled_points)
@@ -5058,23 +5107,14 @@ namespace rs2
             _host_points_xyz[i] = valid ? v : rs2::vertex{ 0.f, 0.f, 0.f };
         }
 
-        _host_points_uv.clear();
-        if( tex_uid >= 0 )
-        {
-            if( project_to_texture( last_device_points.get_profile(), _host_points_xyz.data(), tex_frame ) )
-                _device_pc_tex_frame = tex_frame;
-            else
-            {
-                tex_uid = -1;
-                if( ! colors )
-                    return;
-            }
-        }
+        auto host_points = make_textured_host_points( last_device_points, _host_points_xyz.data(), tex_frame, tex_uid );
+        if( tex_uid < 0 && ! colors )
+            return;
         _device_pc_tex_uid = tex_uid;
-        _device_pc_host_points = make_host_points(last_device_points);
-        _host_points_uv.clear();
-
-        if( tex_uid < 0 )
+        _device_pc_host_points = host_points;
+        if( tex_uid >= 0 )
+            _device_pc_tex_frame = tex_frame;
+        else
         {
             if (!_device_pc_texture)
                 _device_pc_texture = std::make_shared< texture_buffer >();
@@ -5123,6 +5163,11 @@ namespace rs2
                 }
                 float p[3], px[2];
                 rs2_transform_point_to_point( p, &ext, &vertices[i].x );
+                if( p[2] <= 0.f )  // behind the texture camera
+                {
+                    _host_points_uv[i] = { -1.f, -1.f };
+                    continue;
+                }
                 rs2_project_point_to_pixel( px, &intr, p );
                 _host_points_uv[i] = { px[0] / intr.width, px[1] / intr.height };
             }
@@ -5134,6 +5179,19 @@ namespace rs2
             _host_points_uv.clear();
             return false;
         }
+    }
+
+    // Host points of an HKR cloud from _host_points_xyz, textured by tex when tex_uid >= 0;
+    // tex_uid is set to -1 when the cloud cannot be projected into tex
+    rs2::points viewer_model::make_textured_host_points( rs2::frame cloud, const rs2::vertex * vertices,
+                                                         const rs2::video_frame & tex, int & tex_uid )
+    {
+        _host_points_uv.clear();
+        if( tex_uid >= 0 && ! project_to_texture( cloud.get_profile(), vertices, tex ) )
+            tex_uid = -1;
+        auto pts = make_host_points( cloud );
+        _host_points_uv.clear();
+        return pts;
     }
 
     // Texture the labeled cloud is drawn with (see prepare_labeled_cloud)
@@ -5221,7 +5279,12 @@ namespace rs2
         }
         catch (const std::exception& ex)
         {
-            LOG_DEBUG("Labeled point cloud: no depth -> mapping extrinsics (" << ex.what() << "), drawn in the mapping frame");
+            static bool warned = false;
+            if (!warned)
+            {
+                warned = true;
+                LOG_WARNING("Labeled point cloud: no depth -> mapping extrinsics (" << ex.what() << "), drawn in the mapping frame");
+            }
         }
         const float* r = e.rotation;
         const float* t = e.translation;
@@ -5232,16 +5295,15 @@ namespace rs2
         for (size_t i = 0; i < count; ++i)
         {
             const auto& v = vertices[i];
-            // FW writes invalid LPCL points as 404.0F (D500OgLpclAlgo viewer output)
-            const float lpcl_invalid = 404.f;
+            const float invalid = labeled_point_cloud_utilities::invalid_value;
             if (std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z)
-                && v.x != lpcl_invalid && v.y != lpcl_invalid && v.z != lpcl_invalid)
+                && v.x != invalid && v.y != invalid && v.z != invalid)
             {
                 const float d[3] = { v.x - t[0], v.y - t[1], v.z - t[2] };
                 _host_points_xyz[i] = { r[0] * d[0] + r[1] * d[1] + r[2] * d[2],
                                         r[3] * d[0] + r[4] * d[1] + r[5] * d[2],
                                         r[6] * d[0] + r[7] * d[1] + r[8] * d[2] };
-                if (_host_points_xyz[i].z >= 65.5f)  // saturated depth (65535 mm)
+                if (_host_points_xyz[i].z >= labeled_point_cloud_utilities::saturated_depth)
                     _host_points_xyz[i] = { 0.f, 0.f, 0.f };
             }
             else
@@ -5253,12 +5315,8 @@ namespace rs2
             _lpcl_rgb[i * 3 + 1] = static_cast<uint8_t>(std::min(color.y, 1.f) * 255.f + .5f);
             _lpcl_rgb[i * 3 + 2] = static_cast<uint8_t>(std::min(color.z, 1.f) * 255.f + .5f);
         }
-        _host_points_uv.clear();
-        if (tex_uid >= 0 && !project_to_texture(last_labeled_points.get_profile(), vertices, tex_frame))
-            tex_uid = -1;
+        _lpcl_host_points = make_textured_host_points(last_labeled_points, vertices, tex_frame, tex_uid);
         _lpcl_tex_uid = tex_uid;
-        _lpcl_host_points = make_host_points(last_labeled_points);
-        _host_points_uv.clear();
 
         if (tex_uid < 0)
         {

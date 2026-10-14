@@ -829,20 +829,7 @@ namespace rs2
         void upload_labeled_points(const labeled_points& lpc, int width, int height)
         {
             if (!lpc.is<gl::gpu_frame>())
-            {
-                // Upload vertices
-                auto data = lpc.get_vertices();
-                auto lpc_width = lpc.get_width();
-                auto lpc_height = lpc.get_height();
-
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, lpc_width, lpc_height, 0, GL_RGB, GL_FLOAT, (const void*)data);
-
-                // TODO: use of labels 
-                auto labels = lpc.get_labels();
-
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            }
+                upload_label_colors(lpc);
             else
             {
                 texture_id = 1;
@@ -850,6 +837,8 @@ namespace rs2
         }
 
         void upload_occupancy_frame(const rs2::frame &frame, const void *data);
+        // Labeled point cloud tile: each point drawn in its label color, as in the 3D view
+        void upload_label_colors(const labeled_points& lpc);
 
         static void  draw_axes(float axis_size = 1.f, float axisWidth = 4.f)
         {

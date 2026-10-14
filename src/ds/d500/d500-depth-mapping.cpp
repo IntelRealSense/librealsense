@@ -89,8 +89,8 @@ namespace librealsense
     }
 
     // The transport profile is GREY (Y8); the payload is XYZ32F. Validate the frame against the
-    // committed profile (design section 4.4), then relabel it to the requested XYZ32F profile
-    // without copying, so the metadata and the buffer are kept. Invalid frames are dropped.
+    // committed profile, then relabel it to the requested XYZ32F profile without copying, so the
+    // metadata and the buffer are kept. Invalid frames are dropped.
     class pcl_xyz_relabel_block : public stream_filter_processing_block
     {
         std::shared_ptr< stream_profile_interface > _source;
@@ -119,7 +119,7 @@ namespace librealsense
                 _target = source->clone();
                 _target->set_format( RS2_FORMAT_XYZ32F );
                 _target->set_stream_type( RS2_STREAM_POINT_CLOUD );
-                _target->set_stream_index( source->get_stream_index() );
+                _target->set_stream_index( source->get_stream_index() );  // clone() does not copy the index
 
                 _expected = pcl_expected();
                 if( auto vsp = dynamic_cast< video_stream_profile_interface * >( source.get() ) )
@@ -180,8 +180,8 @@ namespace librealsense
                 LOG_WARNING( "Point cloud metadata has an unknown layout: only the payload size is validated" );
             }
 
-            // MAP1 (FW before the pure-payload contract): take the frame number from the sub-header, then drop
-            // the headers so the frame is the bare W x H XYZ32F array that its profile describes
+            // MAP1 compatibility (older FW only; remove once all FW sends the pure payload): take the frame
+            // number from the sub-header, then drop the headers so the frame is the bare W x H XYZ32F array
             const auto layout = resolve_pcl_layout( reinterpret_cast< const uint8_t * >( lf->get_frame_data() ),
                                                     lf->get_frame_data_size() );
             if( layout.map1 && lf->data.size() >= layout.vertex_offset )
@@ -195,6 +195,14 @@ namespace librealsense
 
             fi->set_stream( _target );
             return f;
+        }
+
+        // The base block passes the input frame on when process_frame() returns nothing; drop it instead
+        rs2::frame prepare_output( const rs2::frame_source & source, rs2::frame input, std::vector< rs2::frame > results ) override
+        {
+            if( results.empty() )
+                return {};
+            return stream_filter_processing_block::prepare_output( source, input, results );
         }
     };
 
@@ -301,14 +309,9 @@ namespace librealsense
         // is fully up (though it may not be the case in the device contructor's order, in ds500-factory)
         _depth_to_depth_mapping_extrinsics = std::make_shared< rsutils::lazy< rs2_extrinsics > > ( [this]()
             {
-                // The mapping streams are in the robot frame FW builds from the safety interface's
-                // camera_position (DppCpuNode): ROS map axes (+X forward, +Y left, +Z up) placed by the
-                // camera mount pose. Report that pose as depth -> mapping, so consumers line them up
-                // with depth.
-                //
-                // FW's own default when the safety interface has no camera position: the axis
-                // conversion x_ros = z_opt, y_ros = -x_opt, z_ros = -y_opt, and the camera 180 mm above
-                // the ground (GRID_INSTALL_POS_VERTICAL), stored column-major.
+                // Mapping streams are in the robot frame FW builds from the safety interface camera_position
+                // (ROS axes: +X forward, +Y left, +Z up); report that pose as depth -> mapping.
+                // FW default without a camera position: axis conversion only, mounted 180 mm high (GRID_INSTALL_POS_VERTICAL).
                 auto fw_default_pose = []()
                 {
                     rs2_extrinsics pose = {};
@@ -864,14 +867,16 @@ void d500_depth_mapping::register_processing_blocks( std::shared_ptr< d500_depth
 
     void d500_depth_mapping_sensor::open(const stream_profiles& requests)
     {
-        if (requests.size() > 1)
+        // D585S keeps its own Mapping stream rules
+        if( ! _owner->_is_safety_layout && requests.size() > 1 )
             throw invalid_value_exception(rsutils::string::from()
                 << "The Depth Mapping Camera streams one of Point Cloud, Labeled Point Cloud, or Occupancy at a time; "
                 << requests.size() << " profiles were requested");
 
-        // FW Phase 1: PCL cannot open while Depth streams (no prebuilt XYZ branch)
+        // FW Phase 1 rejects PCL STREAM_OPEN while Depth streams (no prebuilt XYZ branch); fail here with a clear error.
+        // Depth starting while PCL streams is supported.
         if( ! requests.empty() && requests.front()->get_stream_type() == RS2_STREAM_POINT_CLOUD
-            && const_cast< d500_depth_mapping * >( _owner )->get_depth_sensor().is_streaming() )
+            && _owner->get_depth_sensor().is_streaming() )
             throw wrong_api_call_sequence_exception( "Point Cloud cannot start while Depth is streaming; stop Depth first" );
 
         synthetic_sensor::open(requests);
