@@ -233,7 +233,18 @@ namespace librealsense
         get_depth_sensor().register_option( RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE, ae_policy );
 
         if( _passive_depth_mode )
+        {
             _passive_depth_mode->set_ae_policy_option( ae_policy );
+            // Start in Full Passive Depth; a device already streaming elsewhere keeps its current mode.
+            try
+            {
+                _passive_depth_mode->set( RS2_PASSIVE_DEPTH_MODE_FULL );
+            }
+            catch( const std::exception & e )
+            {
+                LOG_WARNING( "Could not set the default Full Passive Depth mode: " << e.what() );
+            }
+        }
     }
 
     // Selects which exposure classes produce depth. Reaching here means a dual-RGB device; the GMSL driver

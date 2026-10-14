@@ -846,7 +846,7 @@ namespace librealsense
     void d500_device::register_hdr_mode_option( synthetic_sensor & ep )
     {
         // Supported over USB only
-        if( _is_mipi_device || _fw_version < firmware_version( "7.59.46629.16494" ) )
+        if( _is_mipi_device || _fw_version < firmware_version( "7.59.46610.16541" ) )
             return;
         ep.register_option( RS2_OPTION_HDR_MODE, std::make_shared< hdr_mode_option >( _hw_monitor, ep.get_raw_sensor() ) );
     }
