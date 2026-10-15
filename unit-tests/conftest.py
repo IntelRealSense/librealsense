@@ -431,6 +431,18 @@ def _test_log_banner(request):
     ensure_newline()
 
 
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_protocol(item, nextitem):
+    """Print a full ``START <nodeid>`` line when a test begins. In verbose mode pytest writes the
+    nodeid at start but ends the line only when the test finishes, so a line-timestamping console
+    (Jenkins) stamps it with the finish time; this line carries the start time. Statically skipped
+    items (e.g. the SKIP-<device> placeholders) are left out to keep the console short."""
+    reporter = item.config.pluginmanager.get_plugin("terminalreporter")
+    if reporter and reporter.verbosity > 0 and not item.get_closest_marker("skip"):
+        reporter.write_line(f"-I- START {item.nodeid}")
+    # return None: the default runtest protocol still runs
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     """Log test duration and any failures/errors, and stash the item's live request for the
