@@ -32,7 +32,8 @@ def test_fw_error_polling( test_device ):
     require_min_fw_version( dev, rsutils.version( 5, 17, 6, 0 ), "GMSL FW error polling" )
 
     depth_sensor = dev.first_depth_sensor()
-    assert depth_sensor.supports( rs.option.error_polling_enabled )
+    assert depth_sensor.supports( rs.option.error_polling_enabled ), \
+        "error polling not supported - is the d4xx driver older than 1.0.7.6?"
 
     notifications = []
     received = threading.Event()

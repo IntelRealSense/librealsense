@@ -822,8 +822,10 @@ namespace librealsense
                                                                                     RS2_OPTION_ASIC_TEMPERATURE ) );
                 }
 
-                // Over GMSL the driver serves the error code from an I2C register only on FW 5.17.6+
-                if( ! _is_mipi_device || _fw_version >= firmware_version( "5.17.6.0" ) )
+                // Over GMSL the error code is served from an I2C register: FW 5.17.6+ and d4xx driver 1.0.7.6+
+                if( ! _is_mipi_device
+                    || ( _fw_version >= firmware_version( "5.17.6.0" )
+                         && mipi_driver_version >= rsutils::version( "1.0.7.6" ) ) )
                 {
                     auto error_control = std::make_shared<uvc_xu_option<uint8_t>>( raw_depth_sensor, depth_xu,
                                                                                    DS5_ERROR_REPORTING, "Error reporting");
