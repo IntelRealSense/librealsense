@@ -26,8 +26,11 @@ namespace librealsense
             // Walk MIPI devices sitting in DFU/recovery mode.
             void foreach_mipi_device( std::function<void(const mipi_device_info&, const std::string&)> action );
 
+            // The DFU chardev is matched to the camera by i2c id; when ids cannot be derived, fallback_dfu_path
+            // is used if it opens, else the first openable chardev.
             uvc_device_info get_info_from_mipi_device_path( const std::string & video_path, const std::string & name,
-                                                            camera_identifier_v4l_mipi & mipi_id );
+                                                            camera_identifier_v4l_mipi & mipi_id,
+                                                            const std::string & fallback_dfu_path = {} );
 
             // Nodes published by the rs-enum udev rules as /dev/video-rs-<sensor>[-md]-<idx>.
             std::vector<node_info> get_mipi_rs_enum_nodes();
