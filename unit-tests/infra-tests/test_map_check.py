@@ -21,7 +21,7 @@ from rspy import device_map
 
 def reported(out, test, word):
     """True if the verbose line '<test> [(took Ns)] <word>' is in the console output."""
-    return re.search(re.escape(test) + r"(?: \(took [\d.]+s\))? " + word + r"\b", out) is not None
+    return re.search(re.escape(test) + r"(?: \(took [\d.]+s\))? " + re.escape(word) + r"\b", out) is not None
 
 
 _UNIT_TESTS = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
