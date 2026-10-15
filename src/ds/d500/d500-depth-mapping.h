@@ -35,6 +35,9 @@ namespace librealsense
         std::string get_depth_mapping_params() const;
         void set_depth_mapping_params( const std::string & params_json_str ) const;
 
+        // Throws if the camera would refuse occupancy with the running depth sensor streams, or starve them
+        void occupancy_allowed_or_throw( const stream_profiles & requests ) const;
+
     private:
 
         friend class d500_depth_mapping_sensor;
@@ -47,6 +50,12 @@ namespace librealsense
         
         void register_occupancy_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep);
         void register_point_cloud_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep);
+
+        // Depth sensor counterpart of occupancy_allowed_or_throw, for streams added while occupancy runs
+        void depth_sensor_allowed_or_throw( const stream_profiles & requests ) const;
+
+        int _depth_mapping_idx = -1;
+        bool _standalone_occupancy = false;   // FW runs occupancy without host Depth, on 2C too
 
     protected:
         std::shared_ptr<stream_interface> _occupancy_stream;
