@@ -325,7 +325,7 @@ def name_recovery_devices( map_file = None, node = None ):
         name = f"{camera['product']} Recovery"
         if device.name != name:
             log.d( f'recovery device {sn} ({device.name}) is mapped as {camera["product"]}; renaming to "{name}"' )
-            device._name = name
+            device._name = name  # Device has no setter; the name only feeds spec matching and display
             renamed.append( sn )
     return renamed
 
