@@ -40,7 +40,7 @@ function(dl_file src dir filename sha1)
         message(STATUS "Downloading '${filename}' into '${dest}'")
         #message(STATUS "... from '${src}/${filename}'")
         # Hash is checked below: EXPECTED_HASH makes a failed download a hard CMake error
-        file( DOWNLOAD "${src}/${filename}" "${dest}/${filename}" STATUS status )
+        file( DOWNLOAD "${src}/${filename}" "${dest}/${filename}" STATUS status INACTIVITY_TIMEOUT 60 )
         list( GET status 0 code )
         list( GET status 1 message )
         #message( STATUS " status = ${status}  code = ${code}  message = ${message}" )
