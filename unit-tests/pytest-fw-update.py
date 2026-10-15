@@ -44,25 +44,16 @@ def abs_fw_path( path ):
     return os.path.abspath( path ) if path else path
 
 
-def run_fw_tool( cmd, timeout = FW_TOOL_TIMEOUT, log_output = False ):
+def run_fw_tool( cmd, timeout = FW_TOOL_TIMEOUT ):
     """
     Run a FW tool (rs-fw-update / rs-dds-config) bounded by `timeout`, from a CWD outside the
     repo so a surviving process cannot pin the workspace. On timeout the child is killed and a
     non-zero result is returned, so callers keep their normal reboot-wait and failure flow.
-    With `log_output`, the tool's output and exit code go to the test log (pytest's capture
-    would otherwise drop them for a passing call and hide them for a failing one).
     """
     log.debug( f'running: {cmd}' )
     sys.stdout.flush()
     tool_cwd = tempfile.mkdtemp()
     try:
-        if log_output:
-            result = subprocess.run( cmd, cwd=tool_cwd, timeout=timeout,
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors='replace' )
-            for line in ( result.stdout or '' ).splitlines():
-                log.debug( f'{os.path.basename( cmd[0] )}: {line}' )
-            log.debug( f'{os.path.basename( cmd[0] )} exited with {result.returncode}' )
-            return result
         return subprocess.run( cmd, cwd=tool_cwd, timeout=timeout )
     except subprocess.TimeoutExpired:
         log.error( f'{cmd[0]} did not exit within {timeout} seconds; killed it' )
@@ -210,8 +201,6 @@ def recover_dds_device_on_golden_domain( serial, context, fw_updater_exe ):
         for d in ctx0.query_devices():
             if not d.is_in_recovery_mode():
                 continue
-            if d.supports( rs.camera_info.connection_type ) and d.get_info( rs.camera_info.connection_type ) != "DDS":
-                continue
             d_id = d.get_info( rs.camera_info.firmware_update_id ) \
                 if d.supports( rs.camera_info.firmware_update_id ) else None
             if d_id == serial:
@@ -320,7 +309,7 @@ def test_fw_update( request, module_device_setup, test_context_var ):
     # check if recovery on the configured domain (e.g. a D400 USB recovery device). If so recover.
     # (recovered may already be True from the domain-0 DDS recovery handled above.)
     if device.is_in_recovery_mode():
-        if "D585S" in product_name:
+        if product_name.startswith( "D585S" ):
             pytest.fail( f"{serial} is a D585S in recovery; not flashing a safety camera from LibCI" )
         log.debug( "recovering device ..." )
         # rs-fw-update -r needs a known-good image, which isn't always the caller's
@@ -334,19 +323,10 @@ def test_fw_update( request, module_device_setup, test_context_var ):
         if not gold_fw:
             pytest.fail( f"Could not download gold recovery FW for {product_name}; cannot recover DFU device" )
         cmd = [fw_updater_exe, '-r', '-f', gold_fw, '-s', serial]
-        if product_line == "D500":
-            cmd.append( '--debug' )  # log the DFU status the camera reports if it rejects the image
         del device, ctx
-        result = run_fw_tool( cmd, log_output = True )
-        if result.returncode != 0 and product_line == "D500" and custom_fw_path and custom_fw_path != gold_fw:
-            # The recovery image may be rejected while the custom one is accepted; power-cycle out
-            # of the failed DFU session and try again with the custom image
-            log.debug( f"recovery with {gold_fw} failed (rc={result.returncode}); retrying with the custom image {custom_fw_path}" )
-            devices.enable_only( [serial], recycle = True )
-            cmd = [fw_updater_exe, '-r', '-f', custom_fw_path, '-s', serial, '--debug']
-            result = run_fw_tool( cmd, log_output = True )
+        result = run_fw_tool( cmd )
         if result.returncode != 0 and product_line == "D500":
-            pytest.fail( f"Recovery flash of {product_name} ({serial}) failed (rc={result.returncode}); see the rs-fw-update output above" )
+            pytest.fail( f"Recovery flash of {product_name} ({serial}) with {gold_fw} failed (rc={result.returncode})" )
         recovered = True
         fw_compat.reload_d4xx_driver_on_jetson( context )
         # The device's identity changed: in DFU it exposed firmware_update_id only,
