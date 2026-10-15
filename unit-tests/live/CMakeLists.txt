@@ -1,5 +1,5 @@
 
-set(PP_Rosbag_Recordings_URL ${RS_TEST_DATA_URL}/Rosbag_unit_test_records)
+set(PP_Rosbag_Recordings_URL ${TEST_DATA_BASE_URL}/Rosbag_unit_test_records)
 
 # for rec-play/test-non-realtime.py
 dl_file( ${PP_Rosbag_Recordings_URL} recordings recording_deadlock.db3 e1a4265bb11ec06343f826282cf827b6f9c0810c )
@@ -32,7 +32,7 @@ dl_file( ${PP_Rosbag_Recordings_URL} recordings d455_depth_non_native.db3 fd2678
 # Shipped as a single zip (308 small files) so a build downloads it once instead of the
 # test doing hundreds of per-file requests at runtime.
 set( PP_Filters_Dataset_ZIP post_processing_tests_2018_ww18.zip )
-dl_file( ${RS_TEST_DATA_URL} recordings ${PP_Filters_Dataset_ZIP} dbb7475422187e5390df00385cf870cf7e563ec2 )
+dl_file( ${TEST_DATA_BASE_URL} recordings ${PP_Filters_Dataset_ZIP} dbb7475422187e5390df00385cf870cf7e563ec2 )
 get_filename_component( PP_Recordings_Dir recordings ABSOLUTE BASE_DIR ${CMAKE_CURRENT_BINARY_DIR} )
 # Extract once; sentinel is one of the dataset files (first sequence's metadata).
 if( EXISTS "${PP_Recordings_Dir}/${PP_Filters_Dataset_ZIP}" AND NOT EXISTS "${PP_Recordings_Dir}/1551257764229.0.Output.csv" )
