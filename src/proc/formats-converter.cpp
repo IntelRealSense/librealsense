@@ -294,10 +294,10 @@ void formats_converter::prepare_to_convert( stream_profiles from_profiles )
                     if( _frame_stream_resolvers.count( from_profile->get_stream_type() ) )
                     {
                         auto index = from_profile->get_stream_index();
-                        auto & indexed_pb = pb_per_index[index];
-                        if( ! indexed_pb )
-                            indexed_pb = pb_per_index.size() == 1 ? best_pb : factory_of_best_match->generate();
-                        pb = indexed_pb;
+                        auto it = pb_per_index.find( index );
+                        if( it == pb_per_index.end() )
+                            it = pb_per_index.emplace( index, pb_per_index.empty() ? best_pb : factory_of_best_match->generate() ).first;
+                        pb = it->second;
                         _raw_profile_to_indexed_converters[raw_profile][index].insert( pb );
                     }
 
