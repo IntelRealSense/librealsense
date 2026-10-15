@@ -220,11 +220,11 @@ namespace librealsense
                                     return node.first.unique_id == cur_node.first.unique_id
                                         && node.first.mi == cur_node.first.mi;
                                 });
-                            if (video == uvc_devices.rend())
-                            {
-                                LOG_ERROR("UVC meta-node with no matching USB video node: " << std::string(cur_node.first));
-                                continue;
-                            }
+                        }
+                        if (video == uvc_devices.rend())
+                        {
+                            LOG_ERROR("UVC meta-node with no matching video node: " << std::string(cur_node.first));
+                            continue;
                         }
                         auto& uvc_node = *video;
 
