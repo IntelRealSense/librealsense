@@ -17,6 +17,7 @@ and fixtures that pytest requires in conftest.py for auto-discovery.
 
 import pytest
 import sys
+import time
 import os
 import re
 import logging
@@ -282,6 +283,9 @@ def pytest_configure(config):
         context_list = context_str.split()
         log.info(f"Test context: {context_list}")
 
+    # Start time + duration on each verbose result line (see _TestStartTime)
+    config.pluginmanager.register(_TestStartTime(config), "rs-test-start-time")
+
     # Set up test log directory
     setup_test_logging(config)
 
@@ -431,16 +435,35 @@ def _test_log_banner(request):
     ensure_newline()
 
 
-@pytest.hookimpl(tryfirst=True)
-def pytest_runtest_protocol(item, nextitem):
-    """Print a full ``START <nodeid>`` line when a test begins. In verbose mode pytest writes the
-    nodeid at start but ends the line only when the test finishes, so a line-timestamping console
-    (Jenkins) stamps it with the finish time; this line carries the start time. Statically skipped
-    items (e.g. the SKIP-<device> placeholders) are left out to keep the console short."""
-    reporter = item.config.pluginmanager.get_plugin("terminalreporter")
-    if reporter and reporter.verbosity > 0 and not item.get_closest_marker("skip"):
-        reporter.write_line(f"-I- START {item.nodeid}")
-    # return None: the default runtest protocol still runs
+class _TestStartTime:
+    """Append the start time and duration to each verbose result line:
+        <nodeid> PASSED [  8%] (start 12:22:58, 14.2s)
+    pytest ends that line only when the test finishes, so a line-timestamping console (Jenkins)
+    stamps it with the finish time; this keeps start and finish on one line, with the name once.
+    Appended after the terminal reporter writes the line, so the result word itself -- which the
+    short summary reuses ("FAILED <nodeid> - ...", parsed by Jenkins) -- is left untouched."""
+
+    def __init__(self, config):
+        self._config = config
+        self._start = {}  # nodeid -> epoch seconds
+
+    def pytest_runtest_logstart(self, nodeid, location):
+        self._start[nodeid] = time.time()
+
+    @pytest.hookimpl(trylast=True)  # after the terminal reporter wrote the result line
+    def pytest_runtest_logreport(self, report):
+        start = self._start.get(report.nodeid)
+        reporter = self._config.pluginmanager.get_plugin("terminalreporter")
+        if start is None or reporter is None or reporter.verbosity <= 0 or report.skipped:
+            return
+        _, letter, word = self._config.hook.pytest_report_teststatus(report=report, config=self._config)
+        if not letter and not word:
+            return  # passed setup/teardown: the reporter printed nothing for this phase
+        stamp = time.strftime("%H:%M:%S", time.localtime(start))
+        reporter._tw.write(f" (start {stamp}, {time.time() - start:.1f}s)")
+
+    def pytest_runtest_logfinish(self, nodeid, location):
+        self._start.pop(nodeid, None)
 
 
 @pytest.hookimpl(hookwrapper=True)
