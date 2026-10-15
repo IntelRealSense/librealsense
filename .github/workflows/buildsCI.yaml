@@ -73,7 +73,7 @@ jobs:
           ${{ matrix.cmake-options }}
 
   #--------------------------------------------------------------------------------
-  Win_ST_Py_CI:  # Windows, Static, Python, Tools (its unit tests run in LibCI)
+  Win_ST_Py_CI:  # Windows, Static, Python, Tools, libCI with executables
     runs-on: windows-2025
     timeout-minutes: 60
     steps:
@@ -92,9 +92,23 @@ jobs:
           -DBUILD_SHARED_LIBS=false
           -DBUILD_EXAMPLES=false
           -DBUILD_TOOLS=true
+          -DBUILD_UNIT_TESTS=true
+          -DUNIT_TESTS_ARGS="--not-live --context=windows"
           -DCHECK_FOR_UPDATES=false
           -DBUILD_WITH_DDS=false
           -DBUILD_PYTHON_BINDINGS=true
+
+    - name: LibCI
+      # Note: requires BUILD_UNIT_TESTS or the executable C++ unit-tests won't run (and it won't complain)
+      shell: bash
+      run: |
+        python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "windows" ${{env.WIN_BUILD_DIR}}/Release
+
+    - name: LibCI (pytest)
+      shell: bash
+      run: |
+        python3 -m pip install -r unit-tests/requirements.txt
+        python3 -m pytest unit-tests/ --color=no --debug -s --not-live --context "windows"
 
     - name: Client for realsense2-all
       shell: bash
@@ -222,7 +236,7 @@ jobs:
           -DENABLE_SECURITY_FLAGS=true
 
   #--------------------------------------------------------------------------------
-  U22_U26_SH_Py_CI:  # Ubuntu, Shared, Python (their unit tests run in LibCI)
+  U22_U26_SH_Py_CI:  # Ubuntu, Shared, Python, LibCI with executables
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -255,10 +269,24 @@ jobs:
           -DBUILD_SHARED_LIBS=true
           -DBUILD_EXAMPLES=false
           -DBUILD_TOOLS=true
+          -DBUILD_UNIT_TESTS=true
           -DBUILD_PYTHON_BINDINGS=true
           -DBUILD_WITH_DDS=false
           -DCHECK_FOR_UPDATES=false
+          -DUNIT_TESTS_ARGS="--not-live --context=linux"
           ${{ matrix.cmake-options }}
+
+    - name: LibCI
+      # Note: requires BUILD_UNIT_TESTS or the executable C++ unit-tests won't run (and it won't complain)
+      shell: bash
+      run: |
+        python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "linux"
+
+    - name: LibCI (pytest)
+      shell: bash
+      run: |
+        python3 -m pip install -r unit-tests/requirements.txt
+        python3 -m pytest unit-tests/ --color=no --debug -s --not-live --context "linux"
 
   #--------------------------------------------------------------------------------
   U22_ST_Py_DDS_RSUSB_SEC:  # Ubuntu 2020, Static, Python, DDS, RSUSB, additional security checks
