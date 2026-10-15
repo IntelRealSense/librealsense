@@ -436,31 +436,43 @@ def _test_log_banner(request):
 
 
 class _TestDuration:
-    """Append the test's duration (setup to result) to each verbose result line:
-        <nodeid> PASSED [  8%] (14.2s)
+    """Show the test's duration (setup to result) on each verbose result line:
+        <nodeid> (took 14.2s) PASSED [  8%]
     pytest ends that line only when the test finishes, so a line-timestamping console (Jenkins)
     stamps it with the finish time; start = that stamp - duration. Only a duration is printed so
-    the one wall clock on the line stays Jenkins' own. Appended after the terminal reporter writes
-    the line, so the result word itself -- which the short summary reuses ("FAILED <nodeid> - ...",
-    parsed by Jenkins) -- is left untouched."""
+    the one wall clock on the line stays Jenkins' own.
+    The prefix is added to the result word only while that per-test line is being reported: the
+    short summary reuses the word later ("FAILED <nodeid> - ...", parsed by Jenkins) and must not
+    change."""
 
     def __init__(self, config):
         self._config = config
-        self._start = {}  # nodeid -> time.monotonic() at logstart
+        self._start = {}       # nodeid -> time.monotonic() at logstart
+        self._reporting = None  # the report whose result line is being written right now
 
     def pytest_runtest_logstart(self, nodeid, location):
         self._start[nodeid] = time.monotonic()
 
-    @pytest.hookimpl(trylast=True)  # after the terminal reporter wrote the result line
+    @pytest.hookimpl(wrapper=True, tryfirst=True)
     def pytest_runtest_logreport(self, report):
+        self._reporting = report
+        try:
+            return (yield)
+        finally:
+            self._reporting = None
+
+    @pytest.hookimpl(wrapper=True)
+    def pytest_report_teststatus(self, report, config):
+        status = yield
         start = self._start.get(report.nodeid)
-        reporter = self._config.pluginmanager.get_plugin("terminalreporter")
-        if start is None or reporter is None or reporter.verbosity <= 0 or report.skipped:
-            return
-        _, letter, word = self._config.hook.pytest_report_teststatus(report=report, config=self._config)
-        if not letter and not word:
-            return  # passed setup/teardown: the reporter printed nothing for this phase
-        reporter._tw.write(f" ({time.monotonic() - start:.1f}s)")
+        if report is not self._reporting or start is None or report.skipped or not status:
+            return status
+        category, letter, word = status
+        text, markup = word if isinstance(word, tuple) else (word, None)
+        if not text:
+            return status  # passed setup/teardown: nothing is printed for this phase
+        text = f"(took {time.monotonic() - start:.1f}s) {text}"
+        return category, letter, (text, markup) if markup is not None else text
 
     def pytest_runtest_logfinish(self, nodeid, location):
         self._start.pop(nodeid, None)
@@ -506,9 +518,6 @@ def pytest_runtest_makereport(item, call):
 _rerun_recycle_ctx = {}  # nodeid -> (item, live request) captured in pytest_runtest_makereport
 
 
-# trylast: recycle only after the result line is fully written (incl. _TestDuration's suffix), so
-# device-teardown output lands after the "RERUN ..." line instead of in the middle of it.
-@pytest.hookimpl(trylast=True)
 def pytest_runtest_logreport(report):
     # Recycle on rerun, and keep _rerun_recycle_ctx bounded: drop the entry on the rerun that
     # consumes it (makereport re-stores it for the next attempt) and on any test's final teardown.

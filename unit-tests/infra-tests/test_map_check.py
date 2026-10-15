@@ -13,9 +13,16 @@ Tests for pytest-map-check.py and the harness pieces it relies on. No hardware.
 import importlib.util
 import json
 import os
+import re
 
 from helpers import run_e2e, assert_outcomes
 from rspy import device_map
+
+
+def reported(out, test, word):
+    """True if the verbose line '<test> [(took Ns)] <word>' is in the console output."""
+    return re.search(re.escape(test) + r"(?: \(took [\d.]+s\))? " + word + r"\b", out) is not None
+
 
 _UNIT_TESTS = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 _spec = importlib.util.spec_from_file_location('pytest_map_check', os.path.join(_UNIT_TESTS, 'pytest-map-check.py'))
@@ -120,12 +127,12 @@ class TestInfraMarker:
     def test_live_keeps_infra_skips_plain(self):
         rc, out, *_ = run_e2e("pytest-infra-marker.py", "--live")
         assert_outcomes(out, passed=1, skipped=1)
-        assert 'test_infra_runs_without_device PASSED' in out
+        assert reported(out, 'test_infra_runs_without_device', 'PASSED')
 
     def test_not_live_skips_infra_keeps_plain(self):
         rc, out, *_ = run_e2e("pytest-infra-marker.py", "--not-live")
         assert_outcomes(out, passed=1, skipped=1)
-        assert 'test_plain_no_device PASSED' in out
+        assert reported(out, 'test_plain_no_device', 'PASSED')
 
 
 # =============================================================================
@@ -138,7 +145,7 @@ class TestExcludedMissing:
         # a MISSING sentinel fails in module_device_setup, so pytest reports it as an error
         rc, out, *_ = run_e2e("pytest-excluded-missing.py")
         assert_outcomes(out, error=1)
-        assert 'test_single_absent[MISSING-D555] ERROR' in out
+        assert reported(out, 'test_single_absent[MISSING-D555]', 'ERROR')
 
     def test_excluded_by_name_skips(self):
         rc, out, *_ = run_e2e("pytest-excluded-missing.py", "--exclude-device", "D555")
