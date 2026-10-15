@@ -187,6 +187,11 @@ def recover_dds_device_on_golden_domain( serial, context, fw_updater_exe ):
     """
     if 'dds' not in context:
         return False
+    # A DDS context also enumerates USB devices: never treat a USB device in recovery as a
+    # bricked DDS camera (its gold image and flash path are different)
+    rspy_dev = devices.get( serial )
+    if rspy_dev and not rspy_dev.is_dds:
+        return False
     # Look for the recovery device on the golden domain 0. Guard the probe so a DDS hiccup can
     # never disturb the normal discovery/recovery flow below (esp. the USB path on mixed rigs).
     recovery_found = False
@@ -195,6 +200,8 @@ def recover_dds_device_on_golden_domain( serial, context, fw_updater_exe ):
         ctx0 = rs.context( { 'dds': { 'enabled': True, 'domain': 0 } } )
         for d in ctx0.query_devices():
             if not d.is_in_recovery_mode():
+                continue
+            if d.supports( rs.camera_info.connection_type ) and d.get_info( rs.camera_info.connection_type ) != "DDS":
                 continue
             d_id = d.get_info( rs.camera_info.firmware_update_id ) \
                 if d.supports( rs.camera_info.firmware_update_id ) else None
