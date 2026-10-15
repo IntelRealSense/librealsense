@@ -319,7 +319,7 @@ def name_recovery_devices( map_file = None, node = None ):
         device = devices.get( sn )
         if not device.handle.is_in_recovery_mode():
             continue
-        camera = by_fwid.get( sn )
+        camera = by_fwid.get( sn )  # rspy registers a recovery device under its firmware_update_id
         if not camera or not camera.get( 'product' ):
             continue
         name = f"{camera['product']} Recovery"
