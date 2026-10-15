@@ -506,6 +506,9 @@ def pytest_runtest_makereport(item, call):
 _rerun_recycle_ctx = {}  # nodeid -> (item, live request) captured in pytest_runtest_makereport
 
 
+# trylast: recycle only after the result line is fully written (incl. _TestStartTime's suffix), so
+# device-teardown output lands after the "RERUN ..." line instead of in the middle of it.
+@pytest.hookimpl(trylast=True)
 def pytest_runtest_logreport(report):
     # Recycle on rerun, and keep _rerun_recycle_ctx bounded: drop the entry on the rerun that
     # consumes it (makereport re-stores it for the next attempt) and on any test's final teardown.
