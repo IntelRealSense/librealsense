@@ -334,8 +334,17 @@ def test_fw_update( request, module_device_setup, test_context_var ):
         if not gold_fw:
             pytest.fail( f"Could not download gold recovery FW for {product_name}; cannot recover DFU device" )
         cmd = [fw_updater_exe, '-r', '-f', gold_fw, '-s', serial]
+        if product_line == "D500":
+            cmd.append( '--debug' )  # log the DFU status the camera reports if it rejects the image
         del device, ctx
         result = run_fw_tool( cmd, log_output = True )
+        if result.returncode != 0 and product_line == "D500" and custom_fw_path and custom_fw_path != gold_fw:
+            # The recovery image may be rejected while the custom one is accepted; power-cycle out
+            # of the failed DFU session and try again with the custom image
+            log.debug( f"recovery with {gold_fw} failed (rc={result.returncode}); retrying with the custom image {custom_fw_path}" )
+            devices.enable_only( [serial], recycle = True )
+            cmd = [fw_updater_exe, '-r', '-f', custom_fw_path, '-s', serial, '--debug']
+            result = run_fw_tool( cmd, log_output = True )
         if result.returncode != 0 and product_line == "D500":
             pytest.fail( f"Recovery flash of {product_name} ({serial}) failed (rc={result.returncode}); see the rs-fw-update output above" )
         recovered = True
