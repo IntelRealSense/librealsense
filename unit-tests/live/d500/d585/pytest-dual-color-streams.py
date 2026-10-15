@@ -101,6 +101,28 @@ def test_one_color_streams_alone(depth_sensor, index):
     check_stream( frames, name )
 
 
+def test_colors_held_by_slow_consumer(depth_sensor):
+    """Each color stream has its own frame pool: holding frames of one does not starve the other (RSDEV-15260)."""
+    HOLD = 12   # frames kept per stream, as a slow viewer does; both colors together exceed one pool (16)
+    held = {}
+    frames = {}
+    def on_frame(f):
+        name = f.get_profile().stream_name()
+        frames.setdefault( name, [] ).append( f.get_frame_number() )
+        q = held.setdefault( name, [] )
+        q.append( f )
+        del q[:-HOLD]
+    depth_sensor.open( [profile( depth_sensor, rs.stream.depth, 0, rs.format.z16 ),
+                        color( depth_sensor, 1 ), color( depth_sensor, 2 )] )
+    depth_sensor.start( on_frame )
+    time.sleep( DURATION_S )
+    depth_sensor.stop()
+    held.clear()
+    depth_sensor.close()
+    for name in ("Depth", "Color 1", "Color 2"):
+        check_stream( frames, name )
+
+
 def test_colors_with_depth_and_infrared(depth_sensor):
     profiles = [profile( depth_sensor, rs.stream.depth, 0, rs.format.z16 ),
                 profile( depth_sensor, rs.stream.infrared, 1, rs.format.y8 ),
