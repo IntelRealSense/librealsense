@@ -822,7 +822,6 @@ namespace librealsense
                                                                                     RS2_OPTION_ASIC_TEMPERATURE ) );
                 }
 
-                // Over GMSL the error code is served from an I2C register: FW 5.17.6+ and d4xx driver 1.0.7.6+
                 if( ! _is_mipi_device
                     || ( _fw_version >= firmware_version( "5.17.6.0" )
                          && mipi_driver_version >= rsutils::version( "1.0.7.6" ) ) )
