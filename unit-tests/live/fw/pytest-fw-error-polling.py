@@ -21,8 +21,8 @@ pytestmark = [
 ]
 
 OPCODE_TRIGGER_ERROR    = 0x4D  # HWM opcode that injects a firmware error
-ERROR_ID_MM_FORCE_PAUSE = 9
-EXPECTED_DESCRIPTION    = "Motion Module force pause"
+ERROR_ID_REC_ERROR      = 25    # one-time error class: latched once, never re-raised
+EXPECTED_DESCRIPTION    = "REC error"
 NOTIFICATION_TIMEOUT_S  = 5     # the handler polls every 1 s
 SETTLE_AFTER_FIRST_S    = 3     # an uncleared error would be re-reported on each poll
 
@@ -30,6 +30,8 @@ SETTLE_AFTER_FIRST_S    = 3     # an uncleared error would be re-reported on eac
 def test_fw_error_polling( test_device ):
     dev, _ = test_device
     require_min_fw_version( dev, rsutils.version( 5, 17, 6, 0 ), "GMSL FW error polling" )
+    if dev.get_info( rs.camera_info.camera_locked ) == "YES":
+        pytest.skip( "FW rejects error injection on locked cameras" )
 
     depth_sensor = dev.first_depth_sensor()
     assert depth_sensor.supports( rs.option.error_polling_enabled ), \
@@ -48,11 +50,11 @@ def test_fw_error_polling( test_device ):
     assert depth_sensor.get_option( rs.option.error_polling_enabled ) == 1
 
     proto = rs.debug_protocol( dev )
-    reply = list( proto.send_and_receive_raw_data( proto.build_command( OPCODE_TRIGGER_ERROR, ERROR_ID_MM_FORCE_PAUSE ) ) )
+    reply = list( proto.send_and_receive_raw_data( proto.build_command( OPCODE_TRIGGER_ERROR, ERROR_ID_REC_ERROR ) ) )
     assert reply[:4] == [OPCODE_TRIGGER_ERROR, 0, 0, 0], f"HWM error injection rejected: {reply[:8]}"
 
     assert received.wait( NOTIFICATION_TIMEOUT_S ), \
-        f"no FW error notification within {NOTIFICATION_TIMEOUT_S} [sec] of injecting error {ERROR_ID_MM_FORCE_PAUSE}"
+        f"no FW error notification within {NOTIFICATION_TIMEOUT_S} [sec] of injecting error {ERROR_ID_REC_ERROR}"
     time.sleep( SETTLE_AFTER_FIRST_S )
 
     log.info( "notifications: %s", notifications )
