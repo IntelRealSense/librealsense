@@ -75,6 +75,7 @@ TEST_CASE( "V4L2 metadata stays with its USB device and interface", "[v4l2]" )
     {
         check_pairings( {}, {} );
         check_pairings( { node( 0, "A", 0, true ) }, {} );
+        check_pairings( { node( 0, "MIPI", 3, true, true ) }, {} );
     }
     SECTION( "duplicate metadata does not overwrite the first pairing" )
     {
