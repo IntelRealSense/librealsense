@@ -283,8 +283,8 @@ def pytest_configure(config):
         context_list = context_str.split()
         log.info(f"Test context: {context_list}")
 
-    # Start time + duration on each verbose result line (see _TestStartTime)
-    config.pluginmanager.register(_TestStartTime(config), "rs-test-start-time")
+    # Duration on each verbose result line (see _TestDuration)
+    config.pluginmanager.register(_TestDuration(config), "rs-test-duration")
 
     # Set up test log directory
     setup_test_logging(config)
@@ -435,20 +435,21 @@ def _test_log_banner(request):
     ensure_newline()
 
 
-class _TestStartTime:
-    """Append the start time and duration to each verbose result line:
-        <nodeid> PASSED [  8%] (start 12:22:58, 14.2s)
+class _TestDuration:
+    """Append the test's duration (setup to result) to each verbose result line:
+        <nodeid> PASSED [  8%] (14.2s)
     pytest ends that line only when the test finishes, so a line-timestamping console (Jenkins)
-    stamps it with the finish time; this keeps start and finish on one line, with the name once.
-    Appended after the terminal reporter writes the line, so the result word itself -- which the
-    short summary reuses ("FAILED <nodeid> - ...", parsed by Jenkins) -- is left untouched."""
+    stamps it with the finish time; start = that stamp - duration. Only a duration is printed so
+    the one wall clock on the line stays Jenkins' own. Appended after the terminal reporter writes
+    the line, so the result word itself -- which the short summary reuses ("FAILED <nodeid> - ...",
+    parsed by Jenkins) -- is left untouched."""
 
     def __init__(self, config):
         self._config = config
-        self._start = {}  # nodeid -> epoch seconds
+        self._start = {}  # nodeid -> time.monotonic() at logstart
 
     def pytest_runtest_logstart(self, nodeid, location):
-        self._start[nodeid] = time.time()
+        self._start[nodeid] = time.monotonic()
 
     @pytest.hookimpl(trylast=True)  # after the terminal reporter wrote the result line
     def pytest_runtest_logreport(self, report):
@@ -459,8 +460,7 @@ class _TestStartTime:
         _, letter, word = self._config.hook.pytest_report_teststatus(report=report, config=self._config)
         if not letter and not word:
             return  # passed setup/teardown: the reporter printed nothing for this phase
-        stamp = time.strftime("%H:%M:%S", time.localtime(start))
-        reporter._tw.write(f" (start {stamp}, {time.time() - start:.1f}s)")
+        reporter._tw.write(f" ({time.monotonic() - start:.1f}s)")
 
     def pytest_runtest_logfinish(self, nodeid, location):
         self._start.pop(nodeid, None)
@@ -506,7 +506,7 @@ def pytest_runtest_makereport(item, call):
 _rerun_recycle_ctx = {}  # nodeid -> (item, live request) captured in pytest_runtest_makereport
 
 
-# trylast: recycle only after the result line is fully written (incl. _TestStartTime's suffix), so
+# trylast: recycle only after the result line is fully written (incl. _TestDuration's suffix), so
 # device-teardown output lands after the "RERUN ..." line instead of in the middle of it.
 @pytest.hookimpl(trylast=True)
 def pytest_runtest_logreport(report):
