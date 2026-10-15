@@ -44,16 +44,25 @@ def abs_fw_path( path ):
     return os.path.abspath( path ) if path else path
 
 
-def run_fw_tool( cmd, timeout = FW_TOOL_TIMEOUT ):
+def run_fw_tool( cmd, timeout = FW_TOOL_TIMEOUT, log_output = False ):
     """
     Run a FW tool (rs-fw-update / rs-dds-config) bounded by `timeout`, from a CWD outside the
     repo so a surviving process cannot pin the workspace. On timeout the child is killed and a
     non-zero result is returned, so callers keep their normal reboot-wait and failure flow.
+    With `log_output`, the tool's output and exit code go to the test log (pytest's capture
+    would otherwise drop them for a passing call and hide them for a failing one).
     """
     log.debug( f'running: {cmd}' )
     sys.stdout.flush()
     tool_cwd = tempfile.mkdtemp()
     try:
+        if log_output:
+            result = subprocess.run( cmd, cwd=tool_cwd, timeout=timeout,
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors='replace' )
+            for line in ( result.stdout or '' ).splitlines():
+                log.debug( f'{os.path.basename( cmd[0] )}: {line}' )
+            log.debug( f'{os.path.basename( cmd[0] )} exited with {result.returncode}' )
+            return result
         return subprocess.run( cmd, cwd=tool_cwd, timeout=timeout )
     except subprocess.TimeoutExpired:
         log.error( f'{cmd[0]} did not exit within {timeout} seconds; killed it' )
@@ -326,7 +335,9 @@ def test_fw_update( request, module_device_setup, test_context_var ):
             pytest.fail( f"Could not download gold recovery FW for {product_name}; cannot recover DFU device" )
         cmd = [fw_updater_exe, '-r', '-f', gold_fw, '-s', serial]
         del device, ctx
-        run_fw_tool( cmd )
+        result = run_fw_tool( cmd, log_output = True )
+        if result.returncode != 0 and product_line == "D500":
+            pytest.fail( f"Recovery flash of {product_name} ({serial}) failed (rc={result.returncode}); see the rs-fw-update output above" )
         recovered = True
         fw_compat.reload_d4xx_driver_on_jetson( context )
         # The device's identity changed: in DFU it exposed firmware_update_id only,
