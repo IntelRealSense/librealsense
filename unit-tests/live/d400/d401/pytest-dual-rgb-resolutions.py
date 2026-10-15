@@ -21,8 +21,7 @@ RESOLUTIONS = [(1280, 720), (848, 480), (640, 480), (640, 360), (480, 270), (424
 @pytest.fixture( scope="module", autouse=True )
 def require_dual_rgb( test_device ):
     dev, _ = test_device
-    if not helper.has_color1( dev.first_depth_sensor() ):
-        pytest.skip( "No Color 1 profile: raw dual-RGB needs FW with the raw pass-through (5.17.4.13+)" )
+    helper.skip_without_color1( dev )
 
 
 @pytest.fixture

@@ -3,7 +3,8 @@
 
 # D401 GMSL ISP color next to the raw dual-RGB feature: a lone Color 0 must stay on the ISP path, and
 # the default configuration must not pull in Color 1. Kept apart from the raw-mode tests: switching
-# raw <-> ISP needs a hardware reset, which the test infra does only between files.
+# raw <-> ISP needs a hardware reset, which the test infra does only between files. Nightly, like the raw
+# tests: the regressions these guard need the raw path, which only the nightly FW/driver has.
 
 import pytest
 import pyrealsense2 as rs
@@ -13,6 +14,7 @@ from d401_helper import COLOR0, COLOR1, DEPTH, IR1, IR2
 pytestmark = [
     pytest.mark.device_each( "D401" ),
     pytest.mark.device_type( "GMSL" ),
+    pytest.mark.context( "nightly" ),
 ]
 
 W, H = 848, 480

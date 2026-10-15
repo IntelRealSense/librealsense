@@ -42,6 +42,18 @@ def has_color1( sensor ):
     return any( (p.stream_type(), p.stream_index()) == COLOR1 for p in sensor.get_stream_profiles() )
 
 
+def skip_without_color1( dev ):
+    """Skip unless the device publishes Color 1. That needs both FW 5.17.4.13+ (the SDK's gate) and a MIPI
+    driver exposing the raw format, so checking the result covers both, whichever driver version added it."""
+    if has_color1( dev.first_depth_sensor() ):
+        return
+    def info( i ):
+        return dev.get_info( i ) if dev.supports( i ) else "unknown"
+    pytest.skip( f"No Color 1 profile on FW {info( rs.camera_info.firmware_version )}, MIPI driver "
+                 f"{info( rs.camera_info.mipi_driver_version )}: raw dual-RGB needs FW 5.17.4.13+ and a MIPI "
+                 f"driver with the raw format" )
+
+
 def stream( sensor, profiles, duration=DURATION_S ):
     """Stream `profiles` for `duration` seconds.
 
