@@ -300,6 +300,36 @@ def check( exclude_specs = None, node = None, runner = None, map_file = None ):
     return report
 
 
+def name_recovery_devices( map_file = None, node = None ):
+    """
+    A D500-family camera in DFU/recovery enumerates under a name shared by the whole family
+    ("D500 Recovery"), so name-based specs like device_each("D585") cannot find it. Rename
+    each recovery device whose firmware_update_id is in this machine's map to
+    "<mapped product> Recovery", so specs (and FW choices made by name) see the real SKU.
+    Call after devices.query(). Returns the serials that were renamed.
+    """
+    from rspy import devices
+    nodes = load_map( map_file )
+    entry = resolve_node( nodes, node )
+    if not entry:
+        return []
+    by_fwid = { camera.get( 'fwid' ): camera for camera in entry.get( 'cameras' ) or [] if camera.get( 'fwid' ) }
+    renamed = []
+    for sn in devices.all():
+        device = devices.get( sn )
+        if not device.handle.is_in_recovery_mode():
+            continue
+        camera = by_fwid.get( sn )
+        if not camera or not camera.get( 'product' ):
+            continue
+        name = f"{camera['product']} Recovery"
+        if device.name != name:
+            log.d( f'recovery device {sn} ({device.name}) is mapped as {camera["product"]}; renaming to "{name}"' )
+            device._name = name
+            renamed.append( sn )
+    return renamed
+
+
 def get_report():
     """The report from the last check() in this process, or None"""
     return _report
