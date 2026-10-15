@@ -3,7 +3,8 @@
 
 # D401 GMSL raw dual-RGB: both imagers stream as Color 0 / Color 1 through the raw (CSI pass-through)
 # path. Kept apart from the ISP-mode tests: switching raw <-> ISP needs a hardware reset, which the
-# test infra does only between files.
+# test infra does only between files. Nightly: gating runs the golden FW/driver, which predate the
+# raw path, so only the nightly with the latest FW/driver can run these.
 
 import pytest
 import pyrealsense2 as rs
@@ -13,6 +14,7 @@ from d401_helper import COLOR0, COLOR1, DEPTH, IR2
 pytestmark = [
     pytest.mark.device_each( "D401" ),
     pytest.mark.device_type( "GMSL" ),
+    pytest.mark.context( "nightly" ),
 ]
 
 W, H = 848, 480
