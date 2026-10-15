@@ -820,8 +820,14 @@ namespace librealsense
                     depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                         std::make_shared< asic_and_projector_temperature_options >( raw_depth_sensor,
                                                                                     RS2_OPTION_ASIC_TEMPERATURE ) );
+                }
 
-                    // D457 dev - get_xu fails for D457 - error polling id not defined
+                // Over GMSL the driver serves the error code from an I2C register only on FW 5.17.6+
+                const bool error_polling_supported = ! _is_mipi_device
+                    || ( _fw_version >= firmware_version( "5.17.6.0" )
+                         && mipi_driver_version >= rsutils::version( "1.0.7.6" ) );
+                if( error_polling_supported )
+                {
                     auto error_control = std::make_shared<uvc_xu_option<uint8_t>>( raw_depth_sensor, depth_xu,
                                                                                    DS5_ERROR_REPORTING, "Error reporting");
 
