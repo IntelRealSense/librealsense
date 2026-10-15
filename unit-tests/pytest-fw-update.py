@@ -274,7 +274,11 @@ def test_fw_update( request, module_device_setup, test_context_var ):
     device, ctx = find_device_or_fail( serial )
     product_line = device.get_info( rs.camera_info.product_line )
     product_name = device.get_info( rs.camera_info.name )
-    log.debug( f'product line: {product_line}' )
+    # A D500 device in recovery enumerates under the family-wide "D500 Recovery"; the harness
+    # renames it from the device map (device_map.name_recovery_devices), so take the SKU from there
+    if device.is_in_recovery_mode() and rspy_dev and rspy_dev.name:
+        product_name = rspy_dev.name
+    log.debug( f'product line: {product_line}, name: {product_name}' )
     ###############################################################################
     #
     if device.supports(rs.camera_info.firmware_version):
@@ -300,11 +304,17 @@ def test_fw_update( request, module_device_setup, test_context_var ):
     # check if recovery on the configured domain (e.g. a D400 USB recovery device). If so recover.
     # (recovered may already be True from the domain-0 DDS recovery handled above.)
     if device.is_in_recovery_mode():
+        if "D585S" in product_name:
+            pytest.fail( f"{serial} is a D585S in recovery; not flashing a safety camera from LibCI" )
         log.debug( "recovering device ..." )
         # rs-fw-update -r needs a known-good image, which isn't always the caller's
         # --custom-fw-<plat> path (e.g. D400 -r expects a *signed* FW, while the custom
         # image is typically unsigned). Fetch the per-product-line gold FW to recover with.
         gold_fw = fw_compat.download_gold_fw( product_line, product_name )
+        if not gold_fw and product_line == "D500":
+            # D500 FW is unsigned-only, so the custom image is as good as the gold one for -r
+            log.debug( f"no gold FW for {product_name}; recovering with the custom image {custom_fw_path}" )
+            gold_fw = custom_fw_path
         if not gold_fw:
             pytest.fail( f"Could not download gold recovery FW for {product_name}; cannot recover DFU device" )
         cmd = [fw_updater_exe, '-r', '-f', gold_fw, '-s', serial]

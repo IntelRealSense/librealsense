@@ -5,6 +5,7 @@
     },
     "gold_recovery_fw": {
         "D400": "https://librealsense.realsenseai.com/Releases/RS4xx/FW/D4XX_FW_Image-5.17.3.10.bin",
-        "D555": "https://librealsense.realsenseai.com/Releases/RS555/FW/unsigned/rvp-flash-dfu-release-7.58.38429.9662.img"
+        "D555": "https://librealsense.realsenseai.com/Releases/RS555/FW/unsigned/rvp-flash-dfu-release-7.58.38429.9662.img",
+        "D585": "https://rsartifactory.realsenseai.com/artifactory/realsense_generic_dev-il-local/FW/RS500/NIGHTLY/7.58.40868/rvp-flash-dfu-release-7.58.40868.13200.img"
     }
 }
