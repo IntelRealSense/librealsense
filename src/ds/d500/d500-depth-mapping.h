@@ -58,7 +58,7 @@ namespace librealsense
         bool _is_safety_layout = false;
         // True only for the D5x5 family; the other D5xx FW does not serve the depth mapping params control
         bool _supports_depth_mapping_params = false;
-        // Serializes get/set of the depth mapping params, so a set's poll can't read another call's result
+        // Serializes get/set of the depth mapping params, so the GET that explains a failed set reads that set's result
         mutable std::mutex _depth_mapping_params_mutex;
         std::shared_ptr<rsutils::lazy<rs2_extrinsics>> _depth_to_depth_mapping_extrinsics;
     };
