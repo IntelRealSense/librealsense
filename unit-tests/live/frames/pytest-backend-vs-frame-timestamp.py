@@ -48,6 +48,10 @@ def _run_timestamp_check(sensor, profile, stream_name):
 
         sensor.open(profile)
         sensor.start(check_backend_ts)
+        # Wait up to 5s for the first frame (startup latency is t2ff's job), then check 1s of frames
+        deadline = time.time() + 5
+        while not has_frame and time.time() < deadline:
+            time.sleep(0.05)
         time.sleep(1)
         sensor.stop()
         sensor.close()
