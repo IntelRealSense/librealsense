@@ -32,8 +32,8 @@ def depth_sensor( test_device ):
 
 @pytest.mark.parametrize( "w,h", RESOLUTIONS )
 def test_both_colors_stream_at( depth_sensor, w, h ):
-    profiles = [helper.need_profile( depth_sensor, COLOR0, rs.format.rgb8, w, h ),
-                helper.need_profile( depth_sensor, COLOR1, rs.format.rgb8, w, h )]
+    profiles = [helper.require_profile( depth_sensor, COLOR0, rs.format.rgb8, w, h ),
+                helper.require_profile( depth_sensor, COLOR1, rs.format.rgb8, w, h )]
     numbers, sizes = helper.stream( depth_sensor, profiles )
     for key in (COLOR0, COLOR1):
         helper.check_rate( numbers, key )

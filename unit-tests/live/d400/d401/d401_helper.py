@@ -32,9 +32,17 @@ def find_profile( sensor, key, fmt, w, h, fps=FPS ):
 
 
 def need_profile( sensor, key, fmt, w, h, fps=FPS ):
+    """The profile, or skip: for profiles that may legitimately be missing on this FW/driver."""
     p = find_profile( sensor, key, fmt, w, h, fps )
     if p is None:
         pytest.skip( f"Device publishes no {key[0]} {key[1]} {w}x{h}@{fps} {fmt}" )
+    return p
+
+
+def require_profile( sensor, key, fmt, w, h, fps=FPS ):
+    """The profile, or fail: once the raw path is confirmed, a missing profile is a regression."""
+    p = find_profile( sensor, key, fmt, w, h, fps )
+    assert p is not None, f"Device publishes no {key[0]} {key[1]} {w}x{h}@{fps} {fmt}"
     return p
 
 
@@ -72,7 +80,12 @@ def stream( sensor, profiles, duration=DURATION_S ):
         try:
             time.sleep( duration )
         finally:
-            sensor.stop()   # always stop: a GMSL stream left open can wedge the camera until a power cycle
+            # Always stop: a GMSL stream left open can wedge the camera until a power cycle. Log a stop
+            # error instead of raising it, so it can't replace a test failure already propagating.
+            try:
+                sensor.stop()
+            except RuntimeError as e:
+                log.error( "sensor.stop() failed: %s", e )
     finally:
         sensor.close()
     return numbers, sizes

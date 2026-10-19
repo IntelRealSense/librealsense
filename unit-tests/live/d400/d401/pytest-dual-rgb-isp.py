@@ -28,8 +28,9 @@ def depth_sensor( test_device ):
 
 def test_default_config_resolves( test_device ):
     """enable_all_streams() (what rs-capture uses) resolves and streams without Color 1. This used to
-    fail: both colors were default-tagged, and Color 1 shares its hardware endpoint with IR 2."""
+    fail: both colors were default-tagged, and Color 1 cannot stream together with IR."""
     dev, ctx = test_device
+    helper.skip_without_color1( dev )   # without Color 1 the assertion below would pass trivially
     pipe = rs.pipeline( ctx )
     cfg = rs.config()
     cfg.enable_device( dev.get_info( rs.camera_info.serial_number ) )
@@ -46,8 +47,9 @@ def test_default_config_resolves( test_device ):
 
 
 def test_isp_color_with_depth_and_infrared( depth_sensor ):
-    """A lone Color 0 RGB8 stays on the ISP path, so it streams alongside depth and both IRs (raw
-    dual-RGB would take the IR imager)."""
+    """A lone Color 0 RGB8 stays on the ISP path, so it streams alongside depth and both IRs. Checked
+    indirectly: on the raw path the open is refused or IR delivers no frames, so full-rate IR next to
+    Color 0 means the ISP path was used."""
     profiles = [helper.need_profile( depth_sensor, DEPTH, rs.format.z16, W, H ),
                 helper.need_profile( depth_sensor, IR1, rs.format.y8, W, H ),
                 helper.need_profile( depth_sensor, IR2, rs.format.y8, W, H ),

@@ -33,7 +33,7 @@ def depth_sensor( test_device ):
 
 
 def color( sensor, key, w=W, h=H ):
-    return helper.need_profile( sensor, key, rs.format.rgb8, w, h )
+    return helper.require_profile( sensor, key, rs.format.rgb8, w, h )
 
 
 def test_color1_profiles_also_on_color0( depth_sensor ):
@@ -71,17 +71,18 @@ def test_both_colors_stream( depth_sensor ):
 def test_depth_with_color1( depth_sensor, w, h ):
     """Depth + Color 1 (one raw color stream) delivers both. This used to crash: the packed RAW10 copy
     was skipped unless two color streams were open, and the copy read past the frame."""
-    depth = helper.need_profile( depth_sensor, DEPTH, rs.format.z16, w, h )
+    depth = helper.require_profile( depth_sensor, DEPTH, rs.format.z16, w, h )
     numbers, _ = helper.stream( depth_sensor, [depth, color( depth_sensor, COLOR1, w, h )] )
     helper.check_rate( numbers, DEPTH )
     helper.check_rate( numbers, COLOR1 )
 
 
 def test_color1_and_ir2_rejected( depth_sensor ):
-    """Color 1 and IR 2 come off the same imager pin, so opening them together must be refused."""
-    ir2 = helper.need_profile( depth_sensor, IR2, rs.format.y8, W, H )
+    """Color 1 puts both imagers in raw Bayer mode, so IR can't stream with it and opening them
+    together must be refused rather than leave IR silent."""
+    ir2 = helper.require_profile( depth_sensor, IR2, rs.format.y8, W, H )
     try:
-        with pytest.raises( RuntimeError, match="same hardware endpoint" ):
+        with pytest.raises( RuntimeError, match="cannot stream together" ):
             depth_sensor.open( [color( depth_sensor, COLOR1 ), ir2] )
     finally:
         try:
