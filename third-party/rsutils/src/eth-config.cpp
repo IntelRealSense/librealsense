@@ -8,6 +8,8 @@
 #include <rsutils/string/hexdump.h>
 #include <rsutils/string/from.h>
 
+#include <algorithm>
+
 
 
 namespace rsutils {
@@ -65,6 +67,8 @@ eth_config::eth_config( eth_config_v3 const & v3 )
     , dhcp{ v3.dhcp_on != 0, v3.dhcp_timeout }
     , transmission_delay( 0 )
     , udp_ttl( 0 )
+    , _raw_config( reinterpret_cast< uint8_t const * >( &v3 ),
+                   reinterpret_cast< uint8_t const * >( &v3 ) + sizeof( v3 ) )
 {
     if( header.version != 3 )
         throw std::runtime_error( rsutils::string::from() << "eth-config expecting version 3. Got " << header.version );
@@ -81,6 +85,8 @@ eth_config::eth_config( eth_config_v4 const & v4 )
     , dhcp{ v4.dhcp_on != 0, v4.dhcp_timeout }
     , transmission_delay( v4.transmission_delay )
     , udp_ttl( 0 )
+    , _raw_config( reinterpret_cast< uint8_t const * >( &v4 ),
+                   reinterpret_cast< uint8_t const * >( &v4 ) + sizeof( v4 ) )
 {
     if( header.version != 4 )
         throw std::runtime_error( rsutils::string::from() << "eth-config expecting version 4. Got " << header.version );
@@ -97,6 +103,8 @@ eth_config::eth_config( eth_config_v5 const & v5 )
     , dhcp{ v5.dhcp_on != 0, v5.dhcp_timeout }
     , transmission_delay( v5.transmission_delay )
     , udp_ttl( v5.udp_ttl )
+    , _raw_config( reinterpret_cast< uint8_t const * >( &v5 ),
+                   reinterpret_cast< uint8_t const * >( &v5 ) + sizeof( v5 ) )
 {
     if( header.version != 5 )
         throw std::runtime_error( rsutils::string::from() << "eth-config expecting version 5. Got " << header.version );
@@ -123,27 +131,27 @@ eth_config::eth_config( std::vector< uint8_t > const & hwm_response )
     switch( header->version )
     {
     case 3: {
-        if( header->size != sizeof( eth_config_v3 ) - sizeof( *header ) )
+        if( header->size < sizeof( eth_config_v3 ) - sizeof( *header ) )
             throw std::runtime_error( rsutils::string::from()
-                                      << "Invalid Eth config table v3 size (" << header->size << "); expecting "
+                                      << "Invalid Eth config table v3 size (" << header->size << "); expecting at least "
                                       << sizeof( eth_config_v3 ) << "-" << sizeof( *header ) );
         auto config = reinterpret_cast< eth_config_v3 const * >( hwm_response.data() );
         *this = *config;
         break;
     }
     case 4: {
-        if( header->size != sizeof( eth_config_v4 ) - sizeof( *header ) )
+        if( header->size < sizeof( eth_config_v4 ) - sizeof( *header ) )
             throw std::runtime_error( rsutils::string::from()
-                                      << "Invalid Eth config table v4 size (" << header->size << "); expecting "
+                                      << "Invalid Eth config table v4 size (" << header->size << "); expecting at least "
                                       << sizeof( eth_config_v4 ) << "-" << sizeof( *header ) );
         auto config = reinterpret_cast< eth_config_v4 const * >( hwm_response.data() );
         *this = *config;
         break;
     }
     case 5: {
-        if( header->size != sizeof( eth_config_v5 ) - sizeof( *header ) )
+        if( header->size < sizeof( eth_config_v5 ) - sizeof( *header ) )
             throw std::runtime_error( rsutils::string::from()
-                                      << "Invalid Eth config table v5 size (" << header->size << "); expecting "
+                                      << "Invalid Eth config table v5 size (" << header->size << "); expecting at least "
                                       << sizeof( eth_config_v5 ) << "-" << sizeof( *header ) );
         auto config = reinterpret_cast< eth_config_v5 const * >( hwm_response.data() );
         *this = *config;
@@ -153,6 +161,10 @@ eth_config::eth_config( std::vector< uint8_t > const & hwm_response )
         throw std::runtime_error( rsutils::string::from()
                                   << "Unrecognized Eth config table version " << header->version );
     }
+
+    // A known version may grow by appending reserved bytes. Preserve the entire
+    // validated response, including any tail beyond the structure we recognize.
+    _raw_config = hwm_response;
 }
 
 
@@ -183,8 +195,12 @@ std::vector< uint8_t > eth_config::build_command() const
 {
     validate();
 
-    std::vector< uint8_t > data;
-    data.resize( sizeof( eth_config_v5 ) );
+    auto const table_size = _raw_config.empty()
+        ? ( header.version == 3 ? sizeof( eth_config_v3 ) : sizeof( eth_config_v5 ) )
+        : _raw_config.size();
+    auto data = _raw_config;
+    // Use the shared layout for known fields, then send the original table length.
+    data.resize( std::max( table_size, sizeof( eth_config_v5 ) ) );
     eth_config_v5 & cfg = *reinterpret_cast< eth_config_v5 * >( data.data() );
     configured.ip.get_components( cfg.config_ip );
     configured.netmask.get_components( cfg.config_netmask );
@@ -195,20 +211,17 @@ std::vector< uint8_t > eth_config::build_command() const
     cfg.link_check_timeout = link.timeout;
     cfg.link_priority = (uint8_t)link.priority;
     cfg.mtu = link.mtu;
-    cfg.transmission_delay = transmission_delay;
-    cfg.udp_ttl = udp_ttl;
-
-    if( header.version < 5 )
-    {
-        cfg.udp_ttl = 0;  // Not supported in FW, keep default DDS layer value.
-    }
+    if( header.version >= 4 )
+        cfg.transmission_delay = transmission_delay;
+    if( header.version >= 5 )
+        cfg.udp_ttl = udp_ttl;
 
     if( header.version == 3 )
     {
         cfg.mtu = 9000;  // R/O, but must be set to this value
-        cfg.transmission_delay = 0; // Was reserved on v3, keep 0
-        data.resize( sizeof( eth_config_v3 ) ); // Trim greater version reserved bytes
     }
+
+    data.resize( table_size );
 
     eth_config_header & cfg_header = *reinterpret_cast< eth_config_header * >( data.data() ); // Getting reference to header again after possible resize
     cfg_header.version = header.version;

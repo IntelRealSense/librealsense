@@ -5,6 +5,7 @@
 #include "eth-config-header.h"
 
 #include <rsutils/type/ip-address.h>
+#include <vector>
 
 namespace rsutils {
 namespace type {
@@ -79,6 +80,10 @@ struct eth_config
 
     std::vector< uint8_t > build_command() const;
     void validate() const; // Check field integrity, throws if not valid
+
+private:
+    // Keep fields unknown to this SDK intact when updating the configuration.
+    std::vector< uint8_t > _raw_config;
 };
 
 }  // namespace type
