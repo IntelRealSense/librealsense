@@ -7,9 +7,9 @@ It walks through the sensor configuration phase and visualizes the algorithm inp
 
 \* For in-depth review of the subject please read the accompanying [white paper](https://dev.realsenseai.com/docs/high-dynamic-range-with-stereoscopic-depth-cameras).
 
-### Color stream on D405 / D401
-On D405 and D401 the color image comes from the same imagers that produce depth. HDR alternates exposure and gain from frame to frame on those imagers, so when HDR is enabled the color stream alternates in brightness and appears to flicker. \
-This is expected behavior, not a defect. On these devices, use HDR for depth-only use cases, or disable HDR when a stable color image is needed.
+### Color stream on cameras with shared imagers
+On cameras where the color image comes from the same imagers that produce depth, like the D40X series, HDR alternates exposure and gain from frame to frame on those imagers, so when HDR is enabled the color stream alternates in brightness and appears to flicker. \
+This is expected behavior, not a defect. On these cameras, use HDR for depth-only use cases, or disable HDR when a stable color image is needed.
 
 
 
