@@ -160,7 +160,7 @@ namespace librealsense
 
     }
 
-    d400_motion::d400_motion( std::shared_ptr< const d400_info > const & dev_info )
+    d400_motion::d400_motion( std::shared_ptr< const d400_info > const & dev_info, bool supports_gyro_sensitivity )
         : device(dev_info), 
         d400_device(dev_info),
         d400_motion_base(dev_info)
@@ -189,6 +189,8 @@ namespace librealsense
 
                 // HID metadata attributes
                 hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&hid_header::timestamp));
+                if( supports_gyro_sensitivity )
+                    register_gyro_sensitivity();
             }
             //for FW >=5.16 the scale factor changes to 1000.0 since FW sends 32bit
             if (_fw_version >= firmware_version( 5, 16, 0, 0))

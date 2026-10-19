@@ -860,14 +860,11 @@ namespace librealsense
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
-            , d400_motion( dev_info )
+            , d400_motion( dev_info, true )
             , ds_advanced_mode_base()
             , firmware_logger_device( dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
             ds_advanced_mode_base::initialize_advanced_mode( this );
-#if !defined(__APPLE__) // Motion sensors not supported on macOS
-            register_gyro_sensitivity();
-#endif
         }
 
 
@@ -909,12 +906,11 @@ namespace librealsense
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
-            , d400_motion( dev_info )
+            , d400_motion( dev_info, true )
             , ds_advanced_mode_base()
             , firmware_logger_device( dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command())
         {
             ds_advanced_mode_base::initialize_advanced_mode( this );
-            register_gyro_sensitivity();
         }
 
 
@@ -1070,15 +1066,12 @@ namespace librealsense
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
-            , d400_motion( dev_info )
+            , d400_motion( dev_info, true )
             , ds_advanced_mode_base()
             , firmware_logger_device( dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
             , ds_thermal_tracking( d400_device::_thermal_monitor )
         {
             ds_advanced_mode_base::initialize_advanced_mode( this );
-#if !defined(__APPLE__) // Motion sensors not supported on macOS
-            register_gyro_sensitivity();
-#endif
         }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
