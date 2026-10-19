@@ -1694,8 +1694,12 @@ namespace rs2
         // this stays a no-op on EVERY other camera -- standard D4xx (color on a separate sensor /
         // single color) never reach the color>=2 check anyway, but the D500 dual-RGB (separate color
         // sensors, 2 colors + stereo on one sensor) would, and it has no such imager conflict.
-        if (!dev.supports(RS2_CAMERA_INFO_PRODUCT_ID)
-            || std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)) != "ABCC")   // RS401_GMSL_PID
+        // Over USB the D401 enumerates as a D405 (0B5B) and follows the same single-mode rules; a plain
+        // D405 has no Color 1, so the check below keeps it out.
+        if (!dev.supports(RS2_CAMERA_INFO_PRODUCT_ID))
+            return false;
+        const std::string pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        if (pid != "ABCC" && pid != "0B5B")   // RS401_GMSL_PID, RS405_PID
             return false;
 
         // Treat this as a dual-RGB subdevice only when it actually exposes a second color stream

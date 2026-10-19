@@ -67,7 +67,8 @@ namespace librealsense
         {fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
         {fourcc('B','Y','R','2'), RS2_FORMAT_RAW16},
         {fourcc('B','A','8','1'), RS2_FORMAT_RAW8},   // D401 GMSL dual-RGB: SBGGR8 (older MIPI driver)
-        {fourcc('p','B','A','A'), RS2_FORMAT_RAW10}   // D401 GMSL dual-RGB: SBGGR10P (MIPI driver 1.0.6.10+)
+        {fourcc('p','B','A','A'), RS2_FORMAT_RAW10},  // D401 GMSL dual-RGB: SBGGR10P (MIPI driver 1.0.6.10+)
+        {fourcc('p','R','A','A'), RS2_FORMAT_RAW10}   // D401/D405 USB dual-RGB: RW10 GUID, same packed BGGR data
     };
     std::map<fourcc::value_type, rs2_stream> d400_depth_fourcc_to_rs2_stream = {
         {fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
@@ -84,30 +85,44 @@ namespace librealsense
         {fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
         {fourcc('M','J','P','G'), RS2_STREAM_COLOR},
         {fourcc('B','A','8','1'), RS2_STREAM_COLOR},   // D401 GMSL dual-RGB: SBGGR8 (older MIPI driver)
-        {fourcc('p','B','A','A'), RS2_STREAM_COLOR}    // D401 GMSL dual-RGB: SBGGR10P (MIPI driver 1.0.6.10+)
+        {fourcc('p','B','A','A'), RS2_STREAM_COLOR},   // D401 GMSL dual-RGB: SBGGR10P (MIPI driver 1.0.6.10+)
+        {fourcc('p','R','A','A'), RS2_STREAM_COLOR}    // D401/D405 USB dual-RGB: RW10 GUID, same packed BGGR data
     };
 
-    // D401 GMSL dual-RGB stream-id resolver: the two imagers arrive on separate backend pins with the same
-    // raw Bayer fourcc (SBGGR8/BA81 on older drivers, SBGGR10P/pBAA on 1.0.6.10+). Rank those pins by
-    // ascending pin_index -> Color 0 / Color 1 (cf. d500_dual_rgb::resolve_color_stream).
+    // D401 dual-RGB stream-id resolver: the two imagers arrive on separate backend pins with the same
+    // raw Bayer fourcc (GMSL: SBGGR8/BA81 on older drivers, SBGGR10P/pBAA on 1.0.6.10+; USB: pRAA).
+    // The FW sends the left imager on the IR node and the right one on the color node, while pin order
+    // differs per transport, so rank by node role: the raw pin that also carries IR is Color 0 (left).
     static void resolve_d401_color_stream( const std::vector< platform::stream_profile > & all,
                                            const platform::stream_profile & p, rs2_stream & type, int & index )
     {
         const auto ba81 = fourcc( 'B', 'A', '8', '1' );   // SBGGR8  (older MIPI driver)
         const auto pbaa = fourcc( 'p', 'B', 'A', 'A' );   // SBGGR10P (MIPI driver 1.0.6.10+)
-        auto is_raw_color = [&]( uint32_t f ) { return f == ba81 || f == pbaa; };
+        const auto praa = fourcc( 'p', 'R', 'A', 'A' );   // USB RW10: uvcvideo names it RGGB, the data is BGGR
+        auto is_raw_color = [&]( uint32_t f ) { return f == ba81 || f == pbaa || f == praa; };
         if( ! is_raw_color( p.format ) )
             return;  // not a D401 color pin - leave type/index as resolved by the fourcc map
 
-        std::set< uint32_t > color_pins;
+        auto is_ir = []( uint32_t f )
+        {
+            return f == fourcc( 'G', 'R', 'E', 'Y' ) || f == fourcc( 'Y', '8', 'I', ' ' )
+                || f == fourcc( 'Y', '1', '2', 'I' );
+        };
+        std::set< uint32_t > ir_pins;
+        for( auto & q : all )
+            if( is_ir( q.format ) )
+                ir_pins.insert( q.pin_index );
+
+        // Order by (not an IR pin, pin_index): the IR-node raw pin first, pin_index breaks ties
+        std::set< std::pair< bool, uint32_t > > color_pins;
         for( auto & q : all )
             if( is_raw_color( q.format ) )
-                color_pins.insert( q.pin_index );
+                color_pins.emplace( ! ir_pins.count( q.pin_index ), q.pin_index );
 
         int rank = 0;
-        for( auto cp : color_pins )
+        for( auto & cp : color_pins )
         {
-            if( cp == p.pin_index )
+            if( cp.second == p.pin_index )
                 break;
             ++rank;
         }
@@ -205,7 +220,7 @@ namespace librealsense
         auto res = get_ds_depth_recommended_proccesing_blocks();
         // D401 GMSL dual-RGB: rectify the two color streams (default-on, toggleable in the viewer's
         // Post-Processing). The filter self-configures from the color profiles' SDK calibration.
-        if( _owner->_pid == ds::RS401_GMSL_PID )
+        if( _owner->_pid == ds::RS401_GMSL_PID || _owner->_dual_rgb )
             res.push_back( std::make_shared< dual_rgb_rectify_filter >() );
         return res;
     }
@@ -262,7 +277,9 @@ namespace librealsense
 
     rs2_intrinsics d400_depth_sensor::get_color_intrinsics( const stream_profile & profile ) const
     {
-        if( _owner->_pid == ds::RS401_GMSL_PID )
+        // _dual_rgb: D401/D405 over USB with the raw dual-RGB FW use the same crop + scale model; without
+        // it a D405 keeps the plain per-resolution intrinsics below.
+        if( _owner->_pid == ds::RS401_GMSL_PID || _owner->_dual_rgb )
         {
             // D401 dual-RGB: every output resolution is produced by demosaicing the native 1288x808
             // image, center-cropping to the output aspect ratio, then bilinear-scaling (see
@@ -338,7 +355,10 @@ namespace librealsense
             {
                 // D401 GMSL dual-RGB: color index 0 = left imager, index 1 = right (distinct streams).
                 if (p->get_stream_index() == 1 && _owner->_color_stream2)
+                {
                     assign_stream(_owner->_color_stream2, p);
+                    _owner->_dual_rgb = true;
+                }
                 else
                     assign_stream(_owner->_color_stream, p);
             }
@@ -760,6 +780,14 @@ namespace librealsense
                     { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
                     []() {return std::make_shared<y12i_to_y16y16>(); }
                 );
+
+                // D401/D405 USB dual-RGB: same routing as GMSL below. No FW gate needed: the raw RW10 pins
+                // exist only when the FW's USB descriptor advertises them, and the resolver ignores others.
+                if( _pid == RS405_PID )
+                {
+                    raw_depth_sensor->set_stream_id_resolver( resolve_d401_color_stream );
+                    raw_depth_sensor->enable_software_color_frame_numbers();
+                }
             }
             else
             {
