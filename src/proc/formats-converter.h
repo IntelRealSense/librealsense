@@ -8,6 +8,7 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
+#include <map>
 #include <memory>
 #include <mutex>
 
@@ -75,6 +76,10 @@ namespace librealsense
 
         std::unordered_map< std::shared_ptr< stream_profile_interface >,
                             std::unordered_set< std::shared_ptr< processing_block > > > _raw_profile_to_converters;
+        // Same converters, split by target stream index, for raw profiles whose streams have a frame stream resolver
+        std::unordered_map< std::shared_ptr< stream_profile_interface >,
+                            std::map< int, std::unordered_set< std::shared_ptr< processing_block > > > >
+            _raw_profile_to_indexed_converters;
         std::unordered_map< rs2_format, stream_profiles > _format_mapping_to_from_profiles;
 
         // Swapped from the record sensor's start/stop while converter threads may be using it; copy it under the
