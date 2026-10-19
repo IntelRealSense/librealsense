@@ -185,6 +185,7 @@ namespace rs2
         yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>()),
         m420_to_rgb(std::make_shared<rs2::gl::m420_decoder>()),
         nv12_to_rgb(std::make_shared<rs2::gl::nv12_decoder>()),
+        mjpeg_to_rgb(std::make_shared<rs2::mjpeg_decoder>()),
         y411(std::make_shared<rs2::gl::y411_decoder>()),
         viewer(viewer),
         detected_objects(device_detected_objects),

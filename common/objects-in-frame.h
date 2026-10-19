@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <chrono>
 #include <imgui.h>
 
 enum class object_type
@@ -50,5 +51,5 @@ struct atomic_objects_in_frame : public objects_in_frame
 {
     std::mutex mutex;
     bool sensor_is_on = true;
-    int ticks_without_od_frame = 0;  // render ticks since last OD frame; cleared on every OD frame arrival
+    std::chrono::steady_clock::time_point last_od_frame_time{};
 };

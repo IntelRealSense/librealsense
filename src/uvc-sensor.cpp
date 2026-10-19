@@ -285,7 +285,10 @@ void uvc_sensor::open( const stream_profiles & requests )
                     // Compressed and perception streams carry variable-length payloads; copy the data as received.
                     if( val_in_range( req_profile_base->get_format(), { RS2_FORMAT_MJPEG } )
                         || is_perception || is_depth_mapping )
+                    {
                         expected_size = f.frame_size;
+                        fr->additional_data.raw_size = static_cast< uint32_t >( f.frame_size );
+                    }
 
                     // D401 GMSL raw color (pBAA) is packed MIPI RAW10 but sized at 16 bpp
                     // (unpacked) here; copy the packed payload verbatim, the rggb converter
