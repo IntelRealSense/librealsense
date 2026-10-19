@@ -220,7 +220,7 @@ namespace librealsense
         auto res = get_ds_depth_recommended_proccesing_blocks();
         // D401 GMSL dual-RGB: rectify the two color streams (default-on, toggleable in the viewer's
         // Post-Processing). The filter self-configures from the color profiles' SDK calibration.
-        if( _owner->_pid == ds::RS401_GMSL_PID || _owner->_dual_rgb )
+        if( _owner->_pid == ds::RS401_GMSL_PID || _owner->_has_color1 )
             res.push_back( std::make_shared< dual_rgb_rectify_filter >() );
         return res;
     }
@@ -255,7 +255,7 @@ namespace librealsense
     void d400_depth_sensor::open( const stream_profiles & requests )
     {
         // D401 dual-RGB: Color 1 puts both imagers in raw Bayer mode, so IR would open but never stream
-        if( _owner->_pid == ds::RS401_GMSL_PID || _owner->_dual_rgb )
+        if( _owner->_pid == ds::RS401_GMSL_PID || _owner->_has_color1 )
         {
             auto has = [&]( rs2_stream type, int index ) {
                 return std::any_of( requests.begin(), requests.end(), [&]( std::shared_ptr< stream_profile_interface > const & p ) {
@@ -290,9 +290,9 @@ namespace librealsense
 
     rs2_intrinsics d400_depth_sensor::get_color_intrinsics( const stream_profile & profile ) const
     {
-        // _dual_rgb: D401/D405 over USB with the raw dual-RGB FW use the same crop + scale model; without
+        // _has_color1: D401/D405 over USB with the raw dual-RGB FW use the same crop + scale model; without
         // it a D405 keeps the plain per-resolution intrinsics below.
-        if( _owner->_pid == ds::RS401_GMSL_PID || _owner->_dual_rgb )
+        if( _owner->_pid == ds::RS401_GMSL_PID || _owner->_has_color1 )
         {
             // D401 dual-RGB: every output resolution is produced by demosaicing the native 1288x808
             // image, center-cropping to the output aspect ratio, then bilinear-scaling (see
@@ -349,6 +349,8 @@ namespace librealsense
 
         auto&& results = synthetic_sensor::init_stream_profiles();
 
+        // Derived from the profiles built now, so a rebuild without Color 1 clears it
+        bool has_color1 = false;
         for (auto&& p : results)
         {
             // Register stream types
@@ -370,7 +372,7 @@ namespace librealsense
                 if (p->get_stream_index() == 1 && _owner->_color_stream2)
                 {
                     assign_stream(_owner->_color_stream2, p);
-                    _owner->_dual_rgb = true;
+                    has_color1 = true;
                 }
                 else
                     assign_stream(_owner->_color_stream, p);
@@ -408,6 +410,7 @@ namespace librealsense
                 });
             }
         }
+        _owner->_has_color1 = has_color1;
 
         return results;
     }

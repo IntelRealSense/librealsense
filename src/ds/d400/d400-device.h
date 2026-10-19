@@ -149,7 +149,7 @@ namespace librealsense
         std::shared_ptr<stream_interface> _right_ir_stream;
         std::shared_ptr<stream_interface> _color_stream;
         std::shared_ptr<stream_interface> _color_stream2;   // D401 GMSL dual-RGB: 2nd color (right imager)
-        mutable bool _dual_rgb = false;   // a raw dual-RGB Color 1 profile is published; set when profiles are built
+        mutable bool _has_color1 = false;   // a raw dual-RGB Color 1 profile is published; set when profiles are built
 
         uint8_t _depth_device_idx;
 
