@@ -254,6 +254,19 @@ namespace librealsense
 
     void d400_depth_sensor::open( const stream_profiles & requests )
     {
+        // D401 dual-RGB: Color 1 puts both imagers in raw Bayer mode, so IR would open but never stream
+        if( _owner->_pid == ds::RS401_GMSL_PID || _owner->_dual_rgb )
+        {
+            auto has = [&]( rs2_stream type, int index ) {
+                return std::any_of( requests.begin(), requests.end(), [&]( std::shared_ptr< stream_profile_interface > const & p ) {
+                    return p->get_stream_type() == type && ( index < 0 || p->get_stream_index() == index );
+                } );
+            };
+            if( has( RS2_STREAM_COLOR, 1 ) && has( RS2_STREAM_INFRARED, -1 ) )
+                throw invalid_value_exception( "Color 1 and Infrared cannot stream together: "
+                                               "in raw dual-RGB mode both imagers output Bayer" );
+        }
+
         group_multiple_fw_calls(*this, [&]() {
             _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
             set_frame_metadata_modifier([&](frame_additional_data& data) {data.depth_units = _depth_units.load(); });
