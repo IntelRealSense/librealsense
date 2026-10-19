@@ -143,9 +143,7 @@ namespace librealsense
                 md = ad.metadata_blob.data() + platform::uvc_header_size;
                 md_size = ad.metadata_size - platform::uvc_header_size;
             }
-            else if( ! _warned_no_metadata
-                     && ! resolve_pcl_layout( reinterpret_cast< const uint8_t * >( lf->get_frame_data() ),
-                                              lf->get_frame_data_size() ).map1 )  // MAP1 has no UVC metadata
+            else if( ! _warned_no_metadata )
             {
                 _warned_no_metadata = true;
                 LOG_WARNING( "Point cloud frames carry no UVC metadata: only the payload size is validated" );
@@ -178,19 +176,6 @@ namespace librealsense
             {
                 _warned_unknown_layout = true;
                 LOG_WARNING( "Point cloud metadata has an unknown layout: only the payload size is validated" );
-            }
-
-            // MAP1 compatibility (older FW only; remove once all FW sends the pure payload): take the frame
-            // number from the sub-header, then drop the headers so the frame is the bare W x H XYZ32F array
-            const auto layout = resolve_pcl_layout( reinterpret_cast< const uint8_t * >( lf->get_frame_data() ),
-                                                    lf->get_frame_data_size() );
-            if( layout.map1 && lf->data.size() >= layout.vertex_offset )
-            {
-                uint32_t source_frame_id = 0;
-                if( map1_pcl_source_frame_id( lf->data.data(), lf->data.size(), source_frame_id ) )
-                    lf->additional_data.frame_number = source_frame_id;
-                lf->data.erase( lf->data.begin(), lf->data.begin() + layout.vertex_offset );
-                lf->set_data_size( lf->data.size() );
             }
 
             fi->set_stream( _target );

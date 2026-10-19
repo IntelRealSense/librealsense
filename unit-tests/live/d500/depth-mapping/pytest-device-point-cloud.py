@@ -63,7 +63,7 @@ def test_pcl_frames( pcl ):
     for f in frames:
         pts = f.as_points()
         check.equal( f.get_profile().stream_type(), rs.stream.point_cloud )
-        # every delivered frame is the bare W x H XYZ32F array (invalid frames are dropped, MAP1 headers stripped)
+        # every delivered frame is the bare W x H XYZ32F array (invalid frames are dropped)
         check.equal( pts.size(), vsp.width() * vsp.height() )
         check.equal( f.get_data_size(), vsp.width() * vsp.height() * 12 )
         check.is_none( pts.get_texture_coordinates() )
