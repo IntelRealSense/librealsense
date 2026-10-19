@@ -3,11 +3,13 @@
 
 import logging
 import threading
+import time
 
 import pytest
 import pyrealsense2 as rs
 import pyrsutils as rsutils
 from rspy.stopwatch import Stopwatch
+from rspy.pytest.device_helpers import require_min_fw_version
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +23,11 @@ pytestmark = [
 
 STREAMING_DURATION_SECONDS = 10  # Duration to stream and monitor for FW errors
 ERROR_TOLERANCE = 0  # No firmware errors should be tolerated
+
+OPCODE_TRIGGER_ERROR = 0x4D  # HWM opcode that injects a firmware error
+ERROR_ID_REC_ERROR = 25      # one-time error class: latched once, never re-raised
+NOTIFICATION_TIMEOUT_S = 5   # the handler polls every 1 s
+SETTLE_AFTER_FIRST_S = 3     # an uncleared error would be re-reported on each poll
 
 def get_known_errors_for_firmware(current_fw_version):
     """Get list of known errors based on firmware version"""
@@ -230,3 +237,36 @@ def test_firmware_error_monitoring(test_device):
     assert total_errors == ERROR_TOLERANCE
 
     log.info("Firmware error monitoring test completed successfully")
+
+
+@pytest.mark.device_type("GMSL")
+@pytest.mark.device_exclude("D500*")
+def test_injected_error_reported_once(test_device):
+    device, _ = test_device
+    require_min_fw_version(device, rsutils.version(5, 17, 6, 0), "GMSL FW error polling")
+    if device.get_info(rs.camera_info.camera_locked) == "YES":
+        pytest.skip("FW rejects error injection on locked cameras")
+
+    depth_sensor = device.first_depth_sensor()
+    assert depth_sensor.supports(rs.option.error_polling_enabled),         "error polling not supported - is the d4xx driver older than 1.0.7.6?"
+
+    notifications = []
+    received = threading.Event()
+
+    def on_notification(n):
+        log.debug("notification: %s (%s)", n.get_description(), n.get_category())
+        notifications.append(n.get_description())
+        received.set()
+
+    depth_sensor.set_notifications_callback(on_notification)
+    assert depth_sensor.get_option(rs.option.error_polling_enabled) == 1
+
+    proto = rs.debug_protocol(device)
+    reply = list(proto.send_and_receive_raw_data(proto.build_command(OPCODE_TRIGGER_ERROR, ERROR_ID_REC_ERROR)))
+    assert reply[:4] == [OPCODE_TRIGGER_ERROR, 0, 0, 0], f"HWM error injection rejected: {reply[:8]}"
+
+    assert received.wait(NOTIFICATION_TIMEOUT_S),         f"no FW error notification within {NOTIFICATION_TIMEOUT_S} [sec] of injecting error {ERROR_ID_REC_ERROR}"
+    time.sleep(SETTLE_AFTER_FIRST_S)
+
+    log.info("notifications: %s", notifications)
+    assert notifications == ["REC error"]
