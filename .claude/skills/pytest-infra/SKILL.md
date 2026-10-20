@@ -35,7 +35,7 @@ All Python tests run under pytest. `run-unit-tests.py` is kept only for C++ test
    | Run once per matching device | `pytest.mark.device_each("D400*")` |
    | Several devices at once (with `test_devices`) | `pytest.mark.device("D400*", "D500*")` |
    | Exclude SKUs | `pytest.mark.device_exclude("D401")` |
-   | Only / never on a connection type | `pytest.mark.device_type("GMSL")` / `device_type_exclude("DDS")` |
+   | Only / never on a connection type | `pytest.mark.device_type("GMSL")` / `pytest.mark.device_type_exclude("DDS")` |
    | Nightly / weekly only | `pytest.mark.context("nightly")` |
    | Needs a DDS build | `pytest.mark.dds` |
    | Run earlier / later (default 500) | `pytest.mark.priority(100)` |
