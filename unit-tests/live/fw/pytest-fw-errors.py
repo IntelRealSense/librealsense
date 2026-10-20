@@ -9,7 +9,6 @@ import pytest
 import pyrealsense2 as rs
 import pyrsutils as rsutils
 from rspy.stopwatch import Stopwatch
-from rspy.pytest.device_helpers import require_min_fw_version
 
 log = logging.getLogger(__name__)
 
@@ -242,13 +241,13 @@ def test_firmware_error_monitoring(test_device):
 @pytest.mark.device_exclude("D500*")  # 0x4D is a D400 FW command
 def test_injected_error_reported_once(test_device):
     device, _ = test_device
-    if device.get_info(rs.camera_info.connection_type) == "GMSL":
-        require_min_fw_version(device, rsutils.version(5, 17, 6, 0), "GMSL FW error polling")
+    if not error_polling_expected(device):
+        pytest.skip("GMSL FW error polling needs FW 5.17.6 and d4xx driver 1.0.7.6")
     if device.get_info(rs.camera_info.camera_locked) == "YES":
         pytest.skip("FW rejects error injection on locked cameras")
 
     depth_sensor = device.first_depth_sensor()
-    assert depth_sensor.supports(rs.option.error_polling_enabled),         "error polling not supported - is the d4xx driver older than 1.0.7.6?"
+    assert depth_sensor.supports(rs.option.error_polling_enabled)
 
     notifications = []
     received = threading.Event()
