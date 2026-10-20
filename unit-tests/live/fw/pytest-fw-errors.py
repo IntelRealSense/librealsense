@@ -45,6 +45,8 @@ def error_polling_expected(device):
     if connection == "DDS":
         return False
     if connection == "GMSL" and device.get_info(rs.camera_info.product_line) == "D400":
+        if not device.supports(rs.camera_info.mipi_driver_version):
+            return False
         fw = rsutils.version(device.get_info(rs.camera_info.firmware_version))
         driver = rsutils.version(device.get_info(rs.camera_info.mipi_driver_version))
         return fw >= rsutils.version(5, 17, 6, 0) and driver >= rsutils.version(1, 0, 7, 6)
