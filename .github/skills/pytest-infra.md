@@ -257,6 +257,9 @@ pytestmark = [
     pytest.mark.device_each("D500*"),
 ]
 
+# Several patterns in one marker = one instance per device matching any of them (same as stacking)
+pytestmark = [pytest.mark.device_each("D555", "D585")]
+
 # Exclude specific devices
 pytestmark = [
     pytest.mark.device_each("D400*"),
@@ -266,7 +269,7 @@ pytestmark = [
 # Multi-device: need 2 unique D400 devices (use with test_devices fixture)
 pytestmark = [pytest.mark.device("D400*", "D400*")]
 
-# Multi-device: need one D400 and one D500
+# Multi-device: need one D400 and one D500 at once (unlike device_each("D400*", "D500*"), which runs on each separately)
 pytestmark = [pytest.mark.device("D400*", "D500*")]
 
 # Multi-device: need specific devices
