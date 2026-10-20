@@ -10,6 +10,7 @@
 # The test adapts to the device at runtime: it skips when the perception stream or a
 # given embedded filter is not present, rather than gating on firmware versions.
 
+import time
 import pytest
 import pyrealsense2 as rs
 import logging
@@ -155,3 +156,76 @@ def test_filter_enables_while_perception_opened_not_streaming(perception_sensor,
         perception_sensor.stop()
     finally:
         perception_sensor.close()
+
+
+# The DPP filters, as reported per depth frame in the embedded-filters metadata
+DPP_METADATA_BIT = {
+    rs.embedded_filter_type.decimation: 1 << 0,
+    rs.embedded_filter_type.temporal: 1 << 2,
+}
+STREAM_SECONDS = 4
+
+
+def video_profile(sensor, stream, width, height, fmt, fps=30):
+    return next( ( p for p in sensor.get_stream_profiles()
+                   if p.stream_type() == stream and p.format() == fmt and p.fps() == fps
+                   and p.as_video_stream_profile().width() == width and p.as_video_stream_profile().height() == height ),
+                 None )
+
+
+@pytest.mark.parametrize( "filter_type", list( DPP_METADATA_BIT ), ids=lambda t: t.name )
+def test_perception_streams_while_filter_processes_depth(test_device, depth_sensor, perception_sensor, perception_profile,
+                                                        embedded_filter, filter_type):
+    # Depth must actually stream for the filter to run on the camera. With decimation on, the FW accepts depth only at
+    # 640x360 next to 1280x720 color. Color must start before perception, which runs on it.
+    dev, _ = test_device
+    depth_w, depth_h = ( 640, 360 ) if filter_type == rs.embedded_filter_type.decimation else ( 1280, 720 )
+    depth_profile = video_profile( depth_sensor, rs.stream.depth, depth_w, depth_h, rs.format.z16 )
+    color_sensor = depth_sensor  # dual-RGB devices carry color on the stereo module
+    color_profile = video_profile( depth_sensor, rs.stream.color, 1280, 720, rs.format.rgb8 )
+    if color_profile is None:
+        color_sensor = next( ( s for s in dev.query_sensors() if s.is_color_sensor() ), None )
+        color_profile = color_sensor and video_profile( color_sensor, rs.stream.color, 1280, 720, rs.format.rgb8 )
+    if depth_profile is None or color_profile is None:
+        pytest.skip( "No depth/color profile pair at 30 fps for this filter" )
+
+    start = time.time()
+    od_times = []
+    depth_bits = []
+    md = rs.frame_metadata_value.embedded_filters
+
+    def on_frame( f ):
+        if f.get_profile().stream_type() == rs.stream.object_detection:
+            od_times.append( time.time() - start )
+        elif f.get_profile().stream_type() == rs.stream.depth and f.supports_frame_metadata( md ):
+            depth_bits.append( f.get_frame_metadata( md ) )
+
+    embedded_filter.set( 1.0 )
+    sensors = []
+    try:
+        if color_sensor is depth_sensor:
+            depth_sensor.open( [depth_profile, color_profile] )
+            sensors.append( depth_sensor )
+            depth_sensor.start( on_frame )
+        else:
+            for sensor, profile in ( ( depth_sensor, depth_profile ), ( color_sensor, color_profile ) ):
+                sensor.open( profile )
+                sensors.append( sensor )
+                sensor.start( on_frame )
+        time.sleep( 1 )
+        perception_sensor.open( perception_profile )
+        sensors.append( perception_sensor )
+        perception_sensor.start( on_frame )
+        time.sleep( STREAM_SECONDS )
+    finally:
+        for sensor in reversed( sensors ):
+            sensor.stop()
+            sensor.close()
+        time.sleep( 2 )  # D555 rejects filter changes ("Option value error") for a moment after its streams close
+
+    second_half = 1 + STREAM_SECONDS / 2
+    log.info( f"{filter_type.name}: {len( od_times )} perception frames, {len( depth_bits )} depth frames with metadata" )
+    assert any( t > second_half for t in od_times ), "perception frames stopped while the filter was running"
+    if depth_bits:
+        bit = DPP_METADATA_BIT[filter_type]
+        assert sum( 1 for b in depth_bits if b & bit ) > len( depth_bits ) // 2, "depth frames do not report the filter as applied"
