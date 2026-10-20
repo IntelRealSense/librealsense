@@ -228,6 +228,8 @@ def test_perception_streams_while_filter_processes_depth(test_device, depth_sens
     second_half = 1 + STREAM_SECONDS / 2
     log.info( f"{filter_type.name}: {len( od_times )} perception frames, {len( depth_bits )} depth frames with metadata" )
     assert any( t > second_half for t in od_times ), "perception frames stopped while the filter was running"
-    if depth_bits:
-        bit = DPP_METADATA_BIT[filter_type]
-        assert sum( 1 for b in depth_bits if b & bit ) > len( depth_bits ) // 2, "depth frames do not report the filter as applied"
+    if not depth_bits:
+        log.warning( "No embedded-filters metadata on depth frames; cannot check the filter was applied" )
+        return
+    bit = DPP_METADATA_BIT[filter_type]
+    assert sum( 1 for b in depth_bits if b & bit ) > len( depth_bits ) // 2, "depth frames do not report the filter as applied"
