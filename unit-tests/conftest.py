@@ -345,8 +345,8 @@ def pytest_configure(config):
         "markers", "dds: test requires a DDS-enabled build (selected by --tag dds / -m dds)"
     )
     config.addinivalue_line(
-        "markers", "infra: harness-level test with no device requirement that still runs under --live "
-                   "(and is skipped under --not-live)"
+        "markers", "infra: harness-level or LibCI-only test (e.g. needs recordings served from Artifactory) with "
+                   "no device requirement that still runs under --live (and is skipped under --not-live)"
     )
 
     # Configure standard logging with format matching legacy rspy.log output
@@ -388,6 +388,23 @@ def pytest_configure(config):
             devices.map_unknown_ports()
         except Exception as e:
             log.warning(f"Failed to query devices during configuration: {e}")
+        try:
+            _name_recovery_devices(config)
+        except Exception as e:
+            log.warning(f"Failed to name recovery devices from the device map: {e}")
+
+
+def _name_recovery_devices(config):
+    """Give D500 recovery devices their mapped SKU name so device specs and FW choices can match them."""
+    from rspy import device_map
+    # LibCI checks the inventory out into the workspace for its health check; use it when no
+    # --device-map is given and the LibCI home has no map of its own
+    candidates = [config.getoption("--device-map", default=None),
+                  device_map.default_map_path(),
+                  os.path.join("device-inventory-checkout", "jenkins", "device-inventory.yaml")]
+    map_file = next((p for p in candidates if p and os.path.isfile(p)), None)
+    if map_file:
+        device_map.name_recovery_devices(map_file)
 
 
 def pytest_generate_tests(metafunc):

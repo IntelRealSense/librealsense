@@ -29,6 +29,62 @@ namespace librealsense
     {
         namespace v4l_enum
         {
+        // True if the string looks like a kernel i2c client id — digits, one
+        // '-', then hex. Kernel uses snprintf("%d-%04x", adapter, addr).
+        static bool is_i2c_id_shape(const std::string& s)
+        {
+            auto sep = s.find('-');
+            if (sep == std::string::npos || sep == 0 || sep + 1 >= s.size())
+                return false;
+            auto is_digit = [](char c) { return c >= '0' && c <= '9'; };
+            auto is_hex   = [](char c) {
+                return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+            };
+            return std::all_of(s.begin(), s.begin() + sep, is_digit)
+                && std::all_of(s.begin() + sep + 1, s.end(), is_hex);
+        }
+
+        // Extract the i2c client id ("<adapter>-<addr>") from a DFU chardev name.
+        // The driver names its CONFIG_OF chardev "d4xx-dfu-<adapter>-<addr>";
+        // the rs-enum path uses the shorter "d4xx-dfu-<index>" form for which
+        // per-i2c resolution is not possible. Returns "" on any non-conforming
+        // name — callers fall back accordingly.
+        static std::string dfu_devname_to_i2c_id(const std::string& dfu_devname)
+        {
+            static const std::string prefix = "d4xx-dfu-";
+            if (dfu_devname.compare(0, prefix.size(), prefix) != 0)
+                return {};
+            std::string rest = dfu_devname.substr(prefix.size());
+            return is_i2c_id_shape(rest) ? rest : std::string{};
+        }
+
+        // Extract the owning i2c client id ("<adapter>-<addr>") from a V4L2 card string.
+        // On Jetson the video node is registered by the tegra VI host, so its sysfs parent
+        // is tegra-capture-vi and carries no link back to the d4xx i2c client. The card
+        // string is the d4xx subdev name and does carry it, as a trailing token:
+        // "vi-output, DS5 mux 9-001a". Every video node of one camera reports the same id
+        // (the camera base address), which is also what the DFU chardev is named after.
+        // Metadata nodes ("tegra-capture-vi-metadata-0") and non-Jetson cards have no such
+        // token and yield "" - callers fall back accordingly.
+        static std::string mipi_card_to_i2c_id(const std::string& card)
+        {
+            auto last = card.find_last_of(" \t");
+            std::string token = (last == std::string::npos) ? card : card.substr(last + 1);
+            return is_i2c_id_shape(token) ? token : std::string{};
+        }
+
+        // Compare two i2c client ids. The kernel formats them with "%04x", so both sides
+        // are lowercase in practice, but is_i2c_id_shape() accepts either case and a
+        // mismatch here is silent - it falls back to first-opened, i.e. the very bug this
+        // matching exists to prevent. ASCII by construction, so no locale involved.
+        static bool i2c_id_equal(const std::string& lhs, const std::string& rhs)
+        {
+            auto lower = [](char c) { return (c >= 'A' && c <= 'Z') ? char(c - 'A' + 'a') : c; };
+            return lhs.size() == rhs.size()
+                && std::equal(lhs.begin(), lhs.end(), rhs.begin(),
+                              [&lower](char a, char b) { return lower(a) == lower(b); });
+        }
+
         bool get_devname_from_mipi_dfu_path(const path_and_identifier& dfu_path, std::string& dev_name)
         {
             DIR * dev_dir = opendir("/dev");
@@ -38,7 +94,14 @@ namespace librealsense
                 throw linux_backend_exception(rsutils::string::from() << "Cannot access /dev");
             }
 
-            // searching for match in /dev, in means of major, minor
+            // searching for match in /dev, in means of major, minor.
+            // One chardev can surface under several names: the driver node
+            // ("d4xx-dfu-<adapter>-<addr>") and any rs-enum udev alias ("d4xx-dfu-<index>")
+            // share a major/minor, so readdir order alone would pick between them
+            // arbitrarily. Prefer the driver node: its i2c id is the only per-camera
+            // identifier, and both per-camera DFU matching and D4xx/D5xx family detection
+            // key off it. Fall back to whatever alias we found when no driver node exists.
+            std::string alias_name;
             while (dirent * entry = readdir(dev_dir))
             {
                 std::string name = entry->d_name;
@@ -54,14 +117,25 @@ namespace librealsense
                     continue;
                 }
                 identifier st_key {major(st.st_rdev), minor(st.st_rdev)};
-                if (dfu_path.key == st_key)
+                if (!(dfu_path.key == st_key))
+                {
+                    continue;
+                }
+                if (!dfu_devname_to_i2c_id(name).empty())
                 {
                     dev_name = name;
                     closedir(dev_dir);
                     return true;
                 }
+                if (alias_name.empty())
+                    alias_name = name;
             }
             closedir(dev_dir);
+            if (!alias_name.empty())
+            {
+                dev_name = alias_name;
+                return true;
+            }
             return false;
         }
 
@@ -120,35 +194,6 @@ namespace librealsense
             }
             closedir(dir);
             return dfu_paths;
-        }
-
-        // True iff the string looks like a kernel i2c client id — digits, one
-        // '-', then hex. Kernel uses snprintf("%d-%04x", adapter, addr).
-        static bool is_i2c_id_shape(const std::string& s)
-        {
-            auto sep = s.find('-');
-            if (sep == std::string::npos || sep == 0 || sep + 1 >= s.size())
-                return false;
-            auto is_digit = [](char c) { return c >= '0' && c <= '9'; };
-            auto is_hex   = [](char c) {
-                return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-            };
-            return std::all_of(s.begin(), s.begin() + sep, is_digit)
-                && std::all_of(s.begin() + sep + 1, s.end(), is_hex);
-        }
-
-        // Extract the i2c client id ("<adapter>-<addr>") from a DFU chardev name.
-        // The driver names its CONFIG_OF chardev "d4xx-dfu-<adapter>-<addr>";
-        // the rs-enum path uses the shorter "d4xx-dfu-<index>" form for which
-        // per-i2c resolution is not possible. Returns "" on any non-conforming
-        // name — callers fall back accordingly.
-        static std::string dfu_devname_to_i2c_id(const std::string& dfu_devname)
-        {
-            static const std::string prefix = "d4xx-dfu-";
-            if (dfu_devname.compare(0, prefix.size(), prefix) != 0)
-                return {};
-            std::string rest = dfu_devname.substr(prefix.size());
-            return is_i2c_id_shape(rest) ? rest : std::string{};
         }
 
         // Read the DT `compatible` of a DFU chardev's owning i2c client via
@@ -245,7 +290,8 @@ namespace librealsense
         }
 
         uvc_device_info get_info_from_mipi_device_path(const std::string& video_path, const std::string& name,
-                                                                       camera_identifier_v4l_mipi& mipi_id)
+                                                                       camera_identifier_v4l_mipi& mipi_id,
+                                                                       const std::string& fallback_dfu_path)
         {
             auto dev_name = "/dev/" + name;
 
@@ -280,17 +326,63 @@ namespace librealsense
             // Note - jetson can use only bus_info, as card is different for each sensor and metadata node.
             info.unique_id = bus_info + "-" + std::to_string(cam_id);
 
-            // Get DFU node for MIPI camera
-            for (const auto& dfu_device_path : get_mipi_dfu_paths())
+            // Get DFU node for MIPI camera.
+            // Prefer the chardev owned by this camera's i2c client: on a multi-camera GMSL
+            // rig every camera exposes its own /dev/d4xx-dfu-<adapter>-<addr>, so taking
+            // whichever one opens first would initiate DFU against the wrong camera.
+            auto can_open = [](const std::string& path)
             {
+                int vfd = open(path.c_str(), O_RDONLY | O_NONBLOCK);
+                if (vfd < 0)
+                    return false;
+                ::close(vfd);
+                return true;
+            };
+            const std::string cam_i2c_id = mipi_card_to_i2c_id(card);
+            std::string first_available_dfu;
+            unsigned openable_dfu_count = 0;
+            bool dfu_has_i2c_id = false;
+            const auto dfu_paths = get_mipi_dfu_paths();
+            for (const auto& dfu_device_path : dfu_paths)
+            {
+                const std::string dfu_i2c_id = dfu_devname_to_i2c_id(dfu_device_path);
+                dfu_has_i2c_id |= !dfu_i2c_id.empty();
                 auto mipi_dfu_chardev = "/dev/" + dfu_device_path;
-                int vfd = open(mipi_dfu_chardev.c_str(), O_RDONLY | O_NONBLOCK);
-                if (vfd >= 0)
+                if (!can_open(mipi_dfu_chardev))
+                    continue;
+                ++openable_dfu_count;
+                if (!cam_i2c_id.empty() && i2c_id_equal(dfu_i2c_id, cam_i2c_id))
                 {
                     // Use legacy DFU device node used in firmware_update_manager
                     info.dfu_device_path = mipi_dfu_chardev;
-                    ::close(vfd); // file exists, close file and continue to assign it
+                    LOG_DEBUG("MIPI DFU: matched " << mipi_dfu_chardev << " to camera "
+                              << dev_name << " by i2c id " << cam_i2c_id);
                     break;
+                }
+                if (first_available_dfu.empty())
+                    first_available_dfu = mipi_dfu_chardev;
+            }
+            if (info.dfu_device_path.empty())
+            {
+                if (!cam_i2c_id.empty() && dfu_has_i2c_id && dfu_paths.size() > 1)
+                {
+                    // The camera is identifiable and so are the chardevs, so a fallback could only
+                    // pick another camera's chardev - leave DFU unavailable instead.
+                    // With a single chardev it can't be the wrong camera, so that case takes the fallback.
+                    LOG_WARNING("MIPI DFU: no openable chardev owned by i2c id " << cam_i2c_id
+                                << " for camera " << dev_name << ", DFU not available for it");
+                }
+                else if (!fallback_dfu_path.empty() && can_open(fallback_dfu_path))
+                {
+                    info.dfu_device_path = fallback_dfu_path;
+                }
+                else if (!first_available_dfu.empty())
+                {
+                    // Ids cannot be derived (single-camera rigs, short-form chardev names, non-Jetson cards)
+                    if (openable_dfu_count > 1)
+                        LOG_DEBUG("Cannot match a DFU chardev to MIPI camera " << dev_name
+                                  << " (card \"" << card << "\"), using first available " << first_available_dfu);
+                    info.dfu_device_path = first_available_dfu;
                 }
             }
             info.usb_conn_spec = usb_undefined;
@@ -333,21 +425,12 @@ namespace librealsense
                         ::close(vfd); // file exists, close file and continue to assign it
                     try
                     {
-                        info = get_info_from_mipi_device_path(video_path, device_path, mipi_id);
+                        info = get_info_from_mipi_device_path(video_path, device_path, mipi_id, dfu_device_path);
                     }
                     catch(const std::exception & e)
                     {
                         LOG_WARNING("MIPI video device issue: " << e.what());
                         continue;
-                    }
-
-                    // Get DFU node for MIPI camera
-                    vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
-
-                    if (vfd >= 0)
-                    {
-                        ::close(vfd); // file exists, close file and continue to assign it
-                        info.dfu_device_path = dfu_device_path;
                     }
 
                     info.mi = vs.compare("imu") ? 0 : 4;
@@ -366,7 +449,7 @@ namespace librealsense
 
                     try
                     {
-                        info = get_info_from_mipi_device_path(video_md_path, device_md_path, mipi_id);
+                        info = get_info_from_mipi_device_path(video_md_path, device_md_path, mipi_id, dfu_device_path);
                     }
                     catch(const std::exception & e)
                     {

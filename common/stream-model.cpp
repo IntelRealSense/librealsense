@@ -262,6 +262,7 @@ namespace rs2
         texture->yuy2rgb = d->yuy2rgb;
         texture->m420_to_rgb = d->m420_to_rgb;
         texture->nv12_to_rgb = d->nv12_to_rgb;
+        texture->mjpeg_to_rgb = d->mjpeg_to_rgb;
         texture->y411 = d->y411;
 
         if (auto vd = p.as<video_stream_profile>())
@@ -552,7 +553,7 @@ namespace rs2
             std::string dev_serial = dev->dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
             std::string sensor_name = dev->s->get_info(RS2_CAMERA_INFO_NAME);
             // A split stream fills two tiles off one profile, so the exposure class has to tell them apart.
-            std::string stream_name = profile.stream_name();
+            std::string stream_name = viewer_stream_name( profile.stream_name() );
             if( split )
                 stream_name += passive ? " Passive" : " Active";
             std::string stream_index_str;
