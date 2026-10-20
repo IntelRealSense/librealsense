@@ -1440,7 +1440,8 @@ namespace librealsense
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
         // USB dual-RGB: like D401 GMSL, Color 1 must be known to the syncer or create_matcher recurses.
         // Only when Color 1 is published, so a plain D405 keeps its original matcher.
-        if( _color_stream2 && _has_color1 )
+        auto depth = dynamic_cast< const d400_depth_sensor * >( &get_sensor( _depth_device_idx ) );
+        if( _color_stream2 && depth && depth->has_color1() )
             streams.push_back( _color_stream2.get() );
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }

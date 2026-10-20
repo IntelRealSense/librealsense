@@ -218,11 +218,23 @@ namespace librealsense
     processing_blocks d400_depth_sensor::get_recommended_processing_blocks() const
     {
         auto res = get_ds_depth_recommended_proccesing_blocks();
-        // D401 GMSL dual-RGB: rectify the two color streams (default-on, toggleable in the viewer's
+        // D401 dual-RGB: rectify the two color streams (default-on, toggleable in the viewer's
         // Post-Processing). The filter self-configures from the color profiles' SDK calibration.
-        if( _owner->_pid == ds::RS401_GMSL_PID || _owner->_has_color1 )
+        if( _owner->_pid == ds::RS401_GMSL_PID || has_color1() )
             res.push_back( std::make_shared< dual_rgb_rectify_filter >() );
         return res;
+    }
+
+    // Checked on the profiles rather than cached, so it holds whenever it is called (the Viewer asks for
+    // filters before it lists profiles). Only a D405 PID can publish Color 1 over USB.
+    bool d400_depth_sensor::has_color1() const
+    {
+        if( _owner->_pid != ds::RS405_PID )
+            return false;
+        auto profiles = get_stream_profiles();
+        return std::any_of( profiles.begin(), profiles.end(), []( std::shared_ptr< stream_profile_interface > const & p ) {
+            return p->get_stream_type() == RS2_STREAM_COLOR && p->get_stream_index() == 1;
+        } );
     }
 
     rs2_intrinsics d400_depth_sensor::get_intrinsics( const stream_profile & profile ) const
@@ -255,7 +267,7 @@ namespace librealsense
     void d400_depth_sensor::open( const stream_profiles & requests )
     {
         // D401 dual-RGB: Color 1 puts both imagers in raw Bayer mode, so IR would open but never stream
-        if( _owner->_pid == ds::RS401_GMSL_PID || _owner->_has_color1 )
+        if( _owner->_pid == ds::RS401_GMSL_PID || has_color1() )
         {
             auto has = [&]( rs2_stream type, int index ) {
                 return std::any_of( requests.begin(), requests.end(), [&]( std::shared_ptr< stream_profile_interface > const & p ) {
@@ -290,9 +302,9 @@ namespace librealsense
 
     rs2_intrinsics d400_depth_sensor::get_color_intrinsics( const stream_profile & profile ) const
     {
-        // _has_color1: D401/D405 over USB with the raw dual-RGB FW use the same crop + scale model; without
-        // it a D405 keeps the plain per-resolution intrinsics below.
-        if( _owner->_pid == ds::RS401_GMSL_PID || _owner->_has_color1 )
+        // D401/D405 over USB with the raw dual-RGB FW use the same crop + scale model; without it a D405
+        // keeps the plain per-resolution intrinsics below.
+        if( _owner->_pid == ds::RS401_GMSL_PID || has_color1() )
         {
             // D401 dual-RGB: every output resolution is produced by demosaicing the native 1288x808
             // image, center-cropping to the output aspect ratio, then bilinear-scaling (see
@@ -349,8 +361,6 @@ namespace librealsense
 
         auto&& results = synthetic_sensor::init_stream_profiles();
 
-        // Derived from the profiles built now, so a rebuild without Color 1 clears it
-        bool has_color1 = false;
         for (auto&& p : results)
         {
             // Register stream types
@@ -372,7 +382,6 @@ namespace librealsense
                 if (p->get_stream_index() == 1 && _owner->_color_stream2)
                 {
                     assign_stream(_owner->_color_stream2, p);
-                    has_color1 = true;
                 }
                 else
                     assign_stream(_owner->_color_stream, p);
@@ -410,7 +419,6 @@ namespace librealsense
                 });
             }
         }
-        _owner->_has_color1 = has_color1;
 
         return results;
     }
@@ -796,14 +804,6 @@ namespace librealsense
                     { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
                     []() {return std::make_shared<y12i_to_y16y16>(); }
                 );
-
-                // D401/D405 USB dual-RGB: same routing as GMSL below. No FW gate needed: the raw RW10 pins
-                // exist only when the FW's USB descriptor advertises them, and the resolver ignores others.
-                if( _pid == RS405_PID )
-                {
-                    raw_depth_sensor->set_stream_id_resolver( resolve_d401_color_stream );
-                    raw_depth_sensor->enable_software_color_frame_numbers();
-                }
             }
             else
             {
@@ -813,18 +813,18 @@ namespace librealsense
                     []() {return std::make_shared<y12i_to_y16y16_mipi>(); }
                 );
 
-                // D401 GMSL dual-RGB: arm the raw-Bayer -> Color 0 / Color 1 routing (raw payload supported
-                // only on firmware with the RAW8/RAW10 CSI passthrough). Keep this guard identical to the
-                // block-registration guard in d400_color::register_processing_blocks().
-                if( _is_mipi_device && _pid == RS401_GMSL_PID && _fw_version >= firmware_version( "5.17.4.13" ) )
-                {
-                    // Route the two identical BGGR color pins to Color 0 / Color 1 (ascending pin order).
-                    raw_depth_sensor->set_stream_id_resolver( resolve_d401_color_stream );
-                    // Both imagers share one HW frame counter; without a per-stream counter FPS reads 2x.
-                    raw_depth_sensor->enable_software_color_frame_numbers();
-                    // The RAW8->RGB8 blocks are registered in d400_color::register_processing_blocks(),
-                    // after the ISP blocks, so a lone Color 0 RGB8 stays ISP and only Color 1 forces raw.
-                }
+            }
+
+            // D401 dual-RGB (GMSL and USB): arm the raw-Bayer -> Color 0 / Color 1 routing. The same
+            // is_d401_raw_dual_rgb() gate registers the raw blocks in d400_color::register_processing_blocks().
+            if( is_d401_raw_dual_rgb() )
+            {
+                // Route the two identical BGGR color pins to Color 0 (IR node, left) / Color 1 (right).
+                raw_depth_sensor->set_stream_id_resolver( resolve_d401_color_stream );
+                // Both imagers share one HW frame counter; without a per-stream counter FPS reads 2x.
+                raw_depth_sensor->enable_software_color_frame_numbers();
+                // The RAW8->RGB8 blocks are registered in d400_color::register_processing_blocks(),
+                // after the ISP blocks, so a lone Color 0 RGB8 stays ISP and only Color 1 forces raw.
             }
 
             
@@ -1611,5 +1611,14 @@ namespace librealsense
         // Per D400 GVD specification, HW type value 7 identifies D401 USB devices
         constexpr uint8_t D401_USB_HW_TYPE = 7;
         return gvd_hw_type == D401_USB_HW_TYPE;
+    }
+
+    // D401 raw dual-RGB path: GMSL needs FW with the RAW CSI passthrough; over USB (D405 PID) the raw pins
+    // exist only when the FW advertises them, so no FW gate. Gates the resolver and the raw->RGB8 blocks.
+    bool d400_device::is_d401_raw_dual_rgb() const
+    {
+        if( _is_mipi_device )
+            return _pid == ds::RS401_GMSL_PID && _fw_version >= firmware_version( "5.17.4.13" );
+        return _pid == ds::RS405_PID;
     }
 }
