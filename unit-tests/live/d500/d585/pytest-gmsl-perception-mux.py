@@ -21,7 +21,7 @@ pytestmark = [
     pytest.mark.device_type( "GMSL" ),   # the MUX exists only over GMSL
 ]
 
-MIN_PD_FRAMES = 8                     # PD runs at ~15 fps
+MIN_PD_FRAMES = 8                     # lifecycle minimum; profile-rate checks are separate
 MIN_OCC_FRAMES = 15                   # OCC runs at ~30 fps
 FRAME_TIMEOUT_S = 5                   # first frames of a fresh stream
 SWITCH_S = 0.6                        # frames already in flight around an enable or disable
@@ -72,7 +72,132 @@ def profile(s, stream_type, fmt, w=1280, h=720, index=None):
 
 def pd_profile(dev):
     return next( p for p in sensor( dev, 'Perception' ).get_stream_profiles()
-                 if p.stream_type() == rs.stream.object_detection )
+                 if p.stream_type() == rs.stream.object_detection and p.fps() == 30 )
+
+
+@pytest.mark.parametrize( "fps", [15, 30] )
+@pytest.mark.parametrize( "mapping_first", [False, True] )
+def test_independent_member_profiles(device, fps, mapping_first):
+    """Mapping keeps 30 FPS across PD open/close, including a PD rate change."""
+    pd = sensor( device, 'Perception' )
+    mapping = sensor( device, 'Depth Mapping Camera' )
+    profiles = { p.fps(): p for p in pd.get_stream_profiles()
+                 if p.stream_type() == rs.stream.object_detection }
+    assert {15, 30} <= profiles.keys(), "Member-profile FW must publish both PD rates"
+    selected_mapping = occ_profile( device )
+    arrivals = { 'pd': [], 'mapping': [] }
+    callback_errors = []
+
+    def callback(key):
+        def receive(frame):
+            if frame.get_profile().fps() != ( fps if key == 'pd' else 30 ):
+                callback_errors.append( f"{key}: wrong callback profile FPS" )
+            arrivals[key].append( time.monotonic() )
+        return receive
+
+    def measure(keys):
+        # Ignore first-frame startup; measure every active member over the same window.
+        time.sleep( 1 )
+        since = time.monotonic()
+        sample_seconds = 6
+        time.sleep( sample_seconds )
+        for key in keys:
+            times = [ t for t in arrivals[key] if t >= since ]
+            target = fps if key == 'pd' else 30
+            pd30 = key == 'pd' and target == 30
+            # PD30 nominal throughput is tracked separately on USB and GMSL.
+            # Reject a stalled stream or PD15 fallback without making that KPI
+            # an implicit 24-FPS gate. PD15/Mapping keep their original limits.
+            minimum_count = ( 15 * 1.1 if pd30 else target * .8 ) * sample_seconds
+            assert len(times) >= minimum_count, f"{key}: stopped, too few frames, or PD15 fallback"
+            actual = ( len(times) - 1 ) / ( times[-1] - times[0] )
+            log.info( "%s: %.2f vs %d FPS", key, actual, target )
+            if pd30:
+                assert actual > 15 * 1.1, f"PD30 request running at PD15 or below: {actual:.2f} FPS"
+                if actual < target * .98:
+                    log.warning( "PD30 throughput below nominal: %.2f FPS (non-gating KPI)", actual )
+            else:
+                # Use the standard SDK PD FPS tolerance; Mapping transport
+                # retains its stricter continuity/rate check.
+                minimum = .95 if key == 'pd' else .98
+                assert actual >= target * minimum, f"{key}: {actual:.2f} vs {target} FPS"
+            assert actual <= target * 1.1, f"{key}: {actual:.2f} vs {target} FPS"
+        assert not callback_errors, callback_errors
+
+    ordered = [( mapping, selected_mapping, 'mapping' ), ( pd, profiles[fps], 'pd' )]
+    if not mapping_first:
+        ordered.reverse()
+    started = []
+    try:
+        for current, selected, key in ordered:
+            current.open( selected )
+            started.append( current )
+            current.start( callback( key ) )
+            measure( [ key ] if len(started) == 1 else [ 'pd', 'mapping' ] )
+        pd.stop()
+        pd.close()
+        started.remove( pd )
+        measure( [ 'mapping' ] )
+        fps = 30 if fps == 15 else 15
+        pd.open( profiles[fps] )
+        started.append( pd )
+        pd.start( callback( 'pd' ) )
+        measure( [ 'pd', 'mapping' ] )
+    finally:
+        for current in reversed( started ):
+            try:
+                current.stop()
+            finally:
+                current.close()
+
+
+@pytest.mark.parametrize( "initial_fps", [15, 30] )
+def test_pd_profile_reopen_beside_rgb(device, initial_fps):
+    """Changing PD FPS requires stop/close and a new profile enable, not an RGB restart."""
+    pd = sensor( device, 'Perception' )
+    profiles = { p.fps(): p for p in pd.get_stream_profiles()
+                 if p.stream_type() == rs.stream.object_detection }
+    assert {15, 30} <= profiles.keys()
+    rgb = sensor( device, 'RGB Camera' ) if is_3c( device ) else device.first_depth_sensor()
+    colors = [profile( rgb, rs.stream.color, rs.format.rgb8, 640, 360 )] if is_3c( device ) else [
+        profile( rgb, rs.stream.color, rs.format.nv12, 640, 360, index=i ) for i in (1, 2)]
+    rgb_arrivals = []
+    pd_started = False
+    pd_open = False
+    rgb.open( colors )
+    try:
+        rgb.start( lambda f: rgb_arrivals.append( time.monotonic() ) )
+        for fps in (initial_fps, 30 if initial_fps == 15 else 15):
+            arrivals = []
+            pd.open( profiles[fps] )
+            pd_open = True
+            pd.start( lambda f: arrivals.append( (time.monotonic(), f.get_profile().fps()) ) )
+            pd_started = True
+            time.sleep( 1 )
+            since = time.monotonic()
+            time.sleep( 6 )
+            times = [ t for t, reported_fps in arrivals if t >= since ]
+            assert all( reported_fps == fps for _, reported_fps in arrivals )
+            assert len(times) >= fps * 6 * .8, f"PD{fps}: stopped or running at the wrong rate"
+            actual = (len(times) - 1) / (times[-1] - times[0])
+            log.info( "RGB retained, PD reopened: %.2f vs %d FPS", actual, fps )
+            if fps == 15:
+                assert actual >= fps * .95
+            assert actual <= fps * 1.1
+            assert sum( t >= since for t in rgb_arrivals ) >= 30 * 6 * .8
+            pd.stop()
+            pd_started = False
+            pd.close()
+            pd_open = False
+    finally:
+        if pd_started:
+            pd.stop()
+        if pd_open:
+            pd.close()
+        try:
+            rgb.stop()
+        finally:
+            rgb.close()
 
 
 def occ_profile(dev):
