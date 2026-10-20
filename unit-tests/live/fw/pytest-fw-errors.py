@@ -239,11 +239,11 @@ def test_firmware_error_monitoring(test_device):
     log.info("Firmware error monitoring test completed successfully")
 
 
-@pytest.mark.device_type("GMSL")
-@pytest.mark.device_exclude("D500*")
+@pytest.mark.device_exclude("D500*")  # 0x4D is a D400 FW command
 def test_injected_error_reported_once(test_device):
     device, _ = test_device
-    require_min_fw_version(device, rsutils.version(5, 17, 6, 0), "GMSL FW error polling")
+    if device.get_info(rs.camera_info.connection_type) == "GMSL":
+        require_min_fw_version(device, rsutils.version(5, 17, 6, 0), "GMSL FW error polling")
     if device.get_info(rs.camera_info.camera_locked) == "YES":
         pytest.skip("FW rejects error injection on locked cameras")
 
