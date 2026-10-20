@@ -4360,14 +4360,17 @@ namespace rs2
     }
 
     // Object detection runs on a single color imager of its own camera: dual-RGB firmware reports boxes for
-    // the lower-indexed color stream, and a device with one color sensor only has index 0.
+    // the lower-indexed color stream, and a device with one color sensor only has index 0. Taken from the
+    // supported profiles, not the active streams, so Color 2 streaming alone never gets the overlay.
     int viewer_model::od_color_stream_index( device_model const * dev_model ) const
     {
         int index = std::numeric_limits< int >::max();
-        for( auto const & s : streams )
-            if( s.second.dev && s.second.dev->dev_model == dev_model
-                && s.second.profile.stream_type() == RS2_STREAM_COLOR )
-                index = std::min( index, s.second.profile.stream_index() );
+        if( ! dev_model )
+            return index;
+        for( auto const & sub : dev_model->subdevices )
+            for( auto const & p : sub->profiles )
+                if( p.stream_type() == RS2_STREAM_COLOR )
+                    index = std::min( index, p.stream_index() );
         return index;
     }
 
