@@ -1,284 +1,44 @@
 ---
 name: add-api
-description: Add new public API to the librealsense SDK (C/C++ headers, Python bindings, examples) without breaking existing API. Use before adding any function, struct, enum, option or metadata field to include/librealsense2.
+description: Add new public API to the librealsense SDK (C/C++ headers, Windows exports, Python bindings, examples) without breaking existing API. Use before adding any function, struct, enum, option or metadata field to include/librealsense2.
 ---
 
 # Adding New API to librealsense
 
-## Overview
-This skill documents best practices for adding new API functionality to librealsense
+## Rules
 
-## Core Principles
+- **Add, don't change.** Never remove or change the signature, struct layout or enum values of existing public API without explicit user approval — the C API keeps ABI compatibility within a major version.
+- **Enums**: add new values just before the `*_COUNT` entry; never renumber existing ones.
+- Add only what was asked. No summary/design files; use an example instead of a doc unless one is really needed (`doc/<feature>.md`).
+- New files get the copyright header with the current year (see the `file-creation` skill).
 
-### 1. API Additions Only - No Modifications
-- **ONLY ADD** new API elements (functions, structures, enums)
-- **NEVER DELETE** or modify existing API without explicit user approval
-- Preserve backward compatibility at all costs
-- Even when code appears incomplete, verify with user before any deletions
+## Checklist — new C function
 
-### 2. Minimal, Focused Changes
-- Add only what's requested
-- Don't create unnecessary summary or documentation files
-- Keep changes surgical and targeted
-- Use existing patterns and conventions
-
-### 3. Proper File Locations
-
-#### API Headers (`include/librealsense2/`)
-- C headers: `include/librealsense2/h/*.h`
-- C++ headers: `include/librealsense2/hpp/*.hpp`
-
-#### Python Wrappers (`wrappers/python/`)
-- **ALWAYS add Python bindings** when adding new C/C++ API
-- Modify relevant files in `wrappers/python/`:
-  - `pyrs_frame.cpp` - for frame-related APIs
-  - `pyrs_device.cpp` - for device-related APIs
-  - `pyrs_sensor.cpp` - for sensor-related APIs
-- Use pybind11 syntax to expose C++ API to Python
-- Follow existing naming conventions (snake_case for Python)
-- Test Python bindings after implementation
-
-#### Examples (`examples/`)
-- Prefer **C++** examples (project standard)
-- Place in appropriate subdirectory (e.g., `examples/object-detection/`)
-- Include CMakeLists.txt for build integration
-- Use clear, minimal code demonstrating the API
-- **Optional**: Create Python example in `wrappers/python/examples/` if the feature is commonly used from Python
-
-#### Documentation (`doc/`)
-- Only create if truly necessary (usually not needed)
-- Use `.md` format
-- Place at repository root: `doc/feature-name.md`
-- **NEVER** place in `build/` folder (not version controlled)
-
-#### Internal Implementation (`src/`)
-- Implementation files in appropriate subdirectories
-- Follow existing naming conventions (kebab-case for files)
-
-### 4. License Headers
-- **Always use the current year** - never copy it from a nearby file
-- Standard format:
-  ```cpp
-  // License: Apache 2.0. See LICENSE file in root directory.
-  // Copyright(c) 2026 RealSense, Inc. All Rights Reserved.
-  ```
-
-## Step-by-Step Process
-
-### Phase 1: API Design
-1. **Read existing API files first**
-   - Understand current patterns
-   - Use `get_file` to examine similar APIs
-   - Check for naming conventions
-
-2. **Add to public headers**
-   - Add enum values to existing enums (at end of enum but before `_COUNT`)
-   - Add structures at appropriate locations
-   - Add function declarations
-   - **Verify with git diff** that only additions were made
-
-3. **Create C++ wrapper if needed**
-   - New file: `include/librealsense2/hpp/rs_<feature>.hpp`
-   - Follow existing wrapper patterns
-   - Use inline functions when appropriate
-
-### Phase 2: Verification
-1. **Use git to verify changes**
-   ```bash
-   git diff --stat <file>
-   # Should show: X insertions(+), 0 deletions(-)
+1. **Declare** in the matching C header `include/librealsense2/h/rs_*.h`, with a doc comment and a trailing `rs2_error** error` parameter.
+2. **Implement** in `src/rs.cpp` using the API-call wrappers, which turn exceptions into `rs2_error`:
+   ```cpp
+   rs2_processing_block* rs2_create_mjpeg_decoder(rs2_error** error) BEGIN_API_CALL
+   {
+       return new rs2_processing_block{ std::make_shared<mjpeg_converter>(RS2_FORMAT_RGB8) };
+   }
+   NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
    ```
+   Use `HANDLE_EXCEPTIONS_AND_RETURN(<default>, <args>...)` when the function takes arguments, and `VALIDATE_NOT_NULL` / `VALIDATE_RANGE` for inputs.
+3. **Export** the symbol in `src/realsense.def` next to related functions. Windows exports only what is listed there — a missing entry builds fine but fails to link for users.
+4. **C++ wrapper**: add the method/class in `include/librealsense2/hpp/rs_*.hpp`, calling the C function and `error::handle(e)`.
+5. **Python**: bind it in the matching `wrappers/python/pyrs_*.cpp` (e.g. `pyrs_processing.cpp`, `pyrs_device.cpp`, `pyrs_sensor.cpp`, `pyrs_frame.cpp`) with snake_case names and a docstring.
+6. **Example / test**: a short C++ example in `examples/<feature>/` (with `CMakeLists.txt`) when the feature is user-facing, and/or a pytest test (see the `pytest-infra` skill).
+7. **Build** the library and `pyrealsense2`, and try the new API from Python.
 
-2. **If deletions appear:**
-   - STOP immediately
-   - `git checkout <file>` to restore
-   - Re-apply changes more carefully
-   - Never assume the edit tool preserved content
+## Checklist — new enum value (option, metadata, stream, format...)
 
-### Phase 3: Examples (Instead of Documentation)
-1. **Create example application**
-   ```
-   examples/<feature-name>/
-   ├── CMakeLists.txt
-   ├── rs-<feature-name>.cpp
-   └── README.md (optional, brief)
-   ```
+1. Add the value in the header before `*_COUNT` (e.g. `RS2_OPTION_*` in `rs_option.h`, `RS2_FRAME_METADATA_*` in `rs_frame.h`).
+2. Add its string in `src/to-string.cpp` (`CASE( NAME )` in the matching `*_to_string` switch).
+3. Implement it where it applies (e.g. the device/sensor option registration under `src/ds/...`, or the metadata parser).
+4. A **new enum type** also needs `src/core/enum-helpers.h`, its `rs2_<type>_to_string` declared, exported in `src/realsense.def`, and a Python binding in `wrappers/python/c_files.cpp`.
 
-2. **Example should demonstrate:**
-   - Basic API usage
-   - Common use cases
-   - Best practices
-   - Error handling
+## Before Finishing
 
-3. **Keep it simple:**
-   - 100-200 lines of code
-   - Clear comments
-   - No external dependencies beyond librealsense
-
-### Phase 4: Python Bindings
-1. **Identify the appropriate wrapper file**
-   - Frame-related: `wrappers/python/pyrs_frame.cpp`
-   - Device-related: `wrappers/python/pyrs_device.cpp`
-   - Sensor-related: `wrappers/python/pyrs_sensor.cpp`
-
-2. **Add Python bindings using pybind11**
-   - Expose new structures as Python classes
-   - Expose new functions as Python methods
-   - Use snake_case naming for Python
-   - Add docstrings for Python help()
-
-3. **Test Python bindings**
-   - Build pyrealsense2 module
-   - Test in Python interpreter
-   - Verify functionality matches C++/C API
-
-### Phase 5: Implementation
-1. Implement C API functions in `src/rs.cpp`
-2. Add internal structures/classes as needed
-3. Build and test
-
-## Anti-Patterns to Avoid
-
-### ❌ DON'T: Create Summary Files
-```
-docs/object-detection-api-summary.cpp  // WRONG - unnecessary
-docs/implementation-guide.cpp          // WRONG - use examples instead
-```
-
-### ❌ DON'T: Use build/ Directory
-```
-build/docs/anything.md                 // WRONG - not version controlled
-```
-
-### ❌ DON'T: Modify Existing API
-```cpp
-// WRONG - modifying existing structure
-typedef struct rs2_intrinsics {
-    int width;
-    int height;
-    float ppx;
-    float ppy;
-    // DON'T add new fields here without approval!
-} rs2_intrinsics;
-```
-
-### ❌ DON'T: Assume Edit Tool Preserves Content
-- Always verify with `git diff`
-- If in doubt, restore and redo
-- Better safe than accidentally deleting code
-
-## Correct Patterns
-
-### ✅ DO: Add New Enums
-```cpp
-typedef enum rs2_frame_metadata_value {
-    // ...existing values...
-    RS2_FRAME_METADATA_EXISTING_LAST,
-    RS2_FRAME_METADATA_NEW_FEATURE,     // ← ADD HERE
-    RS2_FRAME_METADATA_COUNT            // ← Keep at end
-} rs2_frame_metadata_value;
-```
-
-### ✅ DO: Add New Structures
-```cpp
-// At end of appropriate header file, before closing braces
-typedef struct rs2_new_feature {
-    int field1;
-    float field2;
-} rs2_new_feature;
-```
-
-### ✅ DO: Add New Functions
-```cpp
-// With full documentation
-/**
- * Description of what the function does
- * \param[in] param1  Description
- * \param[out] error  Error handling
- * \return Description of return value
- */
-int rs2_new_function(const rs2_frame* frame, rs2_error** error);
-```
-
-### ✅ DO: Create Example Application
-```cpp
-// examples/new-feature/rs-new-feature.cpp
-// License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2026 RealSense, Inc. All Rights Reserved.
-
-#include <librealsense2/rs.hpp>
-#include <iostream>
-
-int main() {
-    try {
-        // Demonstrate the new API
-        rs2::pipeline pipe;
-        pipe.start();
-        
-        while (true) {
-            rs2::frameset frames = pipe.wait_for_frames();
-            // Use new API here
-        }
-    }
-    catch (const rs2::error& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
-}
-```
-
-## Verification Checklist
-
-Before considering work complete:
-
-- [ ] `git diff --stat` shows **only additions** (no deletions)
-- [ ] All new files have the current copyright year
-- [ ] No files created in `build/` directory
-- [ ] Examples created instead of documentation (when needed)
-- [ ] C++ example code preferred over C
-- [ ] **Python bindings added** to appropriate `pyrs_*.cpp` file
-- [ ] API follows existing naming conventions
-- [ ] No modifications to existing API structures/functions
-- [ ] Build completes successfully (including Python module)
-
-## Common Scenarios
-
-### Adding Metadata Fields
-1. Add enum to `rs2_frame_metadata_value` (before `_COUNT`)
-2. Implement parsing in appropriate backend
-3. Create example showing how to read the metadata
-4. Done - no documentation needed
-
-### Adding New Frame Type
-1. Add to `rs2_extension` enum
-2. Create structure for frame data
-3. Add accessor functions
-4. Create example application
-5. Implement in relevant backends
-
-### Adding Option/Control
-1. Add to `rs2_option` enum (if needed)
-2. Add get/set functions (if needed)
-3. Implement in device/sensor classes
-4. Create example showing usage
-
-## Quick Reference
-
-| What to Add | Where | Notes |
-|-------------|-------|-------|
-| C API declarations | `include/librealsense2/h/*.h` | Only additions |
-| C++ wrappers | `include/librealsense2/hpp/*.hpp` | Inline when possible |
-| Python bindings | `wrappers/python/pyrs_*.cpp` | Always required |
-| Examples | `examples/<feature>/` | C++ preferred |
-| Python examples | `wrappers/python/examples/` | Optional |
-| Documentation | `doc/*.md` | Only if truly necessary |
-| Implementation | `src/**/*.cpp` | Follow existing structure |
-
-## Remember
-
-- **When in doubt, ASK** before modifying existing code
-- **Always verify** with git diff
-- **Examples over documentation** - show, don't tell
-- **Current year** in license headers
-- **No build/ directory** files in version control
+- `git diff` shows no changed signatures, struct layouts or enum values in `include/librealsense2/`.
+- Every new C function is in `src/realsense.def`.
+- Library and Python bindings build; the new API was exercised.

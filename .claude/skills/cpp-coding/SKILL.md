@@ -15,10 +15,13 @@ Use this protocol to ensure all C++ code modifications align with the project's 
 *   **No Macros**: Avoid C-style macros unless absolutely necessary.
 
 ### 2. Applied Naming Conventions
-*   **General**: `snake_case` for almost everything (variables, functions, classes, namespaces, files).
+*   **General**: `snake_case` for variables, functions, classes and namespaces (e.g. `uvc_device`, `get_device_count()`).
+*   **Files**: kebab-case (e.g. `backend-v4l2.h`, `device-model.cpp`).
 *   **Constants**: `UPPER_CASE_WITH_UNDERSCORES`.
 *   **Members**: Prefix with `_` (e.g., `_my_variable`).
-*   **Templates**: `PascalCase` for types (e.g., `template<typename T>`).
+*   **Templates**: `PascalCase` for type parameters (e.g., `template<typename T>`).
+*   **Namespaces**: `librealsense` (core), `librealsense::platform` (platform layer); public C API types and enums use the `rs2_` prefix.
+*   **Suffixes**: `*_interface` (abstract bases, e.g. `device_interface`), `*_factory`, `*_callback`, `*_model` (viewer UI classes).
 
 ### 3. Resource Management (RAII)
 *   **Pointers**: Use `std::unique_ptr` by default. Use `std::shared_ptr` *only* when ownership is truly shared.
@@ -26,7 +29,7 @@ Use this protocol to ensure all C++ code modifications align with the project's 
 *   **Value Semantics**: Prefer stack allocation and value semantics where possible.
 
 ### 4. Error Handling
-*   **Exceptions**: Propagate errors explicitly. Use `throw rs2::error(...)` or `throw std::runtime_error(...)` for fatal states.
+*   **Exceptions**: Inside `src/`, throw the library exception types from `src/librealsense-exception.h` (e.g. `invalid_value_exception`, `wrong_api_call_sequence_exception`, `not_implemented_exception`); the C API wrappers translate them into `rs2_error`. `rs2::error` is the public C++ wrapper's type, used only in `include/librealsense2/hpp/` and client code.
 *   **Silence**: Never fail silently. Log errors or throw exceptions.
 
 ### 5. Modification Rules
