@@ -11,7 +11,7 @@ Detailed how-to guides for common tasks are maintained as agent skills under `.c
 | `.claude/skills/cpp-coding/SKILL.md` | Adding or modifying CPP code |
 | `.claude/skills/build/SKILL.md` | Building the project (CMake configure, compile, flags) |
 | `.claude/skills/testing/SKILL.md` | Running, filtering, and debugging unit tests |
-| `.claude/skills/pytest-infra/SKILL.md` | Migrating tests to pytest, modifying pytest/hub infrastructure, verifying Jenkins CI results |
+| `.claude/skills/pytest-infra/SKILL.md` | Writing a new pytest test, modifying pytest/hub infrastructure |
 | `.claude/skills/pr-create/SKILL.md` | Opening a pull request, pushing commits to it, updating its description |
 | `.claude/skills/pr-review/SKILL.md` | Replying to review comments on a pull request |
 
