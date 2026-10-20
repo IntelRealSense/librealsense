@@ -7,10 +7,13 @@ It walks through the sensor configuration phase and visualizes the algorithm inp
 
 \* For in-depth review of the subject please read the accompanying [white paper](https://dev.realsenseai.com/docs/high-dynamic-range-with-stereoscopic-depth-cameras).
 
-### Color stream on cameras with shared imagers
-Some cameras, like the D40X series, have no separate color sensor. Their color image comes from the same stereo imagers that produce depth, so the imagers are shared between the depth and color streams and any exposure or gain setting applies to both. \
-HDR alternates exposure and gain from frame to frame on those imagers, so when HDR is enabled the color stream alternates in brightness and appears to flicker. \
-This is expected behavior, not a defect. On these cameras, use HDR for depth-only use cases, or disable HDR when a stable color image is needed.
+## Caveat: color stream on cameras with shared imagers
+> [!NOTE]
+> Some cameras, like the D40X series, have no separate color sensor. Their color image comes from the same stereo imagers that produce depth, so any exposure or gain setting applies to both the depth and color streams.
+>
+> Under certain configurations, when the exposure and gain of the two HDR sequences are set far apart, the color stream alternates in brightness from frame to frame and appears to flicker. The closer the two settings are, the less visible the flicker; with equal values it disappears.
+>
+> To get a stable color image on these cameras, use HDR for depth-only use cases, keep the two sequence settings close, or disable HDR.
 
 
 
