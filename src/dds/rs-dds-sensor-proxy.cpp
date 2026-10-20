@@ -67,6 +67,7 @@ dds_sensor_proxy::dds_sensor_proxy( std::string const & sensor_name,
     , _dev( dev )
     , _name( sensor_name )
     , _md_enabled( dev->supports_metadata() )
+    , _imu_xz_flipped( dev->device_info().name().find( "D555" ) != std::string::npos )
 {
     rsutils::json const & settings = owner->get_context()->get_settings();
     if( auto interval_j = settings.nested( std::string( "options-update-interval", 23 ) ) )
@@ -172,11 +173,16 @@ void dds_sensor_proxy::register_converters()
 
     if( jpeg_indexes.size() > 0 )
     {
-        std::vector< stream_profile > target_profiles;
+        std::vector< stream_profile > target_profiles, passthrough_profiles;
         for( int index : jpeg_indexes )
+        {
             target_profiles.push_back( { RS2_FORMAT_RGB8, RS2_STREAM_COLOR, index } );
+            passthrough_profiles.push_back( { RS2_FORMAT_MJPEG, RS2_STREAM_COLOR, index } );
+        }
         _formats_converter.register_converter( { { RS2_FORMAT_MJPEG, RS2_STREAM_COLOR } }, target_profiles,
                                                []() { return std::make_shared< mjpeg_converter >( RS2_FORMAT_RGB8 ); } );
+        _formats_converter.register_converter( { { RS2_FORMAT_MJPEG, RS2_STREAM_COLOR } }, passthrough_profiles,
+                                               []() { return std::make_shared< identity_processing_block >(); } );
     }
 
     // Depth. A device can expose more than one, e.g. raw depth next to device-aligned depth, so the
@@ -481,12 +487,14 @@ void dds_sensor_proxy::handle_motion_data( realdds::topics::imu_msg && imu,
     m->orientation.y = imu.imu_data().orientation().y();
     m->orientation.z = imu.imu_data().orientation().z();
     m->orientation.w = imu.imu_data().orientation().w();
-    m->angular_velocity.x = imu.gyro_data().x();  // should be in rad/sec
+    // Same IMU to depth alignment the USB path applies to D555 (diag(-1,1,-1))
+    double const xz_sign = _imu_xz_flipped ? -1. : 1.;
+    m->angular_velocity.x = xz_sign * imu.gyro_data().x();  // should be in rad/sec
     m->angular_velocity.y = imu.gyro_data().y();
-    m->angular_velocity.z = imu.gyro_data().z();
-    m->linear_acceleration.x = imu.accel_data().x();  // should be in m/s^2
+    m->angular_velocity.z = xz_sign * imu.gyro_data().z();
+    m->linear_acceleration.x = xz_sign * imu.accel_data().x();  // should be in m/s^2
     m->linear_acceleration.y = imu.accel_data().y();
-    m->linear_acceleration.z = imu.accel_data().z();
+    m->linear_acceleration.z = xz_sign * imu.accel_data().z();
 
     // No metadata for motion streams, therefore no syncer
     invoke_new_frame( new_frame,

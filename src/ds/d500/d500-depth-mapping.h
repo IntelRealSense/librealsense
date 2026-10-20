@@ -51,11 +51,13 @@ namespace librealsense
     protected:
         std::shared_ptr<stream_interface> _occupancy_stream;
         std::shared_ptr<stream_interface> _point_cloud_stream;
+        std::shared_ptr<stream_interface> _pcl_stream;  // device point cloud (RS2_STREAM_POINT_CLOUD)
         std::shared_ptr<uvc_sensor> _raw_depth_mapping_ep;
         bool _depth_mapping_active = false;
         // True for D585S (mapping on MI 13, 2880-wide payloads), false for every other
         // D5xx (mapping on MI 11, OCCG 320x256 and LPCL 640x360).
         bool _is_safety_layout = false;
+        bool _is_d585s = false;
         // True only for the D5x5 family; the other D5xx FW does not serve the depth mapping params control
         bool _supports_depth_mapping_params = false;
         // Serializes get/set of the depth mapping params, so the GET that explains a failed set reads that set's result
@@ -78,6 +80,8 @@ namespace librealsense
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override;
         stream_profiles init_stream_profiles() override;
+        // EP12 carries one Mapping stream at a time (PCL, LPCL, or OG)
+        void open(const stream_profiles& requests) override;
 
         std::string get_depth_mapping_params() const override { return _owner->get_depth_mapping_params(); }
         void set_depth_mapping_params( const std::string & params_json_str ) const override
@@ -86,6 +90,6 @@ namespace librealsense
         }
 
     protected:
-        const d500_depth_mapping* _owner;
+        d500_depth_mapping* _owner;
     };
 }

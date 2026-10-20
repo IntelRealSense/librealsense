@@ -18,7 +18,7 @@ test.describe('Smoke Tests', () => {
   test('reaches the backend over the socket', async ({ page }) => {
     await page.goto('/')
 
-    // App.tsx renders '○ Disconnected' until the Socket.IO handshake completes
+    // App.tsx hides the connection badge until the Socket.IO handshake completes
     await expect(page.getByText(/^● Connected$/)).toBeVisible()
   })
 })

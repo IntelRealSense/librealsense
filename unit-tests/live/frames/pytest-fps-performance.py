@@ -180,7 +180,7 @@ class FPSMonitor:
         if elapsed_time <= 0:
             return 0.0
 
-        return self.total_frames / elapsed_time
+        return (self.total_frames - 1) / elapsed_time
 
 # Start depth + color streams and measure the time from stream opened until first frame arrived using sensor API.
 # Verify that the time do not exceeds the maximum time allowed
@@ -356,11 +356,10 @@ def check_stream_fps_accuracy_generic(device, stream_name, stream_type, formats,
     # Frame callback to collect timing data
     frame_count = 0
     fps_measurements = []
-    start_test_time = None
 
     # Adjust warmup frames and measurement interval based on FPS rate
     if expected_fps <= 6:
-        warmup_frames = 2      # Minimal warmup for very slow FPS to maximize measurement time
+        warmup_frames = 4      # Must cover the start-of-stream burst (first frames delivered back-to-back)
         # For very low FPS we measure every frame after warmup to avoid having only a single data point
         # (previously interval=2 caused too few measurements for short tests)
         measurement_interval = 1  # Measure on every frame post-warmup
@@ -382,15 +381,23 @@ def check_stream_fps_accuracy_generic(device, stream_name, stream_type, formats,
         measurement_interval = 25  # Balance between frequency and performance
         log.info(f"Very high FPS mode for {expected_fps} FPS: warmup={warmup_frames}, interval={measurement_interval}")
 
+    min_gap = None
+    max_gap = None
+
     def frame_callback(frame):
-        nonlocal frame_count, start_test_time
+        nonlocal frame_count, min_gap, max_gap
         current_time = time.time()
 
-        if start_test_time is None:
-            start_test_time = current_time
+        if fps_monitor.frame_times:
+            gap = current_time - fps_monitor.frame_times[-1]
+            min_gap = gap if min_gap is None else min(min_gap, gap)
+            max_gap = gap if max_gap is None else max(max_gap, gap)
 
-        fps_monitor.update(current_time)
         frame_count += 1
+        # Anchor the measurement window at the last warmup frame so warmup arrival times are excluded
+        if frame_count == warmup_frames:
+            fps_monitor.reset()
+        fps_monitor.update(current_time)
 
         # Record FPS after warmup period, using adaptive measurement interval
         if frame_count > warmup_frames and frame_count % measurement_interval == 0:
@@ -465,6 +472,20 @@ def check_stream_fps_accuracy_generic(device, stream_name, stream_type, formats,
             log.debug(f"{stream_name} sensor.close() failed during teardown: {e}")
         _settle()
 
+    # Host delivery jitter is reported but not failed on: frames held back and then delivered together
+    # still average out to the right rate
+    if max_gap is not None:
+        period_ms = 1000.0 / expected_fps
+        min_gap_ms = min_gap * 1000
+        max_gap_ms = max_gap * 1000
+        gap_msg = (f"{stream_name} frame arrival gaps incl. warmup: min {min_gap_ms:.0f} ms, max {max_gap_ms:.0f} ms "
+                   f"(expected period {period_ms:.0f} ms)")
+        # A held-back frame shows as a gap of about two periods; ignore scheduling jitter at high FPS
+        if max_gap_ms > 1.9 * period_ms and max_gap_ms - period_ms > 50:
+            log.warning(gap_msg)
+        else:
+            log.info(gap_msg)
+
     # Calculate statistics
     if not fps_measurements:
         return False, 0.0, {"error": f"No FPS measurements collected after {test_stopwatch.get_elapsed():.1f}s (expected {expected_fps} FPS, warmup: {warmup_frames} frames, got {frame_count} total frames)"}
@@ -480,7 +501,8 @@ def check_stream_fps_accuracy_generic(device, stream_name, stream_type, formats,
     elif len(fps_measurements) < 2:
         return False, 0.0, {"error": f"Insufficient FPS measurements: {len(fps_measurements)} (need >=2 for statistics, or >=1 with >={MIN_FRAME_COUNT_LOW_FPS} frames for <=6 FPS). Got {frame_count} frames in {test_stopwatch.get_elapsed():.1f}s with warmup={warmup_frames}, interval={measurement_interval}"}
     else:
-        actual_avg_fps = sum(fps_measurements) / len(fps_measurements)
+        # Overall rate since the anchor; a mean of window rates is skewed by back-to-back frames after warmup
+        actual_avg_fps = fps_monitor.get_average_fps()
         fps_min = min(fps_measurements)
         fps_max = max(fps_measurements)
         fps_std = np.std(fps_measurements) if len(fps_measurements) > 1 else 0.0
