@@ -217,7 +217,6 @@ namespace librealsense
 
         _is_safety_layout = ( pid == D585S_PID || pid == D585_LEGACY_PID );
         _is_d585s = ( pid == D585S_PID );
-        _supports_depth_mapping_params = d5x5_family_pids.count( pid ) > 0;
 
         const uint32_t mapping_stream_mi = _is_safety_layout ? 13 : 11;
         auto mapping_devs_info = filter_by_mi( dev_info->get_group().uvc_devices, mapping_stream_mi);
@@ -251,8 +250,9 @@ namespace librealsense
             get_backend()->create_uvc_device(occupancy_devices_info.front()),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
             this);
-        // register_options() registers the Mapping XU, which covers every D5x5 PID
-        if( _supports_depth_mapping_params )
+        // Depth mapping params share the Mapping XU with segmentation, so the same products get both;
+        // register_options() registers the XU
+        if( ! _is_d585s )
             _raw_depth_mapping_ep = raw_mapping_ep;
 
         // The mapping function reports every EP12 output as GREY; the PCL XYZ tuples are the
