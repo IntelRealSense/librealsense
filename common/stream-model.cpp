@@ -73,7 +73,8 @@ namespace rs2
         frame_number = f.get_frame_number();
         timestamp_domain = f.get_frame_timestamp_domain();
         timestamp = f.get_timestamp();
-        fps.add_timestamp(f.get_timestamp(), f.get_frame_number());
+        // Alternating passive depth numbers both exposure classes on one counter, so each tile sees every 2nd number
+        fps.add_timestamp( f.get_timestamp(), split ? frame_number / 2 : frame_number );
 
         view_fps.add_timestamp(glfwGetTime() * 1000, count++);
 
