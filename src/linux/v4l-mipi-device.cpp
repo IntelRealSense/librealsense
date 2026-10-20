@@ -74,8 +74,8 @@ namespace librealsense
             v4l2_ext_control xctrl{cid, uint32_t(size), 0, 0};
 
             // size > 8 cannot fit in xctrl.value/value64 - always the byte pointer. For size <= 8
-            // the compound-vs-scalar choice is ambiguous (e.g. D500 DPP decimation is 2 * u32 = 8
-            // bytes but must go through p_u8, not value64) - query V4L2_CTRL_FLAG_HAS_PAYLOAD to
+            // the compound-vs-scalar choice is ambiguous (e.g. an 8-byte compound array that must
+            // go through p_u8, not value64) - query V4L2_CTRL_FLAG_HAS_PAYLOAD to
             // disambiguate. If the query fails the CID is unlikely to exist and the S_EXT_CTRLS
             // below will fail anyway; falling back to the size-based scalar routing is fine there.
             bool use_pointer = size > 8;

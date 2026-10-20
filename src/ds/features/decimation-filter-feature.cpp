@@ -17,10 +17,11 @@
 namespace librealsense {
 
 
-// D500_CAMERA_CID_DECIMATION compound U32 array descriptor (see realsense_mipi_platform_driver
-// #658). Mirrors d500_decimation_{min,max,step,def} - magnitude is currently fixed at 2 on
-// the FW side, per rs_decimation_filter_dpp.h. USB reads these facts back from FW, so this
-// desc is consulted only on the MIPI path.
+// D500_CAMERA_CID_DECIMATION range descriptor - magnitude is currently fixed at 2 on the
+// FW side, per rs_decimation_filter_dpp.h.
+// GMSL cannot query ranges (V4L2 array controls report one scalar bound and the FW
+// registers hold only the current value), so these tables are the only source of the MIPI
+// range. USB reads it from FW and ignores this desc.
 static constexpr int32_t dec_min[]  = { 0, 2 };
 static constexpr int32_t dec_max[]  = { 1, 2 };
 static constexpr int32_t dec_step[] = { 1, 1 };
