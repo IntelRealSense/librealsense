@@ -49,7 +49,7 @@ These rules apply to all git operations.
 - The core library compiles as **C++14** (`cxx_std_14` — see `CMake/lrs_macros.cmake`)
 - The public interface only requires **C++11** (`cxx_std_11`)
 - Examples and wrappers generally use **C++11**
-- CMake minimum version: **3.10** (3.16.3 when `BUILD_WITH_DDS` is enabled)
+- CMake minimum version: **3.10** (3.16.3 when `BUILD_WITH_DDS` is enabled), enforced by the "Minimal CMake version" CI job — CMake changes must keep working with it
 - Use the existing code style in surrounding files; the project does not enforce a formatter
 - Logging uses EasyLogging++ (controlled by `BUILD_EASYLOGGINGPP` option)
 
