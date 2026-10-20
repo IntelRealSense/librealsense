@@ -200,26 +200,28 @@ def test_perception_streams_while_filter_processes_depth(test_device, depth_sens
         elif f.get_profile().stream_type() == rs.stream.depth and f.supports_frame_metadata( md ):
             depth_bits.append( f.get_frame_metadata( md ) )
 
+    if color_sensor is depth_sensor:
+        stream_order = [( depth_sensor, [depth_profile, color_profile] )]
+    else:
+        stream_order = [( depth_sensor, depth_profile ), ( color_sensor, color_profile )]
+    stream_order.append( ( perception_sensor, perception_profile ) )
+
     embedded_filter.set( 1.0 )
-    sensors = []
+    opened = []
+    started = []
     try:
-        if color_sensor is depth_sensor:
-            depth_sensor.open( [depth_profile, color_profile] )
-            sensors.append( depth_sensor )
-            depth_sensor.start( on_frame )
-        else:
-            for sensor, profile in ( ( depth_sensor, depth_profile ), ( color_sensor, color_profile ) ):
-                sensor.open( profile )
-                sensors.append( sensor )
-                sensor.start( on_frame )
-        time.sleep( 1 )
-        perception_sensor.open( perception_profile )
-        sensors.append( perception_sensor )
-        perception_sensor.start( on_frame )
+        for sensor, profiles in stream_order:
+            if sensor is perception_sensor:
+                time.sleep( 1 )
+            sensor.open( profiles )
+            opened.append( sensor )
+            sensor.start( on_frame )
+            started.append( sensor )
         time.sleep( STREAM_SECONDS )
     finally:
-        for sensor in reversed( sensors ):
+        for sensor in reversed( started ):
             sensor.stop()
+        for sensor in reversed( opened ):
             sensor.close()
         time.sleep( 2 )  # D555 rejects filter changes ("Option value error") for a moment after its streams close
 
