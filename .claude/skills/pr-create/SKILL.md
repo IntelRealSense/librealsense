@@ -1,3 +1,8 @@
+---
+name: pr-create
+description: Open a librealsense pull request, push commits to it, or update its description - tracking ticket, description format, description audit. Use before creating or updating a PR.
+---
+
 # PR Creation & Update Workflow
 
 ## When to Use This Skill
@@ -6,8 +11,9 @@ Opening a PR, pushing new commits to one, or updating its description on `realse
 
 ## Tracking Ticket — Required
 
-Every PR requires a tracking Jira ticket.
+Every PR from the RealSense team requires a tracking Jira ticket. External contributors have no Jira access: link the related GitHub issue instead (`Fixes #1234`), or skip the line if there is none.
 
+For RealSense team PRs:
 - If you **know** the ticket (the user told you, or you opened the ticket yourself this session), add a `Tracked on [RSDEV-1234]` line right after the Overview — bare text, no link.
 - If you are **not sure** which ticket is relevant, **ask the user before creating the PR**. Tell them each PR requires a ticket, and let them either provide one or explicitly approve creating the PR without it.
 - Never guess a ticket. Only omit the `Tracked on` line when the user explicitly says it's OK without one.

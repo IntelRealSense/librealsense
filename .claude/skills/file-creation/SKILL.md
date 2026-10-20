@@ -1,3 +1,8 @@
+---
+name: file-creation
+description: Create new source files in the source tree (not a build directory) with the required copyright header. Use before adding any new file to the repository.
+---
+
 # Safe Source File Generation
 
 When creating new code files, it is critical to ensure they are placed in the project's source tree and NOT in build or temporary directories. 
@@ -5,7 +10,7 @@ When creating new code files, it is critical to ensure they are placed in the pr
 ## Protocol
 
 ### 1. Diagnose Environment
-Before calling `create_file`, always inspect the Current Working Directory (CWD).
+Before creating a file, always inspect the Current Working Directory (CWD).
 
 **Red Flags (Build Directory Indicators):**
 *   Presence of `CMakeCache.txt`, `CMakeFiles/` folder.
@@ -22,10 +27,10 @@ If you are in a build directory, identify the path to the Source Root.
 Ensure the parent directory of the file you intend to create exists in the *Source* location.
 
 ### 4. Execute with Relative Paths
-Use the calculated relative prefix when calling `create_file`.
+Use the calculated relative prefix in the file path.
 
-*   Bad: `filePath: "examples/my_example.cpp"` (If CWD is `build/`, this pollutes the build artifact folder).
-*   Good: `filePath: "../examples/my_example.cpp"` (Escapes build dir to reach the actual source tree).
+*   Bad: `"examples/my_example.cpp"` (If CWD is `build/`, this pollutes the build artifact folder).
+*   Good: `"../examples/my_example.cpp"` (Escapes build dir to reach the actual source tree).
 
 ## Required Copyright Header
 
