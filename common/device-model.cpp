@@ -439,24 +439,6 @@ namespace rs2
         }
     }
 
-    bool device_model::is_perception_streaming() const
-    {
-        return is_stream_active( RS2_STREAM_OBJECT_DETECTION );
-    }
-
-    bool device_model::is_perception_blocking_filter_enabled() const
-    {
-        for( auto const & sub : subdevices )
-            for( auto const & ef : sub->embedded_filters )
-            {
-                auto type = ef->get_filter()->get_type();
-                if( ( type == RS2_EMBEDDED_FILTER_TYPE_DECIMATION || type == RS2_EMBEDDED_FILTER_TYPE_TEMPORAL )
-                    && ef->is_enabled() )
-                    return true;
-            }
-        return false;
-    }
-
     void device_model::play_defaults(viewer_model& viewer)
     {
         if (!dev_syncer)
@@ -2702,16 +2684,13 @@ namespace rs2
                         }
                         if (can_stream)
                         {
-                            // Disable the start button for object detection unless color streams, for GMSL occupancy unless
-                            // depth streams at a supported resolution, and for object detection while a decimation/temporal
-                            // embedded filter is enabled. Over GMSL perception and infrared share the IR channel.
-                            bool blocking_filter_enabled = subdevice_has_stream_enabled( *sub, RS2_STREAM_OBJECT_DETECTION )
-                                                        && is_perception_blocking_filter_enabled();
+                            // Disable the start button for object detection unless color streams, and for GMSL occupancy unless
+                            // depth streams at a supported resolution. Over GMSL perception and infrared share the IR channel.
                             bool blocking_ir_active = subdevice_has_perception( *sub ) && fw_update::is_mipi_device( dev )
                                                    && is_stream_active( RS2_STREAM_INFRARED );
                             bool missing_color = subdevice_needs_color( *sub ) && ! is_stream_active( RS2_STREAM_COLOR );
                             bool missing_depth = subdevice_needs_depth( *sub ) && ! is_depth_resolution_valid_for_occupancy();
-                            bool disable_perception = missing_color || missing_depth || blocking_filter_enabled || blocking_ir_active;
+                            bool disable_perception = missing_color || missing_depth || blocking_ir_active;
                             if( disable_perception )
                                 ImGui::BeginDisabled();
 
@@ -2752,9 +2731,7 @@ namespace rs2
                             {
                                 ImGui::EndDisabled();
                                 if( ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) )
-                                    RsImGui::CustomTooltip( blocking_filter_enabled
-                                        ? "Disable the decimation/temporal embedded filter before starting perception (cannot run together)"
-                                        : blocking_ir_active
+                                    RsImGui::CustomTooltip( blocking_ir_active
                                         ? "Stop the Infrared streams before starting perception (they share the GMSL IR channel)"
                                         : missing_color
                                         ? "Object detection needs a Color stream running; detections are drawn on it"
@@ -3325,16 +3302,11 @@ namespace rs2
                     ImGui::SetCursorPos({ windows_width - 42, pos.y - 3 });
 
                     const bool pb_available = pb->is_available();
-                    // Block turning a decimation/temporal filter on while perception streams (mutually exclusive).
                     auto ef_type = pb->get_filter()->get_type();
-                    const bool block_enable_while_perception = !pb->is_enabled()
-                        && ( ef_type == RS2_EMBEDDED_FILTER_TYPE_DECIMATION
-                          || ef_type == RS2_EMBEDDED_FILTER_TYPE_TEMPORAL )
-                        && is_perception_streaming();
                     // Decimation is FW-side read-only while depth streams - lock both directions.
                     const bool block_decimation_while_depth_streams = sub->streaming
                         && ef_type == RS2_EMBEDDED_FILTER_TYPE_DECIMATION;
-                    disable_guard dg( !pb_available || block_enable_while_perception || block_decimation_while_depth_streams );
+                    disable_guard dg( !pb_available || block_decimation_while_depth_streams );
                     try
                     {
                         ImGui::PushFont(window.get_font());
@@ -3392,8 +3364,6 @@ namespace rs2
                         if( !pb_available && !pb->unavailable_tooltip.empty()
                             && ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) )
                             RsImGui::CustomTooltip( "%s", pb->unavailable_tooltip.c_str() );
-                        else if( block_enable_while_perception && ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) )
-                            RsImGui::CustomTooltip( "Stop the perception stream before enabling this filter (cannot run together)" );
                         else if( block_decimation_while_depth_streams && ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) )
                             RsImGui::CustomTooltip( "Stop streaming before toggling this filter (read-only while active)" );
 
