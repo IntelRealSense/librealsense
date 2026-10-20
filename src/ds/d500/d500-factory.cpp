@@ -142,10 +142,10 @@ namespace librealsense
 
             register_dpp_embedded_filters();
 
-            // Dual-RGB rectification toggle, supported by the D585 2C USB firmware only. Depth and both
-            // color streams share the depth sensor here, so its streaming state gates the option.
-            if( ! _is_mipi_device && ( get_pid() == ds::D585_2C_PID || get_pid() == ds::D585_2C_PROTO_PID )
-                && d500_device::_fw_version >= firmware_version( "7.58.46064.14668" ) )
+            // Dual-RGB rectification toggle. Depth and both color streams share the depth sensor here,
+            // so its streaming state gates the option.
+            if( ( get_pid() == ds::D585_2C_PID || get_pid() == ds::D585_2C_PROTO_PID )
+                && d500_device::_fw_version >= firmware_version( _is_mipi_device ? "7.59.46610.16541" : "7.58.46064.14668" ) )
             {
                 auto rectification = std::make_shared< dual_rgb_rectification_option >( d500_device::_hw_monitor,
                                                                                         get_raw_depth_sensor() );

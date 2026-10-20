@@ -16,11 +16,11 @@
 namespace librealsense {
 
 
-// D500_CAMERA_CID_MINZ compound U32 array descriptor (see realsense_mipi_platform_driver#658).
-// Mirrors the driver's d500_minz_{min,max,def} tables; step is 1 per slot (all-integer
-// params). Defaults track LibRS's rs2_hdrd_control field docs; threshold_mode = 1 matches
-// the driver's d500_minz_def (commit d578fd3b). USB reads these facts back from FW, so this
-// desc is consulted only on the MIPI path.
+// D500_CAMERA_CID_MINZ range descriptor; step is 1 per slot (all-integer params). Defaults
+// track LibRS's rs2_hdrd_control field docs.
+// GMSL cannot query ranges (V4L2 array controls report one scalar bound and the FW
+// registers hold only the current value), so these tables are the only source of the MIPI
+// range. USB reads it from FW and ignores this desc.
 static constexpr int32_t minz_min[]  = { 0, 0, 1, 0,   0, 0, 0 };
 static constexpr int32_t minz_max[]  = { 1, 1, 2, 2, 256, 2, 65535 };
 static constexpr int32_t minz_step[] = { 1, 1, 1, 1,   1, 1, 1 };
