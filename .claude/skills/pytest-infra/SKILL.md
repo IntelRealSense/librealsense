@@ -1,3 +1,8 @@
+---
+name: pytest-infra
+description: Pytest test infrastructure for librealsense - migrating legacy tests to pytest, fixtures, device markers, hub management, verifying Jenkins CI results. Use before writing or migrating pytest tests or changing conftest.py / rspy.
+---
+
 # Pytest Infrastructure & Test Migration
 
 ## When to Use This Skill

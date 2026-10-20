@@ -1,4 +1,9 @@
-﻿# Adding New API to librealsense
+---
+name: add-api
+description: Add new public API to the librealsense SDK (C/C++ headers, Python bindings, examples) without breaking existing API. Use before adding any function, struct, enum, option or metadata field to include/librealsense2.
+---
+
+# Adding New API to librealsense
 
 ## Overview
 This skill documents best practices for adding new API functionality to librealsense
@@ -51,7 +56,7 @@ This skill documents best practices for adding new API functionality to libreals
 - Follow existing naming conventions (kebab-case for files)
 
 ### 4. License Headers
-- **Always use current year** (2026, not 2025 or earlier)
+- **Always use the current year** - never copy it from a nearby file
 - Standard format:
   ```cpp
   // License: Apache 2.0. See LICENSE file in root directory.
@@ -228,7 +233,7 @@ int main() {
 Before considering work complete:
 
 - [ ] `git diff --stat` shows **only additions** (no deletions)
-- [ ] All new files have 2026 copyright year
+- [ ] All new files have the current copyright year
 - [ ] No files created in `build/` directory
 - [ ] Examples created instead of documentation (when needed)
 - [ ] C++ example code preferred over C
@@ -275,5 +280,5 @@ Before considering work complete:
 - **When in doubt, ASK** before modifying existing code
 - **Always verify** with git diff
 - **Examples over documentation** - show, don't tell
-- **Current year** in license headers (2026)
+- **Current year** in license headers
 - **No build/ directory** files in version control

@@ -1,3 +1,8 @@
+---
+name: build
+description: Build librealsense with CMake on Windows, Linux or macOS - configure, compile, build flags, specific targets, Python bindings, DDS. Use before configuring or compiling the project.
+---
+
 # Building librealsense
 
 ## Prerequisites

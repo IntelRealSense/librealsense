@@ -1,3 +1,8 @@
+---
+name: cpp-coding
+description: C++ coding standards for librealsense - language standard, naming, RAII, error handling, comments. Use before adding or modifying any C++ code.
+---
+
 # C++ Coding Standards & Practices Skill
 
 Use this protocol to ensure all C++ code modifications align with the project's engineering standards.
@@ -5,7 +10,7 @@ Use this protocol to ensure all C++ code modifications align with the project's 
 ## Protocol
 
 ### 1. Enforce Language Standard
-*   **Standard**: The core library need to complie with **C++14** compatibility (`cxx_std_14` — see `CMake/lrs_macros.cmake`). The public interface requires **C++11** (`cxx_std_11`). Examples and wrappers generally use **C++11**
+*   **Standard**: The core library must compile with **C++14** compatibility (`cxx_std_14` — see `CMake/lrs_macros.cmake`). The public interface requires **C++11** (`cxx_std_11`). Examples and wrappers generally use **C++11**
 *   **Safety**: Prefer strict Types over `auto` (unless type is obvious or iterator).
 *   **No Macros**: Avoid C-style macros unless absolutely necessary.
 

@@ -1,3 +1,8 @@
+---
+name: pr-create
+description: Open a librealsense pull request, push commits to it, or update its description - tracking ticket, description format, description audit. Use before creating or updating a PR.
+---
+
 # PR Creation & Update Workflow
 
 ## When to Use This Skill
