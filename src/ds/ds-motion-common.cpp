@@ -2,7 +2,6 @@
 // Copyright(c) 2022-4 RealSense, Inc. All Rights Reserved.
 
 #include "ds-motion-common.h"
-#include <cstdlib>
 #include <chrono>
 #include <thread>
 
@@ -157,11 +156,11 @@ namespace librealsense
         constexpr uint8_t imu_batch_default = 1;
         constexpr uint8_t imu_batch_pair = 2;
 
-        uint8_t query_imu_batch(const std::shared_ptr<uvc_sensor>& sensor)
+        uint8_t query_imu_batch(const std::shared_ptr<uvc_sensor>& sensor, uint8_t control = ds::GMSL_IMU_BATCH_STATUS)
         {
-            return sensor->invoke_powered([](platform::uvc_device& dev) {
+            return sensor->invoke_powered([control](platform::uvc_device& dev) {
                 uint8_t status = 0;
-                if (!dev.get_xu(ds::depth_xu, ds::DS5_HKR_IMU_BATCH, &status, sizeof(status)))
+                if (!dev.get_xu(ds::gmsl_imu_xu, control, &status, sizeof(status)))
                     throw std::runtime_error("Cannot read IMU batch XU");
                 return status;
             });
@@ -169,18 +168,18 @@ namespace librealsense
 
         bool valid_imu_batch_status(uint8_t status)
         {
-            return (status & imu_batch_supported) && !(status & 0x1c) &&
-                (status & 3U) <= imu_batch_pair;
+            return (status & imu_batch_supported) && !(status & 0x1f);
         }
 
         void configure_imu_batch(const std::shared_ptr<uvc_sensor>& sensor, uint8_t mode)
         {
             sensor->invoke_powered([mode](platform::uvc_device& dev) {
-                uint8_t status = 0;
-                if (!dev.set_xu(ds::depth_xu, ds::DS5_HKR_IMU_BATCH, &mode, sizeof(mode)) ||
-                    !dev.get_xu(ds::depth_xu, ds::DS5_HKR_IMU_BATCH, &status, sizeof(status)) ||
+                uint8_t status = 0, actual_mode = 0;
+                if (!dev.set_xu(ds::gmsl_imu_xu, ds::GMSL_IMU_BATCH_MODE, &mode, sizeof(mode)) ||
+                    !dev.get_xu(ds::gmsl_imu_xu, ds::GMSL_IMU_BATCH_MODE, &actual_mode, sizeof(actual_mode)) ||
+                    !dev.get_xu(ds::gmsl_imu_xu, ds::GMSL_IMU_BATCH_STATUS, &status, sizeof(status)) ||
                     !valid_imu_batch_status(status) || (status & imu_batch_active) ||
-                    (status & 3U) != mode || (mode == imu_batch_pair && !(status & imu_batch_pixel)))
+                    actual_mode != mode || (mode == imu_batch_pair && !(status & imu_batch_pixel)))
                     throw std::runtime_error("HKR rejected IMU batch XU configuration");
             });
         }
@@ -206,6 +205,7 @@ namespace librealsense
 
     void ds_motion_sensor::open(const stream_profiles& requests)
     {
+        std::lock_guard<std::mutex> lock(_gmsl_batch_mutex);
         if (is_opened()) {
             synthetic_sensor::open(requests); // preserve the existing session on error
             return;
@@ -224,26 +224,16 @@ namespace librealsense
         uint8_t mode = imu_batch_default;
         if (supported) {
             uint8_t mask = 0;
-            int fps = 0;
             for (const auto& request : requests) {
                 const auto type = request->get_stream_type();
                 if (type != RS2_STREAM_ACCEL && type != RS2_STREAM_GYRO)
                     throw invalid_value_exception("IMUB accepts only accel/gyro requests");
-                if (fps != 0 && fps != request->get_framerate())
-                    throw invalid_value_exception("IMUB requires equal accel and gyro rates");
-                fps = request->get_framerate();
                 mask |= type == RS2_STREAM_ACCEL ? 1U : 2U;
             }
             if (mask == 0) throw invalid_value_exception("IMUB requires a motion stream");
             // XU mode 2 enables a pair; sensor masks belong only to IMUB packets.
             // Single-sensor requests retain legacy framing with mode 1.
-            if (mask == 3U) mode = imu_batch_pair;
-            if (const char* setting = std::getenv("RS2_GMSL_IMU_BATCH")) {
-                const std::string value(setting);
-                if (value != "0" && value != "1")
-                    LOG_WARNING("Ignoring RS2_GMSL_IMU_BATCH: expected 0 or 1, using automatic negotiation");
-                if (value == "0") mode = imu_batch_default;
-            }
+            if (mask == 3U && _gmsl_batch_enabled) mode = imu_batch_pair;
         }
         try {
             if (supported) {
@@ -263,12 +253,90 @@ namespace librealsense
 
     void ds_motion_sensor::close()
     {
+        std::lock_guard<std::mutex> lock(_gmsl_batch_mutex);
         synthetic_sensor::close();
         if (_gmsl_batch_sensor) {
             auto raw = _gmsl_batch_sensor;
             _gmsl_batch_sensor.reset();
             disable_imu_batch(raw);
         }
+    }
+
+    namespace {
+        // Callbacks hold a weak sensor reference, so options do not keep a device alive.
+        class imu_batch_option : public option_base
+        {
+        public:
+            imu_batch_option(option_range range, const char* description,
+                             std::function<float()> get, std::function<void(float)> set = {})
+                : option_base(range), _description(description), _get(std::move(get)), _set(std::move(set)) {}
+            float query() const override { return _get(); }
+            bool is_enabled() const override { return true; }
+            bool is_read_only() const override { return !_set; }
+            const char* get_description() const override { return _description; }
+            const char* get_value_description(float value) const override
+            {
+                if (is_read_only())
+                    return value == 1.f ? "Legacy" : value == 2.f ? "Pair" : nullptr;
+                return value == 0.f ? "Legacy" : value == 1.f ? "Automatic" : nullptr;
+            }
+            void set(float value) override
+            {
+                if (!_set) throw not_implemented_exception("IMU batch mode is read-only");
+                if (!is_valid(value)) throw invalid_value_exception("IMU batching expects 0 or 1");
+                _set(value);
+                _recording_function(*this);
+            }
+        private:
+            const char* _description;
+            std::function<float()> _get;
+            std::function<void(float)> _set;
+        };
+    }
+
+    void ds_motion_sensor::register_gmsl_imu_options()
+    {
+        auto raw = std::dynamic_pointer_cast<uvc_sensor>(get_raw_sensor());
+        if (!raw) return;
+        try {
+            const auto status = query_imu_batch(raw);
+            if (!valid_imu_batch_status(status) || !(status & imu_batch_pixel)) return;
+            const auto mode = query_imu_batch(raw, ds::GMSL_IMU_BATCH_MODE);
+            if (mode != imu_batch_default && mode != imu_batch_pair) return;
+        } catch (const std::exception& e) {
+            LOG_DEBUG("IMU batch options unavailable: " << e.what());
+            return;
+        }
+        std::weak_ptr<ds_motion_sensor> weak = std::dynamic_pointer_cast<ds_motion_sensor>(shared_from_this());
+        auto sensor = [weak]() {
+            auto s = weak.lock();
+            if (!s) throw std::runtime_error("Motion sensor is no longer available");
+            return s;
+        };
+        register_option(RS2_OPTION_GMSL_IMU_BATCH, std::make_shared<imu_batch_option>(
+            option_range{0, 1, 1, 1}, "GMSL IMU batching: 0 legacy, 1 automatic. Set while the sensor is closed.",
+            [sensor]() {
+                auto s = sensor();
+                std::lock_guard<std::mutex> lock(s->_gmsl_batch_mutex);
+                return s->_gmsl_batch_enabled ? 1.f : 0.f;
+            },
+            [sensor](float value) {
+                auto s = sensor();
+                std::lock_guard<std::mutex> lock(s->_gmsl_batch_mutex);
+                if (s->is_opened()) throw wrong_api_call_sequence_exception("Set IMU batching before opening the sensor");
+                s->_gmsl_batch_enabled = value != 0;
+            }));
+        register_option(RS2_OPTION_GMSL_IMU_BATCH_MODE, std::make_shared<imu_batch_option>(
+            option_range{1, 2, 1, 1}, "Current GMSL IMU wire mode: 1 legacy, 2 pair (read-only).",
+            [sensor]() {
+                auto s = sensor();
+                std::lock_guard<std::mutex> lock(s->_gmsl_batch_mutex);
+                auto raw = std::dynamic_pointer_cast<uvc_sensor>(s->get_raw_sensor());
+                const auto mode = query_imu_batch(raw, ds::GMSL_IMU_BATCH_MODE);
+                if (mode != imu_batch_default && mode != imu_batch_pair)
+                    throw std::runtime_error("Invalid IMU batch mode readback");
+                return float(mode);
+            }));
     }
 
     rs2_motion_device_intrinsic ds_motion_sensor::get_motion_intrinsics(rs2_stream stream) const

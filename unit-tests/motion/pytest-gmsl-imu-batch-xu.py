@@ -23,24 +23,49 @@ def test_xu_negotiation():
     #include <stdexcept>
     #include <string>
     #include <vector>
+    #include <mutex>
+    #include <map>
+    #include <functional>
+    #include <cmath>
     #define LOG_DEBUG(...) ((void)0)
     #define LOG_WARNING(...) ((void)0)
     using invalid_value_exception=std::invalid_argument;
+    using not_implemented_exception=std::logic_error;
+    using wrong_api_call_sequence_exception=std::logic_error;
+    enum { RS2_OPTION_GMSL_IMU_BATCH, RS2_OPTION_GMSL_IMU_BATCH_MODE };
+    struct option_range { float min,max,step,def; };
+    struct option {
+     virtual ~option(){};
+     virtual float query()const=0;
+     virtual bool is_enabled()const=0;
+     virtual bool is_read_only()const{return false;}
+     virtual const char* get_description()const=0;
+     virtual const char* get_value_description(float)const{return nullptr;}
+     virtual void set(float)=0;
+    };
+    struct option_base:option {
+     option_range range;
+     explicit option_base(option_range r):range(r){}
+     bool is_valid(float v)const{return std::isfinite(v) && v>=range.min && v<=range.max && std::floor(v)==v;}
+     std::function<void(const option&)> _recording_function=[](const option&){};
+    };
     enum { RS2_STREAM_ACCEL=1, RS2_STREAM_GYRO=2, RS2_STREAM_DEPTH=3 };
     struct profile { int type, fps; int get_stream_type()const{return type;} int get_framerate()const{return fps;} };
     using stream_profiles=std::vector<std::shared_ptr<profile>>;
-    namespace ds { constexpr int depth_xu=3; constexpr uint8_t DS5_HKR_IMU_BATCH=0x1c; }
+    namespace ds { constexpr int gmsl_imu_xu=0x11; constexpr uint8_t GMSL_IMU_BATCH_MODE=1, GMSL_IMU_BATCH_STATUS=2; }
     namespace platform {
     struct uvc_device {
-     uint8_t status=0xc1; unsigned writes=0,reads=0; bool fail_get=false,fail_set=false; int active_reads=-1; bool unknown_error=false;
+     uint8_t status=0xc1; unsigned writes=0,reads=0; bool fail_get=false,fail_set=false; int active_reads=-1; bool unknown_error=false, old_driver=false;
      bool get_xu(int unit,uint8_t control,uint8_t *out,int n) {
-      assert(unit==3 && control==0x1c && n==1);reads++;
+      assert(unit==0x11 && (control==1 || control==2) && n==1);reads++;
+      if(old_driver && control==2)return false;
       if(unknown_error)throw 1;
       if(active_reads>=0 && active_reads--==0)status&=~0x20;
-      *out=status;return !fail_get;
+      if(status!=0xff && (status&0x80) && ((status&0x1c) || (status&3)==3))return false;
+      *out=control==2 ? (status==0xff || !(status&0x80) ? 0 : status&0xe0) : (status&3)==2 ? 2 : 1;return !fail_get;
      }
      bool set_xu(int unit,uint8_t control,const uint8_t *in,int n) {
-      assert(unit==3 && control==0x1c && n==1);writes++;
+      assert(unit==0x11 && control==1 && n==1);writes++;
       assert(*in==1 || *in==2); // SDK writes modes, never the old sensor mask
       if(status&0x20)return false;
       status=(status&0xfc)|*in;return !fail_set;
@@ -57,13 +82,18 @@ def test_xu_negotiation():
     struct synthetic_sensor {
      bool opened=false,fail_open=false,fail_close=false; unsigned opens=0;
      bool is_opened()const{return opened;}
-     void open(const stream_profiles&) {
+     void open(const stream_profiles& p) {
+      for(auto& x:p)if(x->fps != p.front()->fps)throw std::runtime_error("Existing UVC equal-rate validation");
       if(opened)throw std::runtime_error("already open");
       opens++;if(fail_open)throw std::runtime_error("streamon failed");opened=true;
      }
      void close(){assert(opened);if(fail_close)throw std::runtime_error("close failed");opened=false;}
     };
-    struct ds_motion_sensor:synthetic_sensor {
+    struct ds_motion_sensor:synthetic_sensor, std::enable_shared_from_this<ds_motion_sensor> {
+     std::mutex _gmsl_batch_mutex;bool _gmsl_batch_enabled=true;
+     std::map<int,std::shared_ptr<option>> options;
+     void register_option(int id,std::shared_ptr<option> o){options[id]=o;}
+     void register_gmsl_imu_options();
      device *_owner;std::shared_ptr<raw_sensor_base> raw;
      std::shared_ptr<uvc_sensor> _gmsl_batch_sensor;
      std::shared_ptr<raw_sensor_base> get_raw_sensor(){return raw;}
@@ -80,7 +110,6 @@ def test_xu_negotiation():
     '''
     tests=r'''
     int main() {
-     unsetenv("RS2_GMSL_IMU_BATCH");
      d500_motion owner;
      auto raw=std::make_shared<uvc_sensor>();ds_motion_sensor s;s._owner=&owner;s.raw=raw;
      s.open(requests());assert(s.opened && raw->dev.status==0xc2);
@@ -91,12 +120,13 @@ def test_xu_negotiation():
      raw->dev.status=0xc0; // explicit disabled alias remains a valid starting state
      s.open(requests());assert(raw->dev.status==0xc2);s.close();
      before=raw->dev.writes;auto unequal=requests();unequal[1]->fps=400;
-     assert(failed(s,unequal) && raw->dev.writes==before);
+     assert(failed(s,unequal) && raw->dev.status==0xc1 && !s._gmsl_batch_sensor);
+     before=raw->dev.writes;
      assert(failed(s,requests(3,0)) && raw->dev.writes==before);
-     setenv("RS2_GMSL_IMU_BATCH","0",1);s.open(requests());assert(raw->dev.status==0xc1);s.close();
-     setenv("RS2_GMSL_IMU_BATCH","1",1);s.open(requests());assert(raw->dev.status==0xc2);s.close();
-     setenv("RS2_GMSL_IMU_BATCH","bad",1);s.open(requests());
-     assert(raw->dev.status==0xc2);s.close();unsetenv("RS2_GMSL_IMU_BATCH");
+     s._gmsl_batch_enabled=false;s.open(requests());assert(raw->dev.status==0xc1);s.close();
+     s._gmsl_batch_enabled=true;s.open(requests());assert(raw->dev.status==0xc2);s.close();
+     raw->dev.old_driver=true;before=raw->dev.writes;
+     s.open(requests());assert(raw->dev.writes==before);s.close();raw->dev.old_driver=false;
      s.open(requests());raw->dev.status=0xe2;raw->dev.active_reads=3;
      before=raw->dev.writes;s.close();
      assert(!s.opened && !s._gmsl_batch_sensor && raw->dev.status==0xc1 && raw->dev.writes==before+1);
@@ -113,7 +143,7 @@ def test_xu_negotiation():
      s.open(requests());s.fail_close=true;
      try{s.close();assert(false);}catch(const std::runtime_error&){}
      assert(s.opened && s._gmsl_batch_sensor);s.fail_close=false;s.close();
-     for(auto status:{0,0x81,0xc4,0xc3}) { // old FW, tunnel, reserved bits, invalid mode
+     for(auto status:{0,0xff,0x81,0xc4,0xc3}) { // old FW, tunnel, reserved bits, invalid mode
       raw->dev.status=status;before=raw->dev.writes;s.open(requests());
       assert(raw->dev.writes==before && !s._gmsl_batch_sensor);s.close();
      }
@@ -125,7 +155,29 @@ def test_xu_negotiation():
      assert(raw->dev.status==0xc1 && !s._gmsl_batch_sensor);raw->dev.fail_set=false;
      raw->dev.status=0xe2;assert(failed(s,requests()));assert(raw->dev.status==0xe2);
      s.raw=std::make_shared<raw_sensor_base>();s.open(requests());assert(!s._gmsl_batch_sensor);s.close();
-     puts("SDK IMU XU: paired/single/legacy/opt-out/invalid-env/busy/rollback/async-release/cleanup-errors tests passed");
+     auto opt_sensor=std::make_shared<ds_motion_sensor>();
+     opt_sensor->_owner=&owner;opt_sensor->raw=raw;raw->dev.status=0xc1;
+     opt_sensor->register_gmsl_imu_options();assert(opt_sensor->options.size()==2);
+     auto policy=opt_sensor->options.at(RS2_OPTION_GMSL_IMU_BATCH);
+     auto actual=opt_sensor->options.at(RS2_OPTION_GMSL_IMU_BATCH_MODE);
+     assert(policy->query()==1 && actual->query()==1 && actual->is_read_only());
+     for(float v:{-1.f,0.5f,2.f,NAN,INFINITY}) {
+      try{policy->set(v);assert(false);}catch(const invalid_value_exception&){}
+      assert(policy->query()==1);
+     }
+     try{actual->set(2);assert(false);}catch(const not_implemented_exception&){}
+     policy->set(0);opt_sensor->open(requests());assert(actual->query()==1);
+     try{policy->set(1);assert(false);}catch(const wrong_api_call_sequence_exception&){}
+     assert(policy->query()==0);opt_sensor->close();
+     policy->set(1);opt_sensor->open(requests());assert(actual->query()==2);
+     opt_sensor->close();assert(actual->query()==1);
+     opt_sensor.reset();
+     try{policy->query();assert(false);}catch(const std::runtime_error&){}
+     for(int status:{0,0xff,0x81,0xc4,0xc3}) {
+      opt_sensor=std::make_shared<ds_motion_sensor>();opt_sensor->raw=raw;raw->dev.status=status;
+      opt_sensor->register_gmsl_imu_options();assert(opt_sensor->options.empty());
+     }
+     puts("SDK IMU XU: options, paired/single/legacy, busy, rollback, async release, cleanup passed");
     }
     '''
     with tempfile.TemporaryDirectory(prefix='sdk-imu-xu-') as tmp:
@@ -141,7 +193,7 @@ def test_cid_mapping():
     constants = source[source.index('            static constexpr uint32_t RS_STREAM_CONFIG_0'):
                        source.index('            bool is_auto_exposure_control')]
     a = source.index('            static uint32_t depth_xu_to_cid(')
-    b = source.index('            static uint32_t inference_xu_to_cid(', a)
+    b = source.index('        }  // namespace v4l_mipi_logic', a)
     mapping = source[a:b]
     prefix = r'''
 #include <cassert>
@@ -149,6 +201,7 @@ def test_cid_mapping():
 #include <stdexcept>
 #include <sstream>
 #include <linux/videodev2.h>
+struct extension_unit { int subdevice,unit; };
 namespace rsutils { namespace string { using from = std::ostringstream; } }
 struct linux_backend_exception : std::runtime_error {
     template<class T> explicit linux_backend_exception(T const&) : std::runtime_error("unmapped") {}
@@ -158,7 +211,17 @@ struct linux_backend_exception : std::runtime_error {
 int main() {
     static_assert(RS_CAMERA_CID_IMU_BATCH == 0x009a4038, "batch CID");
     static_assert(RS_CAMERA_CID_ACCEL_SENSITIVITY == RS_CAMERA_CID_BASE + 39, "accel CID");
-    assert(depth_xu_to_cid(0x1c, true) == RS_CAMERA_CID_IMU_BATCH);
+    static_assert(RS_CAMERA_CID_IMU_BATCH_STATUS == 0x009a4039, "status CID");
+    assert(xu_to_cid({4,0x11},1,true)==RS_CAMERA_CID_IMU_BATCH);
+    assert(xu_to_cid({4,0x11},2,true)==RS_CAMERA_CID_IMU_BATCH_STATUS);
+    for(auto xu:{extension_unit{4,0x11},extension_unit{4,3}}) {
+        try { xu_to_cid(xu,1,false); assert(false); }catch(const linux_backend_exception&){}
+    }
+    for(int control:{1,2,3}) {
+        try { xu_to_cid({4,3},control,true); assert(false); }catch(const linux_backend_exception&){}
+    }
+    try { xu_to_cid({4,0x11},3,true); assert(false); }catch(const linux_backend_exception&){}
+    try { depth_xu_to_cid(0x1c,true); assert(false); }catch(const linux_backend_exception&){}
     bool unsupported = false;
     try { depth_xu_to_cid(0x1c, false); }
     catch (const linux_backend_exception&) { unsupported = true; }

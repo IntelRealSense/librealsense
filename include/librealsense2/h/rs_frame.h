@@ -223,6 +223,11 @@ rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error);
 
 /**
 * retrieve frame number from frame handle
+* GMSL IMU in IMUB mode uses the firmware per-sensor sample sequence, whereas
+* legacy GMSL IMU uses a host delivery counter. IMUB gaps can reflect samples
+* discarded before transmission as well as transport loss; they are not a
+* link-loss counter. Numbering is independent for accel and gyro and need not
+* be continuous across stream sessions or changes of wire mode.
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               the frame number

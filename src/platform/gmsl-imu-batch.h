@@ -8,9 +8,9 @@
 #include <string.h>
 
 /* Little-endian, fixed 256-byte RAW8 line. Header: IMUB, version, count,
- * header bytes, record bytes, packet sequence (u32), requested sensor mask (u8), reserved (3 bytes).
+ * header bytes, record bytes, packet sequence (u32), packet content mask (u8), reserved (3 bytes).
  * Records contain HID32 (40 bytes total) or HID38 (46 bytes total), then a u64 sample sequence.
- * Mask 3: one accel then one gyro; mask 1/2: only the requested sample.
+ * Mask 3: one accel then one gyro; mask 1/2: only the indicated sample.
  * Original per-sensor timestamps are retained. The wire line is always 256 bytes.
  */
 namespace gmsl_imu_batch {
@@ -55,6 +55,15 @@ inline bool valid(const uint8_t* p, size_t n) {
     }
     return true;
 }
+// Use the original 64-bit hardware timestamps, not the converted host clock.
+// Requires a validated packet and position < count. Equal timestamps retain
+// the wire order. This orders one packet only.
+inline unsigned record_in_timestamp_order(const uint8_t* p, unsigned position) {
+    if (p[5] == 2 && read_u64(p + header_bytes + 2) >
+                      read_u64(p + header_bytes + p[7] + 2))
+        return 1U - position;
+    return position;
+}
 // Normalize the internal trailer without changing the firmware-owned HID payload.
 inline bool decode_record(const uint8_t* p, size_t n, unsigned index, uint8_t* sample, size_t capacity) {
     if (!sample || capacity < sample_bytes || !valid(p,n) || index >= p[5]) return false;
@@ -69,11 +78,11 @@ inline bool decode_record(const uint8_t* p, size_t n, unsigned index, uint8_t* s
 inline bool is_decoded_sample(const uint8_t* p, size_t n) {
     return p && n == sample_bytes && memcmp(p+sample_tag_offset,"IMS1",4) == 0;
 }
-inline void begin(uint8_t* p, uint32_t sequence, uint8_t requested_mask=3U) {
+inline void begin(uint8_t* p, uint32_t sequence, uint8_t content_mask=3U) {
     memset(p,0,wire_bytes);
     p[0]='I';p[1]='M';p[2]='U';p[3]='B';p[4]=1;
     p[6]=uint8_t(header_bytes);p[7]=uint8_t(record_bytes);
-    write_u32(p+8,sequence);p[12]=requested_mask;
+    write_u32(p+8,sequence);p[12]=content_mask;
 }
 inline bool append(uint8_t* p, const uint8_t* hid32, uint64_t sample_sequence) {
     if (!has_magic(p,wire_bytes) || p[5]>=count_for_mask(p[12]) || !hid32 ||

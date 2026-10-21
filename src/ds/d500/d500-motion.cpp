@@ -199,6 +199,7 @@ namespace librealsense
                                                             d500_motion_fourcc_to_rs2_format, d500_motion_fourcc_to_rs2_stream);
 
         motion_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+        motion_ep->register_gmsl_imu_options();
 
         // Register a sensitivity control only when the driver reports exactly [0, max_level] with step 1.
         auto register_mipi_sensitivity = [&]( rs2_option id, float max_level ) -> std::shared_ptr< option >

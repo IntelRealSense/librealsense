@@ -548,7 +548,8 @@ namespace librealsense
                                                     for (unsigned i = 0; i < count; ++i) {
                                                         samples[i] = std::make_shared<owned_imu_sample>();
                                                         auto& bytes = samples[i]->bytes;
-                                                        gmsl_imu_batch::decode_record(wire, frame_sz, i, bytes.data(), bytes.size());
+                                                        gmsl_imu_batch::decode_record(wire, frame_sz,
+                                                            gmsl_imu_batch::record_in_timestamp_order(wire, i), bytes.data(), bytes.size());
                                                     }
                                                     buf_mgr.request_next_frame();
                                                     if (!count) {
@@ -564,9 +565,8 @@ namespace librealsense
                                                     }
                                                     // Optional receive evidence, after re-queueing the VI buffer.
                                                     // Keep the transport sequence distinct from sensor sequences.
-                                                    static const bool trace_packets = std::getenv("RS2_GMSL_IMU_PACKET_TRACE") != nullptr;
-                                                    if (trace_packets && count) {
-                                                        LOG_INFO("IMUB_RX packet=" << packet_sequence
+                                                    if (count) {
+                                                        LOG_DEBUG("IMUB_RX packet=" << packet_sequence
                                                             << " records=" << count
                                                             << " first_sensor=" << unsigned(samples[0]->bytes[0])
                                                             << " first_seq=" << gmsl_imu_batch::read_u64(samples[0]->bytes.data()+gmsl_imu_batch::sample_sequence_offset)

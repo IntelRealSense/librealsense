@@ -74,9 +74,10 @@ namespace librealsense
 
             static constexpr uint32_t RS_CAMERA_CID_ALIGNED_DEPTH           = ( RS_CAMERA_CID_BASE + 55 );
 
-            // One-byte IMU batch XU (0x1c) on the motion node.
+            // Logical IMU XU: symmetric mode and read-only status on the motion node.
             static constexpr uint32_t RS_CAMERA_CID_IMU_BATCH = RS_CAMERA_CID_BASE + 56;
-            static constexpr uint8_t RS_IMU_BATCH = 0x1C;
+            static constexpr uint32_t RS_CAMERA_CID_IMU_BATCH_STATUS = RS_CAMERA_CID_BASE + 57;
+            static constexpr uint8_t RS_IMU_XU_UNIT = 0x11;
 
             static constexpr uint8_t GVD_VALID_OPCODE = 0x10;
 
@@ -349,7 +350,6 @@ namespace librealsense
                     case RS_TEMPORAL_FILTER_DPP:   return RS_CAMERA_CID_TEMPORAL_FILTER_DPP;
                     case RS_HDRD_CONTROL:          return RS_CAMERA_CID_MINZ;
                     case RS_ALIGN_DEPTH:           return RS_CAMERA_CID_ALIGNED_DEPTH;
-                    case RS_IMU_BATCH: return RS_CAMERA_CID_IMU_BATCH;
                     default: break;  // the rest are common to both families
                     }
                 }
@@ -392,8 +392,17 @@ namespace librealsense
 
             uint32_t xu_to_cid( const extension_unit & xu, uint8_t control, bool is_d5xx )
             {
+                if( is_d5xx && xu.subdevice == 4 && xu.unit == RS_IMU_XU_UNIT )
+                {
+                    switch( control )
+                    {
+                    case 1: return RS_CAMERA_CID_IMU_BATCH;
+                    case 2: return RS_CAMERA_CID_IMU_BATCH_STATUS;
+                    default: throw linux_backend_exception( "Unknown MIPI IMU XU control" );
+                    }
+                }
                 if( 0 != xu.subdevice )
-                    throw linux_backend_exception( rsutils::string::from() << "MIPI Controls mapping is for Depth XU only, requested for subdevice " << xu.subdevice );
+                    throw linux_backend_exception( rsutils::string::from() << "Unsupported MIPI XU subdevice " << xu.subdevice );
 
                 if( is_d5xx && xu.unit == RS_INFERENCE_XU_UNIT )
                     return inference_xu_to_cid( control );

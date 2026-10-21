@@ -74,8 +74,9 @@ namespace librealsense
         // Backs RS2_COMPOSITE_OPTION_HDRD_CONTROL - see src/ds/d500/hdrd-embedded-filter.h.
         const uint8_t DS5_HKR_HDRD_CONTROL = 0x14;
         // GMSL-only motion negotiation; one byte, not a USB HID control.
-        // SET 0/1: no batching (default 1); 2: accel+gyro pair. GET adds status.
-        const uint8_t DS5_HKR_IMU_BATCH = 0x1C;
+        // MODE GET/SET: 1 legacy, 2 pair. STATUS GET: supported/pixel/active bits7/6/5.
+        const uint8_t GMSL_IMU_BATCH_MODE = 1;
+        const uint8_t GMSL_IMU_BATCH_STATUS = 2;
                 
 
         // DS5 fisheye XU identifiers
@@ -84,6 +85,10 @@ namespace librealsense
         // subdevice[h] unit[fw], node[h] guid[fw]
         const platform::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
+
+        // Software-only MIPI namespace on the motion endpoint; not a USB descriptor.
+        const platform::extension_unit gmsl_imu_xu = { 4, 0x11, 2,
+        { 0x6c824e26, 0xa3f1, 0x49d7,{ 0x9b, 0x4a, 0x1f, 0xb8, 0x9c, 0x3e, 0x70, 0x51 } } };
 
         const platform::extension_unit fisheye_xu = { 3, 12, 2,
         { 0xf6c3c3d1, 0x5cde, 0x4477,{ 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };

@@ -8,6 +8,7 @@
 #include "ds-calib-parsers.h"
 
 #include <rsutils/lazy.h>
+#include <mutex>
 
 
 namespace librealsense
@@ -95,6 +96,7 @@ namespace librealsense
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const;
         void open(const stream_profiles& requests) override;
         void close() override;
+        void register_gmsl_imu_options();
 
         stream_profiles init_stream_profiles() override;
 
@@ -102,6 +104,8 @@ namespace librealsense
         std::shared_ptr<stream_interface> get_accel_stream() const;
         std::shared_ptr<stream_interface> get_gyro_stream() const;
 
+        std::mutex _gmsl_batch_mutex;
+        bool _gmsl_batch_enabled = true;
         std::shared_ptr<uvc_sensor> _gmsl_batch_sensor;
         const device* _owner;
     };

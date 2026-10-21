@@ -653,6 +653,8 @@ std::string const & get_string_( rs2_option value )
         CASE( DUAL_RGB_EXPOSURE )
         CASE( DUAL_RGB_GAIN )
         CASE( ACCEL_SENSITIVITY )
+        CASE( GMSL_IMU_BATCH )
+        CASE( GMSL_IMU_BATCH_MODE )
 #undef CASE
         return arr;
     }();

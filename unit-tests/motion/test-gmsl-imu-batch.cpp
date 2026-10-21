@@ -36,7 +36,7 @@ int main() {
  bad=p;bad[16+1]=0;assert(!valid(bad.data(),256));
  assert(!valid(nullptr,256));assert(!has_magic(a.data(),32));
  assert(!append(p.data(),g.data(),456));
- // Single requested sensor: one record, full 256-byte line, zero padding.
+ // Single content mask: one record, full 256-byte line, zero padding.
  for(unsigned mask=1;mask<=2;mask++) {
   begin(p.data(),7,mask);
   assert(!valid(p.data(),256));
@@ -84,6 +84,21 @@ int main() {
    assert(!decode_record(p.data(),256,0,nullptr,sample.size()));
    p[7]=45;assert(!valid(p.data(),256));
    assert(!decode_record(p.data(),256,0,sample.data(),sample.size()));
+  }
+ }
+ // Callback order uses full hardware timestamps for both record layouts.
+ for(unsigned stride: {40U,46U}) {
+  for(unsigned mask: {1U,2U,3U}) {
+   for(int order: {-1,0,1}) {
+    p.fill(0);begin(p.data(),0,mask);p[7]=stride;p[5]=count_for_mask(mask);
+    for(unsigned i=0;i<p[5];++i) {
+     auto r=p.data()+header_bytes+i*stride;r[0]=report_for_record(mask,i);r[1]=2;
+     write_u64(r+2,i ? 0x100000000ULL+order : 0x100000000ULL);
+    }
+    assert(valid(p.data(),p.size()));
+    for(unsigned i=0;i<p[5];++i)
+     assert(record_in_timestamp_order(p.data(),i)==(mask==3 && order<0 ? 1-i : i));
+   }
   }
  }
  assert(!is_decoded_sample(nullptr,sample_bytes));

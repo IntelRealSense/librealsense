@@ -202,6 +202,8 @@ PYBIND11_MODULE(NAME, m) {
         .value("safety_preset_active_index", RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX)
         .value("safety_mode", RS2_OPTION_SAFETY_MODE)
         .value("rgb_tnr_enabled", RS2_OPTION_RGB_TNR_ENABLED)
+        .value("gmsl_imu_batch", RS2_OPTION_GMSL_IMU_BATCH)
+        .value("gmsl_imu_batch_mode", RS2_OPTION_GMSL_IMU_BATCH_MODE)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
