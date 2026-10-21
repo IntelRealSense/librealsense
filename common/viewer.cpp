@@ -4049,7 +4049,9 @@ namespace rs2
                 _panel_width_pref = io.MousePos.x - _panel_grab_offset;
             else
             {
+                // The choice is the width seen on release, not a drag past the limits
                 _panel_resizing = false;
+                _panel_width_pref = panel_width;
                 config_file::instance().set( configurations::viewer::panel_width, panel_width );
             }
         }

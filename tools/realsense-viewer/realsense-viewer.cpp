@@ -437,7 +437,7 @@ int run_viewer( int argc, const char ** argv,
         // The label is centered; on a wider pane, align it so it stays where it is at the default width
         const float label_w = ImGui::CalcTextSize(add_source_button_text.c_str()).x;
         const float button_pad = 2 * ImGui::GetStyle().FramePadding.x;
-        const float default_room = viewer_model.default_panel_width - 1 - button_pad - label_w;
+        const float default_room = std::max(0.f, viewer_model.default_panel_width - 1 - button_pad - label_w);
         const float room = viewer_model.panel_width - 1 - button_pad - label_w;
         ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(room > 0 ? 0.5f * default_room / room : 0.5f, 0.5f));
         if (ImGui::Button(add_source_button_text.c_str(), { viewer_model.panel_width - 1, viewer_model.panel_y }))
