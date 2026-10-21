@@ -3,9 +3,9 @@
 
 import pytest
 import json
-import pyrealsense2 as rs
 import pyrsutils as rsutils
 from rspy.json_compare import check_equal_jsons
+from rspy.pytest.device_helpers import require_min_fw_version
 import logging
 log = logging.getLogger(__name__)
 
@@ -16,13 +16,7 @@ pytestmark = [
 
 
 # First FW that serves the depth mapping params (with a synchronous set); older FW rejects the control
-MIN_FW = "7.59.46744"
-
-
-def skip_if_fw_below_minimum(dev):
-    fw = dev.get_info(rs.camera_info.firmware_version)
-    if rsutils.version(fw) < rsutils.version(MIN_FW):
-        pytest.skip(f"FW {fw} below minimum {MIN_FW} for depth mapping params")
+MIN_FW = rsutils.version("7.59.46744")
 
 
 depth_mapping_params = {
@@ -55,7 +49,7 @@ def sent_subset(params, sent):
 def depth_mapping_sensor(test_device):
     """Yield depth_mapping_sensor with the original params saved/restored around the test."""
     dev, _ = test_device
-    skip_if_fw_below_minimum(dev)
+    require_min_fw_version(dev, MIN_FW, "depth mapping params")
     depth_mapping_sensor = dev.first_depth_mapping_sensor()
     original_params = json.loads(depth_mapping_sensor.get_depth_mapping_params())
     # FW omits camera_position until the first write, and a camera can't be made unconfigured again
@@ -69,7 +63,7 @@ def depth_mapping_sensor(test_device):
 
 def test_get_depth_mapping_params(test_device):
     dev, _ = test_device
-    skip_if_fw_below_minimum(dev)
+    require_min_fw_version(dev, MIN_FW, "depth mapping params")
     params = json.loads(dev.first_depth_mapping_sensor().get_depth_mapping_params())
     log.debug("depth mapping params successfully downloaded")
     assert isinstance(params, dict)
