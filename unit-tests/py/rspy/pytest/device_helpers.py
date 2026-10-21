@@ -89,18 +89,20 @@ def find_matching_devices(device_markers, each=True, cli_includes=None, cli_excl
         if marker.name not in ['device', 'device_each'] or not marker.args:
             continue
 
-        pattern = marker.args[0]
-        log.debug(f"Looking for devices matching pattern: {pattern}")
+        # device_each("D555", "D585") matches any of its patterns
+        patterns = marker.args if marker.name == 'device_each' else marker.args[:1]
+        for pattern in patterns:
+            log.debug(f"Looking for devices matching pattern: {pattern}")
 
-        for sn in devices.by_spec(pattern, []):
-            had_candidates = True
-            if not passes(sn):
-                continue
-            if sn not in matching_sns:
-                matching_sns.append(sn)
-                log.debug(f"  Found matching device: {devices.get(sn).name} ({sn})")
-            if not each:
-                return matching_sns, had_candidates
+            for sn in devices.by_spec(pattern, []):
+                had_candidates = True
+                if not passes(sn):
+                    continue
+                if sn not in matching_sns:
+                    matching_sns.append(sn)
+                    log.debug(f"  Found matching device: {devices.get(sn).name} ({sn})")
+                if not each:
+                    return matching_sns, had_candidates
 
     return matching_sns, had_candidates
 
@@ -171,7 +173,7 @@ def resolve_device_each_serials(metafunc):
     at *module* scope, so module-scoped fixtures (``module_device_setup``, ``test_context``,
     ``test_device``) are reused across all test functions sharing the same device.
 
-    - ``device_each(pattern)``: one instance per matching device.  When no device
+    - ``device_each(pattern, ...)``: one instance per device matching any pattern.  When no device
       matches (and there is no coexisting single-spec ``device()``), a single
       ``__SKIP__:patterns`` sentinel instance is parametrized so the test is
       collected and skipped by ``module_device_setup``.
@@ -226,12 +228,10 @@ def resolve_device_each_serials(metafunc):
     passes = _build_sn_filter(all_markers, cli_includes, cli_excludes)
 
     for marker in device_each_markers:
-        if not marker.args:
-            continue
-        pattern = marker.args[0]
-        for sn in devices.by_spec(pattern, []):
-            if passes(sn) and sn not in all_serials:
-                all_serials.append(sn)
+        for pattern in marker.args:
+            for sn in devices.by_spec(pattern, []):
+                if passes(sn) and sn not in all_serials:
+                    all_serials.append(sn)
 
     # Each single-spec ``device()`` marker independently contributes one parametrized
     # instance (the first matching device, or a sentinel if none).  Multiple stacked
@@ -272,7 +272,7 @@ def resolve_device_each_serials(metafunc):
     # own. The sentinel ensures consistent skip behavior whether the marker is at
     # module level or function level.
     if device_each_markers and not single_device_markers and not all_serials:
-        patterns = ','.join(m.args[0] for m in device_each_markers if m.args)
+        patterns = ','.join(p for m in device_each_markers for p in m.args)
         all_serials.append(f"{_SKIP_SENTINEL_PREFIX}{patterns}")
 
     if all_serials:

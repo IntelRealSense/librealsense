@@ -17,10 +17,11 @@
 namespace librealsense {
 
 
-// D500_CAMERA_CID_TEMPORAL compound U32 array descriptor (see realsense_mipi_platform_driver
-// #658). Mirrors d500_temporal_{min,max,step,def} - smooth_alpha is a milli-unit-encoded
-// fixed-point ([0,1000] step 10, param_type BIT(1)). USB reads these facts back from FW, so
-// this desc is consulted only on the MIPI path.
+// D500_CAMERA_CID_TEMPORAL range descriptor - smooth_alpha is a milli-unit-encoded
+// fixed-point ([0,1000] step 10, param_type BIT(1)).
+// GMSL cannot query ranges (V4L2 array controls report one scalar bound and the FW
+// registers hold only the current value), so these tables are the only source of the MIPI
+// range. USB reads it from FW and ignores this desc.
 static constexpr int32_t tmp_min[]  = { 0,    0,   1, 0 };
 static constexpr int32_t tmp_max[]  = { 1, 1000, 100, 8 };
 static constexpr int32_t tmp_step[] = { 1,   10,   1, 1 };
