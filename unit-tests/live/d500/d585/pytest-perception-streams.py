@@ -8,6 +8,8 @@
 
 import pytest
 import pyrealsense2 as rs
+import pyrsutils as rsutils
+from rspy.pytest.device_helpers import require_min_fw_version
 import struct
 import time
 import logging
@@ -43,11 +45,6 @@ def device(test_device):
                 pass                     # not started/open, the normal path
 
 
-def fw_at_least(dev, version):
-    as_tuple = lambda v: tuple( int( x ) for x in v.split( '.' ) )
-    return as_tuple( dev.get_info( rs.camera_info.firmware_version ) ) >= as_tuple( version )
-
-
 def is_gmsl(dev):
     return dev.get_info( rs.camera_info.connection_type ) == 'GMSL'
 
@@ -61,8 +58,8 @@ def perception(dev, stream_type):
     for s in dev.query_sensors():
         p = next( ( p for p in s.get_stream_profiles() if p.stream_type() == stream_type ), None )
         if p is not None:
-            if stream_type == rs.stream.occupancy and is_gmsl( dev ) and not fw_at_least( dev, STANDALONE_OCC_FW ):
-                pytest.skip( f"Standalone Occupancy needs FW {STANDALONE_OCC_FW}" )
+            if stream_type == rs.stream.occupancy and is_gmsl( dev ):
+                require_min_fw_version( dev, rsutils.version( STANDALONE_OCC_FW ), "Standalone Occupancy" )
             return s, p
     pytest.skip( f"Device has no {stream_type} stream" )
 

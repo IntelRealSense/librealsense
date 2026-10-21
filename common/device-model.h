@@ -392,6 +392,8 @@ namespace rs2
         // Needed as a member for reseting the window memory on device disconnection.
 
         bool show_advanced_mode_popup = false;
+        // Computed from static device info; a reconnect creates a fresh device model.
+        bool _occupancy_needs_depth = false;
         
         bool subdevice_has_stream_enabled( const subdevice_model & sub, rs2_stream type ) const;
         bool is_stream_active( rs2_stream type ) const;  // enabled on a streaming subdevice

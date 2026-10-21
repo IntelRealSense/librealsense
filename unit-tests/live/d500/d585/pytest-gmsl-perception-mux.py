@@ -9,6 +9,7 @@
 
 import pytest
 import pyrealsense2 as rs
+import pyrsutils as rsutils
 import struct
 import time
 import logging
@@ -49,11 +50,6 @@ def sensor(dev, name):
         if s.get_info( rs.camera_info.name ) == name:
             return s
     return None
-
-
-def fw_at_least(dev, version):
-    as_tuple = lambda v: tuple( int( x ) for x in v.split( '.' ) )
-    return as_tuple( dev.get_info( rs.camera_info.firmware_version ) ) >= as_tuple( version )
 
 
 def require_occupancy(dev):
@@ -154,7 +150,7 @@ def test_perception_sensors_enumerate(device):
     pd = pd_profile( device )
     assert pd.format() == rs.format.y8 and pd.fps() == 30
     assert mux_state( device, PD_ID ) == ( 0, 0, 0 )
-    if not is_3c( device ) and not fw_at_least( device, STANDALONE_OCC_FW ):
+    if not is_3c( device ) and rsutils.version( device.get_info( rs.camera_info.firmware_version ) ) < rsutils.version( STANDALONE_OCC_FW ):
         assert sensor( device, 'Depth Mapping Camera' ) is None, "older FW produces no 2C occupancy"
         return
     occ = occ_profile( device ).as_video_stream_profile()

@@ -322,6 +322,9 @@ namespace rs2
 
                     if( info == RS2_CAMERA_INFO_PRODUCT_LINE )
                         _is_d500_device = strcmp( value, "D500" ) == 0;
+                    if( info == RS2_CAMERA_INFO_FIRMWARE_VERSION )
+                        _occupancy_needs_depth = fw_update::is_mipi_device( dev )
+                            && rsutils::version( value ) < rsutils::version( "7.59.46596.16636" );
                 }
             }
             catch (...)
@@ -411,9 +414,7 @@ namespace rs2
 
     bool device_model::subdevice_needs_depth( const subdevice_model & sub ) const
     {
-        return subdevice_has_stream_enabled( sub, RS2_STREAM_OCCUPANCY ) && fw_update::is_mipi_device( dev )
-            && rsutils::version( dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
-                < rsutils::version( "7.59.46596.16636" );
+        return _occupancy_needs_depth && subdevice_has_stream_enabled( sub, RS2_STREAM_OCCUPANCY );
     }
 
     void device_model::stop_perception_if_video_stopped( viewer_model & viewer )
