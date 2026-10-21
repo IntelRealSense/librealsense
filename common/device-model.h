@@ -397,6 +397,7 @@ namespace rs2
         bool is_stream_active( rs2_stream type ) const;  // enabled on a streaming subdevice
         bool subdevice_has_perception( const subdevice_model & sub ) const;  // object detection or occupancy enabled
         bool subdevice_needs_color( const subdevice_model & sub ) const;
+        bool subdevice_needs_depth( const subdevice_model & sub ) const;
         void stop_perception_if_video_stopped( viewer_model & viewer );
 
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);

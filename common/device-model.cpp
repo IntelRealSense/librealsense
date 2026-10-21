@@ -20,6 +20,7 @@
 #include <realsense_imgui.h>
 
 #include <rsutils/os/special-folder.h>
+#include <rsutils/version.h>
 #include "os.h"
 #include <rsutils/os/os.h>
 #include "control-section.h"
@@ -408,13 +409,22 @@ namespace rs2
         return subdevice_has_stream_enabled( sub, RS2_STREAM_OBJECT_DETECTION );
     }
 
+    bool device_model::subdevice_needs_depth( const subdevice_model & sub ) const
+    {
+        return subdevice_has_stream_enabled( sub, RS2_STREAM_OCCUPANCY ) && fw_update::is_mipi_device( dev )
+            && rsutils::version( dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
+                < rsutils::version( "7.59.46596.16636" );
+    }
+
     void device_model::stop_perception_if_video_stopped( viewer_model & viewer )
     {
-        // Object detection overlays need Color; Occupancy owns its internal Depth source.
+        // Older GMSL FW still requires host Depth; newer FW owns its internal source.
         bool const color_active = is_stream_active( RS2_STREAM_COLOR );
+        bool const depth_active = is_stream_active( RS2_STREAM_DEPTH );
         for( auto & sub : subdevices )
         {
-            if( sub->streaming && ! color_active && subdevice_needs_color( *sub ) )
+            if( sub->streaming && ( ( ! color_active && subdevice_needs_color( *sub ) )
+                                   || ( ! depth_active && subdevice_needs_depth( *sub ) ) ) )
                 sub->stop( viewer.not_model );
         }
     }
@@ -2668,7 +2678,8 @@ namespace rs2
                             bool blocking_ir_active = subdevice_has_perception( *sub ) && fw_update::is_mipi_device( dev )
                                                    && is_stream_active( RS2_STREAM_INFRARED );
                             bool missing_color = subdevice_needs_color( *sub ) && ! is_stream_active( RS2_STREAM_COLOR );
-                            bool disable_perception = missing_color || blocking_ir_active;
+                            bool missing_depth = subdevice_needs_depth( *sub ) && ! is_stream_active( RS2_STREAM_DEPTH );
+                            bool disable_perception = missing_color || missing_depth || blocking_ir_active;
                             if( disable_perception )
                                 ImGui::BeginDisabled();
 
@@ -2711,6 +2722,7 @@ namespace rs2
                                 if( ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) )
                                     RsImGui::CustomTooltip( blocking_ir_active
                                         ? "Stop the Infrared streams before starting perception (they share the GMSL IR channel)"
+                                        : missing_depth ? "This firmware needs a Depth stream running before Occupancy"
                                         : "Object detection needs a Color stream running; detections are drawn on it" );
                             }
                             else if (ImGui::IsItemHovered())

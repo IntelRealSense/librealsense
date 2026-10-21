@@ -61,7 +61,7 @@ def perception(dev, stream_type):
     for s in dev.query_sensors():
         p = next( ( p for p in s.get_stream_profiles() if p.stream_type() == stream_type ), None )
         if p is not None:
-            if stream_type == rs.stream.occupancy and not fw_at_least( dev, STANDALONE_OCC_FW ):
+            if stream_type == rs.stream.occupancy and is_gmsl( dev ) and not fw_at_least( dev, STANDALONE_OCC_FW ):
                 pytest.skip( f"Standalone Occupancy needs FW {STANDALONE_OCC_FW}" )
             return s, p
     pytest.skip( f"Device has no {stream_type} stream" )
@@ -214,6 +214,25 @@ def test_depth_joins_occ(device, join):
     else:
         assert rejected( stereo, requests, frames )
     frames.wait( rs.stream.occupancy, time.monotonic() )
+    stop( occ )
+
+
+@pytest.mark.parametrize( 'source', [( 640, 360 ), ( 1280, 720 )] )
+def test_depth_restart_with_occ(device, source):
+    """Occupancy retains an existing source, including 720p, across host Depth stop/restart."""
+    occ, occ_profile = perception( device, rs.stream.occupancy )
+    stereo, frames = device.first_depth_sensor(), Collector()
+    requests = [depth( device, *source )]
+    frames.wait( rs.stream.depth, start( stereo, requests, frames ) )
+    frames.wait( rs.stream.occupancy, start( occ, occ_profile, frames ) )
+    stop( stereo )
+    frames.wait( rs.stream.occupancy, time.monotonic() )
+    other = ( 1280, 720 ) if source == ( 640, 360 ) else ( 640, 360 )
+    assert rejected( stereo, [depth( device, *other )], frames )
+    since = start( stereo, requests, frames )
+    frames.wait( rs.stream.depth, since )
+    frames.wait( rs.stream.occupancy, since )
+    stop( stereo )
     stop( occ )
 
 

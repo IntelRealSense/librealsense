@@ -18,7 +18,6 @@ log = logging.getLogger(__name__)
 pytestmark = [
     pytest.mark.device_each( "D585" ),
     pytest.mark.device_type( "GMSL" ),   # the MUX exists only over GMSL
-    pytest.mark.context( "nightly" ),
 ]
 
 MIN_PD_FRAMES = 8                     # PD runs at ~15 fps
