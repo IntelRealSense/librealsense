@@ -49,8 +49,6 @@ namespace librealsense
     std::map<uint32_t, rs2_format> d500_depth_fourcc_to_rs2_format = {
         {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
         {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
-        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
-        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_Y8},
         {rs_fourcc('Y','8','I',' '), RS2_FORMAT_Y8I},
         {rs_fourcc('W','1','0',' '), RS2_FORMAT_W10},
         {rs_fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
@@ -65,8 +63,6 @@ namespace librealsense
     std::map<uint32_t, rs2_stream> d500_depth_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
         {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
-        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
-        {rs_fourcc('G','R','E','Y'), RS2_STREAM_INFRARED},
         {rs_fourcc('Y','8','I',' '), RS2_STREAM_INFRARED},
         {rs_fourcc('W','1','0',' '), RS2_STREAM_INFRARED},
         {rs_fourcc('Y','1','6',' '), RS2_STREAM_INFRARED},
@@ -848,10 +844,6 @@ namespace librealsense
     void d500_device::register_converters( synthetic_sensor & depth_sensor )
     {
         depth_sensor.register_processing_block( processing_block_factory::create_id_pbf(RS2_FORMAT_Z16, RS2_STREAM_DEPTH) );
-
-        // On MIPI/GMSL only Y8I is functional, Y8 for left IR only is not supported by FW.
-        if( ! _is_mipi_device )
-            depth_sensor.register_processing_block( processing_block_factory::create_id_pbf(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1) );
 
         depth_sensor.register_processing_block( { {RS2_FORMAT_Y8I} },
                                                 { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
