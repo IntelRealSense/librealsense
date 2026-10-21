@@ -131,6 +131,7 @@ namespace rs2
             static const char* is_measuring{ "viewer_model.is_measuring" };
             static const char* output_open{ "viewer_model.output_open" };
             static const char* dashboard_open{ "viewer_model.dashboard_open" };
+            static const char* panel_width{ "viewer_model.panel_width" };
             static const char* search_term{ "viewer_model.search_term" };
 
             static const char* log_to_console{ "viewer_model.log_to_console" };
@@ -401,7 +402,7 @@ namespace rs2
         void stop_perception_if_video_stopped( viewer_model & viewer );
 
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
-        int draw_seek_bar();
+        int draw_seek_bar(float extra_width);
         int draw_playback_controls(ux_window& window, ImFont* font, viewer_model& view);
         advanced_mode_control amc;
         std::string pretty_time(std::chrono::nanoseconds duration);

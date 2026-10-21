@@ -4018,6 +4018,56 @@ namespace rs2
         ImGui::PopStyleVar();
     }
 
+    void viewer_model::handle_panel_resize( ux_window & window )
+    {
+        if( ! _panel_width_loaded )
+        {
+            _panel_width_pref = config_file::instance().get_or_default( configurations::viewer::panel_width,
+                                                                        default_panel_width );
+            _panel_width_loaded = true;
+        }
+
+        // The grab strip runs down the pane's right edge, just past its scrollbar so it doesn't steal the scrollbar.
+        // ImGui's mouse is in the same units as the layout (ux_window's cursor is in pixels on HiDPI screens).
+        const float grab_width = 5.f;
+        const float strip_x = panel_width + panel_scrollbar_overhang;
+        const ImGuiIO & io = ImGui::GetIO();
+        const bool down = io.MouseDown[0];
+        const bool over = io.MousePos.x >= strip_x && io.MousePos.x < strip_x + grab_width && io.MousePos.y >= panel_y
+                       && ! ImGui::IsPopupOpen( "", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel );
+
+        if( down && ! _panel_prev_mouse_down && over )
+        {
+            _panel_resizing = true;
+            _panel_grab_offset = io.MousePos.x - panel_width;
+        }
+        _panel_prev_mouse_down = down;
+
+        if( _panel_resizing )
+        {
+            if( down )
+                _panel_width_pref = io.MousePos.x - _panel_grab_offset;
+            else
+            {
+                _panel_resizing = false;
+                config_file::instance().set( configurations::viewer::panel_width, panel_width );
+            }
+        }
+
+        // Re-clamped every frame, so shrinking the window narrows the pane and growing it back restores the choice
+        const float max_width = std::max( default_panel_width, window.width() / 2.f );
+        panel_width = std::round( std::min( std::max( _panel_width_pref, default_panel_width ), max_width ) );
+
+        if( over || _panel_resizing )
+        {
+            window.resize_hovered();
+            window.set_hovered_over_input();  // keeps the 3D camera still
+            // The stream area reads the button from ux_window (tile reorder, ROI, measurements): hide the drag from it
+            if( _panel_resizing )
+                window.get_mouse().mouse_down[0] = false;
+        }
+    }
+
     void viewer_model::update_3d_camera(
         ux_window& win,
         const rect& viewer_rect, bool force)

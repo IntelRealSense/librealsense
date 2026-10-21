@@ -541,7 +541,7 @@ namespace rs2
         const int playback_control_height = 35;
         const float combo_box_width = 90.f;
         const float icon_width = 28;
-        const float line_width = 255; //Ideally should use: ImGui::GetContentRegionMax().x
+        const float line_width = 255 + viewer.panel_extra_width(); //Ideally should use: ImGui::GetContentRegionMax().x
         //Line looks like this ("-" == space, "[]" == icon, "[     ]" == combo_box):  |-[]-[]-[]-[]-[]-[     ]-[]-|
         const int num_icons_in_line = 6;
         const int num_combo_boxes_in_line = 1;
@@ -778,7 +778,7 @@ namespace rs2
         return stream.str();
     }
 
-    int device_model::draw_seek_bar()
+    int device_model::draw_seek_bar(float extra_width)
     {
         auto pos = ImGui::GetCursorPos();
 
@@ -793,7 +793,7 @@ namespace rs2
         {
             seek_pos = 0;
         }
-        float seek_bar_width = 300.f;
+        float seek_bar_width = 300.f + extra_width;
         ImGui::PushItemWidth(seek_bar_width);
         std::string label1 = "## " + id;
         if (ImGui::SliderInt(label1.c_str(), &seek_pos, 0, 100, ""))
@@ -836,7 +836,7 @@ namespace rs2
         float seek_bar_left_alignment = 4.f;
         ImGui::SetCursorPos({ pos.x + seek_bar_left_alignment, pos.y + controls_height });
         ImGui::PushFont(font);
-        auto seek_bar_height = draw_seek_bar();
+        auto seek_bar_height = draw_seek_bar(view.panel_extra_width());
         ImGui::PopFont();
         ImGui::PopStyleColor(5);
         return controls_height + seek_bar_height;
@@ -2056,7 +2056,7 @@ namespace rs2
                         }
 
                         ImGui::SameLine();
-                        ImGui::PushItemWidth(185);
+                        ImGui::PushItemWidth(185 + panel_width - viewer_model::default_panel_width);
 
                         ///////////////////////////////////////////
                         //TODO: make this a member function
@@ -2904,7 +2904,7 @@ namespace rs2
                         float clear_button_room = 0.f;
                         if( ! sub->options_filter.empty() )
                             clear_button_room = 18.f + ImGui::GetStyle().ItemSpacing.x;
-                        ImGui::PushItemWidth(295 - ImGui::GetCursorPosX() - clear_button_room);
+                        ImGui::PushItemWidth(295 + panel_width - viewer_model::default_panel_width - ImGui::GetCursorPosX() - clear_button_room);
                         if (ImGui::InputTextWithHint("##options_filter", "Search controls...", filter_buf, sizeof(filter_buf)))
                             sub->options_filter = filter_buf;
                         ImGui::PopItemWidth();
