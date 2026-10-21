@@ -1,11 +1,9 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2026 RealSense, Inc. All Rights Reserved.
 
-# Improved Close Range Depth - host-side checks against the public embedded_filter API.
-# Adapts to whichever transport the device is on: DDS connections expose all four
-# options (Enable, Downscale Ratio, Disparity Shift, Threshold), USB currently exposes
-# only Enable (demo). The test discovers the available options at runtime and skips
-# the option-specific sections that aren't present.
+# Improved Close Range Depth - host-side checks against the public embedded_filter API, over DDS
+# (Enable, Downscale Ratio, Disparity Shift, Threshold). USB exposes it as the hdrd_control
+# composite option instead - see live/options/pytest-hdrd-control.py.
 
 import time
 
@@ -18,9 +16,8 @@ log = logging.getLogger(__name__)
 
 
 pytestmark = [
-    pytest.mark.device_each( "D555", "D585" ),
-    pytest.mark.device_exclude( "D585S" ),
-    pytest.mark.device_exclude( "D585 Prototype" ),
+    pytest.mark.device_each( "D555" ),
+    pytest.mark.device_type( "DDS" ),
     pytest.mark.context( "nightly" ),
 ]
 
@@ -28,20 +25,18 @@ pytestmark = [
 # DPP Filter Bitmask bit 5 = "Improved Close Range Depth merge applied"
 CLOSE_RANGE_METADATA_BIT = 1 << 5
 
-# Spec defaults for the option-specific (DDS-only) sections. The Enable default is
-# device/FW-driven on USB so we don't pin it here.
+# Spec defaults for the option-specific sections.
 RATIO_INDEX_DEFAULT = 1.0    # choices ["1","2","4"], default "2" -> index 1
 SHIFT_DEFAULT      = 0.0
 
-# Minimum FW that registers the close-range feature on each device, mirroring
-# src/ds/d500/d500-factory.cpp. Below the gate the feature is not registered and
-# get_embedded_filter() throws rather than returning a falsy value, so we skip up front.
+# Minimum FW that registers the close-range feature, mirroring src/ds/d500/d500-factory.cpp.
+# Below the gate the feature is not registered and get_embedded_filter() throws rather than
+# returning a falsy value, so we skip up front.
 MIN_FW_BY_DEVICE = {
     "D555": "7.58.39807.10573",
-    "D585": "7.58.39807.10574",
 }
 
-# Pick a depth profile that the close-range merge actually exercises on D555/D585.
+# Pick a depth profile that the close-range merge actually exercises on D555.
 DEPTH_W, DEPTH_H, DEPTH_FPS = 640, 360, 30
 
 
@@ -98,11 +93,11 @@ def test_close_range_enable_invalid_value_rejected( test_device ):
 
 
 def test_close_range_downscale_ratio( test_device ):
-    """Only present on transports that expose the full 4-option surface (DDS today)."""
+    """Not every FW exposes the full 4-option surface."""
     _, embedded_filter = _get_close_range_filter( test_device )
     options = embedded_filter.get_supported_options()
     if rs.option.downscale_ratio not in options:
-        pytest.skip( "downscale_ratio option not exposed on this transport (USB demo)" )
+        pytest.skip( "downscale_ratio option not exposed by this FW" )
 
     # Default index = 1 (choice "2")
     check.equal( embedded_filter.get_option( rs.option.downscale_ratio ), RATIO_INDEX_DEFAULT )
@@ -120,7 +115,7 @@ def test_close_range_disparity_shift( test_device ):
     _, embedded_filter = _get_close_range_filter( test_device )
     options = embedded_filter.get_supported_options()
     if rs.option.disparity_shift not in options:
-        pytest.skip( "disparity_shift option not exposed on this transport (USB demo)" )
+        pytest.skip( "disparity_shift option not exposed by this FW" )
 
     check.equal( embedded_filter.get_option( rs.option.disparity_shift ), SHIFT_DEFAULT )
 
