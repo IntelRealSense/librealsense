@@ -8,7 +8,6 @@
 #include "core/video.h"
 #include <src/core/tagged-profile.h>
 #include <rsutils/lazy.h>
-#include <mutex>
 
 namespace librealsense
 {
@@ -56,8 +55,6 @@ namespace librealsense
 
         int _depth_mapping_idx = -1;
         bool _standalone_occupancy = false;   // FW runs occupancy without host Depth, on 2C too
-        mutable std::mutex _occupancy_source_mutex;
-        std::shared_ptr< stream_profile_interface > _occupancy_depth_source;
 
     protected:
         std::shared_ptr<stream_interface> _occupancy_stream;

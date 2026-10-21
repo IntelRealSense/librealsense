@@ -217,25 +217,6 @@ def test_depth_joins_occ(device, join):
     stop( occ )
 
 
-@pytest.mark.parametrize( 'source', [( 640, 360 ), ( 1280, 720 )] )
-def test_depth_restart_with_occ(device, source):
-    """Occupancy retains an existing source, including 720p, across host Depth stop/restart."""
-    occ, occ_profile = perception( device, rs.stream.occupancy )
-    stereo, frames = device.first_depth_sensor(), Collector()
-    requests = [depth( device, *source )]
-    frames.wait( rs.stream.depth, start( stereo, requests, frames ) )
-    frames.wait( rs.stream.occupancy, start( occ, occ_profile, frames ) )
-    stop( stereo )
-    frames.wait( rs.stream.occupancy, time.monotonic() )
-    other = ( 1280, 720 ) if source == ( 640, 360 ) else ( 640, 360 )
-    assert rejected( stereo, [depth( device, *other )], frames )
-    since = start( stereo, requests, frames )
-    frames.wait( rs.stream.depth, since )
-    frames.wait( rs.stream.occupancy, since )
-    stop( stereo )
-    stop( occ )
-
-
 def test_colors_and_occ_2c(device):
     """2C colors stream from the depth sensor: they cannot join Occupancy, nor feed it without Depth."""
     if not is_2c( device ):

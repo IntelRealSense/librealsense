@@ -242,13 +242,13 @@ namespace librealsense
     }
 
     // The camera builds occupancy from depth at these sizes only, at the occupancy rate
-    static bool is_occupancy_depth_source( const stream_profile_interface & p, uint32_t fps )
+    static bool is_occupancy_depth_source( const stream_profile_interface & p, uint32_t fps, bool fixed_source_only )
     {
         auto vp = dynamic_cast< const video_stream_profile_interface * >( &p );
         if( p.get_stream_type() != RS2_STREAM_DEPTH || ! vp || p.get_framerate() != fps )
             return false;
         bool const native = vp->get_width() == 640 && vp->get_height() == 360;
-        return native || ( vp->get_width() == 1280 && vp->get_height() == 720 );
+        return native || ( ! fixed_source_only && vp->get_width() == 1280 && vp->get_height() == 720 );
     }
 
     static bool has_stream( const stream_profiles & profiles, rs2_stream type )
@@ -280,7 +280,7 @@ namespace librealsense
             return;
         }
         if( std::none_of( running.begin(), running.end(),
-                          [fps]( const std::shared_ptr< stream_profile_interface > & p ) { return p && is_occupancy_depth_source( *p, fps ); } ) )
+                          [fps]( const std::shared_ptr< stream_profile_interface > & p ) { return p && is_occupancy_depth_source( *p, fps, false ); } ) )
             throw wrong_api_call_sequence_exception( rsutils::string::from()
                 << "Occupancy needs Depth at 640x360 or 1280x720, " << fps << " fps, while the depth sensor streams" );
         // Over USB the camera keeps the colors open but stops delivering them
@@ -293,20 +293,13 @@ namespace librealsense
         auto const occupancy = find_stream( get_sensor( _depth_mapping_idx ).get_active_streams(), RS2_STREAM_OCCUPANCY );
         if( ! occupancy )
             return;
-        // FW retains the Depth source chosen when Occupancy opened, or 640x360 for standalone Occupancy.
+        // Occupancy started first fixes its depth source at 640x360; colors and other streams cannot join it
         uint32_t const fps = occupancy->get_framerate();
         if( has_stream( requests, RS2_STREAM_DEPTH ) )
         {
-            std::lock_guard< std::mutex > lock( _occupancy_source_mutex );
-            auto const source = dynamic_cast< const video_stream_profile_interface * >( _occupancy_depth_source.get() );
-            int const width = source ? source->get_width() : 640;
-            int const height = source ? source->get_height() : 360;
-            auto const requested = dynamic_cast< const video_stream_profile_interface * >( requests.front().get() );
-            if( requests.size() != 1 || ! is_occupancy_depth_source( *requests.front(), fps )
-                || ! requested || requested->get_width() != width || requested->get_height() != height )
+            if( requests.size() != 1 || ! is_occupancy_depth_source( *requests.front(), fps, true ) )
                 throw wrong_api_call_sequence_exception( rsutils::string::from()
-                    << "While Occupancy streams, Depth can start only alone at " << width << "x" << height
-                    << ", " << fps << " fps" );
+                    << "While Occupancy streams, Depth can start only alone at 640x360, " << fps << " fps" );
         }
         else if( has_stream( requests, RS2_STREAM_COLOR ) )
             throw wrong_api_call_sequence_exception( "Color cannot start while Occupancy streams" );
@@ -948,15 +941,7 @@ void d500_depth_mapping::register_processing_blocks( std::shared_ptr< d500_depth
             throw wrong_api_call_sequence_exception( "Point Cloud cannot start while Depth is streaming; stop Depth first" );
 
         _owner->occupancy_allowed_or_throw(requests);
-        auto const occupancy = find_stream( requests, RS2_STREAM_OCCUPANCY );
-        auto const depth_source = occupancy
-            ? find_stream( _owner->get_depth_sensor().get_active_streams(), RS2_STREAM_DEPTH ) : nullptr;
         synthetic_sensor::open(requests);
-        if( occupancy )
-        {
-            std::lock_guard< std::mutex > lock( _owner->_occupancy_source_mutex );
-            _owner->_occupancy_depth_source = depth_source;
-        }
     }
 
     rs2_intrinsics d500_depth_mapping_sensor::get_intrinsics(const stream_profile& profile) const
