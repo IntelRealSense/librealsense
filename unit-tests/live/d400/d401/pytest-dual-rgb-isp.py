@@ -46,10 +46,14 @@ def test_default_config_resolves( test_device ):
         pipe.stop()
 
 
-def test_isp_color_with_depth_and_infrared( depth_sensor ):
+def test_isp_color_with_depth_and_infrared( test_device, depth_sensor ):
     """A lone Color 0 RGB8 stays on the ISP path, so it streams alongside depth and both IRs. Checked
     indirectly: on the raw path the open is refused or IR delivers no frames, so full-rate IR next to
     Color 0 means the ISP path was used."""
+    # Only meaningful with the raw path; older FW/driver (e.g. 5.17.3.10 + 1.0.4.9) also can't stream
+    # all four of these streams at once on GMSL
+    dev, _ = test_device
+    helper.skip_without_color1( dev )
     profiles = [helper.need_profile( depth_sensor, DEPTH, rs.format.z16, W, H ),
                 helper.need_profile( depth_sensor, IR1, rs.format.y8, W, H ),
                 helper.need_profile( depth_sensor, IR2, rs.format.y8, W, H ),
