@@ -4057,8 +4057,10 @@ namespace rs2
         }
 
         // Re-clamped every frame, so shrinking the window narrows the pane and growing it back restores the choice
-        const float max_width = std::max( default_panel_width, window.width() / 2.f );
-        panel_width = std::round( std::min( std::max( _panel_width_pref, default_panel_width ), max_width ) );
+        // A local copy: std::min/max take references, and a static constexpr member then needs a definition in C++14
+        const float min_width = default_panel_width;
+        const float max_width = std::max( min_width, window.width() / 2.f );
+        panel_width = std::round( std::min( std::max( _panel_width_pref, min_width ), max_width ) );
 
         if( over || _panel_resizing )
         {
