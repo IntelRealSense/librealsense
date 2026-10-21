@@ -610,8 +610,7 @@ namespace librealsense
                 LOG_DEBUG( "Align Depth is not supported by this firmware: " << e.what() );
             }
 
-            // F SKUs have IR-only covers on the L/R imagers, so dual-RGB mode is meaningless there
-            if( d5x5_family_pids.count( _pid ) && _pid != ds::D535F_PID && _pid != ds::D585F_PID
+            if( d5x5_rgb_mode_switch_pids.count( _pid )
                 && _fw_version >= firmware_version( "7.58.40897.13078" ) )
             {
                 // The camera rejects a reset sent right after the write, so wait for the new mode to read back
