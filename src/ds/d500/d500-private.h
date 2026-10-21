@@ -62,8 +62,21 @@ namespace librealsense
             SEGMENTATION_CLASS          = 0x03,  // bitmask of segmentation classes
             PCL_FORMAT                  = 0x04,  // Phase 2: 0 = XYZ, 1 = XYZRGB (SDK-internal)
             OCCUPANCY_GRID_SEGMENTATION = 0x05,  // OccupancyGrid_Segmentation: 0 = off, 1 = on
-            LPCL_SEGMENTATION           = 0x06   // LPCL_Segmentation (Labeled PCL): 0 = off, 1 = on
+            LPCL_SEGMENTATION           = 0x06,  // LPCL_Segmentation (Labeled PCL): 0 = off, 1 = on
+            DEPTH_MAPPING_PARAMS        = 0x0A   // OG/LPCL params as JSON (D5x5 family only)
         };
+        const int DEPTH_MAPPING_PARAMS_LEN = 1024;  // fixed control length; caps the JSON
+        const uint16_t DEPTH_MAPPING_PARAMS_VERSION = 1;
+
+#pragma pack(push, 1)
+        // Precedes the JSON in both directions, so each side can verify the JSON arrived intact
+        struct depth_mapping_params_header
+        {
+            uint16_t version;
+            uint16_t json_size;  // JSON bytes that follow, no NUL
+            uint32_t json_crc;   // CRC-32 of those bytes
+        };
+#pragma pack(pop)
 
 
         // d500 Devices supported by the current version
