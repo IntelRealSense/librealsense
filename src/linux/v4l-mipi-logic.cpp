@@ -66,8 +66,7 @@ namespace librealsense
             static constexpr uint32_t RS_CAMERA_CID_ACCEL_SENSITIVITY       = ( RS_CAMERA_CID_BASE + 0x27 );
             static constexpr uint32_t RS_CAMERA_CID_OD_DISTANCE             = ( RS_CAMERA_CID_BASE + 0x28 );
             // D500 DPP composite XU CIDs, matching the MIPI driver's D500_CAMERA_CID_*
-            // allocations (see realsense_mipi_platform_driver#658). The payload translation
-            // for these lives in composite_mipi_xu_option, not this file.
+            // allocations (see realsense_mipi_platform_driver#658).
             static constexpr uint32_t RS_CAMERA_CID_MINZ                    = ( RS_CAMERA_CID_BASE + 44 );
             static constexpr uint32_t RS_CAMERA_CID_DECIMATION_FILTER_DPP   = ( RS_CAMERA_CID_BASE + 49 );
             static constexpr uint32_t RS_CAMERA_CID_TEMPORAL_FILTER_DPP     = ( RS_CAMERA_CID_BASE + 51 );

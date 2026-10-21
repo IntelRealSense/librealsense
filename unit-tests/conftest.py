@@ -321,7 +321,7 @@ def pytest_configure(config):
         "markers", "device(pattern): mark test to run on devices matching pattern (e.g., D400*, D455)"
     )
     config.addinivalue_line(
-        "markers", "device_each(pattern): mark test to run on each device matching pattern separately"
+        "markers", "device_each(pattern, ...): mark test to run on each device matching any pattern separately"
     )
     config.addinivalue_line(
         "markers", "device_exclude(pattern): exclude devices matching pattern from test execution"
