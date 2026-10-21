@@ -2723,6 +2723,8 @@ namespace rs2
                                 if( ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) )
                                     RsImGui::CustomTooltip( blocking_ir_active
                                         ? "Stop the Infrared streams before starting perception (they share the GMSL IR channel)"
+                                        : missing_depth && missing_color
+                                            ? "This firmware needs Depth for Occupancy and Color for Object Detection; start both streams first"
                                         : missing_depth ? "This firmware needs a Depth stream running before Occupancy"
                                         : "Object detection needs a Color stream running; detections are drawn on it" );
                             }
