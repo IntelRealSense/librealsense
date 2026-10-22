@@ -172,7 +172,7 @@ namespace librealsense
 
         void set( float value ) override;
         float query() const override;
-        option_range get_range() const override { return { 0, RS2_HDR_MODE_COUNT - 1, 1, RS2_HDR_MODE_SINGLE_FRAME_WDR }; }
+        option_range get_range() const override { return _range; }
         bool is_enabled() const override { return true; }
         bool is_read_only() const override;
         const char * get_description() const override
@@ -183,9 +183,13 @@ namespace librealsense
         void enable_recording( std::function< void( const option & ) > record_action ) override { _record_action = record_action; }
 
     private:
+        static uint32_t const SET_HDR_MODE_SUB_CMD = 0x2C;
+        static uint32_t const GET_HDR_MODE_SUB_CMD = 0x2D;
+
         std::function< void( const option & ) > _record_action = []( const option & ) {};
         std::shared_ptr< hw_monitor > _hwm;
         std::weak_ptr< sensor_base > _sensor;
+        option_range _range;
     };
 
     // Device-side depth-to-color alignment. Enabling it replaces the raw depth payload (over USB) with Z16 projected into the color viewport,
