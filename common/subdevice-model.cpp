@@ -1848,6 +1848,11 @@ namespace rs2
         return it->second.value_as_float() <= 0.f;
     }
 
+    float subdevice_model::panel_extra_width() const
+    {
+        return viewer.panel_extra_width();
+    }
+
     bool subdevice_model::is_depth_calibration_profile() const
     {
         // Check if D555 at depth resolution of 1280x800

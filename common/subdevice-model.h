@@ -169,6 +169,9 @@ namespace rs2
 
         void repopulate_options();
 
+        // How much wider than the default the control pane is; option rows widen by this much
+        float panel_extra_width() const;
+
         viewer_model& viewer;
         std::function<void()> on_frame = [] {};
 

@@ -114,7 +114,7 @@ namespace rs2
         ImGui::Text( "%s:", name );
 
         ImGui::SameLine();
-        ImGui::SetCursorPosX( 257.f );
+        ImGui::SetCursorPosX( 257.f + extra_width );
         ImGui::PushStyleColor( ImGuiCol_Text, grey );
         ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, grey );
         ImGui::PushStyleColor( ImGuiCol_ButtonActive, { 1.f, 1.f, 1.f, 0.f } );
@@ -127,7 +127,7 @@ namespace rs2
             RsImGui::CustomTooltip( "%s", description );
 
         ImGui::SameLine();
-        ImGui::SetCursorPosX( 280.f );
+        ImGui::SetCursorPosX( 280.f + extra_width );
         std::string edit_id = rsutils::string::from() << textual_icons::edit << "##" << id << "_edit";
         ImGui::PushStyleColor( ImGuiCol_Text, edit.edit_mode ? light_blue : light_grey );
         ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, edit.edit_mode ? light_blue : light_grey );
@@ -152,7 +152,7 @@ namespace rs2
         draw_field_header( name, description, id, edit, format_value( value, scale, digits ) );
 
         std::string widget_id = rsutils::string::from() << "##" << id;
-        ImGui::PushItemWidth( 295.f - ImGui::GetCursorPosX() );
+        ImGui::PushItemWidth( 295.f + extra_width - ImGui::GetCursorPosX() );
         ImGui::PushStyleColor( ImGuiCol_FrameBgHovered, black );
         ImGui::PushStyleColor( ImGuiCol_FrameBgActive, black );
 

@@ -32,6 +32,7 @@
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <regex>
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <limits>
 
@@ -992,6 +993,10 @@ namespace rs2
 
         is_3d_view = config_file::instance().get_or_default(
             configurations::viewer::is_3d_view, true);
+
+        // Re-read on every settings reload too, so Restore Defaults / Import Settings apply to the pane
+        _panel_width_pref = config_file::instance().get_or_default(
+            configurations::viewer::panel_width, default_panel_width);
 
         if (bool measurement_enabled = config_file::instance().get_or_default(
             configurations::viewer::is_measuring, false))
@@ -4020,13 +4025,6 @@ namespace rs2
 
     void viewer_model::handle_panel_resize( ux_window & window )
     {
-        if( ! _panel_width_loaded )
-        {
-            _panel_width_pref = config_file::instance().get_or_default( configurations::viewer::panel_width,
-                                                                        default_panel_width );
-            _panel_width_loaded = true;
-        }
-
         // The grab strip runs down the pane's right edge, just past its scrollbar so it doesn't steal the scrollbar.
         // ImGui's mouse is in the same units as the layout (ux_window's cursor is in pixels on HiDPI screens).
         const float grab_width = 5.f;

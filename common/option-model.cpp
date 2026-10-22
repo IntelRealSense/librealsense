@@ -14,16 +14,8 @@
 
 #include <stdexcept>
 
-#include "viewer.h"
-
 namespace rs2
 {
-    // Option rows were laid out for the default pane width; this much more lets them follow a wider pane
-    static float pane_extra_width( const subdevice_model * dev )
-    {
-        return dev ? dev->viewer.panel_extra_width() : 0.f;
-    }
-
     option_model create_option_model( option_value const & opt,
         const std::string& opt_base_label,
         subdevice_model* model,
@@ -412,7 +404,8 @@ bool option_model::draw_slider( notifications_model & model,
     ImGui::Text( "%s", txt.c_str() );
 
     ImGui::SameLine();
-    const float extra_width = pane_extra_width( dev );
+    // Option rows were laid out for the default pane width; this much more lets them follow a wider pane
+    const float extra_width = dev ? dev->panel_extra_width() : 0.f;
     ImGui::SetCursorPosX( ( read_only ? 280.f : 257.f ) + extra_width );
     ImGui::PushStyleColor( ImGuiCol_Text, grey );
     ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, grey );

@@ -371,7 +371,6 @@ namespace rs2
 
         // Control pane resize state (see handle_panel_resize)
         float _panel_width_pref = default_panel_width;  // the dragged/saved width, before clamping to the window
-        bool _panel_width_loaded = false;
         bool _panel_resizing = false;
         bool _panel_prev_mouse_down = false;
         float _panel_grab_offset = 0.f;
