@@ -610,7 +610,7 @@ namespace librealsense
                 LOG_DEBUG( "Align Depth is not supported by this firmware: " << e.what() );
             }
 
-            if( d5x5_rgb_mode_switch_pids.count( _pid )
+            if( d5x5_dual_rgb_mode_pids.count( _pid )
                 && _fw_version >= firmware_version( "7.58.40897.13078" ) )
             {
                 // The camera rejects a reset sent right after the write, so wait for the new mode to read back

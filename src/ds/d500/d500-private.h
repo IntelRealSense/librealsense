@@ -122,7 +122,7 @@ namespace librealsense
 
         // SKUs allowed to toggle Dual-RGB (2C) vs Dedicated-Color (3C) via the DUAL_RGB_MODE XU (0x12).
         // The F SKUs are left out: their L/R imagers have IR-only covers.
-        static const std::set<std::uint16_t> d5x5_rgb_mode_switch_pids = {
+        static const std::set<std::uint16_t> d5x5_dual_rgb_mode_pids = {
             D535_2C_PID,
             D535_3C_PID,
             D585_2C_PID,
