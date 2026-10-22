@@ -72,8 +72,19 @@ namespace rs2
 
         void update_configuration(config_file* new_cfg = nullptr);
 
-        const float panel_width = 340.f;
+        // The left control pane is resizable in the Viewer (see handle_panel_resize); the default is also the minimum
+        static constexpr float default_panel_width = 340.f;
+        // The pane window is this much wider than the pane, so its scrollbar lands under the top bar's divider
+        static constexpr float panel_scrollbar_overhang = 3.f;
+        float panel_width = default_panel_width;
         const float panel_y = 50.f;
+
+        // Widgets laid out for the default pane width add this to follow a wider pane
+        float panel_extra_width() const { return panel_width - default_panel_width; }
+
+        // Drag the pane's right edge to resize it, between the default width and half the window; the width is
+        // kept in the config. Call at the start of each frame, before anything uses panel_width or the mouse.
+        void handle_panel_resize( ux_window & window );
 
         float get_output_height() const { return (float)(not_model->output.get_output_height()); }
         float get_dashboard_width() const { return (float)(not_model->output.get_dashboard_width()); }
@@ -357,6 +368,12 @@ namespace rs2
         bool _is_dragging_stream = false;
         bool _prev_reorder_mouse_down = false;
         float2 _drag_origin{ 0.f, 0.f };
+
+        // Control pane resize state (see handle_panel_resize)
+        float _panel_width_pref = default_panel_width;  // the dragged/saved width, before clamping to the window
+        bool _panel_resizing = false;
+        bool _panel_prev_mouse_down = false;
+        float _panel_grab_offset = 0.f;
 
         // 3D-Viewer state
         float3 pos = { 0.0f, 0.0f, -0.5f };

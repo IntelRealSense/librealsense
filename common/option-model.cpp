@@ -404,7 +404,9 @@ bool option_model::draw_slider( notifications_model & model,
     ImGui::Text( "%s", txt.c_str() );
 
     ImGui::SameLine();
-    ImGui::SetCursorPosX( read_only ? 280.f : 257.f );
+    // Option rows were laid out for the default pane width; this much more lets them follow a wider pane
+    const float extra_width = dev ? dev->panel_extra_width() : 0.f;
+    ImGui::SetCursorPosX( ( read_only ? 280.f : 257.f ) + extra_width );
     ImGui::PushStyleColor( ImGuiCol_Text, grey );
     ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, grey );
     ImGui::PushStyleColor( ImGuiCol_ButtonActive, { 1.f, 1.f, 1.f, 0.f } );
@@ -420,7 +422,7 @@ bool option_model::draw_slider( notifications_model & model,
     if( ! read_only )
     {
         ImGui::SameLine();
-        ImGui::SetCursorPosX( 280 );
+        ImGui::SetCursorPosX( 280 + extra_width );
         if( ! edit_mode )
         {
             std::string edit_id = rsutils::string::from() << textual_icons::edit << "##" << id;
@@ -458,7 +460,7 @@ bool option_model::draw_slider( notifications_model & model,
         }
     }
     flush_arrow_nudge( error_message );
-    float customWidth = 295 - ImGui::GetCursorPosX(); //set slider width from the current Xpos to the right border at 295 (the edit button pos)
+    float customWidth = 295 + extra_width - ImGui::GetCursorPosX(); //set slider width from the current Xpos to the right border at 295 (the edit button pos)
     ImGui::PushItemWidth(customWidth);
     ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, black);
     ImGui::PushStyleColor(ImGuiCol_FrameBgActive, black);

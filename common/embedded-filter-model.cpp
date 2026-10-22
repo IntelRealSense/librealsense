@@ -192,6 +192,7 @@ namespace rs2
         // commit time via before_commit.
         template< typename T, typename RangeT >
         void draw_composite_editor( composite_control_editor< T > & editor,
+                                    float extra_width,
                                     const std::shared_ptr< rs2::embedded_filter > & filter,
                                     rs2_composite_option_id id,
                                     bool enabled,
@@ -200,6 +201,7 @@ namespace rs2
                                     const std::function< void( T & ) > & sanitize,
                                     const std::function< void( T & ) > & before_commit )
         {
+            editor.extra_width = extra_width;
             ImGui::Dummy( ImVec2( 0, 4 ) );
             ImVec2 frame_min = ImGui::GetCursorScreenPos();
             frame_min.x -= 9.f;   // same gap to the sliders on the left as the right
@@ -276,7 +278,7 @@ namespace rs2
         // The device also rejects a SET once Depth/IR is streaming (read-only while active) -
         // end_frame_and_maybe_commit()'s own error_message surfaces that rejection.
         draw_composite_editor< rs2_decimation_filter_dpp_config, rs2_decimation_filter_dpp_range >(
-            _decimation_filter_dpp_editor, _embedded_filter, id, _enabled, error_message,
+            _decimation_filter_dpp_editor, _viewer.panel_extra_width(), _embedded_filter, id, _enabled, error_message,
             [&]() { return draw_decimation_filter_dpp_fields( error_message ); },
             sanitize_decimation_filter_dpp_config,
             [this]( rs2_decimation_filter_dpp_config & v )
@@ -316,7 +318,7 @@ namespace rs2
         sanitize_temporal_filter_dpp_config( _temporal_filter_dpp_editor.value );
 
         draw_composite_editor< rs2_temporal_filter_dpp_config, rs2_temporal_filter_dpp_range >(
-            _temporal_filter_dpp_editor, _embedded_filter, id, _enabled, error_message,
+            _temporal_filter_dpp_editor, _viewer.panel_extra_width(), _embedded_filter, id, _enabled, error_message,
             [&]() { return draw_temporal_filter_dpp_fields( error_message ); },
             sanitize_temporal_filter_dpp_config,
             [this]( rs2_temporal_filter_dpp_config & v )
@@ -391,7 +393,7 @@ namespace rs2
         sanitize_hdrd_control( _hdrd_editor.value );
 
         draw_composite_editor< rs2_hdrd_control, rs2_hdrd_control_range >(
-            _hdrd_editor, _embedded_filter, id, _enabled, error_message,
+            _hdrd_editor, _viewer.panel_extra_width(), _embedded_filter, id, _enabled, error_message,
             [&]() { return draw_hdrd_fields( error_message ); },
             sanitize_hdrd_control,
             [this]( rs2_hdrd_control & v )

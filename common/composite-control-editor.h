@@ -45,6 +45,9 @@ namespace rs2
         // progress: 0 = just touched, 1 = about to commit. False when nothing is pending.
         bool try_get_progress( float & progress ) const;
 
+        // How much wider than the default the control pane is; the rows widen by this much, like option_model's
+        float extra_width = 0.f;
+
         // Label row + "?" help + pencil + slider (or InputText in edit mode). value is the wire integer;
         // scale > 1 shows it as value/scale on a float slider (e.g. 1000 -> 0.000..1.000).
         bool draw_scalar_field( const char * name, const char * description, const char * id,
