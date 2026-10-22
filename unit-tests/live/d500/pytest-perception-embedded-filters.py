@@ -8,11 +8,13 @@
 # filter and then starting perception, or toggling a filter while perception is opened or streaming.
 #
 # The test adapts to the device at runtime: it skips when the perception stream or a
-# given embedded filter is not present, rather than gating on firmware versions.
+# given embedded filter is not present. Older FW runs DPP on the DSP, so DPP filters need DPP_MIN_FW.
 
 import time
 import pytest
 import pyrealsense2 as rs
+import pyrsutils as rsutils
+from rspy.pytest.device_helpers import require_min_fw_version
 import logging
 log = logging.getLogger(__name__)
 
@@ -32,6 +34,7 @@ EMBEDDED_FILTERS = [
 ]
 
 ENABLED = rs.option.embedded_filter_enabled
+DPP_MIN_FW = rsutils.version( "7.59.46680" )  # first FW that runs DPP on the CPU by default
 
 
 @pytest.fixture
@@ -96,7 +99,9 @@ class FilterToggle:
 
 
 @pytest.fixture
-def embedded_filter(depth_sensor, filter_type):
+def embedded_filter(test_device, depth_sensor, filter_type):
+    if filter_type in DPP_COMPOSITE:
+        require_min_fw_version( test_device[0], DPP_MIN_FW, "DPP filters with object detection" )
     # get_embedded_filter throws (rather than returning falsy) when the filter is not present.
     try:
         ef = depth_sensor.get_embedded_filter( filter_type )
