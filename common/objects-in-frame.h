@@ -4,6 +4,7 @@
 #pragma once
 
 #include "rect.h"
+#include "detection-distance.h"
 #include <string>
 #include <vector>
 #include <mutex>
@@ -52,4 +53,6 @@ struct atomic_objects_in_frame : public objects_in_frame
     std::mutex mutex;
     bool sensor_is_on = true;
     std::chrono::steady_clock::time_point last_od_frame_time{};
+    // Chosen with the OD sensor's Detection Distance combo; read and written on the UI thread only
+    rs2::detection_distance_mode distance_mode = rs2::detection_distance_mode::fallback;
 };

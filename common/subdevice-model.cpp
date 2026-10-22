@@ -113,6 +113,62 @@ namespace rs2
         RsImGui::BetaBadge("Beta feature - still maturing, behavior and output may change");
     }
 
+    // The camera's Detection Distance control only turns the FW calculation on or off; the combo adds the
+    // viewer's own estimate as a third choice and drives the overlay from the chosen mode
+    static bool draw_detection_distance_combo( option_model & opt_model, std::string & error_message,
+                                               notifications_model & model )
+    {
+        auto & objects = opt_model.dev->detected_objects;
+        if( ! objects )
+            return false;
+
+        static const char * const labels[] = { "Off", "Host", "On-Camera" };
+        static const detection_distance_mode modes[]
+            = { detection_distance_mode::off, detection_distance_mode::host, detection_distance_mode::on_camera };
+
+        std::string const txt = rsutils::string::from() << opt_model.endpoint->get_option_name( opt_model.opt ) << ":";
+        float const combo_position_x = ImGui::GetCursorPosX() + ImGui::CalcTextSize( txt.c_str() ).x + 5;
+        ImGui::Text( "%s", txt.c_str() );
+        if( ImGui::IsItemHovered() )
+            RsImGui::CustomTooltip( "Distance shown on the object detection boxes\n"
+                                    "Off: none\n"
+                                    "Host: estimated by the viewer from the depth stream\n"
+                                    "On-Camera: calculated by the camera" );
+
+        ImGui::SameLine();
+        ImGui::SetCursorPosX( combo_position_x );
+        ImGui::PushItemWidth( ImGui::GetContentRegionAvail().x - 25 );
+        ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, { 1, 1, 1, 1 } );
+
+        int selected = 0;
+        for( int i = 0; i < 3; ++i )
+            if( modes[i] == objects->distance_mode )
+                selected = i;
+
+        bool changed = false;
+        try
+        {
+            if( RsImGui::CustomComboBox( opt_model.id.c_str(), &selected, labels, 3 ) )
+            {
+                objects->distance_mode = modes[selected];
+                model.add_log( rsutils::string::from() << "Setting Detection Distance to " << labels[selected] );
+                // A recording replays the FW distances it captured; only a live camera takes the control
+                float const fw_value = detection_distance_fw_value( modes[selected] );
+                if( ! opt_model.dev->dev.is< playback >() && opt_model.value_as_float() != fw_value )
+                    opt_model.set_option_async( opt_model.opt, fw_value );
+                changed = true;
+            }
+        }
+        catch( const error & e )
+        {
+            error_message = error_to_string( e );
+        }
+
+        ImGui::PopStyleColor();
+        ImGui::PopItemWidth();
+        return changed;
+    }
+
     void subdevice_model::populate_options( const std::string & opt_base_label,
                                             bool * options_invalidated,
                                             std::string & error_message )
@@ -137,6 +193,17 @@ namespace rs2
                     if( viewer.not_model )
                         viewer.not_model->add_log( e.what(), RS2_LOG_SEVERITY_WARN );
                 }
+            }
+
+            auto distance_opt = options_metadata.find( RS2_OPTION_DETECTION_DISTANCE );
+            if( distance_opt != options_metadata.end() && detected_objects )
+            {
+                distance_opt->second.custom_draw_method = draw_detection_distance_combo;
+                // Start from the camera's state; a later repopulate keeps the user's choice
+                if( detected_objects->distance_mode == detection_distance_mode::fallback )
+                    detected_objects->distance_mode = distance_opt->second.value_as_float() > 0.f
+                                                        ? detection_distance_mode::on_camera
+                                                        : detection_distance_mode::off;
             }
 
             s->on_options_changed( [this]( const options_list & list )

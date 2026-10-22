@@ -4537,6 +4537,7 @@ namespace rs2
 
             objects_in_frame new_objects;
             unsigned int const count = odf.get_detection_count();
+            auto const distance_mode = objects->distance_mode;
 
             // Non-maximum suppression: sort by score, suppress overlapping same-class boxes
             static constexpr float NMS_IOU_THRESHOLD   = 0.55f;
@@ -4585,12 +4586,11 @@ namespace rs2
                 float const hkr_depth_m = det.depth;
                 float viewer_depth_m = 0.f;
 
-                // TODO: temporary fallback — viewer-side COM runs only when HKR firmware
-                // returns 0 (XU command not supported or device not ready).
-                // Checked per-detection intentionally: firmware could return 0 for individual
-                // detections (e.g. out-of-range) even when HKR COM is otherwise working.
-                // Remove once HKR COM is fully implemented and reliable on all devices.
-                if( hkr_depth_m == 0.f && df )
+                // The Detection Distance combo picks the source. The FW reports 0 when its calculation
+                // is off, so 0 can't mean "unavailable" there - only cameras without the control
+                // (fallback mode) estimate here when the FW gives 0, checked per detection since the FW
+                // can also return 0 for a single detection (e.g. out of range).
+                if( needs_host_detection_distance( distance_mode, hkr_depth_m ) && df )
                 {
                     if( !depth8u_ready )
                     {
@@ -4639,7 +4639,7 @@ namespace rs2
                         viewer_depth_m = com_result.mean_body_depth / 1000.f;
                 }
 
-                float const mean_depth = hkr_depth_m > 0.f ? hkr_depth_m : viewer_depth_m;
+                float const mean_depth = pick_detection_distance( distance_mode, hkr_depth_m, viewer_depth_m );
 
                 std::string name = object_type_to_string( static_cast< object_type >( det.class_id ) );
                 new_objects.emplace_back( obj_id++, name, normalized_color_bbox, mean_depth,
