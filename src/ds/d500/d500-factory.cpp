@@ -183,15 +183,14 @@ namespace librealsense
         {
             std::vector<tagged_profile> tags;
 
-            // The shared-imager default is 25 fps on USB; MIPI publishes no 25 fps profiles, so 30 there.
-            // MIPI also requires accel and gyro at equal fps, USB uses 100 for accel.
-            int video_fps = _is_mipi_device ? 30 : 25;
+            // MIPI requires accel and gyro at equal fps, USB uses 100 for accel.
+            int video_fps = 30;
             int accel_fps = _is_mipi_device ? static_cast< int >( odr::IMU_FPS_200 ) : static_cast< int >( odr::IMU_FPS_100 );
 
             tags.push_back({ RS2_STREAM_DEPTH, -1, 1280, 720, RS2_FORMAT_Z16, video_fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_INFRARED, -1, 1280, 720, RS2_FORMAT_Y8, video_fps, profile_tag::PROFILE_TAG_SUPERSET });
-            tags.push_back({ RS2_STREAM_COLOR, 1, 1280, 720, RS2_FORMAT_RGB8, video_fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_COLOR, 2, 1280, 720, RS2_FORMAT_RGB8, video_fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_COLOR, 1, 1280, 720, RS2_FORMAT_NV12, video_fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_COLOR, 2, 1280, 720, RS2_FORMAT_NV12, video_fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_GYRO, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, (int)odr::IMU_FPS_200, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_ACCEL, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, accel_fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_OBJECT_DETECTION, -1, -1, -1, RS2_FORMAT_Y8, -1, profile_tag::PROFILE_TAG_SUPERSET });
