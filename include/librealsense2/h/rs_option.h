@@ -151,6 +151,7 @@ extern "C" {
         RS2_OPTION_ACCEL_SENSITIVITY, /**< Control of the accel sensitivity (dynamic range) level, see rs2_accel_sensitivity for values. Selects the saturation point only, the reported unit scale is unchanged */
         RS2_OPTION_OCCUPANCY_GRID_SEGMENTATION, /**< OccupancyGrid_Segmentation: Off (0) = depth-only labeling, On (1) = OG uses the segmentation mode and classes (pre-stream only) */
         RS2_OPTION_LPCL_SEGMENTATION, /**< LPCL_Segmentation: Off (0) = depth-only labeling, On (1) = Labeled PCL uses the segmentation mode and classes (pre-stream only) */
+        RS2_OPTION_HDR_MODE, /**< D585: processing mode applied at the next stream start, see rs2_hdr_mode for values (pre-stream only) */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -350,6 +351,16 @@ extern "C" {
         RS2_PASSIVE_DEPTH_MODE_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_passive_depth_mode;
     const char * rs2_passive_depth_mode_to_string( rs2_passive_depth_mode mode );
+
+    /** \brief values for RS2_OPTION_HDR_MODE option, selecting the processing pipeline. */
+    typedef enum rs2_hdr_mode
+    {
+        RS2_HDR_MODE_OFF = 0,  /**< Regular path with WDR off */
+        RS2_HDR_MODE_SINGLE_FRAME_WDR = 1,  /**< Regular path with WDR tuning */
+        RS2_HDR_MODE_MULTI_FRAME_HDR = 2,  /**< Alternating short/long exposures merged into one frame by the firmware */
+        RS2_HDR_MODE_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    } rs2_hdr_mode;
+    const char * rs2_hdr_mode_to_string( rs2_hdr_mode mode );
 
     /** \brief values for RS2_OPTION_EMITTER_MODE option. */
     typedef enum rs2_emitter_mode
