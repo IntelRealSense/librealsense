@@ -285,6 +285,10 @@ namespace rs2
         bool draw_formats_combo_box_multiple_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1,
             rs2_stream stream_type);
         bool is_multiple_resolutions_supported() const;
+        bool is_d585s() const;
+        bool has_color_streams() const;
+        bool ir_shares_depth_resolution() const;
+        bool is_decimation_enabled() const;
         void refresh_multiple_resolutions_state();
         void apply_decimation_resolution_defaults();
         bool decimation_restricts_stream(rs2_stream stream) const;
