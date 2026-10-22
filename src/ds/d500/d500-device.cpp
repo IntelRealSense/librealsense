@@ -138,8 +138,9 @@ namespace librealsense
     {
         // Aligned depth is a depth-sized virtual rectified color viewport, so per FW it is interpreted with
         // rectified color intrinsics scaled and cropped to the depth dimensions - not with depth's own.
+        // In Dual RGB the aligned-to color is Color 1, the left imager, which shares depth's own intrinsics.
         if( profile.stream == RS2_STREAM_DEPTH && _owner->_aligned_depth_option
-            && _owner->_aligned_depth_option->is_aligned() )
+            && _owner->_aligned_depth_option->is_aligned() && ! ds::is_dual_rgb_pid( _owner->_pid ) )
             return get_color_intrinsics( profile );
 
         return get_d500_intrinsic_by_resolution(
