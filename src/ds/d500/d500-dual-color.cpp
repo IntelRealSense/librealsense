@@ -236,12 +236,9 @@ namespace librealsense
             _passive_depth_mode->set_ae_policy_option( ae_policy );
     }
 
-    // Selects which exposure classes produce depth. Reaching here means a dual-RGB device; the GMSL driver
-    // has no matching CID yet, so USB only.
+    // Selects which exposure classes produce depth. Reaching here means a dual-RGB device.
     void d500_dual_color::register_passive_depth_option()
     {
-        if( _is_mipi_device )
-            return;
         if( ! is_xu_published( get_raw_depth_sensor(), ds::depth_xu, ds::d500_xu_id::PASSIVE_DEPTH,
                                sizeof( uint8_t ), RS2_OPTION_PASSIVE_DEPTH_MODE ) )
             return;
