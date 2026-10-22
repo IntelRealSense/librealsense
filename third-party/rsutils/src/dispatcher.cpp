@@ -71,6 +71,7 @@ void dispatcher::start()
     {
         std::lock_guard< std::mutex > lock(_was_stopped_mutex);
         was_stopped = _was_stopped.exchange( false );
+        _stopping = false;
     }
     _queue.start();
     // Wake up all threads that wait for the dispatcher to start

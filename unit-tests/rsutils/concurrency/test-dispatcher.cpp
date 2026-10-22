@@ -201,13 +201,16 @@ TEST_CASE( "stop() wakes a sleeping dispatched item" )
 
     std::atomic_bool sleep_completed{ true };
     std::atomic_bool item_returned{ false };
+    std::promise< void > dispatched;
     dispatcher.invoke( [&]( dispatcher::cancellable_timer c ) {
+        dispatched.set_value();
         sleep_completed = c.try_sleep( std::chrono::seconds( 5 ) );
         item_returned = true;
     } );
 
-    // Make sure the above invoke function is dispatched and sleeping
-    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+    // Make sure the above invoke function is dispatched; whether stop() lands before or during
+    // the sleep, it must not wait the sleep out
+    REQUIRE( dispatched.get_future().wait_for( std::chrono::seconds( 5 ) ) == std::future_status::ready );
 
     stopwatch sw;
     dispatcher.stop();
