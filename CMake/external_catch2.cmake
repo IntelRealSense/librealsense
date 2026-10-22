@@ -6,6 +6,9 @@ include(ExternalProject)
 # (i.e turn off BUILD_SHARED_LIBS which is used on LRS build as well)
 function(get_catch2)
 
+    # Keep Catch2 in the test executable so it shares the exception state with static CRT builds.
+    set( BUILD_SHARED_LIBS OFF )
+
     message( STATUS "Fetching Catch2..." )
 
     # We want to clone the repo and build it here, during configuration, so we can use it.
