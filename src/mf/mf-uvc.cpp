@@ -1020,9 +1020,11 @@ namespace librealsense
             };
             for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
             {
-                // Filter a pin only if it has a native media type; when MF offers host-provided types only (e.g. a webcam
-                // behind the Windows frame server exposing NV12 alone), those are the pin's only usable formats.
-                bool filter_pin = false;
+                // RealSense pins are always filtered: streaming a host-decoded type there (NV12 from MJPEG) can stop
+                // the color stream until a HW reset (#15362). Other cameras are filtered only if the pin has a native
+                // media type; when MF offers host-provided types only (e.g. a webcam behind the Windows frame server
+                // exposing NV12 alone), those are the pin's only usable formats.
+                bool filter_pin = ( _info.vid == VID_INTEL_CAMERA || _info.vid == VID_REALSENSE_CAMERA ) && ! _native_formats.empty();
                 GUID subtype;
                 DWORD n_types = 0;
                 for( CComPtr< IMFMediaType > type; ! _native_formats.empty() && ! filter_pin
