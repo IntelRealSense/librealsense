@@ -10,9 +10,12 @@
 #include <va/va.h>
 #include <va/va_drm.h>
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <algorithm>
 #include <string>
+#include <vector>
 #include <cstring>
 
 namespace librealsense
@@ -30,36 +33,18 @@ namespace librealsense
                 : _width( width )
                 , _height( height )
             {
-                _loader = MFXLoad();
-                if( ! _loader ) throw std::runtime_error( "MFXLoad failed" );
-                require( MFX_IMPL_TYPE_HARDWARE, "mfxImplDescription.Impl" );
-                require( MFX_CODEC_AVC, "mfxImplDescription.mfxDecoderDescription.decoder.CodecID" );
-
-                mfxStatus s = MFXCreateSession( _loader, 0, &_session );
-                if( s != MFX_ERR_NONE )
-                    throw std::runtime_error( "no hardware oneVPL H.264 decoder, MFXCreateSession=" + mfx_string( s ) );
-
-                // The Linux runtime decodes through VA-API and will not initialize until we give it a display
-                _drm_fd = open( "/dev/dri/renderD128", O_RDWR );
-                if( _drm_fd < 0 )
-                    throw std::runtime_error( "cannot open /dev/dri/renderD128 - is this user in the 'render' group?" );
-                _va = vaGetDisplayDRM( _drm_fd );
-                int major = 0, minor = 0;
-                VAStatus v = _va ? vaInitialize( _va, &major, &minor ) : VA_STATUS_ERROR_INVALID_DISPLAY;
-                if( v != VA_STATUS_SUCCESS )
-                    throw std::runtime_error( std::string( "vaInitialize failed: " ) + vaErrorStr( v ) );
-                if( ( s = MFXVideoCORE_SetHandle( _session, MFX_HANDLE_VA_DISPLAY, (mfxHDL)_va ) ) != MFX_ERR_NONE )
-                    throw std::runtime_error( "MFXVideoCORE_SetHandle=" + mfx_string( s ) );
+                try
+                {
+                    build();
+                }
+                catch( ... )
+                {
+                    release();
+                    throw;
+                }
             }
 
-            ~vpl_h264_decoder() override
-            {
-                if( _initialized ) MFXVideoDECODE_Close( _session );
-                if( _session ) MFXClose( _session );
-                if( _loader ) MFXUnload( _loader );
-                if( _va ) vaTerminate( _va );
-                if( _drm_fd >= 0 ) close( _drm_fd );
-            }
+            ~vpl_h264_decoder() override { release(); }
 
             bool decode( uint8_t const * data, size_t size, std::vector< uint8_t > & nv12 ) override
             {
@@ -101,6 +86,98 @@ namespace librealsense
             }
 
         private:
+            void build()
+            {
+                _loader = MFXLoad();
+                if( ! _loader ) throw std::runtime_error( "MFXLoad failed" );
+                require( MFX_IMPL_TYPE_HARDWARE, "mfxImplDescription.Impl" );
+                require( MFX_CODEC_AVC, "mfxImplDescription.mfxDecoderDescription.decoder.CodecID" );
+
+                mfxStatus s = MFXCreateSession( _loader, 0, &_session );
+                if( s != MFX_ERR_NONE )
+                    throw std::runtime_error( "no hardware oneVPL H.264 decoder, MFXCreateSession=" + mfx_string( s ) );
+
+                // The Linux runtime decodes through VA-API and will not initialize until we give it a display
+                open_display();
+                if( ( s = MFXVideoCORE_SetHandle( _session, MFX_HANDLE_VA_DISPLAY, (mfxHDL)_va ) ) != MFX_ERR_NONE )
+                    throw std::runtime_error( "MFXVideoCORE_SetHandle=" + mfx_string( s ) );
+            }
+
+            // A constructor that throws leaves no destructor to run, so whatever it already took has to go back here
+            void release()
+            {
+                if( _initialized ) MFXVideoDECODE_Close( _session );
+                if( _session ) MFXClose( _session );
+                if( _loader ) MFXUnload( _loader );
+                if( _va ) vaTerminate( _va );
+                if( _drm_fd >= 0 ) close( _drm_fd );
+                _initialized = false;
+                _session = nullptr;
+                _loader = nullptr;
+                _va = nullptr;
+                _drm_fd = -1;
+            }
+
+            // The Intel GPU is not always renderD128 - with more than one GPU it can be any of them - so take the first
+            // node that initializes and reports an H.264 decode entrypoint
+            void open_display()
+            {
+                std::vector< std::string > nodes;
+                if( DIR * dir = opendir( "/dev/dri" ) )
+                {
+                    while( dirent * entry = readdir( dir ) )
+                        if( ! strncmp( entry->d_name, "renderD", 7 ) )
+                            nodes.push_back( std::string( "/dev/dri/" ) + entry->d_name );
+                    closedir( dir );
+                }
+                std::sort( nodes.begin(), nodes.end() );
+
+                for( auto const & node : nodes )
+                {
+                    int fd = open( node.c_str(), O_RDWR );
+                    if( fd < 0 )
+                        continue;  // most often this user is not in the 'render' group
+                    VADisplay va = vaGetDisplayDRM( fd );
+                    int major = 0, minor = 0;
+                    if( va && vaInitialize( va, &major, &minor ) == VA_STATUS_SUCCESS )
+                    {
+                        if( decodes_h264( va ) )
+                        {
+                            _drm_fd = fd;
+                            _va = va;
+                            return;
+                        }
+                        vaTerminate( va );
+                    }
+                    close( fd );
+                }
+                throw std::runtime_error( "no DRM render node decodes H.264; "
+                                          + std::string( nodes.empty() ? "none found" : "is this user in the 'render' group?" ) );
+            }
+
+            static bool decodes_h264( VADisplay va )
+            {
+                std::vector< VAProfile > profiles( std::max( vaMaxNumProfiles( va ), 0 ) );
+                int count = 0;
+                if( profiles.empty() || vaQueryConfigProfiles( va, profiles.data(), &count ) != VA_STATUS_SUCCESS )
+                    return false;
+                for( int i = 0; i < count; ++i )
+                {
+                    if( profiles[i] != VAProfileH264High && profiles[i] != VAProfileH264Main
+                        && profiles[i] != VAProfileH264ConstrainedBaseline )
+                        continue;
+                    std::vector< VAEntrypoint > entrypoints( std::max( vaMaxNumEntrypoints( va ), 0 ) );
+                    int entries = 0;
+                    if( entrypoints.empty()
+                        || vaQueryConfigEntrypoints( va, profiles[i], entrypoints.data(), &entries ) != VA_STATUS_SUCCESS )
+                        continue;
+                    if( std::find( entrypoints.begin(), entrypoints.begin() + entries, VAEntrypointVLD )
+                        != entrypoints.begin() + entries )
+                        return true;
+                }
+                return false;
+            }
+
             void require( mfxU32 value, char const * property )
             {
                 mfxConfig cfg = MFXCreateConfig( _loader );
@@ -128,7 +205,13 @@ namespace librealsense
                 }
 
                 mfxFrameAllocRequest req = {};
-                MFXVideoDECODE_QueryIOSurf( _session, &par, &req );
+                if( ( s = MFXVideoDECODE_QueryIOSurf( _session, &par, &req ) ) < MFX_ERR_NONE )
+                {
+                    // Left unchecked this yields a zeroed request, so the pool would be sized from nothing and then
+                    // report itself exhausted on every frame
+                    LOG_WARNING( "H264 QueryIOSurf=" << mfx_string( s ) );
+                    return false;
+                }
                 _coded_width = ( par.mfx.FrameInfo.Width + 31 ) & ~31;
                 _coded_height = ( par.mfx.FrameInfo.Height + 31 ) & ~31;
                 size_t const plane = size_t( _coded_width ) * _coded_height;

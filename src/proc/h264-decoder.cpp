@@ -50,6 +50,11 @@ namespace librealsense
             _height = vf.get_height();
             _backend.reset();
             _queued.clear();
+            _reported_overflow = false;
+            // A future from std::async blocks in its destructor, so overwriting one that is still running would stall the
+            // frame callback for as long as the old start takes. Park it instead and let it retire in its own time.
+            if( _starting.valid() )
+                _abandoned.push_back( std::move( _starting ) );
             // Building a backend costs ~0.2s - D3D11 device, decoder, type negotiation - far too long to spend on the frame
             // callback, so it happens on its own thread. Once per geometry, never once per frame.
             _starting = std::async( std::launch::async,
@@ -77,7 +82,12 @@ namespace librealsense
             }
             _backend = _starting.get();
             if( ! _backend )
-                _queued.clear();  // is_supported() already passed, so it is this geometry alone that was refused
+            {
+                // is_supported() already passed, so it is this geometry alone that was refused - say so, or the stream
+                // just produces nothing. Bounded: one attempt, and one message, per geometry.
+                LOG_ERROR( "H264 decoder refused " << _width << 'x' << _height << "; this stream will not decode" );
+                _queued.clear();
+            }
         }
         if( ! _backend )
             return {};

@@ -12,10 +12,6 @@ pytestmark = [
     pytest.mark.context("nightly"),
 ]
 
-_h264_profile = None  # set by test_h264_format_support, reused by test_h264_streaming_conversion
-_module_state = {}
-
-
 def _target_device(ctx, module_device_setup):
     # On hubless multi-device rigs the context sees every connected device; find the parametrized
     # one by SN rather than picking index 0.
@@ -32,31 +28,34 @@ def _target_device(ctx, module_device_setup):
     return dev
 
 
-def test_h264_format_support(module_device_setup):
-    """Prerequisite: device must publish H.264 profiles."""
-    global _h264_profile
+@pytest.fixture(scope="module")
+def h264_profile(module_device_setup):
+    """The device's H.264 profile. A fixture, so either test stands on its own whatever the run order."""
     ctx = rs.context({"format-conversion": "raw"})
     color_sensor = _target_device(ctx, module_device_setup).first_color_sensor()
-    _h264_profile = next(
+    profile = next(
         (p for p in color_sensor.profiles
          if p.stream_type() == rs.stream.color and p.format() == rs.format.h264),
         None
     )
-    if _h264_profile is None:
+    if profile is None:
         pytest.fail("Device does not publish H.264 profiles")
-    log.debug(f"Device publishes H.264 with profile: {_h264_profile}")
-    _module_state['h264_ok'] = True
+    log.debug(f"Device publishes H.264 with profile: {profile}")
+    return profile
 
 
-def test_h264_streaming_conversion(module_device_setup):
-    if not _module_state.get('h264_ok'):
-        pytest.skip("prerequisite test_h264_format_support failed")
+def test_h264_format_support(h264_profile):
+    """Device must publish H.264 profiles."""
+    assert h264_profile.as_video_stream_profile().width() > 0
+
+
+def test_h264_streaming_conversion(module_device_setup, h264_profile):
     """Stream H.264 color and verify decoding to RGB8 succeeds for 10 frames."""
     pipeline = rs.pipeline()
     config = rs.config()
     if isinstance(module_device_setup, str):
         config.enable_device(module_device_setup)
-    vp = _h264_profile.as_video_stream_profile()
+    vp = h264_profile.as_video_stream_profile()
     # H.264 is decoded to RGB8; without a platform decoder no such profile is exposed at all
     config.enable_stream(rs.stream.color, vp.stream_index(), vp.width(), vp.height(), rs.format.rgb8, vp.fps())
     pipeline.start(config)

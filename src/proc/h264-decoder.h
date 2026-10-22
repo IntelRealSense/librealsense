@@ -53,6 +53,7 @@ namespace librealsense
 
         std::unique_ptr< h264_decoder_backend > _backend;
         std::future< std::unique_ptr< h264_decoder_backend > > _starting;  // backend creation, kept off the frame callback
+        std::vector< std::future< std::unique_ptr< h264_decoder_backend > > > _abandoned;  // superseded starts, retired on destruction
         std::vector< std::vector< uint8_t > > _queued;                     // access units that arrived while starting
         std::vector< uint8_t > _nv12;  // what the backend decodes into, converted to the target format before it goes out
         int _width = 0;
