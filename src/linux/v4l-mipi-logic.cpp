@@ -72,6 +72,7 @@ namespace librealsense
             static constexpr uint32_t RS_CAMERA_CID_TEMPORAL_FILTER_DPP     = ( RS_CAMERA_CID_BASE + 51 );
 
             static constexpr uint32_t RS_CAMERA_CID_ALIGNED_DEPTH           = ( RS_CAMERA_CID_BASE + 55 );
+            static constexpr uint32_t RS_CAMERA_CID_PASSIVE_DEPTH           = ( RS_CAMERA_CID_BASE + 17 ); // D500 reuses D400's manual-exposure offset
 
             static constexpr uint8_t GVD_VALID_OPCODE = 0x10;
 
@@ -96,6 +97,7 @@ namespace librealsense
             static constexpr uint8_t RS_OHM_TEMPERATURE                 = 0x17;
             static constexpr uint8_t RS_COLORED_IR_AE_POLICY            = 0x19; // d500_xu_id::COLORED_IR_AE_POLICY
             static constexpr uint8_t RS_EXTERNAL_SYNC_D500              = 0x1A; // d500_xu_id::EXTERNAL_SYNC_MODE
+            static constexpr uint8_t RS_PASSIVE_DEPTH                   = 0x1B; // d500_xu_id::PASSIVE_DEPTH
 
             // D500-only selectors that collide with a different D400 control at the same number.
             static constexpr uint8_t RS_ALIGN_DEPTH           = 0x10; // vs RS_EMITTER_FREQUENCY
@@ -344,6 +346,7 @@ namespace librealsense
                     case RS_TEMPORAL_FILTER_DPP:   return RS_CAMERA_CID_TEMPORAL_FILTER_DPP;
                     case RS_HDRD_CONTROL:          return RS_CAMERA_CID_MINZ;
                     case RS_ALIGN_DEPTH:           return RS_CAMERA_CID_ALIGNED_DEPTH;
+                    case RS_PASSIVE_DEPTH:         return RS_CAMERA_CID_PASSIVE_DEPTH;
                     default: break;  // the rest are common to both families
                     }
                 }
