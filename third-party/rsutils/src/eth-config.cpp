@@ -5,15 +5,33 @@
 #include <rsutils/type/eth-config-struct.h>
 
 #include <rsutils/number/crc32.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/string/hexdump.h>
 #include <rsutils/string/from.h>
 
 #include <algorithm>
+#include <cstring>
 
 
 
 namespace rsutils {
 namespace type {
+
+namespace {
+
+constexpr size_t max_table_size = 512;
+
+size_t table_size_for_version( uint16_t version )
+{
+    switch( version )
+    {
+    case 3: return sizeof( eth_config_v3 );
+    case 4: return sizeof( eth_config_v4 );
+    default: return sizeof( eth_config_v5 );  // Newer versions are read using the v5 prefix only.
+    }
+}
+
+}  // namespace
 
 std::ostream & operator<<( std::ostream & os, link_priority p )
 {
@@ -112,6 +130,11 @@ eth_config::eth_config( eth_config_v5 const & v5 )
 
 eth_config::eth_config( std::vector< uint8_t > const & hwm_response )
 {
+    if( hwm_response.size() > max_table_size )
+        throw std::runtime_error( rsutils::string::from()
+                                  << "Eth config table size (" << hwm_response.size() << ") exceeds limit "
+                                  << max_table_size );
+
     auto header = reinterpret_cast< eth_config_header const * >( hwm_response.data() );
     if( hwm_response.size() < sizeof( *header ) )
         throw std::runtime_error( rsutils::string::from()
@@ -128,42 +151,39 @@ eth_config::eth_config( std::vector< uint8_t > const & hwm_response )
         throw std::runtime_error( rsutils::string::from()
                                   << "Eth config table CRC (" << header->crc << ") does not match response " << crc );
 
-    switch( header->version )
-    {
-    case 3: {
-        if( header->size < sizeof( eth_config_v3 ) - sizeof( *header ) )
-            throw std::runtime_error( rsutils::string::from()
-                                      << "Invalid Eth config table v3 size (" << header->size << "); expecting at least "
-                                      << sizeof( eth_config_v3 ) << "-" << sizeof( *header ) );
-        auto config = reinterpret_cast< eth_config_v3 const * >( hwm_response.data() );
-        *this = *config;
-        break;
-    }
-    case 4: {
-        if( header->size < sizeof( eth_config_v4 ) - sizeof( *header ) )
-            throw std::runtime_error( rsutils::string::from()
-                                      << "Invalid Eth config table v4 size (" << header->size << "); expecting at least "
-                                      << sizeof( eth_config_v4 ) << "-" << sizeof( *header ) );
-        auto config = reinterpret_cast< eth_config_v4 const * >( hwm_response.data() );
-        *this = *config;
-        break;
-    }
-    case 5: {
-        if( header->size < sizeof( eth_config_v5 ) - sizeof( *header ) )
-            throw std::runtime_error( rsutils::string::from()
-                                      << "Invalid Eth config table v5 size (" << header->size << "); expecting at least "
-                                      << sizeof( eth_config_v5 ) << "-" << sizeof( *header ) );
-        auto config = reinterpret_cast< eth_config_v5 const * >( hwm_response.data() );
-        *this = *config;
-        break;
-    }
-    default:
+    if( header->version < 3 )
         throw std::runtime_error( rsutils::string::from()
                                   << "Unrecognized Eth config table version " << header->version );
+
+    auto const expected_size = table_size_for_version( header->version );
+    if( hwm_response.size() < expected_size )
+        throw std::runtime_error( rsutils::string::from()
+                                  << "Invalid Eth config table v" << header->version << " size ("
+                                  << hwm_response.size() << "); expecting at least " << expected_size );
+    if( hwm_response.size() > expected_size )
+        LOG_DEBUG( "Eth config table v" << header->version << " is larger than the SDK layout: expected "
+                   << expected_size << " bytes, received " << hwm_response.size() );
+
+    switch( header->version )
+    {
+    case 3:
+        *this = *reinterpret_cast< eth_config_v3 const * >( hwm_response.data() );
+        break;
+    case 4:
+        *this = *reinterpret_cast< eth_config_v4 const * >( hwm_response.data() );
+        break;
+    default: {
+        // Future layouts expose the known prefix for getters, but validate() rejects writes.
+        eth_config_v5 prefix;
+        std::memcpy( &prefix, hwm_response.data(), sizeof( prefix ) );
+        prefix.header.version = 5;
+        *this = prefix;
+        this->header = *header;
+        break;
+    }
     }
 
-    // A known version may grow by appending reserved bytes. Preserve the entire
-    // validated response, including any tail beyond the structure we recognize.
+    // Preserve the entire table, including opaque bytes from newer firmware.
     _raw_config = hwm_response;
 }
 
@@ -196,7 +216,7 @@ std::vector< uint8_t > eth_config::build_command() const
     validate();
 
     auto const table_size = _raw_config.empty()
-        ? ( header.version == 3 ? sizeof( eth_config_v3 ) : sizeof( eth_config_v5 ) )
+        ? table_size_for_version( header.version )
         : _raw_config.size();
     auto data = _raw_config;
     // Use the shared layout for known fields, then send the original table length.
@@ -233,8 +253,24 @@ std::vector< uint8_t > eth_config::build_command() const
 
 void eth_config::validate() const
 {
+    auto raw_version = header.version;
+    if( ! _raw_config.empty() )
+    {
+        eth_config_header raw_header;
+        std::memcpy( &raw_header, _raw_config.data(), sizeof( raw_header ) );
+        raw_version = raw_header.version;
+    }
+    if( raw_version > 5 || header.version > 5 )
+        throw std::invalid_argument( rsutils::string::from()
+                                    << "FW eth-config v" << std::max( raw_version, header.version )
+                                    << " is newer than SDK, please update SDK" );
+    if( header.version != raw_version )
+        throw std::invalid_argument( "Cannot change the version of a parsed Eth config table" );
     if( header.version != 3 && header.version != 4 && header.version != 5 )
         throw std::invalid_argument( rsutils::string::from() << "Unrecognized Eth config table version " << header.version );
+
+    if( ! _raw_config.empty() && _raw_config.size() < table_size_for_version( header.version ) )
+        throw std::invalid_argument( "Eth config table is too small for its version" );
 
     if( ! configured.ip.is_valid() )
         throw std::invalid_argument( rsutils::string::from() << "Invalid configured IP address " << configured.ip );

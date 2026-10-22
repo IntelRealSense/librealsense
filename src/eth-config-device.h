@@ -63,7 +63,8 @@ namespace librealsense
 
         rsutils::type::eth_config read_eth_config_from_device( bool default_values = false );
         void save_eth_config_to_device( const rsutils::type::eth_config & config, bool default_values = false );
-        void validate_support() const;
+        void validate_support( bool for_write = false ) const;
+        template< class Update > void update_eth_config( Update update );
     };
 
 MAP_EXTENSION( RS2_EXTENSION_ETH_CONFIG, eth_config_device );

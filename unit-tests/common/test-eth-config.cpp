@@ -184,8 +184,15 @@ TEST_CASE( "Ethernet configuration rejects malformed responses", "[eth-config]" 
         CHECK_THROWS( eth_config{ data } );  // Too short for the known version, even with a valid CRC
     }
     auto data = make_table( 5 );
-    reinterpret_cast< eth_config_header * >( data.data() )->version = 6;
-    CHECK_THROWS( eth_config{ data } );  // An unknown layout still requires SDK support
+    reinterpret_cast< eth_config_header * >( data.data() )->version = 2;
+    CHECK_THROWS( eth_config{ data } );
+    data = make_table( 6 );
+    data.pop_back();
+    update_header( data );
+    CHECK_THROWS( eth_config{ data } );  // A newer version still needs the entire v5 prefix.
+    data = make_table( 6 );
+    data.back() ^= 1;
+    CHECK_THROWS( eth_config{ data } );  // Newer versions require a valid CRC too.
 }
 
 TEST_CASE( "Ethernet setters read current device configuration before writing", "[eth-config]" )
@@ -267,10 +274,16 @@ TEST_CASE( "Failed Ethernet updates preserve the SDK cache and device table", "[
         CHECK_THROWS( device.set_link_timeout( 6000 ) );
         CHECK( debug.commands == std::vector< uint32_t >{ 0xbb, 0xba } );
     }
-    SECTION( "Invalid field values prevent SET" )
+    SECTION( "Invalid field values prevent GET and SET" )
     {
         CHECK_THROWS_AS( device.set_link_timeout( 1 ), std::invalid_argument );
-        CHECK( debug.commands == std::vector< uint32_t >{ 0xbb } );
+        CHECK_THROWS_AS( device.set_link_timeout( 2050 ), std::invalid_argument );
+        CHECK_THROWS_AS( device.set_dds_domain_id( 233 ), std::invalid_argument );
+        CHECK_THROWS_AS( device.set_ip_address( ip_address() ), std::invalid_argument );
+        CHECK_THROWS_AS( device.set_netmask( ip_address() ), std::invalid_argument );
+        CHECK_THROWS_AS( device.set_mtu( 501 ), std::invalid_argument );
+        CHECK_THROWS_AS( device.set_transmission_delay( 145 ), std::invalid_argument );
+        CHECK( debug.commands.empty() );
     }
     CHECK( debug.current == original );
     CHECK( device.get_link_timeout() == 5000 );
@@ -279,10 +292,145 @@ TEST_CASE( "Failed Ethernet updates preserve the SDK cache and device table", "[
 TEST_CASE( "Ethernet factory reset preserves the complete default table", "[eth-config]" )
 {
     debug_device debug;
+    SECTION( "Valid current settings" ) {}
+    SECTION( "Factory reset can recover invalid current field values" )
+    {
+        reinterpret_cast< eth_config_v5 * >( debug.current.data() )->link_check_timeout = 1;
+        update_header( debug.current );
+    }
     eth_config_device device;
     device.init( &debug );
     debug.commands.clear();
     device.restore_defaults();
     CHECK( debug.commands == std::vector< uint32_t >{ 0xbb, 0xba } );
     CHECK( debug.current == debug.defaults );
+}
+
+TEST_CASE( "Parsed Ethernet configuration versions cannot be changed", "[eth-config]" )
+{
+    for( uint16_t version : { 3, 4, 5 } )
+        for( size_t extra : { 0, 64 } )
+        {
+            CAPTURE( version, extra );
+            eth_config config( make_table( version, extra ) );
+            for( uint16_t changed_version : { 3, 4, 5 } )
+            {
+                if( changed_version == version )
+                    continue;
+                config.header.version = changed_version;
+                CHECK_THROWS_AS( config.validate(), std::invalid_argument );
+                CHECK_THROWS_AS( config.build_command(), std::invalid_argument );
+            }
+        }
+}
+
+TEST_CASE( "Ethernet configuration table size is bounded", "[eth-config]" )
+{
+    for( uint16_t version : { 3, 4, 5, 6 } )
+    {
+        CAPTURE( version );
+        auto const base_size = make_table( version ).size();
+        auto const at_limit = make_table( version, 512 - base_size );
+        CHECK_NOTHROW( eth_config{ at_limit } );
+        if( version <= 5 )
+            CHECK( eth_config( at_limit ).build_command() == at_limit );
+        auto const oversized = make_table( version, 513 - base_size );
+        CHECK_THROWS_WITH( eth_config{ oversized }, "Eth config table size (513) exceeds limit 512" );
+    }
+}
+
+TEST_CASE( "Newer Ethernet configurations expose getters but reject writes", "[eth-config]" )
+{
+    for( uint16_t version : { 6, 65535 } )
+        for( size_t extra : { 0, 12 } )
+        {
+            CAPTURE( version, extra );
+            debug_device debug;
+            debug.current = make_table( version, extra );
+            auto & table = *reinterpret_cast< eth_config_v5 * >( debug.current.data() );
+            table.transmission_delay = 30;
+            table.udp_ttl = 64;
+            update_header( debug.current );
+            auto const original = debug.current;
+            auto const message = "FW eth-config v" + std::to_string( version )
+                + " is newer than SDK, please update SDK";
+            eth_config config( original );
+            CHECK( config.header.version == version );
+            CHECK( config.header.size == original.size() - sizeof( eth_config_header ) );
+            CHECK( config.mac_address == "42:42:42:42:42:42" );
+            CHECK_THROWS_WITH( config.build_command(), message );
+            auto copy = config;
+            copy.header.version = 5;  // Changing the public header cannot bypass read-only protection.
+            CHECK_THROWS_WITH( copy.build_command(), message );
+
+            eth_config_device device;
+            device.init( &debug );
+            CHECK( device.supports_ethernet_configuration() );
+            CHECK( device.get_link_timeout() == 5000 );
+            CHECK( device.get_ethernet_link_speed() == 1000 );
+            CHECK( device.get_link_priority() == link_priority::eth_first );
+            CHECK( device.get_dds_domain_id() == 2 );
+            CHECK( device.get_mtu() == 9000 );
+            CHECK( device.get_transmission_delay() == 30 );
+            CHECK( device.get_udp_ttl() == 64 );
+            ip_address configured, actual;
+            device.get_ip_address( configured, actual );
+            CHECK( configured == ip_address( "192.168.1.10" ) );
+            CHECK( actual == ip_address( "10.0.0.20" ) );
+            device.get_netmask( configured, actual );
+            CHECK( configured == ip_address( "255.255.255.0" ) );
+            device.get_gateway( configured, actual );
+            CHECK( configured == ip_address() );
+            bool enabled;
+            uint8_t timeout;
+            device.get_dhcp_config( enabled, timeout );
+            CHECK( enabled );
+            CHECK( timeout == 30 );
+            debug.commands.clear();
+            CHECK_THROWS_WITH( device.set_link_priority( link_priority::usb_first ), message );
+            CHECK_THROWS_WITH( device.set_link_timeout( 6000 ), message );
+            CHECK_THROWS_WITH( device.set_dds_domain_id( 40 ), message );
+            CHECK_THROWS_WITH( device.set_ip_address( ip_address( "192.168.1.11" ) ), message );
+            CHECK_THROWS_WITH( device.set_netmask( ip_address( "255.255.0.0" ) ), message );
+            CHECK_THROWS_WITH( device.set_gateway( ip_address( "192.168.1.1" ) ), message );
+            CHECK_THROWS_WITH( device.set_dhcp_config( false, 20 ), message );
+            CHECK_THROWS_WITH( device.set_mtu( 7000 ), message );
+            CHECK_THROWS_WITH( device.set_transmission_delay( 60 ), message );
+            CHECK_THROWS_WITH( device.set_udp_ttl( 32 ), message );
+            CHECK_THROWS_WITH( device.restore_defaults(), message );
+            CHECK( debug.commands.empty() );
+            CHECK( debug.current == original );
+        }
+}
+
+TEST_CASE( "Version 3 Ethernet setters preserve reserved transmission delay bytes", "[eth-config]" )
+{
+    debug_device debug;
+    debug.current = make_table( 3, 12 );
+    eth_config_device device;
+    device.init( &debug );
+    auto const original = debug.current;
+    debug.commands.clear();
+    device.set_transmission_delay( 0 );
+    CHECK( debug.commands == std::vector< uint32_t >{ 0xbb, 0xba } );
+    CHECK( debug.current == original );
+    debug.commands.clear();
+    CHECK_THROWS_AS( device.set_transmission_delay( 30 ), std::invalid_argument );
+    CHECK( debug.commands.empty() );
+    CHECK( debug.current == original );
+}
+
+TEST_CASE( "Ethernet writes recheck the firmware version after GET", "[eth-config]" )
+{
+    debug_device debug;
+    eth_config_device device;
+    device.init( &debug );
+    debug.current = make_table( 6, 12 );
+    auto const original = debug.current;
+    debug.commands.clear();
+    CHECK_THROWS_WITH( device.set_link_timeout( 6000 ),
+                       "FW eth-config v6 is newer than SDK, please update SDK" );
+    CHECK( debug.commands == std::vector< uint32_t >{ 0xbb } );
+    CHECK( debug.current == original );
+    CHECK( device.get_link_timeout() == 5000 );
 }

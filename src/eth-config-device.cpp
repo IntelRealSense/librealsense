@@ -81,10 +81,26 @@ namespace librealsense
             throw std::runtime_error( rsutils::string::from() << "Failed to set Ethernet configuration, response code: " << code );
     }
 
-    void eth_config_device::validate_support() const
+    void eth_config_device::validate_support( bool for_write ) const
     {
         if( ! _supported )
             throw std::runtime_error( "Ethernet configuration is not supported for this device" );
+        if( for_write && _curr_config.header.version > 5 )
+            throw std::invalid_argument( rsutils::string::from()
+                                        << "FW eth-config v" << _curr_config.header.version
+                                        << " is newer than SDK, please update SDK" );
+    }
+
+    template< class Update > void eth_config_device::update_eth_config( Update update )
+    {
+        validate_support();
+        auto tmp_config = _curr_config;
+        update( tmp_config );
+        tmp_config.validate();  // Reject invalid input before issuing a firmware GET.
+        tmp_config = read_eth_config_from_device();
+        update( tmp_config );
+        save_eth_config_to_device( tmp_config );
+        _curr_config = tmp_config;
     }
 
     // Link configuration
@@ -102,11 +118,9 @@ namespace librealsense
 
     void eth_config_device::set_link_priority( rsutils::type::link_priority priority )
     {
-        validate_support();
-        auto tmp_config = read_eth_config_from_device();
-        tmp_config.link.priority = priority;
-        save_eth_config_to_device( tmp_config );
-        _curr_config = tmp_config;
+        update_eth_config( [&]( rsutils::type::eth_config & config ) {
+            config.link.priority = priority;
+        } );
     }
 
     uint32_t eth_config_device::get_link_timeout() const
@@ -117,11 +131,9 @@ namespace librealsense
 
     void eth_config_device::set_link_timeout( uint32_t timeout )
     {
-        validate_support();
-        auto tmp_config = read_eth_config_from_device();
-        tmp_config.link.timeout = timeout;
-        save_eth_config_to_device( tmp_config );
-        _curr_config = tmp_config;
+        update_eth_config( [&]( rsutils::type::eth_config & config ) {
+            config.link.timeout = timeout;
+        } );
     }
 
     uint32_t eth_config_device::get_dds_domain_id() const
@@ -132,11 +144,9 @@ namespace librealsense
 
     void eth_config_device::set_dds_domain_id( uint32_t domain )
     {
-        validate_support();
-        auto tmp_config = read_eth_config_from_device();
-        tmp_config.dds.domain_id = domain;
-        save_eth_config_to_device( tmp_config );
-        _curr_config = tmp_config;
+        update_eth_config( [&]( rsutils::type::eth_config & config ) {
+            config.dds.domain_id = domain;
+        } );
     }
 
     void eth_config_device::get_ip_address( rsutils::type::ip_address & configured_ip, rsutils::type::ip_address & actual_ip ) const
@@ -148,11 +158,9 @@ namespace librealsense
 
     void eth_config_device::set_ip_address( const rsutils::type::ip_address & ip )
     {
-        validate_support();
-        auto tmp_config = read_eth_config_from_device();
-        tmp_config.configured.ip = ip;
-        save_eth_config_to_device( tmp_config );
-        _curr_config = tmp_config;
+        update_eth_config( [&]( rsutils::type::eth_config & config ) {
+            config.configured.ip = ip;
+        } );
     }
 
     void eth_config_device::get_netmask( rsutils::type::ip_address & configured_netmask, rsutils::type::ip_address & actual_netmask ) const
@@ -164,11 +172,9 @@ namespace librealsense
 
     void eth_config_device::set_netmask( const rsutils::type::ip_address & netmask )
     {
-        validate_support();
-        auto tmp_config = read_eth_config_from_device();
-        tmp_config.configured.netmask = netmask;
-        save_eth_config_to_device( tmp_config );
-        _curr_config = tmp_config;
+        update_eth_config( [&]( rsutils::type::eth_config & config ) {
+            config.configured.netmask = netmask;
+        } );
     }
 
     void eth_config_device::get_gateway( rsutils::type::ip_address & configured_gateway, rsutils::type::ip_address & actual_gateway ) const
@@ -180,11 +186,9 @@ namespace librealsense
 
     void eth_config_device::set_gateway( const rsutils::type::ip_address & gateway )
     {
-        validate_support();
-        auto tmp_config = read_eth_config_from_device();
-        tmp_config.configured.gateway = gateway;
-        save_eth_config_to_device( tmp_config );
-        _curr_config = tmp_config;
+        update_eth_config( [&]( rsutils::type::eth_config & config ) {
+            config.configured.gateway = gateway;
+        } );
     }
 
     void eth_config_device::get_dhcp_config( bool & enabled, uint8_t & timeout ) const
@@ -196,12 +200,10 @@ namespace librealsense
 
     void eth_config_device::set_dhcp_config( bool enabled, uint8_t timeout )
     {
-        validate_support();
-        auto tmp_config = read_eth_config_from_device();
-        tmp_config.dhcp.on = enabled;
-        tmp_config.dhcp.timeout = timeout;
-        save_eth_config_to_device( tmp_config );
-        _curr_config = tmp_config;
+        update_eth_config( [&]( rsutils::type::eth_config & config ) {
+            config.dhcp.on = enabled;
+            config.dhcp.timeout = timeout;
+        } );
     }
 
     // Network configuration
@@ -213,11 +215,9 @@ namespace librealsense
 
     void eth_config_device::set_mtu( uint32_t mtu )
     {
-        validate_support();
-        auto tmp_config = read_eth_config_from_device();
-        tmp_config.link.mtu = mtu;
-        save_eth_config_to_device( tmp_config );
-        _curr_config = tmp_config;
+        update_eth_config( [&]( rsutils::type::eth_config & config ) {
+            config.link.mtu = mtu;
+        } );
     }
 
     uint32_t eth_config_device::get_transmission_delay() const
@@ -228,11 +228,9 @@ namespace librealsense
 
     void eth_config_device::set_transmission_delay( uint32_t delay )
     {
-        validate_support();
-        auto tmp_config = read_eth_config_from_device();
-        tmp_config.transmission_delay = delay;
-        save_eth_config_to_device( tmp_config );
-        _curr_config = tmp_config;
+        update_eth_config( [&]( rsutils::type::eth_config & config ) {
+            config.transmission_delay = delay;
+        } );
     }
 
     uint8_t eth_config_device::get_udp_ttl() const
@@ -243,16 +241,15 @@ namespace librealsense
 
     void eth_config_device::set_udp_ttl( uint8_t ttl )
     {
-        validate_support();
-        auto tmp_config = read_eth_config_from_device();
-        tmp_config.udp_ttl = ttl;
-        save_eth_config_to_device( tmp_config );
-        _curr_config = tmp_config;
+        update_eth_config( [&]( rsutils::type::eth_config & config ) {
+            config.udp_ttl = ttl;
+        } );
     }
 
     // Factory reset
     void eth_config_device::restore_defaults()
     {
+        validate_support( true );
         auto default_config = read_eth_config_from_device( true );
         save_eth_config_to_device( default_config ); // Reading default but writing to current
         _curr_config = default_config;
