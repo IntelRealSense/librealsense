@@ -350,7 +350,9 @@ namespace librealsense
                             return false;
                         }
                         const size_t offset = sizeof( opcode ) + ( with_profile ? 8 : 0 );
-                        if( size != offset + sizeof( state ) - sizeof( opcode ) )
+                        // Allow appended fields, but keep the response before the size trailer.
+                        if( size < offset + sizeof( state ) - sizeof( opcode )
+                            || size > HWMC_DATA_SIZE_OFFSET - sizeof( opcode ) )
                         {
                             throw backend_exception( "Perception MUX response size does not match the FW contract" );
                         }
