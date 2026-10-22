@@ -218,7 +218,7 @@ namespace librealsense
                 const auto status = query_imu_batch(raw);
                 supported = valid_imu_batch_status(status) && (status & imu_batch_pixel);
             } catch (const std::exception& e) {
-                LOG_DEBUG("IMU pair XU unavailable: " << e.what());
+                LOG_DEBUG("IMU bundle XU unavailable: " << e.what());
             }
         }
         uint8_t mode = imu_batch_default;
@@ -231,7 +231,7 @@ namespace librealsense
                 mask |= type == RS2_STREAM_ACCEL ? 1U : 2U;
             }
             if (mask == 0) throw invalid_value_exception("IMUB requires a motion stream");
-            // XU mode 2 enables a pair; sensor masks belong only to IMUB packets.
+            // XU mode 2 enables bundling (A, G or A+G); packet masks describe actual contents.
             // Single-sensor requests retain legacy framing with mode 1.
             if (mask == 3U && _gmsl_batch_enabled) mode = imu_batch_pair;
         }
@@ -277,7 +277,7 @@ namespace librealsense
             const char* get_value_description(float value) const override
             {
                 if (is_read_only())
-                    return value == 1.f ? "Legacy" : value == 2.f ? "Pair" : nullptr;
+                    return value == 1.f ? "Legacy" : value == 2.f ? "Bundled" : nullptr;
                 return value == 0.f ? "Legacy" : value == 1.f ? "Automatic" : nullptr;
             }
             void set(float value) override
@@ -327,7 +327,7 @@ namespace librealsense
                 s->_gmsl_batch_enabled = value != 0;
             }));
         register_option(RS2_OPTION_GMSL_IMU_BATCH_MODE, std::make_shared<imu_batch_option>(
-            option_range{1, 2, 1, 1}, "Current GMSL IMU wire mode: 1 legacy, 2 pair (read-only).",
+            option_range{1, 2, 1, 1}, "Current GMSL IMU wire mode: 1 legacy, 2 bundled (A, G or A+G; read-only).",
             [sensor]() {
                 auto s = sensor();
                 std::lock_guard<std::mutex> lock(s->_gmsl_batch_mutex);

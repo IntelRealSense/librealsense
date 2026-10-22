@@ -149,8 +149,8 @@ extern "C" {
         RS2_OPTION_DUAL_RGB_EXPOSURE, /**< D585 2C: RGB exposure time in 100 microsecond units, like other color sensors. Setting any value disables RGB auto-exposure */
         RS2_OPTION_DUAL_RGB_GAIN, /**< D585 2C: RGB gain. Setting any value disables RGB auto-exposure */
         RS2_OPTION_ACCEL_SENSITIVITY, /**< Control of the accel sensitivity (dynamic range) level, see rs2_accel_sensitivity for values. Selects the saturation point only, the reported unit scale is unchanged */
-        RS2_OPTION_GMSL_IMU_BATCH, /**< D500 GMSL Pixel motion sensor: 0 forces legacy, 1 automatically negotiates pairs (default). Set only while closed. Available only with a supporting driver and firmware. */
-        RS2_OPTION_GMSL_IMU_BATCH_MODE, /**< Read-only current GMSL IMU wire mode: 1 legacy, 2 pair. Query after open for the negotiated mode; close restores legacy. IMUB frame numbers use per-sensor firmware sequences and can contain gaps. */
+        RS2_OPTION_GMSL_IMU_BATCH, /**< D500 GMSL Pixel motion sensor: 0 forces legacy, 1 automatically negotiates IMU bundling (default). Set only while closed. Available only with a supporting driver and firmware. */
+        RS2_OPTION_GMSL_IMU_BATCH_MODE, /**< Read-only current GMSL IMU wire mode: 1 legacy, 2 bundled (A, G or A+G per packet). Query after open for the negotiated mode; close restores legacy. IMUB frame numbers use per-sensor firmware sequences and can contain gaps. */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
