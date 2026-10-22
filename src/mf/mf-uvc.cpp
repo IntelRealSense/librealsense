@@ -1025,11 +1025,9 @@ namespace librealsense
                 bool filter_pin = false;
                 GUID subtype;
                 DWORD n_types = 0;
-                for( ; ! _native_formats.empty() && ! filter_pin && SUCCEEDED( _reader->GetNativeMediaType( sIndex, n_types, &pMediaType.p ) ); ++n_types )
-                {
-                    filter_pin = SUCCEEDED( pMediaType->GetGUID( MF_MT_SUBTYPE, &subtype ) ) && is_native( subtype );
-                    safe_release( pMediaType );
-                }
+                for( CComPtr< IMFMediaType > type; ! _native_formats.empty() && ! filter_pin
+                     && SUCCEEDED( _reader->GetNativeMediaType( sIndex, n_types, &type.p ) ); ++n_types, type.Release() )
+                    filter_pin = SUCCEEDED( type->GetGUID( MF_MT_SUBTYPE, &subtype ) ) && is_native( subtype );
                 if( n_types && ! filter_pin )
                     LOG_DEBUG( "No native media type on pin " << sIndex << " - keeping all MF-reported types" );
 
