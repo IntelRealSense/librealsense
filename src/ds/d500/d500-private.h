@@ -108,7 +108,6 @@ namespace librealsense
         };
 
         // D5x5 (non-safety, non-legacy) SKU family: D535 and D585 in their 2C/3C/F/proto variants.
-        // Gates the DUAL_RGB_MODE XU (0x12) selector that toggles Dual-RGB (2C) vs Dedicated-Color (3C).
         // D585S has no dual-RGB variant, so it stays out of this set — see uses_interactive_triggered_calibration below.
         static const std::set<std::uint16_t> d5x5_family_pids = {
             D535_2C_PID,
@@ -117,6 +116,17 @@ namespace librealsense
             D585_2C_PID,
             D585_3C_PID,
             D585F_PID,
+            D585_2C_PROTO_PID,
+            D585_3C_PROTO_PID
+        };
+
+        // SKUs allowed to toggle Dual-RGB (2C) vs Dedicated-Color (3C) via the DUAL_RGB_MODE XU (0x12).
+        // The F SKUs are left out: their L/R imagers have IR-only covers.
+        static const std::set<std::uint16_t> d5x5_dual_rgb_mode_pids = {
+            D535_2C_PID,
+            D535_3C_PID,
+            D585_2C_PID,
+            D585_3C_PID,
             D585_2C_PROTO_PID,
             D585_3C_PROTO_PID
         };
