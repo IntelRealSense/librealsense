@@ -600,14 +600,18 @@ namespace librealsense
             }
 
             // Constructing the option probes the XU; firmware without aligned-depth support throws and we skip it.
-            try
+            // In Dual RGB, Color 1 is the left imager, so depth is already aligned to it.
+            if( ! is_dual_rgb_pid( _pid ) )
             {
-                _aligned_depth_option = std::make_shared< d500_enable_aligned_depth_option >( raw_depth_sensor );
-                depth_sensor.register_option( RS2_OPTION_ENABLE_ALIGNED_DEPTH, _aligned_depth_option );
-            }
-            catch( std::exception const & e )
-            {
-                LOG_DEBUG( "Align Depth is not supported by this firmware: " << e.what() );
+                try
+                {
+                    _aligned_depth_option = std::make_shared< d500_enable_aligned_depth_option >( raw_depth_sensor );
+                    depth_sensor.register_option( RS2_OPTION_ENABLE_ALIGNED_DEPTH, _aligned_depth_option );
+                }
+                catch( std::exception const & e )
+                {
+                    LOG_DEBUG( "Align Depth is not supported by this firmware: " << e.what() );
+                }
             }
 
             if( d5x5_family_pids.count( _pid )
