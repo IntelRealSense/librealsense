@@ -215,11 +215,6 @@ namespace librealsense
         _is_safety_layout = ( pid == D585S_PID || pid == D585_LEGACY_PID );
         _is_d585s = ( pid == D585S_PID );
 
-        // Older FW needs running Depth for occupancy over GMSL, and produces none on GMSL 2C
-        _standalone_occupancy = _fw_version >= firmware_version( "7.59.46596.16636" );
-        if( _is_mipi_device && is_dual_rgb_pid( pid ) && ! _standalone_occupancy )
-            return;
-
         const uint32_t mapping_stream_mi = _is_safety_layout ? 13 : 11;
         auto mapping_devs_info = filter_by_mi( dev_info->get_group().uvc_devices, mapping_stream_mi);
 
@@ -251,12 +246,6 @@ namespace librealsense
         return native || ( ! fixed_source_only && vp->get_width() == 1280 && vp->get_height() == 720 );
     }
 
-    static bool has_stream( const stream_profiles & profiles, rs2_stream type )
-    {
-        return std::any_of( profiles.begin(), profiles.end(),
-                            [type]( const std::shared_ptr< stream_profile_interface > & p ) { return p && p->get_stream_type() == type; } );
-    }
-
     static std::shared_ptr< stream_profile_interface > find_stream( const stream_profiles & profiles, rs2_stream type )
     {
         auto it = std::find_if( profiles.begin(), profiles.end(),
@@ -272,19 +261,13 @@ namespace librealsense
         auto const running = get_sensor( _depth_device_idx ).get_active_streams();
         uint32_t const fps = occupancy->get_framerate();
         if( running.empty() )
-        {
-            if( _is_mipi_device && ! _standalone_occupancy )
-                throw wrong_api_call_sequence_exception( rsutils::string::from()
-                    << "Occupancy needs Depth at 640x360 or 1280x720, " << fps
-                    << " fps, streaming first; standalone occupancy needs FW 7.59.46596.16636 or newer" );
             return;
-        }
         if( std::none_of( running.begin(), running.end(),
                           [fps]( const std::shared_ptr< stream_profile_interface > & p ) { return p && is_occupancy_depth_source( *p, fps, false ); } ) )
             throw wrong_api_call_sequence_exception( rsutils::string::from()
                 << "Occupancy needs Depth at 640x360 or 1280x720, " << fps << " fps, while the depth sensor streams" );
         // Over USB the camera keeps the colors open but stops delivering them
-        if( ! _is_mipi_device && has_stream( running, RS2_STREAM_COLOR ) )
+        if( ! _is_mipi_device && find_stream( running, RS2_STREAM_COLOR ) )
             throw wrong_api_call_sequence_exception( "Occupancy cannot start while the depth sensor streams color" );
     }
 
@@ -293,15 +276,15 @@ namespace librealsense
         auto const occupancy = find_stream( get_sensor( _depth_mapping_idx ).get_active_streams(), RS2_STREAM_OCCUPANCY );
         if( ! occupancy )
             return;
-        // Occupancy started first fixes its depth source at 640x360; colors and other streams cannot join it
+        // Keep the existing Depth/Color join rules; the GMSL MUX backend enforces IR exclusion.
         uint32_t const fps = occupancy->get_framerate();
-        if( has_stream( requests, RS2_STREAM_DEPTH ) )
+        if( find_stream( requests, RS2_STREAM_DEPTH ) )
         {
             if( requests.size() != 1 || ! is_occupancy_depth_source( *requests.front(), fps, true ) )
                 throw wrong_api_call_sequence_exception( rsutils::string::from()
                     << "While Occupancy streams, Depth can start only alone at 640x360, " << fps << " fps" );
         }
-        else if( has_stream( requests, RS2_STREAM_COLOR ) )
+        else if( find_stream( requests, RS2_STREAM_COLOR ) )
             throw wrong_api_call_sequence_exception( "Color cannot start while Occupancy streams" );
     }
 

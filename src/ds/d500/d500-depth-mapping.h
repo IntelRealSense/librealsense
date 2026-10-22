@@ -8,6 +8,7 @@
 #include "core/video.h"
 #include <src/core/tagged-profile.h>
 #include <rsutils/lazy.h>
+#include <mutex>
 
 namespace librealsense
 {
@@ -21,8 +22,7 @@ namespace librealsense
 
         d500_depth_mapping( std::shared_ptr< const d500_info > const & );
 
-        // False when depth mapping was skipped for this device (currently: MIPI/GMSL
-        // transport, or USB FW that doesn't yet expose the interface).
+        // False when the device does not expose a Mapping interface.
         bool is_depth_mapping_active() const { return _depth_mapping_active; }
 
         // Append the occupancy/point-cloud streams (and default profile tag) only when
@@ -54,7 +54,6 @@ namespace librealsense
         void depth_sensor_allowed_or_throw( const stream_profiles & requests ) const;
 
         int _depth_mapping_idx = -1;
-        bool _standalone_occupancy = false;   // FW runs occupancy without host Depth, on 2C too
 
     protected:
         std::shared_ptr<stream_interface> _occupancy_stream;

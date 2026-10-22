@@ -26,8 +26,8 @@ namespace librealsense
                 constexpr uint32_t RSVL_FOURCC = 0x5253564C;  // shared carrier format of the logical streams
                 constexpr uint32_t GREY_FOURCC = 0x47524559;
 
-                // Temporary paired-FW contract: this record advertises action 6
-                // and PD rates, not a member ID. Payload routing uses metadata.
+                // Temporary paired-FW PD rate record, not a member ID.
+                // Command responses determine profile-enable support; metadata routes payloads.
                 constexpr uint32_t MUX_CARRIER_WIDTH = 1024;
                 constexpr uint32_t PD_PROFILE_MARKER_ROWS = 3;
                 constexpr uint32_t PD_PROFILE_FPS_LOW = 15;
@@ -129,7 +129,6 @@ namespace librealsense
                 public:
                     mux( const uvc_device_info & carrier_info, const uvc_device_info & control_info )
                         : _control( std::make_shared< retry_controls_work_around >( std::make_shared< v4l_mipi_device >( control_info ) ) )
-                        , _member_profiles_sku( carrier_info.pid == 0x0c07 || carrier_info.pid == 0x0c08 )
                         , _carrier( std::make_shared< v4l_mipi_device >( carrier_info ) )
                     {
                     }
@@ -141,7 +140,7 @@ namespace librealsense
                     {
                         if( m != PRIMARY )
                         {
-                            if( m == PD_MEMBER && member_profiles_available() )
+                            if( m == PD_MEMBER )
                             {
                                 std::vector< stream_profile > result;
                                 for( const auto & p : _carrier->get_profiles() )
@@ -295,22 +294,6 @@ namespace librealsense
                     }
 
                 private:
-                    bool member_profiles_available() const
-                    {
-                        // Paired FW contract: D585 publishes both PD capacity intervals with action 6.
-                        if( ! _member_profiles_sku )
-                            return false;
-                        const auto profiles = _carrier->get_profiles();
-                        const std::array< uint32_t, 2 > rates{{ PD_PROFILE_FPS_LOW, PD_PROFILE_FPS_HIGH }};
-                        return std::all_of( rates.begin(), rates.end(),
-                                            [&]( uint32_t fps )
-                        {
-                            return std::any_of( profiles.begin(), profiles.end(), [&]( const stream_profile & p )
-                            { return p.format == RSVL_FOURCC && p.width == MUX_CARRIER_WIDTH
-                                  && p.height == PD_PROFILE_MARKER_ROWS && p.fps == fps; } );
-                        } );
-                    }
-
                     struct slot
                     {
                         stream_profile profile{};
@@ -385,17 +368,14 @@ namespace librealsense
                         int32_t error;
                         const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds( 1500 );
                         bool accepted;
-                        const bool with_profile = on && member_profiles_available();
                         const auto & selected = _slots[m].profile;
-                        if( on && ! with_profile && selected.fps != MUX_MEMBERS[m].profile.fps )
-                            throw not_implemented_exception( "This firmware does not support Perception member profiles" );
                         const uint64_t profile = ( uint64_t( m == PD_MEMBER ? 0 : selected.width ) << 32 )
                             | ( uint64_t( m == PD_MEMBER ? 0 : selected.height ) << 16 ) | selected.fps;
                         do
                         {
-                            accepted = command( with_profile ? MUX_ENABLE_WITH_PROFILE : MUX_SET_ENABLE,
+                            accepted = command( on ? MUX_ENABLE_WITH_PROFILE : MUX_SET_ENABLE,
                                                 MUX_MEMBERS[m].stream_id, on, state, error, profile );
-                            if( accepted || ! with_profile || error != MUX_NOT_READY
+                            if( accepted || ! on || error != MUX_NOT_READY
                                 || std::chrono::steady_clock::now() >= deadline )
                                 break;
                             // A Mapping switch may still be draining STOP/CLOSE on the camera worker.
@@ -515,7 +495,6 @@ namespace librealsense
                     bool _streaming = false;
                     int _power_users = 0;
                     size_t _rejected = 0;
-                    const bool _member_profiles_sku;
                     std::shared_ptr< uvc_device > _carrier;  // last, so its capture thread stops before the rest goes
                 };
 

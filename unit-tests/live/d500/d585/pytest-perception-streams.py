@@ -8,8 +8,6 @@
 
 import pytest
 import pyrealsense2 as rs
-import pyrsutils as rsutils
-from rspy.pytest.device_helpers import require_min_fw_version
 import struct
 import time
 import logging
@@ -29,7 +27,6 @@ QUIET_S = 0.3             # how long a stopped stream must stay silent
 SDK_REJECT_S = 1.0        # a camera refusal takes longer
 ODET_HEADER = 20          # magic, version, type, flags, payload size, spare, crc
 ODET_PAYLOAD_MIN = 23     # payload header of a result with no detections
-STANDALONE_OCC_FW = '7.59.46596.16636'   # occupancy without host Depth, on 2C too
 MD = rs.frame_metadata_value
 
 
@@ -54,12 +51,10 @@ def is_2c(dev):
 
 
 def perception(dev, stream_type):
-    """(sensor, profile) of a perception stream, skipping when this device or FW does not run it standalone."""
+    """(sensor, profile) of a perception stream, skipping when the device does not expose it."""
     for s in dev.query_sensors():
         p = next( ( p for p in s.get_stream_profiles() if p.stream_type() == stream_type ), None )
         if p is not None:
-            if stream_type == rs.stream.occupancy and is_gmsl( dev ):
-                require_min_fw_version( dev, rsutils.version( STANDALONE_OCC_FW ), "Standalone Occupancy" )
             return s, p
     pytest.skip( f"Device has no {stream_type} stream" )
 

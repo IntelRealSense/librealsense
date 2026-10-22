@@ -9,7 +9,6 @@
 
 import pytest
 import pyrealsense2 as rs
-import pyrsutils as rsutils
 import struct
 import time
 import logging
@@ -28,7 +27,6 @@ SWITCH_S = 0.6                        # frames already in flight around an enabl
 QUIET_S = 1.0                         # how long a disabled stream must stay silent
 PD_ID, OCC_ID = 6, 7                  # stream ids of the camera's MUX control (HWMC 0xC0)
 MUX_CONTROL, MUX_SET_ENABLE, MUX_GET_STATE = 0xC0, 1, 2
-STANDALONE_OCC_FW = '7.59.46596.16636'   # occupancy without host Depth, on 2C too
 
 
 @pytest.fixture
@@ -50,11 +48,6 @@ def sensor(dev, name):
         if s.get_info( rs.camera_info.name ) == name:
             return s
     return None
-
-
-def require_occupancy(dev):
-    if sensor( dev, 'Depth Mapping Camera' ) is None:
-        pytest.skip( f"No Occupancy: 2C on FW older than {STANDALONE_OCC_FW}" )
 
 
 def is_3c(dev):
@@ -275,9 +268,6 @@ def test_perception_sensors_enumerate(device):
     pd = pd_profile( device )
     assert pd.format() == rs.format.y8 and pd.fps() == 30
     assert mux_state( device, PD_ID ) == ( 0, 0, 0 )
-    if not is_3c( device ) and rsutils.version( device.get_info( rs.camera_info.firmware_version ) ) < rsutils.version( STANDALONE_OCC_FW ):
-        assert sensor( device, 'Depth Mapping Camera' ) is None, "older FW produces no 2C occupancy"
-        return
     occ = occ_profile( device ).as_video_stream_profile()
     assert ( occ.format(), occ.width(), occ.height(), occ.fps() ) == ( rs.format.y8, 320, 256, 30 )
     assert mux_state( device, OCC_ID ) == ( 0, 0, 0 )
@@ -303,7 +293,6 @@ def test_detection_distance(device):
 @pytest.mark.parametrize( 'occ_first', [False, True] )
 def test_pd_and_occ_independent(device, occ_first):
     """Each MUX member starts and stops on its own while the other keeps streaming, in either start order."""
-    require_occupancy( device )
     inputs = start_inputs( device )
     pd, mapping = sensor( device, 'Perception' ), sensor( device, 'Depth Mapping Camera' )
     frames = Collector()
@@ -350,7 +339,6 @@ def test_pd_and_occ_independent(device, occ_first):
 
 def test_stale_request_cleared(device):
     """A stream request another client left behind is cleared when the SDK starts the capture."""
-    require_occupancy( device )
     dp = rs.debug_protocol( device )
     dp.send_and_receive_raw_data( dp.build_command( MUX_CONTROL, 1, MUX_SET_ENABLE, OCC_ID, 1 ) )
     assert mux_state( device, OCC_ID )[0] == 1
@@ -362,6 +350,23 @@ def test_stale_request_cleared(device):
     pd.stop()
     pd.close()
     stop( inputs )
+
+
+@pytest.mark.parametrize( 'width, height', [(640, 360), (1280, 720)] )
+def test_ir_only_rejected_while_occupancy_runs(device, width, height):
+    """The shared GMSL capture owner rejects IR before committing it; OCCG keeps streaming."""
+    stereo = device.first_depth_sensor()
+    ir = profile( stereo, rs.stream.infrared, rs.format.y8, w=width, h=height, index=1 )
+    mapping, frames = sensor( device, 'Depth Mapping Camera' ), Collector()
+    mapping.open( occ_profile( device ) )
+    mapping.start( frames )
+    frames.wait( rs.stream.occupancy, time.monotonic(), MIN_OCC_FRAMES )
+    with pytest.raises( RuntimeError, match="IR channel" ):
+        stereo.open( [ir] )
+    frames.wait( rs.stream.occupancy, time.monotonic(), MIN_OCC_FRAMES )
+    assert wait_state( device, OCC_ID, (1, 1, 1) ) == (1, 1, 1)
+    mapping.stop()
+    mapping.close()
 
 
 def test_ir_and_perception_exclude_each_other(device):
