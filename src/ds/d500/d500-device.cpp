@@ -138,8 +138,9 @@ namespace librealsense
     {
         // Aligned depth is a depth-sized virtual rectified color viewport, so per FW it is interpreted with
         // rectified color intrinsics scaled and cropped to the depth dimensions - not with depth's own.
+        // In Dual RGB the aligned-to color is Color 1, the left imager, which shares depth's own intrinsics.
         if( profile.stream == RS2_STREAM_DEPTH && _owner->_aligned_depth_option
-            && _owner->_aligned_depth_option->is_aligned() )
+            && _owner->_aligned_depth_option->is_aligned() && ! ds::is_dual_rgb_pid( _owner->_pid ) )
             return get_color_intrinsics( profile );
 
         return get_d500_intrinsic_by_resolution(
@@ -600,18 +601,14 @@ namespace librealsense
             }
 
             // Constructing the option probes the XU; firmware without aligned-depth support throws and we skip it.
-            // In Dual RGB, Color 1 is the left imager, so depth is already aligned to it.
-            if( ! is_dual_rgb_pid( _pid ) )
+            try
             {
-                try
-                {
-                    _aligned_depth_option = std::make_shared< d500_enable_aligned_depth_option >( raw_depth_sensor );
-                    depth_sensor.register_option( RS2_OPTION_ENABLE_ALIGNED_DEPTH, _aligned_depth_option );
-                }
-                catch( std::exception const & e )
-                {
-                    LOG_DEBUG( "Align Depth is not supported by this firmware: " << e.what() );
-                }
+                _aligned_depth_option = std::make_shared< d500_enable_aligned_depth_option >( raw_depth_sensor );
+                depth_sensor.register_option( RS2_OPTION_ENABLE_ALIGNED_DEPTH, _aligned_depth_option );
+            }
+            catch( std::exception const & e )
+            {
+                LOG_DEBUG( "Align Depth is not supported by this firmware: " << e.what() );
             }
 
             if( d5x5_family_pids.count( _pid )
