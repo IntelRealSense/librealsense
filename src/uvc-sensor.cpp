@@ -276,7 +276,8 @@ void uvc_sensor::open( const stream_profiles & requests )
                     // payload with its own headers, so width*height*bpp is not its length.
                     const bool is_depth_mapping
                         = ( extension == RS2_EXTENSION_LABELED_POINTS )
-                       || ( req_profile_base->get_stream_type() == RS2_STREAM_OCCUPANCY );
+                       || ( req_profile_base->get_stream_type() == RS2_STREAM_OCCUPANCY )
+                       || ( req_profile_base->get_stream_type() == RS2_STREAM_POINT_CLOUD );
 
                     if( ! msp )
                         expected_size = compute_frame_expected_size( width, height, bpp );

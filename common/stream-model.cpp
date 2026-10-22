@@ -73,7 +73,8 @@ namespace rs2
         frame_number = f.get_frame_number();
         timestamp_domain = f.get_frame_timestamp_domain();
         timestamp = f.get_timestamp();
-        fps.add_timestamp(f.get_timestamp(), f.get_frame_number());
+        // Alternating passive depth numbers both exposure classes on one counter, so each tile sees every 2nd number
+        fps.add_timestamp( f.get_timestamp(), split ? frame_number / 2 : frame_number );
 
         view_fps.add_timestamp(glfwGetTime() * 1000, count++);
 
@@ -553,7 +554,7 @@ namespace rs2
             std::string dev_serial = dev->dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
             std::string sensor_name = dev->s->get_info(RS2_CAMERA_INFO_NAME);
             // A split stream fills two tiles off one profile, so the exposure class has to tell them apart.
-            std::string stream_name = profile.stream_name();
+            std::string stream_name = viewer_stream_name( profile.stream_name() );
             if( split )
                 stream_name += passive ? " Passive" : " Active";
             std::string stream_index_str;

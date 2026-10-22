@@ -1,3 +1,8 @@
+---
+name: testing
+description: Run, filter and debug librealsense unit tests - pytest tests and the legacy C++ test runner (run-unit-tests.py), tags, devices, nightly/weekly contexts. Use before running tests.
+---
+
 # Running Tests in librealsense
 
 ## Prerequisites
@@ -17,7 +22,7 @@ Two frameworks, split by test language:
 
 - **C++ tests** (`test-*.cpp`) are orchestrated by the legacy runner `unit-tests/run-unit-tests.py`.
   Keeping that runner for C++ testing is its only remaining purpose.
-- **Python tests** (`pytest-*.py`) are pytest only. See `.github/skills/pytest-infra.md`.
+- **Python tests** (`pytest-*.py`) are pytest only. See the `pytest-infra` skill (`.claude/skills/pytest-infra/SKILL.md`).
   No legacy `test-*.py` scripts remain, and `run-unit-tests.py` never collects `pytest-*.py`.
 
 Either way, run **from the `unit-tests/` directory**.
@@ -48,7 +53,7 @@ python3 -m pytest -v -k "hdr and not preset"   # filter by test name
 
 Flags are registered in `conftest.py`: `--live`, `--not-live`, `--device`, `--exclude-device`,
 `--context`, `--tag`, `--repeat`, `--reruns`, `--debug`, `--rslog`, `--test-dir`, `--device-map`. Note that `-s`
-disables the per-test log files. See `.github/skills/pytest-infra.md` for fixtures and markers.
+disables the per-test log files. See the `pytest-infra` skill (`.claude/skills/pytest-infra/SKILL.md`) for fixtures and markers.
 
 ## Running the C++ Tests (legacy runner)
 

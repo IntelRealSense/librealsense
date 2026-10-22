@@ -399,9 +399,6 @@ namespace rs2
         bool subdevice_needs_depth( const subdevice_model & sub ) const;
         bool is_depth_resolution_valid_for_occupancy() const;
         void stop_perception_if_video_stopped( viewer_model & viewer );
-        // Perception and the decimation/temporal embedded filters are mutually exclusive.
-        bool is_perception_streaming() const;
-        bool is_perception_blocking_filter_enabled() const;
 
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();

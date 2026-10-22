@@ -1,10 +1,15 @@
+---
+name: pr-review
+description: Reply to human or bot review comments on a librealsense pull request. Use before responding to PR review threads.
+---
+
 # PR Review Workflow
 
 ## When to Use This Skill
 
 Replying to review comments (human or bot) on a `realsenseai/librealsense` pull request.
 
-For opening a PR, pushing commits to one, or updating its description, see `.github/skills/pr-create.md`.
+For opening a PR, pushing commits to one, or updating its description, see the `pr-create` skill (`.claude/skills/pr-create/SKILL.md`).
 
 ## Responding to Review Comments
 

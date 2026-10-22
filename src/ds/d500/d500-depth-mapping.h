@@ -8,6 +8,7 @@
 #include "core/video.h"
 #include <src/core/tagged-profile.h>
 #include <rsutils/lazy.h>
+#include <mutex>
 
 namespace librealsense
 {
@@ -30,6 +31,10 @@ namespace librealsense
         void add_streams_if_active( std::vector< std::shared_ptr< stream_interface > > & streams ) const;
         void add_profile_tag_if_active( std::vector< tagged_profile > & tags ) const;
 
+        // Occupancy grid and labeled point cloud params, exposed through the depth mapping sensor
+        std::string get_depth_mapping_params() const;
+        void set_depth_mapping_params( const std::string & params_json_str ) const;
+
     private:
 
         friend class d500_depth_mapping_sensor;
@@ -46,10 +51,15 @@ namespace librealsense
     protected:
         std::shared_ptr<stream_interface> _occupancy_stream;
         std::shared_ptr<stream_interface> _point_cloud_stream;
+        std::shared_ptr<stream_interface> _pcl_stream;  // device point cloud (RS2_STREAM_POINT_CLOUD)
+        std::shared_ptr<uvc_sensor> _raw_depth_mapping_ep;
         bool _depth_mapping_active = false;
         // True for D585S (mapping on MI 13, 2880-wide payloads), false for every other
         // D5xx (mapping on MI 11, OCCG 320x256 and LPCL 640x360).
         bool _is_safety_layout = false;
+        bool _is_d585s = false;
+        // Serializes get/set of the depth mapping params, so the GET that explains a failed set reads that set's result
+        mutable std::mutex _depth_mapping_params_mutex;
         std::shared_ptr<rsutils::lazy<rs2_extrinsics>> _depth_to_depth_mapping_extrinsics;
     };
 
@@ -68,8 +78,16 @@ namespace librealsense
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override;
         stream_profiles init_stream_profiles() override;
+        // EP12 carries one Mapping stream at a time (PCL, LPCL, or OG)
+        void open(const stream_profiles& requests) override;
+
+        std::string get_depth_mapping_params() const override { return _owner->get_depth_mapping_params(); }
+        void set_depth_mapping_params( const std::string & params_json_str ) const override
+        {
+            _owner->set_depth_mapping_params( params_json_str );
+        }
 
     protected:
-        const d500_depth_mapping* _owner;
+        d500_depth_mapping* _owner;
     };
 }
