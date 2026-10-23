@@ -1014,8 +1014,25 @@ namespace librealsense
         {
             bool quit = false;
             CComPtr<IMFMediaType> pMediaType = nullptr;
+            auto is_native = [this]( const GUID & subtype )
+            {
+                return _native_formats.count( normalize_fourcc( reinterpret_cast< const big_endian< uint32_t > & >( subtype.Data1 ) ) ) > 0;
+            };
             for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
             {
+                // RealSense pins are always filtered: streaming a host-decoded type there (NV12 from MJPEG) can stop
+                // the color stream until a HW reset (#15362). Other cameras are filtered only if the pin has a native
+                // media type; when MF offers host-provided types only (e.g. a webcam behind the Windows frame server
+                // exposing NV12 alone), those are the pin's only usable formats.
+                bool filter_pin = ( _info.vid == VID_INTEL_CAMERA || _info.vid == VID_REALSENSE_CAMERA ) && ! _native_formats.empty();
+                GUID subtype;
+                DWORD n_types = 0;
+                for( CComPtr< IMFMediaType > type; ! _native_formats.empty() && ! filter_pin
+                     && SUCCEEDED( _reader->GetNativeMediaType( sIndex, n_types, &type.p ) ); ++n_types, type.Release() )
+                    filter_pin = SUCCEEDED( type->GetGUID( MF_MT_SUBTYPE, &subtype ) ) && is_native( subtype );
+                if( n_types && ! filter_pin )
+                    LOG_DEBUG( "No native media type on pin " << sIndex << " - keeping all MF-reported types" );
+
                 for (auto k = 0;; k++)
                 {
                     auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
@@ -1028,7 +1045,6 @@ namespace librealsense
                         break;
                     }
 
-                    GUID subtype;
                     CHECK_HR(pMediaType->GetGUID(MF_MT_SUBTYPE, &subtype));
 
                     unsigned width = 0;
@@ -1054,7 +1070,7 @@ namespace librealsense
                     // Drop media types MF reports but the device does not advertise in its USB configuration descriptor.
                     // e.g. camera stack exposes an NV12 decoded from MJPEG. Streaming such a host-injected type via the
                     // native path can fail, so expose only true device formats.
-                    if( ! _native_formats.empty() && _native_formats.find( normalize_fourcc( device_fourcc ) ) == _native_formats.end() )
+                    if( filter_pin && ! is_native( subtype ) )
                     {
                         LOG_DEBUG( "Dropping non-native media type " << fourcc( device_fourcc ) << " " << width << "x"
                                    << height << " @" << currFps << "Hz (not in USB configuration descriptor)" );
