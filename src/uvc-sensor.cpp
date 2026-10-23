@@ -290,7 +290,7 @@ void uvc_sensor::open( const stream_profiles & requests )
                         fr->additional_data.raw_size = static_cast< uint32_t >( f.frame_size );
                     }
 
-                    // D401 GMSL raw color (pBAA) is packed MIPI RAW10 but sized at 16 bpp
+                    // D401 raw color (GMSL pBAA, USB pRAA) is packed MIPI RAW10 but sized at 16 bpp
                     // (unpacked) here; copy the packed payload verbatim, the rggb converter
                     // unpacks it downstream. Applies to any raw color frame (e.g. Depth + Color 1,
                     // a single color stream), not only the multi-color path.

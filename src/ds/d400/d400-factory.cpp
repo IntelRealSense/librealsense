@@ -1000,8 +1000,10 @@ namespace librealsense
             int color_height = 480;
             int fps = usb3mode ?  30 : 10;
 
+            // Default only Color 0: with the raw dual-RGB FW, Color 1 also advertises RGB8 and shares a
+            // hardware endpoint with IR2, so a wildcard index would make the default config unresolvable.
             tags.push_back( { RS2_STREAM_COLOR,
-                              -1,  // index
+                              0,  // index
                               color_width, color_height,
                               get_color_format(),
                               fps,
@@ -1436,6 +1438,11 @@ namespace librealsense
     std::shared_ptr<matcher> rs405_device::create_matcher(const frame_holder& frame) const
     {
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
+        // USB dual-RGB: like D401 GMSL, Color 1 must be known to the syncer or create_matcher recurses.
+        // Only when Color 1 is published, so a plain D405 keeps its original matcher.
+        auto depth = dynamic_cast< const d400_depth_sensor * >( &get_sensor( _depth_device_idx ) );
+        if( _color_stream2 && depth && depth->has_color1() )
+            streams.push_back( _color_stream2.get() );
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
