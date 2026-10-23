@@ -3,6 +3,7 @@
 
 # HDR Mode selects the processing pipeline on D5x5 USB SKUs, over the HWM CUSTOM_CMD.
 # The firmware applies it at the next stream start and refuses changes while the sensor is open.
+# The range tops out at the highest mode the firmware reports: Multi-Frame HDR only on HDR-enabled builds.
 
 import pytest
 import pyrealsense2 as rs
@@ -47,7 +48,7 @@ def color_profile(sensor, fps=30):
 def test_hdr_mode_range(hdr_sensor):
     r = hdr_sensor.get_option_range(HDR)
     assert r.min == MODES.off
-    assert r.max == MODES.multi_frame_hdr
+    assert r.max in (MODES.single_frame_wdr, MODES.multi_frame_hdr)
     assert r.step == 1
     assert r.default == MODES.single_frame_wdr
 
@@ -59,7 +60,7 @@ def test_hdr_mode_set_get(hdr_sensor):
 
 
 def test_hdr_mode_rejects_out_of_range(hdr_sensor):
-    for bad in (int(MODES.multi_frame_hdr) + 1, 256, -1, 0.5):
+    for bad in (int(hdr_sensor.get_option_range(HDR).max) + 1, 256, -1, 0.5):
         with pytest.raises(Exception):
             hdr_sensor.set_option(HDR, bad)
     assert hdr_sensor.get_option(HDR) == MODES.single_frame_wdr
@@ -86,10 +87,9 @@ def test_hdr_mode_rejected_while_open(hdr_sensor):
 
 
 def test_hdr_mode_multi_frame_streams(hdr_sensor):
-    try:
-        hdr_sensor.set_option(HDR, MODES.multi_frame_hdr)
-    except Exception as e:
-        pytest.skip(f"Multi-Frame HDR not supported by this firmware build: {e}")
+    if hdr_sensor.get_option_range(HDR).max < int(MODES.multi_frame_hdr):
+        pytest.skip("Multi-Frame HDR not supported by this firmware build")
+    hdr_sensor.set_option(HDR, MODES.multi_frame_hdr)
     assert hdr_sensor.get_option(HDR) == MODES.multi_frame_hdr
 
     # The firmware merges short/long pairs, so the host still receives the requested output fps.

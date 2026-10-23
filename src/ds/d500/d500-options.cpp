@@ -242,18 +242,34 @@ namespace librealsense
     hdr_mode_option::hdr_mode_option( std::shared_ptr< hw_monitor > hwm, const std::weak_ptr< sensor_base > & ep )
         : _hwm( hwm )
         , _sensor( ep )
+        , _range{ 0, RS2_HDR_MODE_SINGLE_FRAME_WDR, 1, RS2_HDR_MODE_SINGLE_FRAME_WDR }
     {
+        // Multi-Frame HDR support dropped by FW, but may be reintroduced by future FW versions.
+        try
+        {
+            hwmon_response_type response;
+            auto res = _hwm->send( command( ds::d500_fw_cmd::CUSTOM_CMD, GET_HDR_MODE_SUB_CMD, 1 ), &response );
+            if( response == ds::d500_hwmon_response::SUCCESS && res.size() >= sizeof( uint32_t ) )
+            {
+                uint32_t const max_mode = *reinterpret_cast< const uint32_t * >( res.data() );
+                _range.max = std::min( static_cast< float >( max_mode ), static_cast< float >( RS2_HDR_MODE_COUNT - 1 ) );
+                _range.def = std::min( _range.def, _range.max );
+            }
+        }
+        catch( const std::exception & e )
+        {
+            LOG_WARNING( "Could not read the HDR mode range, keeping the default: " << e.what() );
+        }
     }
 
     void hdr_mode_option::set( float value )
     {
-        if( value < 0 || value >= RS2_HDR_MODE_COUNT || static_cast< int >( value ) != value )
+        if( value < _range.min || value > _range.max || static_cast< int >( value ) != value )
             throw invalid_value_exception( rsutils::string::from()
                                            << "set(...) failed! " << value << " is not a valid value" );
         if( is_read_only() )
             throw wrong_api_call_sequence_exception( "Cannot change HDR mode while the sensor is open!" );
 
-        constexpr uint32_t SET_HDR_MODE_SUB_CMD = 0x2C;
         command cmd( ds::d500_fw_cmd::CUSTOM_CMD, SET_HDR_MODE_SUB_CMD, static_cast< uint32_t >( value ) );
         // The firmware releases the stream state a few hundred ms after the sensor closes, and reports not-ready until then
         hwmon_response_type response;
@@ -273,7 +289,6 @@ namespace librealsense
 
     float hdr_mode_option::query() const
     {
-        constexpr uint32_t GET_HDR_MODE_SUB_CMD = 0x2D;
         command cmd( ds::d500_fw_cmd::CUSTOM_CMD, GET_HDR_MODE_SUB_CMD );
         auto res = _hwm->send( cmd );
         if( res.size() < sizeof( uint32_t ) )

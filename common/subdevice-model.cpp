@@ -1021,18 +1021,15 @@ namespace rs2
     {
         // D585S (PID 0B6B): FW-side decimation kicks in only when depth is 640x360,
         // so depth is free and IR/color are pinned only in that specific case.
-        const bool is_d585s = dev.supports(RS2_CAMERA_INFO_PRODUCT_ID)
-            && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)) == "0B6B";
-        if (is_d585s)
+        if (is_d585s())
         {
             if (stream == RS2_STREAM_DEPTH) return false;
             auto it = ui.selected_stream_to_res.find(RS2_STREAM_DEPTH);
             return it != ui.selected_stream_to_res.end()
                 && it->second == decimation_mandated_res(RS2_STREAM_DEPTH);
         }
-        // Other D500 with the user-toggle decimation on (that is what put us in the
-        // split UI): FW mandates depth 640x360 + IR/color 1280x720 - restrict every stream.
-        return true;
+        // Other D500 with the user-toggle decimation on: FW mandates depth 640x360 + IR/color 1280x720.
+        return is_decimation_enabled();
     }
 
     bool subdevice_model::draw_resolutions_combo_box_multiple_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1,
@@ -1125,8 +1122,11 @@ namespace rs2
             if (f.second.size() == 0)
                 continue;
 
-            if (stream_type == RS2_STREAM_DEPTH && f.second[0] != std::string("Z16") ||
-                stream_type == RS2_STREAM_INFRARED && f.second[0] == std::string("Z16"))
+            // Color has a section of its own; any other non-Z16 stream is listed with IR, or with depth when IR shares its resolution
+            rs2_stream section = stream_type_of(f.first) == RS2_STREAM_COLOR ? RS2_STREAM_COLOR
+                               : f.second[0] == std::string("Z16") || ir_shares_depth_resolution() ? RS2_STREAM_DEPTH
+                                                                                                   : RS2_STREAM_INFRARED;
+            if (section != stream_type)
                 continue;
 
             auto formats_chars = get_string_pointers(f.second);
@@ -1217,12 +1217,18 @@ namespace rs2
     {
         bool res = false;
 
-        std::vector<rs2_stream> relevant_streams = { RS2_STREAM_DEPTH, RS2_STREAM_INFRARED };
+        std::vector<rs2_stream> relevant_streams = { RS2_STREAM_DEPTH };
+        if (!ir_shares_depth_resolution())
+            relevant_streams.push_back(RS2_STREAM_INFRARED);
+        if (has_color_streams())
+            relevant_streams.push_back(RS2_STREAM_COLOR);
         for (auto&& stream_type : relevant_streams)
         {
             // resolution
             // Draw combo-box with all resolution options for this stream type
             res |= draw_resolutions_combo_box_multiple_resolutions(error_message, label, streaming_tooltip, col0, col1, stream_type);
+            if (stream_type == RS2_STREAM_DEPTH)
+                sync_ir_to_depth_resolution();
 
             if (draw_streams_selector) 
             {
@@ -1240,8 +1246,8 @@ namespace rs2
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10);
         bool res = false;
 
-        // The split depth/IR resolution UI only makes sense when the embedded decimation
-        // filter is ON; re-evaluate here so toggling the filter switches modes live.
+        // Outside dual-color, the split resolution UI follows the embedded decimation filter;
+        // re-evaluate here so toggling the filter switches modes live.
         refresh_multiple_resolutions_state();
 
         std::string label = rsutils::string::from()
@@ -1895,11 +1901,40 @@ namespace rs2
         if( std::string( s->get_info( RS2_CAMERA_INFO_NAME ) ) != "Stereo Module" ) return false;
 
         // D585S: FW-side decimation always on, option not exposed.
-        if( dev.supports( RS2_CAMERA_INFO_PRODUCT_ID )
-            && std::string( dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ) ) == "0B6B" )
+        if( is_d585s() )
             return true;
 
-        // Other D500: show split UI only when the user-toggleable decimation is enabled.
+        // Dual-color carries color on this sensor, at a resolution of its own. Other D500 split only
+        // when the user-toggleable decimation is enabled.
+        return has_color_streams() || is_decimation_enabled();
+    }
+
+    bool subdevice_model::is_d585s() const
+    {
+        return dev.supports( RS2_CAMERA_INFO_PRODUCT_ID )
+            && std::string( dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ) ) == "0B6B";
+    }
+
+    bool subdevice_model::has_color_streams() const
+    {
+        return resolutions_per_stream.count( RS2_STREAM_COLOR ) > 0;
+    }
+
+    bool subdevice_model::ir_shares_depth_resolution() const
+    {
+        // Without decimation, dual-color IR delivers no frames at any resolution but depth's
+        return has_color_streams() && ! is_decimation_enabled();
+    }
+
+    void subdevice_model::sync_ir_to_depth_resolution()
+    {
+        auto depth = ui.selected_stream_to_res.find( RS2_STREAM_DEPTH );
+        if( depth != ui.selected_stream_to_res.end() && ir_shares_depth_resolution() )
+            ui.selected_stream_to_res[RS2_STREAM_INFRARED] = depth->second;
+    }
+
+    bool subdevice_model::is_decimation_enabled() const
+    {
         // Read the cached is_enabled() (kept fresh via on_options_changed) so this stays
         // cheap on the per-frame draw path.
         for( auto & ef : embedded_filters )
@@ -1971,6 +2006,8 @@ namespace rs2
         // Viewer-only convenience for the split-resolution UI: land the combo boxes on
         // the FW-mandated decimation pairing (see decimation_mandated_res) so streaming
         // starts cleanly. Dual-color carries color on this same sensor, so pin it too.
+        if( ! is_d585s() && ! is_decimation_enabled() )
+            return;
         auto force = [&]( rs2_stream stream ) {
             auto res = decimation_mandated_res( stream );
             if( res.first == 0 || res.second == 0 ) return;
@@ -2020,6 +2057,8 @@ namespace rs2
     std::vector<stream_profile> subdevice_model::get_selected_profiles(bool enforce_inter_stream_policies)
     {
         std::vector<stream_profile> results;
+        if (ui.is_multiple_resolutions)
+            sync_ir_to_depth_resolution();
 
         std::stringstream error_message;
         error_message << "The profile ";
@@ -2146,8 +2185,7 @@ namespace rs2
 
         if (ui.is_multiple_resolutions)
         {
-            streaming_map[RS2_STREAM_DEPTH] = false;
-            streaming_map[RS2_STREAM_INFRARED] = false;
+            streaming_map.clear();
         }
 
         if (sensor_has_color_stream(profiles))
@@ -2347,7 +2385,9 @@ namespace rs2
         {
             for (size_t i = 0; i < profiles.size(); i++)
             {
-                streaming_map[profiles[i].stream_type()] = true;
+                // IR that shares depth's resolution is listed in depth's section
+                auto type = profiles[i].stream_type();
+                streaming_map[type == RS2_STREAM_INFRARED && ir_shares_depth_resolution() ? RS2_STREAM_DEPTH : type] = true;
             }
         }
 

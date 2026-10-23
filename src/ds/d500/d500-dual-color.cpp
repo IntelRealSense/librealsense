@@ -95,6 +95,7 @@ namespace librealsense
         d500_depth.add_stream( _color_stream_2 );
 
         add_stream_combination_validator( [this]( const stream_profiles & requests ) { frame_rates_allowed_or_throw( requests ); } );
+        add_stream_combination_validator( color_resolutions_allowed_or_throw );
 
         register_color_extrinsics();
         register_color_metadata();
@@ -125,8 +126,8 @@ namespace librealsense
         return name;
     }
 
-    // Resolutions may differ freely, but a frame-rate mismatch silently starves the streams - both
-    // between the two color pins and between color and depth/IR.
+    // Depth/IR and color resolutions may differ freely, but a frame-rate mismatch silently starves the
+    // streams - both between the two color pins and between color and depth/IR.
     void d500_dual_color::frame_rates_allowed_or_throw( const stream_profiles & requests ) const
     {
         if( ! color_requested( requests ) )
@@ -156,6 +157,25 @@ namespace librealsense
                     << "All streams must share one frame rate while color is streaming ("
                     << stream_name( *first ) << " requested " << first->get_framerate() << " FPS, "
                     << stream_name( *p ) << " requested " << p->get_framerate() << " FPS)" );
+        }
+    }
+
+    // A resolution mismatch between the two color pins silently starves Color 1.
+    void d500_dual_color::color_resolutions_allowed_or_throw( const stream_profiles & requests )
+    {
+        std::shared_ptr< video_stream_profile_interface > first;
+        for( auto & p : requests )
+        {
+            auto vp = std::dynamic_pointer_cast< video_stream_profile_interface >( p );
+            if( ! vp || vp->get_stream_type() != RS2_STREAM_COLOR )
+                continue;
+            if( ! first )
+                first = vp;
+            else if( vp->get_width() != first->get_width() || vp->get_height() != first->get_height() )
+                throw wrong_api_call_sequence_exception( rsutils::string::from()
+                    << "Both color streams must share one resolution (" << stream_name( *first ) << " requested "
+                    << first->get_width() << "x" << first->get_height() << ", " << stream_name( *vp ) << " requested "
+                    << vp->get_width() << "x" << vp->get_height() << ")" );
         }
     }
 
