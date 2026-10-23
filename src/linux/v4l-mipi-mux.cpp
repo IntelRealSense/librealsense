@@ -9,11 +9,9 @@
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <cstring>
 #include <map>
 #include <mutex>
-#include <thread>
 
 namespace librealsense
 {
@@ -26,20 +24,13 @@ namespace librealsense
                 constexpr uint32_t RSVL_FOURCC = 0x5253564C;  // shared carrier format of the logical streams
                 constexpr uint32_t GREY_FOURCC = 0x47524559;
 
-                // Temporary paired-FW PD rate record, not a member ID.
-                // Command responses determine profile-enable support; metadata routes payloads.
                 constexpr uint32_t MUX_CARRIER_WIDTH = 1024;
-                constexpr uint32_t PD_PROFILE_MARKER_ROWS = 3;
-                constexpr uint32_t PD_PROFILE_FPS_LOW = 15;
-                constexpr uint32_t PD_PROFILE_FPS_HIGH = 30;
 
                 // HWMC opcode 0xC0 controls one logical stream: { version, action, stream id, enable }
                 constexpr uint32_t MUX_CONTROL_OPCODE = 0xC0;
                 constexpr uint32_t MUX_CONTROL_VERSION = 1;
                 constexpr uint32_t MUX_SET_ENABLE = 1;
                 constexpr uint32_t MUX_GET_STATE = 2;
-                constexpr uint32_t MUX_ENABLE_WITH_PROFILE = 6;
-                constexpr int32_t MUX_NOT_READY = -21;
 
                 // HWMC rides the depth XU (subdevice 0, unit 3) selector 1, in fixed size buffers
                 const extension_unit HWMC_XU = { 0, 3, 2, {} };
@@ -98,7 +89,6 @@ namespace librealsense
                 };
 
                 constexpr int PRIMARY = -1;  // the multiplexing node's own user, not a logical stream
-                constexpr int PD_MEMBER = 0;
 
                 // Camera index of an rs-enum IR node, or -1 for any other node
                 int ir_camera_index( const uvc_device_info & info )
@@ -139,25 +129,7 @@ namespace librealsense
                     std::vector< stream_profile > get_profiles( int m ) const
                     {
                         if( m != PRIMARY )
-                        {
-                            if( m == PD_MEMBER )
-                            {
-                                std::vector< stream_profile > result;
-                                for( const auto & p : _carrier->get_profiles() )
-                                    if( p.format == RSVL_FOURCC && p.width == MUX_CARRIER_WIDTH
-                                        && p.height == PD_PROFILE_MARKER_ROWS
-                                        && ( p.fps == PD_PROFILE_FPS_LOW || p.fps == PD_PROFILE_FPS_HIGH ) )
-                                    {
-                                        auto logical = MUX_MEMBERS[m].profile;
-                                        logical.fps = p.fps;
-                                        result.push_back( logical );
-                                    }
-                                std::sort( result.begin(), result.end(), []( const stream_profile & a, const stream_profile & b )
-                                           { return a.fps > b.fps; } );
-                                return result;
-                            }
                             return { MUX_MEMBERS[m].profile };
-                        }
                         auto profiles = _carrier->get_profiles();
                         profiles.erase( std::remove_if( profiles.begin(), profiles.end(),
                                                         []( const stream_profile & p ) { return p.format == RSVL_FOURCC; } ),
@@ -207,7 +179,6 @@ namespace librealsense
                                                             { dispatch( f, std::move( release ) ); },
                                                             buffers );
                             _slots[m].committed = true;
-                            _slots[m].profile = profile;
                             ++_members_committed;
                         }
                         std::lock_guard< std::recursive_mutex > route( _route_mtx );
@@ -296,7 +267,6 @@ namespace librealsense
                 private:
                     struct slot
                     {
-                        stream_profile profile{};
                         frame_callback callback;
                         bool started = false;
                         bool committed = false;
@@ -308,7 +278,7 @@ namespace librealsense
                         size_t capacity = 0;
                         for( const auto & member : MUX_MEMBERS )
                             capacity = std::max( capacity, size_t( member.profile.width ) * member.profile.height );
-                        // Reserve PD + OCC capacity before streaming; a late OCC start must not resize the queue.
+                        // Reserve the largest member's capacity; a late start must not resize the queue.
                         const auto profiles = _carrier->get_profiles();
                         auto best = profiles.end();
                         for( auto it = profiles.begin(); it != profiles.end(); ++it )
@@ -322,18 +292,13 @@ namespace librealsense
                     }
 
                     // False, with the camera's error code, when the camera rejects the request
-                    bool command( uint32_t action, uint32_t stream_id, uint32_t enable, mux_state & state, int32_t & error,
-                                  uint64_t profile = 0 ) const
+                    bool command( uint32_t action, uint32_t stream_id, uint32_t enable, mux_state & state, int32_t & error ) const
                     {
                         std::vector< uint8_t > buf( HWMC_BUFFER_SIZE, 0 );
-                        const bool with_profile = action == MUX_ENABLE_WITH_PROFILE;
-                        const uint16_t header[] = { uint16_t( with_profile ? 28 : 20 ), 0xCDAB };
+                        const uint16_t header[] = { 20, 0xCDAB };
                         const uint32_t request[] = { MUX_CONTROL_OPCODE, MUX_CONTROL_VERSION, action, stream_id, enable };
                         std::memcpy( buf.data(), header, sizeof( header ) );
                         std::memcpy( buf.data() + sizeof( header ), request, sizeof( request ) );
-                        if( with_profile )
-                            for( size_t i = 0; i < 8; ++i )
-                                buf[24 + i] = uint8_t( profile >> ( i * 8 ) );
                         {
                             // The HWMC mailbox is shared with every other HWMC user of the depth node
                             std::lock_guard< uvc_device > lock( *_control );
@@ -349,18 +314,13 @@ namespace librealsense
                             error = static_cast< int32_t >( opcode );
                             return false;
                         }
-                        const size_t offset = sizeof( opcode ) + ( with_profile ? 8 : 0 );
                         // Allow appended fields, but keep the response before the size trailer.
-                        if( size < offset + sizeof( state ) - sizeof( opcode )
+                        if( size < sizeof( state )
                             || size > HWMC_DATA_SIZE_OFFSET - sizeof( opcode ) )
                         {
                             throw backend_exception( "Perception MUX response size does not match the FW contract" );
                         }
-                        if( with_profile )
-                            for( size_t i = 0; i < 8; ++i )
-                                if( buf[4 + i] != uint8_t( profile >> ( i * 8 ) ) )
-                                    throw backend_exception( "Perception MUX accepted a different member profile" );
-                        std::memcpy( &state, buf.data() + offset, sizeof( state ) );
+                        std::memcpy( &state, buf.data() + sizeof( opcode ), sizeof( state ) );
                         return true;
                     }
 
@@ -368,22 +328,7 @@ namespace librealsense
                     {
                         mux_state state;
                         int32_t error;
-                        const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds( 1500 );
-                        bool accepted;
-                        const auto & selected = _slots[m].profile;
-                        const uint64_t profile = ( uint64_t( m == PD_MEMBER ? 0 : selected.width ) << 32 )
-                            | ( uint64_t( m == PD_MEMBER ? 0 : selected.height ) << 16 ) | selected.fps;
-                        do
-                        {
-                            accepted = command( on ? MUX_ENABLE_WITH_PROFILE : MUX_SET_ENABLE,
-                                                MUX_MEMBERS[m].stream_id, on, state, error, profile );
-                            if( accepted || ! on || error != MUX_NOT_READY
-                                || std::chrono::steady_clock::now() >= deadline )
-                                break;
-                            // A Mapping switch may still be draining STOP/CLOSE on the camera worker.
-                            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-                        } while( true );
-                        if( ! accepted )
+                        if( ! command( MUX_SET_ENABLE, MUX_MEMBERS[m].stream_id, on, state, error ) )
                             throw backend_exception( rsutils::string::from() << "Perception stream " << MUX_MEMBERS[m].stream_id
                                                                              << " enable(" << on << ") rejected, error " << error );
                         // The camera applies the request asynchronously; routing by metadata makes waiting for it unnecessary
@@ -483,7 +428,7 @@ namespace librealsense
                         std::lock_guard< std::recursive_mutex > route( _route_mtx );
                         if( m < 0 || ! _slots[m].started || ! _slots[m].callback )
                             return release();
-                        _slots[m].callback( _slots[m].profile, f, std::move( release ) );
+                        _slots[m].callback( MUX_MEMBERS[m].profile, f, std::move( release ) );
                     }
 
                     std::shared_ptr< uvc_device > _control;  // the depth node, holding the camera controls
@@ -532,14 +477,6 @@ namespace librealsense
 
                     void probe_and_commit( stream_profile profile, frame_callback callback, int buffers ) override
                     {
-                        if( _member != PRIMARY )
-                        {
-                            const auto profiles = _mux->get_profiles( _member );
-                            if( std::none_of( profiles.begin(), profiles.end(), [&]( const stream_profile & p )
-                                { return p.format == profile.format && p.width == profile.width
-                                      && p.height == profile.height && p.fps == profile.fps; } ) )
-                                throw backend_exception( "Unsupported GMSL Perception logical profile" );
-                        }
                         _mux->commit( _member, profile, std::move( callback ), buffers );
                     }
                     void stream_on( std::function< void( const notification & n ) > error_handler ) override
