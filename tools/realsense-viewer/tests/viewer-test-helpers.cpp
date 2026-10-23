@@ -213,6 +213,19 @@ void viewer_test::set_control_value( rs2::device_model & model,
     set_value_by_seed( opt, seed, value );
 }
 
+void viewer_test::select_control_combo_item( rs2::device_model & model,
+                                             std::shared_ptr< rs2::subdevice_model > sub,
+                                             rs2_option option, const std::string & item )
+{
+    auto & opt = find_option( sub, option );
+
+    ImGuiID seed = controls_id_seed( model, sub );
+    if( !imgui->ItemExists( ImHashStr( opt.id.c_str(), 0, seed ) ) )
+        seed = sensor_id_seed( model, sub );
+
+    select_combo_item( ImHashStr( opt.id.c_str(), 0, seed ), item );
+}
+
 std::string viewer_test::get_control_value( rs2::device_model & model,
                                             std::shared_ptr< rs2::subdevice_model > sub,
                                             rs2_option option )

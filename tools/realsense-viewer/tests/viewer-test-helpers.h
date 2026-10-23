@@ -148,6 +148,11 @@ public:
     std::string get_control_value( rs2::device_model & model,
                                    std::shared_ptr< rs2::subdevice_model > sub,
                                    rs2_option option );
+    // Pick an item in an option's combo box, including one the viewer draws itself for a
+    // non-enum option (e.g. Detection Distance)
+    void select_control_combo_item( rs2::device_model & model,
+                                    std::shared_ptr< rs2::subdevice_model > sub,
+                                    rs2_option option, const std::string & item );
 
     // Enter a value the way a user does: click the pencil beside a slider, click the text box it
     // turns into, type, Enter. False when no text box took the click - the pencil did nothing.
